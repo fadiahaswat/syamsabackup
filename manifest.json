@@ -1,0 +1,46 @@
+{
+  "name": "Student Activity Attendance and Monitoring System Application",
+  "short_name": "Syamsa",
+  "description": "Aplikasi absensi dan pemantauan kegiatan pelajar",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "orientation": "portrait",
+  "gcm_sender_id": "166579449286",
+  "gcm_user_visible_only": true,
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "assets/icons/app-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/app-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/screenshots/desktop-wide.png",
+      "sizes": "1440x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Syamsa desktop view"
+    },
+    {
+      "src": "assets/screenshots/mobile-narrow.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Syamsa mobile view"
+    }
+  ],
+  "notifications": {
+    "enabled": true
+  }
+}

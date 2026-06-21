@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:claude-opus-4-5ff030a60b0434f039eed782c6aa2c19ec12d7748a41a99a43d2214658833903e2..png)",
+      "Bash(npm run *)",
+      "Bash(npx tailwindcss *)",
+      "Bash(cat \"d:/syamsa-main/Design System for Sya/src/imports/design.md\" 2>/dev/null || cat \"d:/syamsa-main/Design%20System%20for%20Sya/src/imports/design.md\" 2>/dev/null || find \"d:/syamsa-main\" -name \"design.md\" -type f 2>/dev/null)",
+      "Read(//d/syamsa-main/Design%20System%20for%20Sya/src/imports/**)",
+      "Bash(find \"./Design System for Sya\" -type f -name \"*.md\")",
+      "Bash(find \"./Design%20System%20for%20Sya\" -type f -name \"*.md\")",
+      "Bash(cat \"d:/syamsa-main/design.md\")",
+      "Read(//tmp/**)",
+      "Bash(powershell -Command ' *)",
+      "Bash(powershell -Command \"Get-ChildItem -Path '.' -Recurse -Filter 'design.md' | Select-Object FullName\")",
+      "Read(//c/Users/Lenovo/AppData/Local/Temp/**)",
+      "Bash(powershell -Command \"Get-Content 'Design System for SYAMSA/src/imports/design.md' | Select-Object -First 20\")",
+      "Bash(xxd)",
+      "Bash(curl -s -I \"https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js\")"
+    ]
+  }
+}

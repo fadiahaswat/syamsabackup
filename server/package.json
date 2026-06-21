@@ -1,0 +1,26 @@
+{
+  "name": "syamsa-fcm-server",
+  "version": "1.0.0",
+  "description": "FCM Notification Server for Syamsa App - handles push notifications scheduling",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "send-test": "node server.js --send-now",
+    "list-tokens": "node server.js --list-tokens",
+    "scheduler": "node server.js --schedule"
+  },
+  "keywords": [
+    "firebase",
+    "fcm",
+    "push-notifications",
+    "syamsa"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "firebase-admin": "^12.0.0",
+    "node-schedule": "^2.1.1"
+  }
+}

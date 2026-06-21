@@ -1,0 +1,1915 @@
+/* ============================================================
+   SYAMSA DESIGN SYSTEM v1.0.0
+   Philosophy: "Fast but smooth"
+   All CSS tokens consolidated in one :root block
+   ============================================================ */
+
+:root {
+  /* ========== BRAND COLORS ========== */
+  --color-brand-deep: #0C4E8C;
+  --color-brand-blue: #0C81E4;
+  --color-brand-cyan: #17C3D4;
+  --color-brand-mint: #4FE7AF;
+
+  /* ========== SURFACE COLORS ========== */
+  --color-syamsa-background: #F8FAFC;
+  --color-syamsa-card: #FFFFFF;
+  --color-syamsa-muted: #F1F5F9;
+  --color-syamsa-border: rgba(148, 163, 184, 0.22);
+  --color-syamsa-foreground: #0C1F3D;
+  --color-syamsa-muted-foreground: #5B7099;
+
+  /* ========== RADIUS TOKENS ========== */
+  --radius-chip: 0.5rem;
+  --radius-control: 0.875rem;
+  --radius-panel: 1.5rem;
+  --radius-full: 999px;
+
+  /* ========== ELEVATION/SHADOW TOKENS ========== */
+  --shadow-elevation-1: 0 2px 8px -2px rgba(15, 23, 42, 0.08);
+  --shadow-elevation-2: 0 14px 40px -24px rgba(15, 23, 42, 0.28);
+  --shadow-elevation-3: 0 18px 46px -26px rgba(12, 78, 140, 0.32);
+  --shadow-elevation-4: 0 24px 70px -32px rgba(15, 23, 42, 0.45);
+  --shadow-floating: 0 10px 35px rgba(0, 0, 0, 0.12);
+
+  /* ========== STATUS COLORS ========== */
+  --color-status-hadir: #10B981;
+  --color-status-telat: #17C3D4;
+  --color-status-sakit: #F59E0B;
+  --color-status-izin: #3B82F6;
+  --color-status-pulang: #A855F7;
+  --color-status-alpa: #EF4444;
+  --color-status-tidak: #64748B;
+  --color-status-ya: #10B981;
+
+  /* Status Backgrounds */
+  --color-status-hadir-bg: rgba(16, 185, 129, 0.12);
+  --color-status-telat-bg: rgba(23, 195, 212, 0.12);
+  --color-status-sakit-bg: rgba(245, 158, 11, 0.12);
+  --color-status-izin-bg: rgba(59, 130, 246, 0.12);
+  --color-status-pulang-bg: rgba(168, 85, 247, 0.12);
+  --color-status-alpa-bg: rgba(239, 68, 68, 0.12);
+  --color-status-tidak-bg: rgba(100, 116, 139, 0.12);
+  --color-status-ya-bg: rgba(16, 185, 129, 0.12);
+
+  /* ========== MOTION DURATION TOKENS ========== */
+  --motion-micro: 100ms;
+  --motion-fast: 150ms;
+  --motion-standard: 200ms;
+  --motion-comfortable: 250ms;
+  --motion-large: 300ms;
+  --motion-page: 350ms;
+  --motion-emphasis: 400ms;
+  --motion-celebration: 600ms;
+
+  /* ========== MOTION EASING TOKENS ========== */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-emphasized: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* ========== BUTTON SCALE TOKENS ========== */
+  --scale-hover: scale(1.02);
+  --scale-press: scale(0.96);
+}
+
+/* ============================================================
+   ELEVATION CSS CLASSES
+   Use these classes instead of inline shadow classes
+   ============================================================ */
+.elevation-0 { box-shadow: none; }
+.elevation-1 { box-shadow: var(--shadow-elevation-1); }
+.elevation-2 { box-shadow: var(--shadow-elevation-2); }
+.elevation-3 { box-shadow: var(--shadow-elevation-3); }
+.elevation-4 { box-shadow: var(--shadow-elevation-4); }
+.elevation-floating { box-shadow: var(--shadow-floating); }
+
+/* Interactive elevation with hover states */
+.elevation-interactive {
+  box-shadow: var(--shadow-elevation-2);
+  transition: box-shadow var(--motion-standard) var(--ease-standard),
+              transform var(--motion-standard) var(--ease-decelerate);
+}
+.elevation-interactive:hover {
+  box-shadow: var(--shadow-elevation-3);
+  transform: translateY(-2px);
+}
+.elevation-interactive:active {
+  transform: var(--scale-press);
+  transition-duration: var(--motion-micro);
+}
+
+/* ============================================================
+   RADIUS CSS CLASSES
+   ============================================================ */
+.radius-chip { border-radius: var(--radius-chip); }
+.radius-control { border-radius: var(--radius-control); }
+.radius-panel { border-radius: var(--radius-panel); }
+.radius-full { border-radius: var(--radius-full); }
+
+/* ============================================================
+   REDUCED MOTION SUPPORT
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   BUTTON MOTION CLASSES
+   ============================================================ */
+.btn-motion {
+  transition: transform var(--motion-fast) var(--ease-standard),
+              background-color var(--motion-fast) var(--ease-standard),
+              box-shadow var(--motion-fast) var(--ease-standard),
+              border-color var(--motion-fast) var(--ease-standard),
+              opacity var(--motion-fast) var(--ease-standard);
+}
+
+.btn-motion:hover {
+  transform: var(--scale-hover);
+}
+
+.btn-motion:active {
+  transform: var(--scale-press);
+  transition-duration: var(--motion-micro);
+}
+
+.btn-motion:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ============================================================
+   CARD MOTION CLASSES
+   ============================================================ */
+.card-motion {
+  transition: transform var(--motion-standard) var(--ease-decelerate),
+              box-shadow var(--motion-standard) var(--ease-decelerate),
+              border-color var(--motion-standard) var(--ease-standard);
+}
+
+.card-motion:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevation-3);
+}
+
+/* ============================================================
+   TOAST MOTION CLASSES
+   ============================================================ */
+.toast-enter {
+  animation: toastEnter var(--motion-comfortable) var(--ease-enter) forwards;
+}
+
+.animate-toast-enter {
+  animation: toastEnter var(--motion-comfortable) var(--ease-enter) forwards;
+}
+
+.toast-exit {
+  animation: toastExit var(--motion-standard) var(--ease-exit) forwards;
+}
+
+.animate-toast-exit {
+  animation: toastExit var(--motion-standard) var(--ease-exit) forwards;
+}
+
+@keyframes toastEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastExit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+}
+
+/* ============================================================
+   MODAL MOTION CLASSES
+   ============================================================ */
+.modal-backdrop {
+  transition: opacity var(--motion-standard) var(--ease-standard),
+              background-color var(--motion-standard) var(--ease-standard);
+}
+
+.modal-panel {
+  transition: opacity var(--motion-large) var(--ease-enter),
+              transform var(--motion-large) var(--ease-enter);
+}
+
+.modal-panel.open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.modal-panel.closing {
+  opacity: 0;
+  transform: scale(0.95) translateY(8px);
+  transition-duration: var(--motion-standard);
+  transition-timing-function: var(--ease-exit);
+}
+
+/* ============================================================
+   BOTTOM SHEET MOTION
+   ============================================================ */
+.bottom-sheet {
+  transition: transform var(--motion-large) var(--ease-enter);
+}
+
+.bottom-sheet.open {
+  transform: translateY(0);
+}
+
+.bottom-sheet.closing {
+  transform: translateY(100%);
+  transition-duration: var(--motion-comfortable);
+  transition-timing-function: var(--ease-accelerate);
+}
+
+/* ============================================================
+   LIST ITEM MOTION
+   ============================================================ */
+.list-item {
+  transition: opacity var(--motion-standard) var(--ease-enter),
+              transform var(--motion-standard) var(--ease-enter),
+              background-color var(--motion-fast) var(--ease-standard);
+}
+
+.list-item.inserting {
+  animation: itemInsert var(--motion-large) var(--ease-enter) forwards;
+}
+
+.list-item.deleting {
+  animation: itemDelete var(--motion-standard) var(--ease-exit) forwards;
+}
+
+@keyframes itemInsert {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes itemDelete {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+/* ============================================================
+   VIEW TRANSITION
+   ============================================================ */
+.view-enter {
+  animation: viewEnter var(--motion-page) var(--ease-enter) forwards;
+}
+
+.view-exit {
+  animation: viewExit var(--motion-standard) var(--ease-exit) forwards;
+}
+
+@keyframes viewEnter {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes viewExit {
+  to {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+/* ============================================================
+   ATTENDANCE SCREEN TRANSITION
+   ============================================================ */
+.attendance-enter {
+  animation: attendanceEnter var(--motion-page) var(--ease-enter) forwards;
+}
+
+.attendance-exit {
+  animation: attendanceExit var(--motion-standard) var(--ease-exit) forwards;
+}
+
+@keyframes attendanceEnter {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes attendanceExit {
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+/* ============================================================
+   SUCCESS/ERROR STATE ANIMATIONS
+   ============================================================ */
+.success-indicator {
+  transition: transform var(--motion-emphasis) var(--ease-emphasized),
+              background-color var(--motion-standard) var(--ease-standard);
+}
+
+.success-indicator.success {
+  animation: successPop var(--motion-emphasis) var(--ease-emphasized);
+}
+
+@keyframes successPop {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.error-indicator {
+  animation: errorShake var(--motion-standard) ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+/* ============================================================
+   SKELETON LOADING
+   ============================================================ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 0%,
+    #f1f5f9 50%,
+    #e2e8f0 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    #1e293b 0%,
+    #334155 50%,
+    #1e293b 100%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-wave {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================================
+   SPINNER
+   ============================================================ */
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Base Styles */
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom Scrollbar */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.dark .custom-scrollbar {
+  scrollbar-color: #334155 transparent;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #334155;
+}
+
+/* ============================================================
+   LEGACY ANIMATIONS — Using Motion Tokens
+   Updated to use CSS variables from motion system
+   ============================================================ */
+.fade-in {
+  animation: fadeIn var(--motion-standard) var(--ease-standard);
+}
+.slide-up {
+  animation: slideUp var(--motion-comfortable) var(--ease-enter);
+}
+.scale-in {
+  animation: scaleIn var(--motion-comfortable) var(--ease-emphasized);
+}
+.pulse-slow {
+  animation: pulse 3s infinite;
+}
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Utility classes for transition timing using motion tokens */
+.transition-duration-micro { transition-duration: var(--motion-micro) !important; }
+.transition-duration-fast { transition-duration: var(--motion-fast) !important; }
+.transition-duration-standard { transition-duration: var(--motion-standard) !important; }
+.transition-duration-comfortable { transition-duration: var(--motion-comfortable) !important; }
+.transition-duration-large { transition-duration: var(--motion-large) !important; }
+.transition-duration-page { transition-duration: var(--motion-page) !important; }
+.transition-duration-emphasis { transition-duration: var(--motion-emphasis) !important; }
+
+/* Easing helpers */
+.transition-ease-standard { transition-timing-function: var(--ease-standard) !important; }
+.transition-ease-enter { transition-timing-function: var(--ease-enter) !important; }
+.transition-ease-exit { transition-timing-function: var(--ease-exit) !important; }
+.transition-ease-emphasized { transition-timing-function: var(--ease-emphasized) !important; }
+
+/* Success pop animation */
+.scale-success-pop {
+  animation: successPop var(--motion-emphasis) var(--ease-emphasized) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+}
+.dark .glass {
+  background: rgba(15, 23, 42, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Mesh Gradient Background */
+.mesh-bg {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(156, 72%, 90%, 1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(180, 70%, 93%, 1) 0, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(210, 80%, 94%, 1) 0, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(140, 70%, 92%, 1) 0, transparent 50%);
+}
+.dark .mesh-bg {
+  background-color: #0f172a;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(156, 72%, 10%, 0.4) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(210, 70%, 15%, 0.4) 0, transparent 50%);
+}
+
+/* Pie Chart Utility */
+.pie-chart {
+  background: conic-gradient(var(--color) var(--percent), #e2e8f0 0);
+  border-radius: 50%;
+  transition: all 1s ease-out;
+}
+.dark .pie-chart {
+  background: conic-gradient(var(--color) var(--percent), #334155 0);
+}
+
+/* Active Tab Indicator */
+.nav-btn.active {
+  color: #0c81e4;
+}
+.nav-btn.active i {
+  fill: currentColor;
+}
+
+.activity-container {
+  scroll-padding-inline: 0.25rem;
+}
+
+.activity-container .btn-wrapper {
+  flex: 0 0 44px;
+  width: 44px;
+}
+
+.activity-container .btn-status {
+  box-sizing: border-box;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  overflow: visible;
+}
+
+.activity-container .lbl-status {
+  font-size: 9px;
+  max-width: 44px;
+}
+
+.meta-chip {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.meta-chip-text {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta-chip-marquee {
+  padding-left: 100%;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  animation: meta-chip-marquee 5.5s linear infinite;
+}
+
+@keyframes meta-chip-marquee {
+  0%,
+  18% {
+    transform: translateX(0);
+  }
+  82%,
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.dashboard-name-wrap {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dashboard-name-text {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.dashboard-name-marquee {
+  padding-left: 100%;
+  max-width: none;
+  overflow: visible;
+  animation: dashboard-name-marquee 8s linear infinite;
+}
+
+@keyframes dashboard-name-marquee {
+  0%,
+  16% {
+    transform: translateX(0);
+  }
+  84%,
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* Location name marquee for long names */
+.loc-marquee-container {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.loc-marquee-container > span {
+  display: inline-block;
+  padding-left: 100%;
+  animation: loc-name-marquee 6s linear infinite;
+}
+
+@keyframes loc-name-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@media (min-width: 640px) {
+  .activity-container .btn-wrapper {
+    flex-basis: 58px;
+    width: 58px;
+  }
+
+  .activity-container .btn-status {
+    flex-basis: 3.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .activity-container .lbl-status {
+    font-size: 9px;
+    max-width: 58px;
+  }
+}
+
+/* AirTag-inspired Qibla precision finder */
+.qibla-finder {
+  --qibla-bg-a: #070707;
+  --qibla-bg-b: #202018;
+  --qibla-accent: #26d354;
+  --qibla-foreground: #ffffff;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.08), transparent 34%),
+    linear-gradient(160deg, var(--qibla-bg-b), var(--qibla-bg-a) 62%);
+  color: var(--qibla-foreground);
+  transition: background 1100ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+html.qibla-browser-active,
+body.qibla-browser-active {
+  background: #070707 !important;
+  background-color: #070707 !important;
+}
+
+html.qibla-browser-active.qibla-browser-green,
+body.qibla-browser-active.qibla-browser-green {
+  background: #25d654 !important;
+  background-color: #25d654 !important;
+}
+
+.qibla-finder > div {
+  min-height: 100%;
+  padding: 28px 32px 26px !important;
+  background: transparent !important;
+}
+
+.qibla-finder > div > .absolute {
+  filter: blur(22px);
+  opacity: 0.75;
+}
+
+.qibla-finder > div > .absolute::before,
+.qibla-finder > div > .absolute::after {
+  content: "";
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  animation: qiblaParticleFloat 7s ease-in-out infinite;
+}
+
+.qibla-finder > div > .absolute::before {
+  left: -80px;
+  top: 18%;
+}
+
+.qibla-finder > div > .absolute::after {
+  right: -110px;
+  bottom: 18%;
+  animation-delay: -2.4s;
+}
+
+.qibla-finder header {
+  display: block !important;
+  padding-top: 0;
+}
+
+.qibla-finder header p {
+  color: rgba(255, 255, 255, 0.52) !important;
+  font-size: 9px !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase;
+}
+
+.qibla-finder header h3 {
+  color: #fff !important;
+  font-size: 25px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.08 !important;
+  transition: opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1), transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.qibla-finder header button {
+  display: none !important;
+}
+
+#qibla-loading {
+  color: #fff;
+}
+
+#qibla-loading span {
+  width: 180px !important;
+  height: 180px !important;
+  border-radius: 999px;
+  border: 10px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.86);
+  border-right-color: rgba(255, 255, 255, 0.48);
+  animation: qiblaRing 1.2s linear infinite;
+}
+
+#qibla-loading span span {
+  display: none !important;
+}
+
+#qibla-loading p {
+  color: rgba(255, 255, 255, 0.72) !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 16px !important;
+}
+
+#qibla-content-wrapper {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100%;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 26px !important;
+  pointer-events: none;
+}
+
+#qibla-alignment-indicator {
+  position: absolute;
+  left: 32px;
+  bottom: 124px;
+  order: 3;
+  border: 0 !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  max-width: 320px;
+  font-size: 34px !important;
+  font-weight: 700 !important;
+  line-height: 1.16 !important;
+  text-align: left;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  pointer-events: none;
+  transition:
+    opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#qibla-content-wrapper > div:has(#qibla-compass-dial) {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  order: 1;
+  width: min(74vw, 340px) !important;
+  height: min(74vw, 340px) !important;
+  transform: translate(-50%, -50%) !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#qibla-compass-dial {
+  display: none !important;
+}
+
+#qibla-needle {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: min(36vw, 168px) !important;
+  height: min(36vw, 168px) !important;
+  color: #fff !important;
+  filter: drop-shadow(0 22px 34px rgba(0, 0, 0, 0.34));
+  transform: translate(-50%, -50%) rotate(0deg);
+  transform-origin: center center;
+  transition:
+    transform 520ms cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 700ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+#qibla-needle svg {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+}
+
+#qibla-needle .qibla-arrow-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transform-origin: center center;
+}
+
+#qibla-needle > div {
+  display: none !important;
+}
+
+#qibla-content-wrapper .grid {
+  order: 2;
+  position: absolute;
+  left: 50%;
+  top: calc(50% - min(42vw, 220px));
+  width: min(78vw, 330px);
+  display: block !important;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition:
+    opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    top 640ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+#qibla-content-wrapper .grid > div {
+  display: none !important;
+}
+
+#qibla-content-wrapper .grid > div:first-child {
+  display: block !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+}
+
+#qibla-content-wrapper .grid > div:first-child p:first-child {
+  display: none;
+}
+
+#qibla-angle-txt {
+  color: #fff !important;
+  font-size: clamp(50px, 15vw, 72px) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  line-height: 0.95 !important;
+  text-align: center;
+  text-shadow: 0 18px 38px rgba(0, 0, 0, 0.28);
+  transition:
+    opacity 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+#qibla-sensor-permission-btn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 20;
+  min-width: min(78vw, 310px);
+  min-height: 68px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.34) !important;
+  border-radius: 24px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.16) !important;
+  color: #fff !important;
+  font-size: 16px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(22px) saturate(1.35);
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  pointer-events: auto;
+}
+
+#qibla-sensor-permission-btn::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  margin-right: 10px;
+  vertical-align: -5px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 50%, #fff 0 22%, transparent 24%),
+    conic-gradient(from 0deg, #fff, rgba(255, 255, 255, 0.22), #fff);
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.56);
+}
+
+#qibla-sensor-permission-btn:active {
+  transform: translate(-50%, -50%) scale(0.97);
+}
+
+.qibla-finder footer,
+.qibla-finder .qibla-actions {
+  display: none;
+}
+
+.qibla-bottom-actions {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 34px;
+  z-index: 28;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.qibla-bottom-actions button {
+  pointer-events: auto;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(18px);
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.qibla-bottom-actions button:active {
+  transform: scale(0.94);
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.qibla-bottom-actions button.is-active {
+  background: rgba(38, 211, 84, 0.82);
+  border-color: rgba(255, 255, 255, 0.38);
+  box-shadow: 0 18px 42px rgba(38, 211, 84, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.qibla-bottom-actions svg {
+  width: 20px;
+  height: 20px;
+}
+
+.qibla-finder #qibla-content-wrapper::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6px;
+  height: 48px;
+  pointer-events: none;
+}
+
+.qibla-finder[data-qibla-state="far"] {
+  --qibla-bg-a: #000;
+  --qibla-bg-b: #141414;
+}
+
+.qibla-finder[data-qibla-state="closer"] {
+  --qibla-bg-a: #051408;
+  --qibla-bg-b: #119432;
+}
+
+.qibla-finder[data-qibla-state="almost"],
+.qibla-finder[data-qibla-state="perfect"],
+.qibla-finder[data-qibla-state="locked"] {
+  --qibla-bg-a: #21d34f;
+  --qibla-bg-b: #25d654;
+}
+
+.qibla-finder[data-qibla-state="almost"] #qibla-needle {
+  scale: 1;
+}
+
+.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper {
+  justify-content: center !important;
+  padding-top: 0;
+}
+
+.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper > div:has(#qibla-compass-dial) {
+  display: none !important;
+}
+
+.qibla-finder[data-qibla-state="calibrating"] #qibla-content-wrapper .grid {
+  display: none !important;
+}
+
+.qibla-finder[data-qibla-state="calibrating"] #qibla-alignment-indicator {
+  position: absolute;
+  left: 32px;
+  top: auto;
+  bottom: 124px;
+  width: min(78vw, 330px);
+  margin-top: 0;
+  transform: none;
+  font-size: 19px !important;
+  text-align: left;
+  line-height: 1.45 !important;
+}
+
+.qibla-finder[data-qibla-state="perfect"] #qibla-needle,
+.qibla-finder[data-qibla-state="locked"] #qibla-needle {
+  opacity: 0 !important;
+  visibility: hidden;
+  scale: 1;
+}
+
+.qibla-finder[data-qibla-state="perfect"] #qibla-content-wrapper,
+.qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper {
+  position: relative;
+  justify-content: center !important;
+}
+
+.qibla-finder[data-qibla-state="perfect"] #qibla-content-wrapper > div:has(#qibla-compass-dial),
+.qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper > div:has(#qibla-compass-dial) {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  display: block !important;
+  width: min(74vw, 340px) !important;
+  height: min(74vw, 340px) !important;
+  transform: translate(-50%, -50%) !important;
+  pointer-events: none;
+}
+
+.qibla-finder[data-qibla-state="perfect"] #qibla-content-wrapper .grid,
+.qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper .grid {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + min(26vw, 132px));
+  width: min(78vw, 330px);
+  transform: translateX(-50%);
+}
+
+.qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper .grid {
+  top: calc(50% - min(46vw, 238px));
+}
+
+.qibla-finder[data-qibla-state="locked"] #qibla-angle-txt {
+  font-size: clamp(42px, 12vw, 58px) !important;
+}
+
+.qibla-finder[data-qibla-state="perfect"] #qibla-alignment-indicator,
+.qibla-finder[data-qibla-state="locked"] #qibla-alignment-indicator {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + min(36vw, 176px));
+  width: min(78vw, 330px);
+  transform: translateX(-50%);
+}
+
+.qibla-finder[data-qibla-state="locked"] #qibla-alignment-indicator {
+  font-size: 25px !important;
+  line-height: 1.2 !important;
+}
+
+.qibla-finder[data-qibla-state="perfect"] #qibla-alignment-indicator,
+.qibla-finder[data-qibla-state="locked"] #qibla-alignment-indicator {
+  left: 32px;
+  top: auto;
+  bottom: 124px;
+  width: min(78vw, 330px);
+  transform: none;
+  text-align: left;
+}
+
+.qibla-finder[data-qibla-state="perfect"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 118px;
+  height: 118px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 18px rgba(255, 255, 255, 0.18), 0 0 58px rgba(255, 255, 255, 0.72);
+  transform: translate(-50%, -50%);
+  opacity: 1;
+  animation: qiblaSuccessPulse 1.8s ease-in-out infinite, qiblaSoftEnter 700ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(48vw, 190px);
+  height: min(48vw, 190px);
+  border-radius: 28px;
+  background: url("assets/illustrations/kaaba.webp") center / contain no-repeat;
+  filter: drop-shadow(0 24px 42px rgba(0, 0, 0, 0.28));
+  transform: translate(-50%, -50%);
+  animation: qiblaKaabaEnter 900ms cubic-bezier(0.19, 1, 0.22, 1), qiblaKaabaFloat 4s ease-in-out 900ms infinite;
+}
+
+.qibla-finder[data-qibla-state="locked"] #qibla-content-wrapper > div:has(#qibla-compass-dial)::after {
+  display: none;
+}
+
+@keyframes qiblaRing {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes qiblaParticleFloat {
+  50% {
+    transform: translate3d(18px, -22px, 0) scale(1.08);
+  }
+}
+
+@keyframes qiblaSuccessPulse {
+  50% {
+    box-shadow: 0 0 0 28px rgba(255, 255, 255, 0.12), 0 0 76px rgba(255, 255, 255, 0.88);
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+
+@keyframes qiblaKaabaFloat {
+  50% {
+    transform: translate(-50%, calc(-50% - 10px));
+  }
+}
+
+.qibla-finder.qibla-state-enter header h3,
+.qibla-finder.qibla-state-enter #qibla-angle-txt {
+  animation: qiblaTextStateEnter 620ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.qibla-finder.qibla-state-enter #qibla-alignment-indicator {
+  animation: qiblaLabelStateEnter 620ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.qibla-finder.qibla-state-enter:not([data-qibla-state="perfect"]):not([data-qibla-state="locked"]) #qibla-needle {
+  animation: qiblaArrowStateEnter 620ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+@keyframes qiblaTextStateEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes qiblaLabelStateEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes qiblaArrowStateEnter {
+  from {
+    opacity: 0.35;
+    filter: blur(8px) drop-shadow(0 22px 34px rgba(0, 0, 0, 0.34));
+  }
+  to {
+    opacity: 1;
+    filter: blur(0) drop-shadow(0 22px 34px rgba(0, 0, 0, 0.34));
+  }
+}
+
+@keyframes qiblaSoftEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.78);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes qiblaKaabaEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 18px)) scale(0.72);
+    filter: blur(14px) drop-shadow(0 24px 42px rgba(0, 0, 0, 0.18));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    filter: blur(0) drop-shadow(0 24px 42px rgba(0, 0, 0, 0.28));
+  }
+}
+
+/* ============================================================
+   PROGRESS BAR TRANSITION
+   Motion token: --motion-standard (200ms)
+   ============================================================ */
+.progress-bar {
+  transition: width var(--motion-standard) ease-out;
+}
+
+/* Salat Accordion Expanded Layout */
+#salat-accordion-wrapper.is-expanded .salat-flex-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 12px 12px;
+}
+
+#salat-accordion-wrapper.is-expanded #salat-accordion-content {
+  width: 0; /* allows flex box shrink/grow */
+  flex-grow: 1;
+}
+
+/* Mobile layout: 3 columns, 2 rows for Salat cards when expanded */
+#salat-accordion-wrapper.is-expanded #salat-hijri-widget .grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+@media (min-width: 640px) {
+  #salat-accordion-wrapper.is-expanded #salat-hijri-widget .grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* Toggle Button in Expanded State */
+#salat-accordion-wrapper.is-expanded #salat-accordion-toggle {
+  width: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-top: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 4px 4px 12px;
+  margin-left: 8px;
+  gap: 6px;
+}
+
+#salat-accordion-wrapper.is-expanded #salat-toggle-left {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+#salat-accordion-wrapper.is-expanded #salat-toggle-right {
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 4px;
+}
+
+#salat-accordion-wrapper.is-expanded #salat-accordion-label {
+  display: block;
+  max-width: 50px;
+  white-space: normal;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+#salat-accordion-wrapper.is-expanded #widget-hijri-date {
+  display: block;
+  max-width: 60px;
+  white-space: normal;
+  text-align: center;
+  font-size: 9px;
+  line-height: 1.2;
+  margin-right: 0;
+}
+
+
+/* ============================================================
+   HERO CARD — STICKY BEHAVIOR
+   Motion tokens: --motion-standard (200ms) untuk smooth feel
+   ============================================================ */
+
+#main-content {
+  position: relative;
+  isolation: isolate;
+  --dashboard-bg-from: #0c4e8c;
+  --dashboard-bg-to: #0b67b5;
+}
+
+.syamsa-header-logo {
+  display: block;
+  width: auto;
+  height: 1.9rem;
+  filter: brightness(0) invert(1) drop-shadow(0 1px 2px rgba(15, 23, 42, 0.18));
+  object-fit: contain;
+  object-position: center;
+  user-select: none;
+}
+
+#dashboard-greeting-panel {
+  margin-bottom: 0.75rem !important;
+}
+
+.dashboard-header-actions {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 24px -18px rgba(12, 31, 61, 0.45);
+}
+
+.dashboard-header-actions button,
+.dashboard-header-actions svg {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.dashboard-header-actions button:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.dashboard-header-actions #dash-clock {
+  color: #ffffff;
+}
+
+.dashboard-header-actions #dash-clock-sec {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+#main-content::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(21rem, 52vh);
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, var(--dashboard-bg-from) 0%, var(--dashboard-bg-to) 100%);
+  transform: translateZ(0);
+}
+
+.dark #main-content::before {
+  background:
+    linear-gradient(180deg, var(--dashboard-bg-from) 0%, var(--dashboard-bg-to) 100%);
+}
+
+#dashboard-slot-bg-illustration {
+  position: fixed;
+  top: 4.75rem;
+  right: clamp(0.75rem, 5vw, 3.25rem);
+  z-index: -1;
+  width: clamp(9rem, 34vw, 17rem);
+  height: clamp(9rem, 34vw, 17rem);
+  color: rgba(255, 255, 255, 0.025);
+  pointer-events: none;
+  transform: rotate(-8deg);
+}
+
+#dashboard-slot-bg-illustration svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1.35;
+}
+
+#dash-main-card {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(79, 231, 175, 0.14), transparent 28%),
+    linear-gradient(155deg, #0c1f3d 0%, #0d2d4f 58%, #0f3d52 100%) !important;
+  box-shadow:
+    0 18px 44px -28px rgba(12, 31, 61, 0.62),
+    0 1px 0 rgba(255, 255, 255, 0.05) inset !important;
+}
+
+/* Smooth transition untuk wrapper & card - USING MOTION TOKENS */
+#dash-main-card,
+#dash-main-card-wrapper,
+#tahfizh-hero-card,
+#tahfizh-hero-card-wrapper,
+#profile-hero-card,
+#profile-hero-card-wrapper {
+  transition:
+    padding var(--motion-standard) var(--ease-standard),
+    border-radius var(--motion-standard) var(--ease-standard),
+    box-shadow var(--motion-standard) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard),
+    transform var(--motion-standard) var(--ease-standard),
+    max-height var(--motion-standard) var(--ease-standard);
+  will-change: padding, border-radius, transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: layout paint;
+}
+
+/* State saat card menjadi sticky (compact/1-baris mode) */
+#dash-main-card.sticky-hero,
+#tahfizh-hero-card.sticky-hero,
+#profile-hero-card.sticky-hero {
+  padding: 0.6rem 1rem !important;
+  border-radius: 1.25rem !important;
+  box-shadow:
+    0 10px 30px -10px rgba(0, 0, 0, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+#tahfizh-hero-card.sticky-hero,
+#profile-hero-card.sticky-hero {
+  min-height: 0 !important;
+}
+
+#tahfizh-hero-card {
+  background:
+    radial-gradient(circle at 14% 34%, rgba(249, 115, 22, 0.34), transparent 24%),
+    radial-gradient(circle at 92% 92%, rgba(34, 197, 94, 0.16), transparent 28%),
+    linear-gradient(135deg, #0f172a, #111827 55%, #1c1917) !important;
+}
+
+#tahfizh-hero-card::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 38%, rgba(251, 146, 60, 0.1));
+  opacity: 0.7;
+}
+
+#tahfizh-hero-card.sticky-hero > img,
+#profile-hero-card.sticky-hero > img,
+#profile-hero-card.sticky-hero .absolute,
+#tahfizh-hero-card.sticky-hero .absolute {
+  opacity: 0 !important;
+}
+
+#tahfizh-hero-card.sticky-hero > .relative,
+#profile-hero-card.sticky-hero > .relative {
+  width: 100% !important;
+}
+
+#tahfizh-hero-card.sticky-hero > .relative {
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+}
+
+#tahfizh-hero-card.sticky-hero > .relative > div:first-child {
+  align-items: center !important;
+  width: 100% !important;
+}
+
+#tahfizh-hero-card > .relative > .flex {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+#tahfizh-hero-card h2 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+#tahfizh-hero-card .tahfizh-hero-stats {
+  max-height: 80px;
+  transition: opacity var(--motion-fast) var(--ease-standard),
+              max-height var(--motion-standard) var(--ease-standard),
+              transform var(--motion-standard) var(--ease-standard);
+}
+
+#tahfizh-hero-card .tahfizh-stat-pill {
+  position: relative;
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 24px -18px rgba(0, 0, 0, 0.6);
+}
+
+#tahfizh-hero-card .tahfizh-stat-pill::after {
+  content: "";
+  position: absolute;
+  inset: auto 10px 0;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+#tahfizh-hero-card .tahfizh-stat-pill:nth-child(2)::after {
+  background: rgba(251, 146, 60, 0.65);
+}
+
+#tahfizh-hero-card .tahfizh-stat-pill:nth-child(3)::after {
+  background: rgba(251, 191, 36, 0.65);
+}
+
+#tahfizh-hero-card .tahfizh-hero-logo,
+#tahfizh-hero-card .tahfizh-hero-action {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 12px 24px -16px rgba(0, 0, 0, 0.7);
+}
+
+#profile-hero-card.sticky-hero #profile-role-tab,
+#profile-hero-card.sticky-hero .grid {
+  display: none !important;
+}
+
+#profile-hero-card.sticky-hero .profile-compact-logout {
+  display: inline-flex !important;
+  margin-left: auto !important;
+}
+
+#tahfizh-hero-card.sticky-hero > .relative > .min-w-0 > span,
+#tahfizh-hero-card.sticky-hero p {
+  display: none !important;
+}
+
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-stats {
+  max-height: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+  transform: translateY(-4px) !important;
+}
+
+#tahfizh-hero-card.sticky-hero h2,
+#profile-hero-card.sticky-hero #profile-name {
+  font-size: 0.95rem !important;
+  line-height: 1.25rem !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-logo {
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 0.75rem !important;
+}
+
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-logo i,
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-logo svg {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+#profile-hero-card.sticky-hero {
+  text-align: left !important;
+}
+
+#profile-hero-card.sticky-hero > .relative {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  min-width: 0 !important;
+}
+
+#profile-hero-card.sticky-hero > .relative > h2 {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+#profile-hero-card.sticky-hero > .relative > p {
+  display: none !important;
+}
+
+#profile-hero-card.sticky-hero #profile-avatar {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+}
+
+#profile-hero-card.sticky-hero #profile-avatar i,
+#profile-hero-card.sticky-hero #profile-avatar svg {
+  width: 1.15rem !important;
+  height: 1.15rem !important;
+}
+
+#profile-hero-card.sticky-hero .w-20.h-20 {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+#tahfizh-hero-card.sticky-hero button {
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 0.75rem !important;
+  box-shadow: none !important;
+}
+
+#tahfizh-hero-card.sticky-hero button svg {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+@media (max-width: 380px) {
+  #tahfizh-hero-card.sticky-hero h2,
+  #profile-hero-card.sticky-hero #profile-name {
+    font-size: 0.875rem !important;
+  }
+}
+
+/* Body card collapse halus (bukan display:none agar bisa animate) */
+#dash-main-card.sticky-hero #dash-main-card-body {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Header row jadi 1 baris horizontal penuh */
+#dash-main-card.sticky-hero #dash-main-card-header-row {
+  margin-bottom: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+/* Grup kiri (badge + judul + waktu) jadi 1 baris */
+#dash-main-card.sticky-hero #dash-main-card-header-row > div:first-child {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  flex-wrap: nowrap !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+}
+
+/* Badge div tidak tumbuh, label judul juga flat */
+#dash-main-card.sticky-hero #dash-main-card-header-row > div:first-child > div:first-child,
+#dash-main-card.sticky-hero #dash-card-title {
+  margin-bottom: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Judul lebih kecil, satu baris */
+#dash-main-card.sticky-hero #dash-card-title {
+  font-size: 0.95rem !important;
+  font-weight: 900 !important;
+  line-height: 1.25rem !important;
+  white-space: nowrap !important;
+}
+
+/* Waktu lebih kecil, ellipsis kalau terlalu panjang */
+#dash-main-card.sticky-hero #dash-card-time {
+  font-size: 0.65rem !important;
+  line-height: 1.25rem !important;
+  white-space: nowrap !important;
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 640px) {
+  #dash-main-card.sticky-hero #dash-card-time {
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Tombol aksi mengecil jadi 2rem */
+#dash-main-card.sticky-hero #dash-main-card-header-row button {
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 0.5rem !important;
+  box-shadow: none !important;
+  flex-shrink: 0 !important;
+}
+
+/* Icon di dalam tombol ikut mengecil */
+#dash-main-card.sticky-hero #dash-main-card-header-row button svg {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+/* z-index agar card melayang di atas konten lain saat sticky */
+#dash-main-card-wrapper.sticky,
+#tahfizh-hero-card-wrapper.sticky,
+#profile-hero-card-wrapper.sticky {
+  z-index: 30;
+}
+
+
+/* ============================================================
+   ATTENDANCE — FLOATING BOTTOM BAR & MORPHING SEARCH PILL
+   Motion tokens: --motion-comfortable (250ms) untuk morphing effect
+   ============================================================ */
+
+/* Bar wrapper: fit-content, smooth transition semua props */
+#att-bottom-bar {
+  transition: all var(--motion-comfortable) var(--ease-enter);
+  width: fit-content;
+}
+
+/* Search pill container: hanya width & bg yang berubah */
+#search-pill-container {
+  transition:
+    width var(--motion-comfortable) var(--ease-enter),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+/* Collapsed: cuma icon search (3rem = 48px, sama dengan h-12) */
+#att-bottom-bar.collapsed #search-pill-container {
+  width: 3rem;
+}
+
+/* Expanded: melebar jadi search penuh, max 20rem */
+#att-bottom-bar.expanded #search-pill-container {
+  width: 16rem;
+  width: calc(100vw - 6rem);
+  max-width: 20rem;
+}
+
+/* Tombol filter problem: fade in/out */
+#btn-filter-problem {
+  transition: opacity var(--motion-standard) var(--ease-standard);
+}
+
+#att-bottom-bar.collapsed #btn-filter-problem {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#att-bottom-bar.expanded #btn-filter-problem {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 380px) {
+  .qibla-finder > div {
+    padding: 20px 20px 20px !important;
+  }
+  #qibla-alignment-indicator {
+    left: 20px;
+    font-size: 26px !important;
+    max-width: 280px;
+  }
+  .qibla-bottom-actions {
+    left: 20px;
+    right: 20px;
+    bottom: 24px;
+  }
+  .qibla-finder[data-qibla-state="calibrating"] #qibla-alignment-indicator {
+    left: 20px;
+    font-size: 16px !important;
+    bottom: 100px;
+  }
+  .qibla-finder[data-qibla-state="perfect"] #qibla-alignment-indicator,
+  .qibla-finder[data-qibla-state="locked"] #qibla-alignment-indicator {
+    left: 20px;
+    bottom: 100px;
+  }
+  .qibla-finder[data-qibla-state="locked"] #qibla-alignment-indicator {
+    font-size: 20px !important;
+  }
+  #qibla-loading span {
+    width: 140px !important;
+    height: 140px !important;
+  }
+}
+
+/* ============================================================
+   TAILWIND COMPLIANT UTILITY CLASSES
+   Mengganti inline styles agar sesuai dengan Tailwind CSS
+   ============================================================ */
+
+/* Animation Delay Classes */
+.delay-100ms { animation-delay: 0.1s; }
+.delay-120ms { animation-delay: 0.12s; }
+.delay-200ms { animation-delay: 0.2s; }
+.delay-250ms { animation-delay: 0.25s; }
+.delay-300ms { animation-delay: 0.3s; }
+.delay-500ms { animation-delay: 0.5s; }
+.delay-550ms { animation-delay: 0.55s; }
+
+/* Font Family */
+.font-rubik { font-family: Rubik, sans-serif; }
+.font-mono { font-family: "DM Mono", monospace; }
+
+/* Grid Template Columns */
+.grid-cols-custom-progress {
+  grid-template-columns: minmax(92px, 1fr) minmax(0, 1.35fr);
+}
+
+/* Width for progress bars (controlled by JS) */
+.w-progress { width: 0%; }
+
+/* ============================================================
+   BUTTON SCALE UTILITIES
+   Standardized press scale for all buttons
+   ============================================================ */
+.btn-press-scale {
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+.btn-press-scale:active {
+  transform: var(--scale-press);
+}
+
+/* Alternative: use Tailwind's active: variant with consistent scale */
+.active\:scale-96:active {
+  transform: scale(0.96);
+}
