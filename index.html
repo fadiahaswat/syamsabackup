@@ -2742,7 +2742,7 @@
                 onclick="window.kirimLaporanWA()"
                 aria-label="Kirim WhatsApp"
                 title="Kirim WhatsApp"
-                class="h-11 w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-400 font-black text-[10px] flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-500/20 active:scale-95 transition-all"
+                class="musyrif-only h-11 w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-400 font-black text-[10px] flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-500/20 active:scale-95 transition-all"
               >
                 <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
               </button>
@@ -2750,7 +2750,7 @@
                 onclick="window.exportToPDF()"
                 aria-label="Export PDF"
                 title="Export PDF"
-                class="h-11 w-full rounded-xl bg-blue-50 dark:bg-blue-500/10 text-palette-blue border border-blue-100 dark:border-blue-500/20 font-black text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+                class="musyrif-only h-11 w-full rounded-xl bg-blue-50 dark:bg-blue-500/10 text-palette-blue border border-blue-100 dark:border-blue-500/20 font-black text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-all"
               >
                 <i data-lucide="file-down" class="w-4 h-4"></i>
               </button>
@@ -3463,7 +3463,60 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <!-- Left Column: Profile Card & Calendar -->
           <div class="lg:col-span-5 space-y-5">
-          <div id="timesheet-secret-trigger" class="flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-sm select-none">
+          
+          <!-- Wali-Only Info Card & Contact Musyrif -->
+          <div class="wali-only bg-white dark:bg-slate-900 p-5 rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-black/20 flex flex-col gap-5">
+            <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-500/10 dark:to-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-500/20 shadow-sm shrink-0">
+                <i data-lucide="contact-2" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white leading-tight">Biodata &amp; Kontak</h3>
+                <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">Informasi lengkap santri &amp; wali</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Santri Section -->
+              <div class="space-y-2">
+                <span class="text-[8px] font-black uppercase tracking-widest text-slate-400 block">Detail Santri</span>
+                <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                  <div>
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-tight">Nama Santri</span>
+                    <span id="wali-santri-nama" class="text-slate-800 dark:text-slate-200">-</span>
+                  </div>
+                  <div>
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-tight">NIS</span>
+                    <span id="wali-santri-nis" class="text-slate-800 dark:text-slate-200">-</span>
+                  </div>
+                  <div>
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-tight">Kelas</span>
+                    <span id="wali-santri-kelas" class="text-slate-800 dark:text-slate-200">-</span>
+                  </div>
+                  <div>
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-tight">Kamar Asrama</span>
+                    <span id="wali-santri-asrama" class="text-slate-800 dark:text-slate-200">-</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Musyrif Section -->
+              <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                <span class="text-[8px] font-black uppercase tracking-widest text-slate-400 block">Musyrif Pembina</span>
+                <div class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                  <div class="min-w-0">
+                    <span id="wali-musyrif-nama" class="block text-xs font-black text-slate-800 dark:text-white truncate">-</span>
+                    <span class="block text-[8px] font-bold text-slate-400 mt-0.5">Musyrif Asrama</span>
+                  </div>
+                  <a id="wali-musyrif-wa-btn" href="#" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[9px] flex items-center gap-1 transition-all active:scale-95">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Hubungi WA
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="timesheet-secret-trigger" class="musyrif-only flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-sm select-none">
             <div class="flex items-center gap-2 px-1 min-w-0">
               <div class="w-8 h-8 rounded-xl bg-palette-blue/10 dark:bg-palette-blue/20 flex items-center justify-center text-palette-blue shrink-0">
                 <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
@@ -3479,7 +3532,7 @@
         </div>
 
         <div
-          class="bg-white/80 dark:bg-slate-800/90 p-4 sm:p-5 rounded-[1.75rem] shadow-xl shadow-slate-200/50 dark:shadow-black/40 border border-white/60 dark:border-slate-700 font-sans backdrop-blur-xl"
+          class="musyrif-only bg-white/80 dark:bg-slate-800/90 p-4 sm:p-5 rounded-[1.75rem] shadow-xl shadow-slate-200/50 dark:shadow-black/40 border border-white/60 dark:border-slate-700 font-sans backdrop-blur-xl"
         >
           <div class="flex items-center justify-between w-full mb-6 gap-3">
             <button
@@ -3882,7 +3935,7 @@
             </div>
           </header>
 
-          <div class="animate-slide-up tahfizh-card rounded-2xl p-1 delay-120ms">
+          <div class="musyrif-only animate-slide-up tahfizh-card rounded-2xl p-1 delay-120ms">
             <div class="grid grid-cols-3 gap-1">
               <button onclick="window.switchTahfizhSubTab('beranda')" data-subtab="beranda" class="tahfizh-sub-nav-btn active h-10 px-2 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-black active:scale-[0.98]"><i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i><span>Beranda</span></button>
               <button onclick="window.switchTahfizhSubTab('analisis')" data-subtab="analisis" class="tahfizh-sub-nav-btn h-10 px-2 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-black active:scale-[0.98]"><i data-lucide="user-search" class="w-4 h-4 shrink-0"></i><span>Analisis</span></button>
@@ -4040,7 +4093,7 @@
           </section>
 
           <section id="tahfizh-page-analisis" class="tahfizh-page-content hidden space-y-4">
-            <div class="max-w-xl tahfizh-card rounded-2xl overflow-hidden">
+            <div class="musyrif-only max-w-xl tahfizh-card rounded-2xl overflow-hidden">
               <div class="p-5">
                 <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2.5 ml-1">Pilih Santri</label>
                 <div class="relative flex items-center h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 group focus-within:ring-4 focus-within:ring-orange-500/10 focus-within:border-orange-500 transition-all">

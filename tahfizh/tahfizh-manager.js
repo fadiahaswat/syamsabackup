@@ -280,6 +280,13 @@ async function initTahfizhTab() {
     await reloadTahfizhData();
     TahfizhState.isLoaded = true;
 
+    if (window.isWaliMode?.()) {
+        window.switchTahfizhSubTab('analisis');
+        if (typeof renderTahfizhSantriRaporDashboard === 'function') {
+            renderTahfizhSantriRaporDashboard(window.getWaliPrimaryId());
+        }
+    }
+
     window.syncRoleModeUI?.();
 }
 
@@ -2117,6 +2124,10 @@ function handleFormJuzChange() {
 
 async function handleTahfizhFormSubmit(e) {
     e.preventDefault();
+    if (window.isWaliMode?.()) {
+        if (window.showToast) window.showToast("Wali tidak memiliki izin untuk menyimpan setoran tahfizh.", "error");
+        return;
+    }
     if (!validateTahfizhForm()) return;
 
     // Loading State

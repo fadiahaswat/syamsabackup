@@ -1894,7 +1894,7 @@ window.updateDashboard = function () {
   }
 
   if (elTitleGreet) {
-    let displayName = window.isWaliMode() ? window.getWaliDisplayName() : "Ustadz";
+    let displayName = window.isWaliMode() ? "Wali dari " + window.getWaliDisplayName() : "Ustadz";
     if (appState.selectedClass && typeof MASTER_KELAS !== "undefined" && MASTER_KELAS[appState.selectedClass]) {
       const musyrifName = MASTER_KELAS[appState.selectedClass].musyrif;
       if (!window.isWaliMode() && musyrifName && musyrifName !== "-") {
@@ -2152,8 +2152,8 @@ window.handleLocationCardClick = function () {
 window.updateLocationStatus = function () {
   const card = document.getElementById("location-status-card");
 
-  // Jika fitur dimatikan di config, sembunyikan kartu
-  if (!GEO_CONFIG.useGeofencing) {
+  // Sembunyikan untuk Wali atau jika dinonaktifkan di config
+  if (window.isWaliMode() || !GEO_CONFIG.useGeofencing) {
     if (card) card.classList.add("hidden");
     return;
   }
@@ -2720,6 +2720,28 @@ window.updateProfileInfo = function () {
     if (elSidebarName) elSidebarName.textContent = santriName;
     if (elSidebarClass) elSidebarClass.textContent = `Santri ${className}`;
     if (elSidebarAvatar) elSidebarAvatar.textContent = initials || "S";
+
+    // Update Wali-only profile biodata card
+    const elWaliSantriNama = document.getElementById("wali-santri-nama");
+    const elWaliSantriNis = document.getElementById("wali-santri-nis");
+    const elWaliSantriKelas = document.getElementById("wali-santri-kelas");
+    const elWaliSantriAsrama = document.getElementById("wali-santri-asrama");
+    const elWaliMusyrifNama = document.getElementById("wali-musyrif-nama");
+    const elWaliMusyrifWa = document.getElementById("wali-musyrif-wa-btn");
+
+    if (elWaliSantriNama) elWaliSantriNama.textContent = santriName;
+    if (elWaliSantriNis) elWaliSantriNis.textContent = nis;
+    if (elWaliSantriKelas) elWaliSantriKelas.textContent = className;
+    if (elWaliSantriAsrama) elWaliSantriAsrama.textContent = santri?.asrama || santri?.kamar || "Asrama Binaan";
+
+    const musyrifName = (typeof MASTER_KELAS !== "undefined" && MASTER_KELAS[className]?.musyrif) || santri?.musyrif_khusus || "-";
+    if (elWaliMusyrifNama) elWaliMusyrifNama.textContent = musyrifName;
+
+    if (elWaliMusyrifWa) {
+      const rawHp = String(santri?.hp_musyrif || (typeof MASTER_KELAS !== "undefined" && MASTER_KELAS[className]?.hp_musyrif) || "628123456789");
+      const hp = rawHp.startsWith("0") ? "62" + rawHp.substring(1) : rawHp;
+      elWaliMusyrifWa.href = `https://wa.me/${hp}?text=${encodeURIComponent("Assalamualaikum Ustadz " + musyrifName + ", saya orang tua/wali dari " + santriName + " ingin menanyakan perkembangan anak kami...")}`;
+    }
 
     if (window.lucide) lucide.createIcons();
     window.syncRoleModeUI();
@@ -4587,6 +4609,10 @@ window.toggleNotifications = async function () {
 };
 
 window.saveData = async function () {
+  if (window.isWaliMode()) {
+    console.warn("Save ignored - Wali mode is active.");
+    return;
+  }
   clearTimeout(saveTimeout);
   saveTimeout = setTimeout(async () => {
     try {
@@ -4872,17 +4898,19 @@ window.drawDonutChart = function () {
     });
 
     const div = filledSlots > 0 ? filledSlots : 1;
+    const multiplier = window.isWaliMode() ? 100 : 1;
     return {
-      hadir: stats.h / div,
-      sakit: stats.s / div,
-      izin: stats.i / div,
-      pulang: stats.p / div,
-      telat: stats.t / div,
-      alpa: stats.a / div,
+      hadir: (stats.h / div) * multiplier,
+      sakit: (stats.s / div) * multiplier,
+      izin: (stats.i / div) * multiplier,
+      pulang: (stats.p / div) * multiplier,
+      telat: (stats.t / div) * multiplier,
+      alpa: (stats.a / div) * multiplier,
       hasData: filledSlots > 0
     };
   };
 
+  const defaultHadir = window.isWaliMode() ? 100 : classSize;
   if (range === 'weekly') {
     const dates = getDatesForRange(appState.date, 7);
     const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
@@ -4891,7 +4919,7 @@ window.drawDonutChart = function () {
       const dateObj = new Date(dateKey);
       groupedData.push({
         label: dayNames[dateObj.getDay()],
-        stats: stats.hasData ? stats : { hadir: classSize, sakit: 0, izin: 0, pulang: 0, telat: 0, alpa: 0 }
+        stats: stats.hasData ? stats : { hadir: defaultHadir, sakit: 0, izin: 0, pulang: 0, telat: 0, alpa: 0 }
       });
     });
   } else if (range === 'monthly') {
@@ -4902,7 +4930,7 @@ window.drawDonutChart = function () {
       const stats = getStatsForDates(weekDates);
       groupedData.push({
         label: `W-${4 - w}`,
-        stats: stats.hasData ? stats : { hadir: classSize, sakit: 0, izin: 0, pulang: 0, telat: 0, alpa: 0 }
+        stats: stats.hasData ? stats : { hadir: defaultHadir, sakit: 0, izin: 0, pulang: 0, telat: 0, alpa: 0 }
       });
     }
   } else if (range === 'semester') {
@@ -4923,7 +4951,7 @@ window.drawDonutChart = function () {
       const stats = getStatsForDates(monthDates);
       groupedData.push({
         label: monthNames[mIdx],
-        stats: stats.hasData ? stats : { hadir: classSize, sakit: 0, izin: 0, pulang: 0, telat: 0, alpa: 0 }
+        stats: stats.hasData ? stats : { hadir: defaultHadir, sakit: 0, izin: 0, pulang: 0, telat: 0, alpa: 0 }
       });
     }
   }
@@ -4937,7 +4965,7 @@ window.drawDonutChart = function () {
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
 
-  const maxY = Math.max(classSize, 10);
+  const maxY = window.isWaliMode() ? 100 : Math.max(classSize, 10);
   const minY = 0;
 
   const isDark = document.documentElement.classList.contains("dark");
@@ -4962,7 +4990,8 @@ window.drawDonutChart = function () {
     ctx.lineTo(width - paddingRight, y);
     ctx.stroke();
 
-    ctx.fillText(val.toString(), paddingLeft - 6, y);
+    const labelText = window.isWaliMode() ? val + "%" : val.toString();
+    ctx.fillText(labelText, paddingLeft - 6, y);
   }
 
   // Coordinates
@@ -5228,6 +5257,210 @@ window.updateReportTab = function () {
   const tbody = document.getElementById("daily-recap-tbody");
   const rangeLabel = document.getElementById("report-date-range");
   const thead = document.querySelector("#tab-report thead tr");
+
+  if (window.isWaliMode()) {
+    // 1. Sembunyikan elemen Musyrif
+    const tableEl = document.querySelector("#tab-report table");
+    if (tableEl) tableEl.classList.add("hidden");
+    const legendEl = document.getElementById("report-table-legend");
+    if (legendEl) legendEl.classList.add("hidden");
+    const footerEl = tableEl?.parentElement?.nextElementSibling;
+    if (footerEl && footerEl.textContent.includes("Kalkulasi nilai")) footerEl.classList.add("hidden");
+
+    // 2. Siapkan container Wali
+    let waliContainer = document.getElementById("wali-report-container");
+    if (!waliContainer) {
+      waliContainer = document.createElement("div");
+      waliContainer.id = "wali-report-container";
+      waliContainer.className = "space-y-6 pt-4";
+      const wrapper = tbody?.closest(".bg-white\\/90");
+      if (wrapper) {
+        wrapper.appendChild(waliContainer);
+      }
+    }
+    if (waliContainer) {
+      waliContainer.classList.remove("hidden");
+      waliContainer.innerHTML = "";
+    }
+
+    // 3. Dapatkan Detail Anak
+    const student = appState.waliSantri;
+    const studentId = window.getWaliStudentId(student);
+
+    if (!student || !studentId) {
+      if (waliContainer) waliContainer.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">Data anak tidak tersedia</div>`;
+      return;
+    }
+
+    // 4. Kalkulasi statistik sesuai rentang terpilih
+    const range = window.getReportDateRange(appState.reportMode);
+    if (rangeLabel) rangeLabel.textContent = range.label;
+    window.syncPeriodPicker("report");
+
+    // Dapatkan daftar tanggal
+    const datesList = [];
+    let startD = new Date(range.start);
+    const endD = new Date(range.end);
+    while (startD <= endD) {
+      datesList.push(window.getLocalDateStr(startD));
+      startD.setDate(startD.getDate() + 1);
+    }
+    datesList.reverse(); // Urutkan tanggal terbaru di atas
+
+    // Akumulasi statistik kehadiran anak
+    let statsCounts = { Hadir: 0, Telat: 0, Sakit: 0, Izin: 0, Pulang: 0, Alpa: 0, total: 0 };
+    datesList.forEach(dateKey => {
+      Object.values(SLOT_WAKTU).forEach(slot => {
+        if (window.isSlotHoliday?.(slot.id, dateKey)) return;
+        const sData = appState.attendanceData?.[dateKey]?.[slot.id]?.[studentId];
+        if (!sData?.status) return;
+        Object.values(sData.status).forEach(status => {
+          if (Object.prototype.hasOwnProperty.call(statsCounts, status)) {
+            statsCounts[status]++;
+            statsCounts.total++;
+          }
+        });
+      });
+    });
+
+    const totalSessions = statsCounts.total || 1;
+    const presenceRate = Math.round(((statsCounts.Hadir + statsCounts.Telat) / totalSessions) * 100);
+
+    // 5. Render kartu statistik ringkasan kehadiran anak
+    let statsCardHTML = `
+      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-5 border border-white/10 shadow-lg relative overflow-hidden group">
+        <div class="absolute -right-10 -top-10 w-36 h-36 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span class="text-[9px] font-black uppercase tracking-wider text-slate-400 block mb-1">Persentase Kehadiran</span>
+            <h3 class="text-3xl font-black text-white">${presenceRate}% <span class="text-xs font-bold text-slate-400">Hadir</span></h3>
+            <p class="text-[10px] text-slate-400 mt-1">Total sesi terdata: ${statsCounts.total} kegiatan</p>
+          </div>
+          <div class="grid grid-cols-3 gap-2 w-full md:w-auto text-center shrink-0">
+            <div class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10">
+              <span class="block text-emerald-400 font-extrabold text-sm">${statsCounts.Hadir}</span>
+              <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Tepat Waktu</span>
+            </div>
+            <div class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10">
+              <span class="block text-amber-400 font-extrabold text-sm">${statsCounts.Telat}</span>
+              <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Telat</span>
+            </div>
+            <div class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10">
+              <span class="block text-blue-400 font-extrabold text-sm">${statsCounts.Sakit + statsCounts.Izin}</span>
+              <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Sakit/Izin</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    if (waliContainer) waliContainer.innerHTML += statsCardHTML;
+
+    // 6. Render list harian (timeline)
+    let timelineHTML = `
+      <div class="space-y-3">
+        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider pl-1">Riwayat Harian Kehadiran</h4>
+        <div class="flex flex-col gap-2.5 max-h-[500px] overflow-y-auto pr-1 hide-scrollbar">
+    `;
+
+    datesList.forEach(dateKey => {
+      const dateDisplay = window.formatDate(dateKey);
+      const isToday = dateKey === window.getLocalDateStr();
+      
+      let daySlotsHTML = "";
+      let activeSlotsCount = 0;
+      
+      Object.values(SLOT_WAKTU).forEach(slot => {
+        const isHoliday = window.isSlotHoliday?.(slot.id, dateKey);
+        const sData = appState.attendanceData?.[dateKey]?.[slot.id]?.[studentId];
+        const status = sData?.status ? Object.values(sData.status)[0] : null;
+        
+        let badgeColor = "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border-slate-200/50 dark:border-slate-700/50";
+        let statusLabel = "Nihil";
+        let iconName = "circle-dashed";
+        
+        if (isHoliday) {
+          badgeColor = "bg-slate-50 text-slate-400 dark:bg-slate-900/50 dark:text-slate-600 border-slate-200/30 dark:border-slate-800/30";
+          statusLabel = "Libur";
+          iconName = "calendar-x";
+        } else if (status) {
+          activeSlotsCount++;
+          if (status === "Hadir") {
+            badgeColor = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/20";
+            statusLabel = "Hadir";
+            iconName = "check-circle";
+          } else if (status === "Telat") {
+            badgeColor = "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/20";
+            statusLabel = "Telat";
+            iconName = "clock";
+          } else if (status === "Sakit") {
+            badgeColor = "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 border-blue-100 dark:border-blue-900/20";
+            statusLabel = "Sakit";
+            iconName = "heart-handshake";
+          } else if (status === "Izin" || status === "Pulang") {
+            badgeColor = "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/20";
+            statusLabel = status === "Pulang" ? "Pulang" : "Izin";
+            iconName = "file-text";
+          } else if (status === "Alpa") {
+            badgeColor = "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 border-rose-100 dark:border-rose-900/20";
+            statusLabel = "Alpa";
+            iconName = "alert-circle";
+          }
+        }
+        
+        daySlotsHTML += `
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800/50 last:border-0">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">${slot.label}</span>
+            <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black border ${badgeColor}">
+              <i data-lucide="${iconName}" class="w-3.5 h-3.5"></i>
+              ${statusLabel}
+            </span>
+          </div>
+        `;
+      });
+      
+      const dayUid = `day-card-${dateKey}`;
+      timelineHTML += `
+        <div class="bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 transition-all duration-300">
+          <div onclick="document.getElementById('${dayUid}').classList.toggle('hidden')" class="flex items-center justify-between cursor-pointer select-none">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shadow-sm shrink-0">
+                <i data-lucide="calendar" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h5 class="text-xs font-black text-slate-800 dark:text-white">${dateDisplay} ${isToday ? '<span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white uppercase ml-1.5">Hari Ini</span>' : ''}</h5>
+                <p class="text-[9px] font-bold text-slate-400 mt-0.5">${activeSlotsCount} sesi terisi</p>
+              </div>
+            </div>
+            <div class="w-6 h-6 rounded-md bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-400">
+              <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+            </div>
+          </div>
+          <div id="${dayUid}" class="hidden mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+            ${daySlotsHTML}
+          </div>
+        </div>
+      `;
+    });
+
+    timelineHTML += `
+        </div>
+      </div>
+    `;
+    if (waliContainer) waliContainer.innerHTML += timelineHTML;
+    
+    if (window.lucide) window.lucide.createIcons();
+    return; // Keluar agar tidak menjalankan logic rendering tabel Musyrif
+  }
+
+  // Tampilkan kembali elemen Musyrif jika bukan mode Wali
+  const tableEl = document.querySelector("#tab-report table");
+  if (tableEl) tableEl.classList.remove("hidden");
+  const legendEl = document.getElementById("report-table-legend");
+  if (legendEl) legendEl.classList.remove("hidden");
+  const footerEl = tableEl?.parentElement?.nextElementSibling;
+  if (footerEl && footerEl.textContent.includes("Kalkulasi nilai")) footerEl.classList.remove("hidden");
+  const waliContainer = document.getElementById("wali-report-container");
+  if (waliContainer) waliContainer.classList.add("hidden");
 
   if (thead) {
     let headerHTML = `
@@ -8430,6 +8663,9 @@ window.setPermitTab = function (tab) {
 
 // 3. Logic Simpan Data (Advanced)
 window.savePermitLogic = function () {
+  if (window.isWaliMode()) {
+    return window.showToast("Wali tidak memiliki izin untuk menyimpan izin langsung.", "error");
+  }
   const checkboxes = document.querySelectorAll(
     'input[name="permit_santri_select"]:checked',
   );
@@ -10032,8 +10268,8 @@ window.renderSchoolStatsWidget = function () {
   const widget = document.getElementById("school-stats-widget");
   if (!widget) return;
 
-  // SINKRONISASI: Jika hari ini sekolah libur (Ahad), hilangkan sekalian widgetnya!
-  if (window.isSlotHoliday("sekolah", appState.date)) {
+  // Sembunyikan untuk Wali atau jika libur
+  if (window.isWaliMode() || window.isSlotHoliday("sekolah", appState.date)) {
     widget.classList.add("hidden");
     return;
   } else {
