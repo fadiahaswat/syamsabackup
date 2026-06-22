@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Wali - Systa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="./manifest.json">
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .shake {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      20%, 80% { transform: translate3d(2px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+      40%, 60% { transform: translate3d(4px, 0, 0); }
+    }
+    .pulse-success {
+      animation: pulse-success 1s ease-in-out;
+    }
+    @keyframes pulse-success {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-900 dark:to-slate-800">
+
+  <div class="max-w-md mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="w-20 h-20 mx-auto mb-4 bg-emerald-500 rounded-3xl flex items-center justify-center shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Pendaftaran Wali</h1>
+      <p class="text-slate-500 mt-2">Dapatkan notifikasi jika anak Anda tidak hadir</p>
+    </div>
+
+    <!-- Status Badge -->
+    <div id="statusBadge" class="mb-6 p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+      <div class="flex items-center gap-3">
+        <div id="statusIcon" class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+          <svg id="iconPending" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <svg id="iconSuccess" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-emerald-500 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <svg id="iconError" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <div>
+          <p id="statusTitle" class="font-semibold text-slate-800 dark:text-white">Menunggu Pendaftaran</p>
+          <p id="statusText" class="text-sm text-slate-500">Isi form di bawah untuk register</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registration Form -->
+    <form id="registerForm" class="bg-white dark:bg-slate-800 rounded-3xl shadow-xl p-6 space-y-5">
+      <!-- NIS -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          NIS Santri <span class="text-red-500">*</span>
+        </label>
+        <input type="text" id="nis" required
+          class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+          placeholder="Contoh: 12345">
+        <p id="nisHint" class="mt-1 text-xs text-slate-400">Nomor Induk Santri anak Anda</p>
+      </div>
+
+      <!-- Nama Santri -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          Nama Santri <span class="text-red-500">*</span>
+        </label>
+        <input type="text" id="namaSantri" required
+          class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+          placeholder="Contoh: Ahmad Fauzan">
+      </div>
+
+      <!-- Nama Wali -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          Nama Wali <span class="text-red-500">*</span>
+        </label>
+        <input type="text" id="namaWali" required
+          class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+          placeholder="Contoh: Budi Santoso">
+      </div>
+
+      <!-- No HP -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          No. HP Wali <span class="text-red-500">*</span>
+        </label>
+        <input type="tel" id="noHP" required
+          class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+          placeholder="Contoh: 081234567890">
+        <p class="mt-1 text-xs text-slate-400">Akan digunakan untuk notifikasi WhatsApp (opsional)</p>
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          Email
+        </label>
+        <input type="email" id="email"
+          class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+          placeholder="Contoh: budi@email.com">
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" id="submitBtn"
+        class="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition flex items-center justify-center gap-2">
+        <svg id="btnIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span id="btnText">Daftarkan Sekarang</span>
+        <svg id="btnSpinner" class="hidden w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </button>
+    </form>
+
+    <!-- Info Box -->
+    <div class="mt-6 p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+      <h3 class="font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        Informasi
+      </h3>
+      <ul class="text-sm text-blue-600 dark:text-blue-300 space-y-1">
+        <li>• Notifikasi akan dikirim saat anak Anda ditandai <strong>Alpa</strong></li>
+        <li>• Pastikan browser mengizinkan notifikasi</li>
+        <li>• Hubungi musyrif jika ada kesalahan data</li>
+      </ul>
+    </div>
+
+    <!-- Debug Info (Development Only) -->
+    <div id="debugInfo" class="mt-6 p-4 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hidden">
+      <h3 class="font-semibold text-slate-600 dark:text-slate-400 mb-2 text-xs uppercase">Debug Info</h3>
+      <pre id="debugContent" class="text-xs text-slate-500 overflow-auto max-h-40"></pre>
+    </div>
+  </div>
+
+  <script>
+    // Load Firebase config
+    (function() {
+      const script = document.createElement('script');
+      script.src = './firebase-config.js';
+      script.async = true;
+      script.onload = initApp;
+      document.head.appendChild(script);
+    })();
+
+    async function initApp() {
+      const form = document.getElementById('registerForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const btnText = document.getElementById('btnText');
+      const btnIcon = document.getElementById('btnIcon');
+      const btnSpinner = document.getElementById('btnSpinner');
+
+      // Check if already registered
+      const urlParams = new URLSearchParams(window.location.search);
+      const nisParam = urlParams.get('nis');
+      if (nisParam) {
+        document.getElementById('nis').value = nisParam;
+      }
+
+      // Check notification permission
+      if (!('Notification' in window)) {
+        showError('Browser tidak mendukung notifications');
+        return;
+      }
+
+      if (Notification.permission === 'denied') {
+        showError('Notifikasi diblokir. Aktifkan di pengaturan browser.');
+        return;
+      }
+
+      // Request permission
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          showError('Izin notifikasi diperlukan');
+          return;
+        }
+      }
+
+      // Load FCM Manager
+      const fcmScript = document.createElement('script');
+      fcmScript.src = './managers/fcm-manager.js';
+      fcmScript.async = true;
+      fcmScript.onload = async () => {
+        // Wait for FCM to initialize
+        await window.fcmManager?.init?.();
+        log('FCM Token:', window.fcmManager?.token?.substring(0, 20) + '...');
+      };
+      document.head.appendChild(fcmScript);
+
+      // Load Wali Manager
+      const waliScript = document.createElement('script');
+      waliScript.src = './managers/wali-notification-manager.js';
+      waliScript.async = true;
+      waliScript.onload = () => {
+        window.waliNotificationManager?.init?.();
+      };
+      document.head.appendChild(waliScript);
+
+      // Form submit
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const nis = document.getElementById('nis').value.trim();
+        const namaSantri = document.getElementById('namaSantri').value.trim();
+        const namaWali = document.getElementById('namaWali').value.trim();
+        const noHP = document.getElementById('noHP').value.trim();
+        const email = document.getElementById('email').value.trim();
+
+        // Validate
+        if (!nis || !namaSantri || !namaWali || !noHP) {
+          showError('Mohon isi semua field yang wajib');
+          return;
+        }
+
+        // Show loading
+        setLoading(true);
+
+        try {
+          // Wait for FCM token
+          if (!window.fcmManager?.token) {
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+
+          const fcmToken = window.fcmManager?.token || localStorage.getItem('fcm_token');
+          log('FCM Token:', fcmToken ? fcmToken.substring(0, 20) + '...' : 'No token');
+
+          // Save to Firebase Realtime Database via REST API
+          const firebaseDbUrl = 'https://syamsa-a3395-default-rtdb.firebaseio.com/wali_tokens/' + nis + '.json';
+
+          const data = {
+            nis: nis,
+            namaSantri: namaSantri,
+            namaWali: namaWali,
+            noHP: noHP,
+            email: email || '',
+            fcmToken: fcmToken || null,
+            registeredAt: Date.now(),
+            lastActive: Date.now(),
+            active: true
+          };
+
+          // Try to save to Firebase
+          try {
+            const response = await fetch(firebaseDbUrl, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data)
+            });
+
+            if (!response.ok) throw new Error('Firebase error');
+
+            log('Saved to Firebase successfully');
+            showSuccess(nis, namaSantri);
+
+            // Also send test notification
+            if (fcmToken && Notification.permission === 'granted') {
+              new Notification('Pendaftaran Berhasil! 🎉', {
+                body: `Anda akan menerima notifikasi jika ${namaSantri} tidak hadir.`,
+                icon: './assets/icons/icon.webp',
+                tag: 'wali-registered'
+              });
+            }
+          } catch (firebaseErr) {
+            log('Firebase save failed:', firebaseErr);
+
+            // Fallback: save to localStorage
+            localStorage.setItem(`wali_register_${nis}`, JSON.stringify(data));
+            localStorage.setItem('wali_pending_sync', 'true');
+            log('Saved to localStorage as fallback');
+            showSuccess(nis, namaSantri);
+          }
+
+        } catch (err) {
+          log('Error:', err);
+          showError('Terjadi kesalahan: ' + err.message);
+        }
+
+        setLoading(false);
+      });
+    }
+
+    function setLoading(loading) {
+      const submitBtn = document.getElementById('submitBtn');
+      const btnText = document.getElementById('btnText');
+      const btnIcon = document.getElementById('btnIcon');
+      const btnSpinner = document.getElementById('btnSpinner');
+
+      submitBtn.disabled = loading;
+      submitBtn.classList.toggle('opacity-50', loading);
+      btnIcon.classList.toggle('hidden', loading);
+      btnSpinner.classList.toggle('hidden', !loading);
+      btnText.textContent = loading ? 'Mendaftar...' : 'Daftarkan Sekarang';
+    }
+
+    function showSuccess(nis, namaSantri) {
+      const badge = document.getElementById('statusBadge');
+      const icon = document.getElementById('statusIcon');
+      const iconPending = document.getElementById('iconPending');
+      const iconSuccess = document.getElementById('iconSuccess');
+      const iconError = document.getElementById('iconError');
+      const statusTitle = document.getElementById('statusTitle');
+      const statusText = document.getElementById('statusText');
+
+      badge.classList.remove('border-slate-200', 'border-red-200', 'dark:border-slate-700', 'dark:border-red-800');
+      badge.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-900/20', 'pulse-success');
+      icon.classList.remove('bg-slate-100', 'bg-red-100', 'dark:bg-slate-700', 'dark:bg-red-900');
+      icon.classList.add('bg-emerald-100', 'dark:bg-emerald-900');
+      iconPending.classList.add('hidden');
+      iconError.classList.add('hidden');
+      iconSuccess.classList.remove('hidden');
+
+      statusTitle.textContent = 'Berhasil Terdaftar!';
+      statusText.textContent = `${namaSantri} (NIS: ${nis})`;
+
+      document.getElementById('registerForm').classList.add('hidden');
+
+      // Show test notification
+      if (Notification.permission === 'granted') {
+        new Notification('Pendaftaran Berhasil! 🎉', {
+          body: `Anda akan menerima notifikasi jika ${namaSantri} tidak hadir.`,
+          icon: './assets/icons/icon.webp'
+        });
+      }
+
+      showDebug(`Registered: ${nis} - ${namaSantri}`);
+    }
+
+    function showError(message) {
+      const badge = document.getElementById('statusBadge');
+      const icon = document.getElementById('statusIcon');
+      const iconPending = document.getElementById('iconPending');
+      const iconSuccess = document.getElementById('iconSuccess');
+      const iconError = document.getElementById('iconError');
+      const statusTitle = document.getElementById('statusTitle');
+      const statusText = document.getElementById('statusText');
+
+      badge.classList.add('shake');
+      setTimeout(() => badge.classList.remove('shake'), 500);
+
+      badge.classList.remove('border-slate-200', 'border-emerald-500', 'dark:border-slate-700', 'dark:border-emerald-800');
+      badge.classList.add('border-red-500', 'bg-red-50', 'dark:bg-red-900/20');
+      icon.classList.remove('bg-slate-100', 'bg-emerald-100', 'dark:bg-slate-700', 'dark:bg-emerald-900');
+      icon.classList.add('bg-red-100', 'dark:bg-red-900');
+      iconPending.classList.add('hidden');
+      iconSuccess.classList.add('hidden');
+      iconError.classList.remove('hidden');
+
+      statusTitle.textContent = 'Terjadi Kesalahan';
+      statusText.textContent = message;
+
+      showDebug(`Error: ${message}`);
+    }
+
+    function log(...args) {
+      console.log('[WALI-REGISTER]', ...args);
+      showDebug(args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' '));
+    }
+
+    function showDebug(message) {
+      const debugInfo = document.getElementById('debugInfo');
+      const debugContent = document.getElementById('debugContent');
+      debugInfo.classList.remove('hidden');
+      debugContent.textContent = `[${new Date().toLocaleTimeString()}] ${message}\n` + debugContent.textContent;
+    }
+  </script>
+</body>
+</html>
