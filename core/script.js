@@ -1652,7 +1652,7 @@ window.showWaliView = function (tabName = "home") {
   window.renderWaliView();
 };
 
-window.handleGoogleCallback = function (response) {
+window.handleGoogleCallback = async function (response) {
   try {
     const profile = window.parseJwt(response.credential);
     const userEmail = profile.email;
