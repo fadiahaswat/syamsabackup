@@ -97,12 +97,9 @@ window.initFirebaseStorage = async function(musyrifId) {
     // Make available globally
     window.storageManager = storageManager;
 
-    // REALTIME LISTENERS DISABLED
-    // Data sync hanya terjadi saat:
-    // 1. Buka aplikasi (load dari Firebase)
-    // 2. Pull-to-refresh manual
-    // 3. Reload halaman manual
-    // Jika realtime sync dibutuhkan lagi, aktifkan setupRealtimeListeners() di firebase-storage-manager.js
+    // REALTIME LISTENERS SUDAH AKTIF
+    // Sync realtime untuk attendance, permits, dan settings
+    // Debounce 500ms mencegah flickering icon
 
     console.log('[FirebaseStorage] Initialized for musyrifId:', finalMusyrifId);
 

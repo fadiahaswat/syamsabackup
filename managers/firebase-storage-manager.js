@@ -324,12 +324,18 @@ class FirebaseStorageManager {
   _lastKnownDataHash = null;
 
   /**
-   * Setup real-time listeners for attendance data
+   * Global debounce timer for UI updates (prevent flickering)
+   */
+  _uiUpdateTimer = null;
+  _UI_UPDATE_DEBOUNCE = 500; // 500ms debounce
+
+  /**
+   * Setup ALL realtime listeners
    *
    * MODEL: Mirip permit-request-manager.js
    * - Listener HANYA update appState dan UI
    * - Listener TIDAK trigger save ke Firebase (avoid infinite loop)
-   * - Cross-device sync realtime
+   * - Semua data sync realtime
    */
   setupRealtimeListeners() {
     if (!this.db || !this.musyrifId) {
@@ -339,43 +345,102 @@ class FirebaseStorageManager {
 
     const basePath = `/${this.musyrifId}`;
 
+    // ========== 1. ATTENDANCE LISTENER ==========
     console.log(`[FirebaseStorageManager] 🔗 Listening to: attendance${basePath}`);
 
-    // Listen to attendance changes from OTHER devices
-    // CRITICAL: Ini hanya update appState, TIDAK trigger save
     this.listenTo(`attendance${basePath}`, (data) => {
       if (typeof appState === 'undefined') return;
       if (!data) return;
 
-      const newData = data;
-
-      // Skip jika data sama (prevent unnecessary re-render)
-      const newJson = JSON.stringify(newData);
-      if (this._lastListenerData === newJson) {
-        console.log('[FirebaseStorageManager] ⏭️ Skipping - data unchanged');
+      // Skip jika data sama
+      const newJson = JSON.stringify(data);
+      if (this._lastAttendanceData === newJson) {
         return;
       }
-      this._lastListenerData = newJson;
+      this._lastAttendanceData = newJson;
 
-      console.log('[FirebaseStorageManager] 🔄 Realtime update received - syncing attendance data');
+      console.log('[FirebaseStorageManager] 🔄 Attendance updated from another device');
 
-      // CRITICAL: Hanya update appState, JANGAN simpan lagi
-      // Inibeda dengan permit - attendance listener TIDAK menulis ke Firebase
-      appState.attendanceData = newData;
-      this.setLocalStorageData(APP_CONFIG.storageKey, newData);
+      // Update data, TIDAK trigger save
+      appState.attendanceData = data;
+      this.setLocalStorageData(APP_CONFIG.storageKey, data);
 
-      // Update UI (mirip permit listener - hanya render, tidak save)
+      // Debounced UI update (prevent flickering)
+      this._debouncedUIUpdate();
+    });
+
+    // ========== 2. PERMITS LISTENER ==========
+    this.listenTo(`permits`, (data) => {
+      if (typeof appState === 'undefined') return;
+
+      const permitsArray = data ? Object.values(data).filter(p => p) : [];
+
+      // Skip jika sama
+      const newJson = JSON.stringify(permitsArray);
+      if (this._lastPermitsData === newJson) {
+        return;
+      }
+      this._lastPermitsData = newJson;
+
+      console.log('[FirebaseStorageManager] 🔄 Permits updated from another device');
+
+      appState.permits = permitsArray;
+      this.setLocalStorageData(APP_CONFIG.permitKey, permitsArray);
+
+      // Refresh permit surfaces
+      if (typeof window.refreshPermitSurfaces === 'function') {
+        window.refreshPermitSurfaces();
+      }
+
+      // Debounced UI update
+      this._debouncedUIUpdate();
+    });
+
+    // ========== 3. SETTINGS LISTENER ==========
+    this.listenTo(`settings${basePath}`, (data) => {
+      if (!data || typeof appState === 'undefined') return;
+
+      console.log('[FirebaseStorageManager] 🔄 Settings updated from another device');
+
+      appState.settings = { ...appState.settings, ...data };
+      this.setLocalStorageData(APP_CONFIG.settingsKey, data);
+
+      // Apply settings immediately
+      if (typeof data.darkMode !== 'undefined') {
+        appState.settings.darkMode = data.darkMode;
+        document.documentElement.classList.toggle("dark", data.darkMode);
+      }
+      if (typeof data.notifications !== 'undefined') {
+        appState.settings.notifications = data.notifications;
+      }
+    });
+
+    console.log('[FirebaseStorageManager] ✅ ALL realtime listeners ACTIVE');
+  }
+
+  /**
+   * Debounced UI update - prevents flickering by batching rapid updates
+   */
+  _debouncedUIUpdate() {
+    if (this._uiUpdateTimer) {
+      clearTimeout(this._uiUpdateTimer);
+    }
+
+    this._uiUpdateTimer = setTimeout(() => {
+      this._uiUpdateTimer = null;
+
+      // Update dashboard
       if (typeof window.updateDashboard === 'function') {
         window.updateDashboard();
       }
+
+      // Update attendance list if visible
       if (typeof window.renderAttendanceList === 'function') {
         window.renderAttendanceList();
       }
 
-      console.log('[FirebaseStorageManager] ✅ Attendance synced from another device');
-    });
-
-    console.log('[FirebaseStorageManager] ✅ Realtime listeners ACTIVE for attendance');
+      console.log('[FirebaseStorageManager] ✅ UI updated (debounced)');
+    }, this._UI_UPDATE_DEBOUNCE);
   }
     });
 
