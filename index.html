@@ -2015,7 +2015,7 @@
 
             <!-- WIDGET: Persetujuan Izin Pending (Hanya muncul untuk Musyrif jika ada pending) -->
             <div id="musyrif-approval-widget" class="hidden musyrif-only animate-slide-up delay-120ms">
-              <div onclick="window.openMusyrifApprovalModal()" class="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 dark:from-amber-500/15 dark:to-amber-500/5 backdrop-blur-xl border border-amber-500/20 shadow-md w-full transition-all duration-300 hover:shadow-lg hover:border-amber-500/40 select-none cursor-pointer active:scale-98">
+              <div onclick="window.openMusyrifApprovalModal()" class="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 shadow-md w-full transition-all duration-300 hover:shadow-lg hover:border-amber-500/40 select-none cursor-pointer active:scale-98">
                 <div class="flex items-center gap-3 min-w-0">
                   <div class="w-8 h-8 shrink-0 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -2476,7 +2476,7 @@
             </div>
 
             <!-- Tombol Pengajuan -->
-            <button onclick="window.openWaliPermitModal()" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-br from-palette-blue to-palette-blue/90 hover:from-palette-blue/90 hover:to-palette-blue text-white text-xs font-black shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2">
+            <button onclick="window.openWaliPermitModal()" class="w-full py-3 px-4 rounded-2xl bg-palette-blue hover:bg-palette-deep text-white text-xs font-black shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
               <span>Ajukan Izin Baru</span>
             </button>
@@ -4593,7 +4593,7 @@
           </div>
 
           <!-- Submit Button -->
-          <button type="submit" class="w-full py-4 mt-2 rounded-2xl bg-gradient-to-br from-palette-blue to-palette-blue/90 hover:from-palette-blue/90 hover:to-palette-blue text-white text-xs font-black shadow-lg hover:shadow-xl active:scale-95 transition-all duration-300">
+          <button type="submit" class="w-full py-4 mt-2 rounded-2xl bg-palette-blue hover:bg-palette-deep text-white text-xs font-black shadow-lg hover:shadow-xl active:scale-95 transition-all duration-300">
             Kirim Permohonan Izin
           </button>
         </form>
@@ -4625,7 +4625,7 @@
     <div id="modal-exit-ticket" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
       <div class="bg-white dark:bg-slate-950 w-full max-w-md rounded-[2.5rem] p-6 animate-slide-up border border-slate-200/10 dark:border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
         
-        <div class="flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-850/80 pb-3">
+        <div class="flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-800/80 pb-3">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span class="text-xs font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Tiket Keluar Aktif</span>
@@ -4639,28 +4639,28 @@
         <div class="flex-1 overflow-y-auto pr-1 pb-4 hide-scrollbar">
           
           <!-- Ticket Premium Card design -->
-          <div class="bg-gradient-to-br from-slate-900 via-slate-955 to-black rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-white/10 flex flex-col gap-6">
+          <div class="bg-gradient-to-br from-slate-50 via-slate-100/80 to-white rounded-3xl p-6 text-slate-800 shadow-xl relative overflow-hidden border border-slate-200 flex flex-col gap-6">
             
             <!-- Glow effect background -->
-            <div class="absolute top-0 right-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+            <div class="absolute top-0 right-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-[40px] pointer-events-none"></div>
             
             <!-- Logo Header -->
             <div class="flex justify-between items-start z-10">
               <div>
-                <h3 class="text-lg font-black tracking-tight text-white leading-none">ASRAMA 1</h3>
-                <span class="text-[7.5px] font-bold text-slate-400 tracking-wider uppercase mt-1 block">Abu Bakar Ash-Shiddiq</span>
+                <h3 class="text-lg font-black tracking-tight text-slate-900 leading-none">ASRAMA 1</h3>
+                <span class="text-[7.5px] font-bold text-slate-500 tracking-wider uppercase mt-1 block">Abu Bakar Ash-Shiddiq</span>
               </div>
-              <img src="assets/branding/Primary Logo.webp" class="h-6 w-auto opacity-80" alt="Logo" />
+              <img src="assets/branding/Primary Logo.webp" class="h-6 w-auto opacity-90" alt="Logo" />
             </div>
 
             <!-- Student Profile -->
-            <div class="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5 z-10">
+            <div class="flex items-center gap-3 bg-slate-200/50 p-3 rounded-2xl border border-slate-200/30 z-10">
               <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-extrabold text-sm shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               </div>
               <div class="min-w-0">
-                <h4 id="ticket-student-name" class="text-sm font-black truncate">Nama Santri</h4>
-                <div class="flex gap-2 text-[9px] font-bold text-slate-400 mt-0.5">
+                <h4 id="ticket-student-name" class="text-sm font-black text-slate-950 truncate">Nama Santri</h4>
+                <div class="flex gap-2 text-[9px] font-bold text-slate-500 mt-0.5">
                   <span id="ticket-student-nis">NIS: -</span>
                   <span id="ticket-student-class">Kelas: -</span>
                 </div>
@@ -4671,40 +4671,40 @@
             <div class="space-y-4 text-xs z-10">
               <div>
                 <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Masa Berlaku Izin</span>
-                <p id="ticket-valid-time" class="font-extrabold text-white bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl text-emerald-400">Senin, 22 Juni 2026 pukul 08:00 - 17:00 WIB</p>
+                <p id="ticket-valid-time" class="font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl">Senin, 22 Juni 2026 pukul 08:00 - 17:00 WIB</p>
               </div>
 
               <div class="grid grid-cols-2 gap-4">
                 <div>
                   <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Penjemput / Wali</span>
-                  <p id="ticket-wali-name" class="font-black text-slate-200">Nama Wali</p>
-                  <p id="ticket-wali-address" class="text-[10px] text-slate-400 mt-0.5 truncate">Alamat Wali</p>
+                  <p id="ticket-wali-name" class="font-black text-slate-900">Nama Wali</p>
+                  <p id="ticket-wali-address" class="text-[10px] text-slate-500 mt-0.5 truncate">Alamat Wali</p>
                 </div>
                 <div>
                   <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Tempat Tujuan</span>
-                  <p id="ticket-destination" class="font-black text-slate-200 truncate font-semibold">Tempat Tujuan</p>
+                  <p id="ticket-destination" class="font-black text-slate-900 truncate font-semibold">Tempat Tujuan</p>
                 </div>
               </div>
 
               <div>
                 <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Keperluan / Alasan</span>
-                <p id="ticket-reason" class="text-slate-300 font-medium leading-relaxed italic">"Keperluan"</p>
+                <p id="ticket-reason" class="text-slate-700 font-medium leading-relaxed italic">"Keperluan"</p>
               </div>
             </div>
 
             <!-- Approval Verification (Musyrif Seal) -->
-            <div class="flex justify-between items-center bg-white/5 border border-white/5 p-3 rounded-2xl z-10 relative">
+            <div class="flex justify-between items-center bg-slate-200/40 border border-slate-200/50 p-3 rounded-2xl z-10 relative">
               <div>
                 <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Diverifikasi Oleh</span>
-                <p id="ticket-approver" class="font-black text-slate-200">Ustadz Andi</p>
-                <span id="ticket-approved-time" class="text-[8px] font-bold text-slate-400 block mt-0.5">Waktu</span>
+                <p id="ticket-approver" class="font-black text-slate-900">Ustadz Andi</p>
+                <span id="ticket-approved-time" class="text-[8px] font-bold text-slate-500 block mt-0.5">Waktu</span>
               </div>
               
               <!-- Digital Seal (Stamp) -->
-              <div class="flex items-center justify-center border-2 border-emerald-500/30 text-emerald-400 rounded-full w-14 h-14 rotate-[12deg] shrink-0">
+              <div class="flex items-center justify-center border-2 border-emerald-600/40 text-emerald-600 rounded-full w-14 h-14 rotate-[12deg] shrink-0">
                 <div class="text-center font-black flex flex-col justify-center items-center">
                   <span class="text-[7px] tracking-widest uppercase leading-none">PASSED</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="my-0.5 text-emerald-400"><path d="M20 6 9 17l-5-5"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="my-0.5 text-emerald-600"><path d="M20 6 9 17l-5-5"/></svg>
                   <span class="text-[5px] tracking-wider uppercase leading-none">APPROVED</span>
                 </div>
               </div>
@@ -4718,7 +4718,7 @@
           </div>
 
           <!-- Satpam Info Card -->
-          <div class="mt-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-955/20 border border-amber-200/50 dark:border-amber-900/30 text-amber-800 dark:text-amber-300 flex items-start gap-3">
+          <div class="mt-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-900/30 text-amber-800 dark:text-amber-300 flex items-start gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
             <div class="text-xs">
               <p class="font-bold mb-0.5">Perhatian untuk Wali / Satpam:</p>

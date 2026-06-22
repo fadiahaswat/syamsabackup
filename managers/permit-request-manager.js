@@ -312,7 +312,7 @@
       svgBarcode.innerHTML = "";
       // Create random width vertical bars
       let x = 10;
-      const barColor = document.documentElement.classList.contains('dark') ? '#ffffff' : '#0f172a';
+      const barColor = '#0f172a';
       while (x < 290) {
         const width = [1, 2, 3, 4][Math.floor(Math.random() * 4)];
         const spacing = [2, 3, 4][Math.floor(Math.random() * 3)];
@@ -332,7 +332,7 @@
       text.setAttribute("x", "150");
       text.setAttribute("y", "56");
       text.setAttribute("text-anchor", "middle");
-      text.setAttribute("fill", "#64748b");
+      text.setAttribute("fill", "#334155");
       text.setAttribute("font-size", "9px");
       text.setAttribute("font-family", "monospace");
       text.setAttribute("font-weight", "bold");
