@@ -68,13 +68,73 @@ window.initFirebaseStorage = async function(musyrifId) {
       storageManager = new window.FirebaseStorageManager();
     }
 
+    // Force musyrifId to be class-based if appState.selectedClass is available
+    let finalMusyrifId = musyrifId;
+    if (typeof appState !== 'undefined' && appState.selectedClass) {
+      finalMusyrifId = `class_${appState.selectedClass}`;
+    } else if (musyrifId && !musyrifId.startsWith('class_') && musyrifId !== 'anonymous') {
+      // Look up class by email from window.classData if available
+      if (typeof window.classData === 'object' && appState?.userProfile?.email) {
+        const foundClass = Object.keys(window.classData).find(
+          c => window.classData[c]?.email === appState.userProfile.email
+        );
+        if (foundClass) {
+          finalMusyrifId = `class_${foundClass}`;
+        }
+      }
+    }
+
+    // Ensure finalMusyrifId is not empty and defaults properly
+    if (!finalMusyrifId || finalMusyrifId === 'anonymous') {
+      if (typeof appState !== 'undefined' && appState.waliMode && appState.waliKelas) {
+        finalMusyrifId = `class_${appState.waliKelas}`;
+      }
+    }
+
     // Initialize with musyrif ID
-    await storageManager.init(musyrifId);
+    await storageManager.init(finalMusyrifId);
 
     // Make available globally
     window.storageManager = storageManager;
 
-    console.log('[FirebaseStorage] Initialized for musyrifId:', musyrifId);
+    // Set callback to refresh UI when data changes in Firebase
+    storageManager.onDataUpdate = function(type, data) {
+      console.log(`[FirebaseStorage] Realtime update received for: ${type}`);
+      if (type === 'attendance') {
+        if (typeof window.updateDashboard === 'function') {
+          window.updateDashboard();
+        }
+        if (typeof window.renderAttendanceList === 'function') {
+          window.renderAttendanceList();
+        }
+      } else if (type === 'settings') {
+        if (data) {
+          // Apply settings changes (dark mode, notifications)
+          if (typeof data.darkMode !== 'undefined' && data.darkMode !== appState.settings.darkMode) {
+            appState.settings.darkMode = data.darkMode;
+            document.documentElement.classList.toggle("dark", data.darkMode);
+            if (typeof window.updateMetaThemeColor === 'function') {
+              window.updateMetaThemeColor();
+            }
+          }
+          if (typeof data.notifications !== 'undefined' && data.notifications !== appState.settings.notifications) {
+            appState.settings.notifications = data.notifications;
+            const btn = document.getElementById("btn-notifications");
+            if (btn) btn.classList.toggle("opacity-50", !data.notifications);
+          }
+        }
+      }
+    };
+
+    console.log('[FirebaseStorage] Initialized for musyrifId:', finalMusyrifId);
+
+    // Sync pending operations if online at startup
+    if (storageManager.isOnline && storageManager.db) {
+      console.log('[FirebaseStorage] Online at startup, triggering pending queue sync...');
+      storageManager.syncPendingOperations().catch(err => {
+        console.warn('[FirebaseStorage] Startup sync failed:', err);
+      });
+    }
 
     // ========== FORCE REFRESH FROM FIREBASE (PWA Fix) ==========
     // PWA memiliki localStorage terpisah, jadi kita harus force pull dari Firebase

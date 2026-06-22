@@ -50,6 +50,9 @@ class FirebaseStorageManager {
     console.log('[FirebaseStorageManager] Initializing with musyrifId:', sanitizedId);
     this.musyrifId = sanitizedId || this.getMusyrifId();
 
+    // Clean up any existing listeners first to prevent memory leaks or crossover
+    this.unlistenAll();
+
     // Setup online/offline listeners
     this.setupConnectionListeners();
 
@@ -116,8 +119,20 @@ class FirebaseStorageManager {
    * Setup online/offline connection listeners
    */
   setupConnectionListeners() {
-    window.addEventListener('online', () => this.handleOnline());
-    window.addEventListener('offline', () => this.handleOffline());
+    // Remove existing event listeners to avoid duplicates
+    if (this.handleOnlineBound) {
+      window.removeEventListener('online', this.handleOnlineBound);
+    }
+    if (this.handleOfflineBound) {
+      window.removeEventListener('offline', this.handleOfflineBound);
+    }
+
+    // Bind event handlers and store references for cleanup
+    this.handleOnlineBound = this.handleOnline.bind(this);
+    this.handleOfflineBound = this.handleOffline.bind(this);
+
+    window.addEventListener('online', this.handleOnlineBound);
+    window.addEventListener('offline', this.handleOfflineBound);
   }
 
   /**
@@ -192,10 +207,10 @@ class FirebaseStorageManager {
     // Load attendance data
     const attendanceRef = this.ref( `attendance${basePath}`);
     const attendanceSnapshot = await this.get(attendanceRef);
+    const localData = this.getLocalStorageData(APP_CONFIG.storageKey);
 
     if (attendanceSnapshot.exists()) {
       const remoteData = attendanceSnapshot.val();
-      const localData = this.getLocalStorageData(APP_CONFIG.storageKey);
 
       // Merge data: prefer remote (Firebase) as source of truth
       if (localData && typeof localData === 'object') {
@@ -211,13 +226,19 @@ class FirebaseStorageManager {
         }
         this.setLocalStorageData(APP_CONFIG.storageKey, remoteData);
       }
-
       console.log('[FirebaseStorageManager] Attendance data loaded from Firebase');
+    } else {
+      // Firebase has no data yet, load local data if it exists
+      if (localData && typeof appState !== 'undefined') {
+        appState.attendanceData = localData;
+      }
+      console.log('[FirebaseStorageManager] Attendance data initialized from local cache');
     }
 
     // Load permits
     const permitsRef = this.ref( 'permits');
     const permitsSnapshot = await this.get(permitsRef);
+    const savedPermits = this.getLocalStorageData(APP_CONFIG.permitKey);
 
     if (permitsSnapshot.exists()) {
       const permitsData = permitsSnapshot.val();
@@ -227,11 +248,17 @@ class FirebaseStorageManager {
         appState.permits = permitsArray;
       }
       console.log('[FirebaseStorageManager] Permits data loaded from Firebase');
+    } else {
+      if (savedPermits && typeof appState !== 'undefined') {
+        appState.permits = savedPermits;
+      }
+      console.log('[FirebaseStorageManager] Permits data initialized from local cache');
     }
 
     // Load settings
     const settingsRef = this.ref( `settings${basePath}`);
     const settingsSnapshot = await this.get(settingsRef);
+    const savedSettings = this.getLocalStorageData(APP_CONFIG.settingsKey);
 
     if (settingsSnapshot.exists()) {
       const remoteSettings = settingsSnapshot.val();
@@ -240,6 +267,11 @@ class FirebaseStorageManager {
         appState.settings = { ...appState.settings, ...remoteSettings };
       }
       console.log('[FirebaseStorageManager] Settings loaded from Firebase');
+    } else {
+      if (savedSettings && typeof appState !== 'undefined') {
+        appState.settings = { ...appState.settings, ...savedSettings };
+      }
+      console.log('[FirebaseStorageManager] Settings initialized from local cache');
     }
 
     this.lastSyncTime = Date.now();
@@ -284,10 +316,11 @@ class FirebaseStorageManager {
 
     // Listen to attendance changes
     this.listenTo(`attendance${basePath}`, (data) => {
-      if (data && typeof appState !== 'undefined') {
-        appState.attendanceData = data;
-        this.setLocalStorageData(APP_CONFIG.storageKey, data);
-        if (this.onDataUpdate) this.onDataUpdate('attendance', data);
+      if (typeof appState !== 'undefined') {
+        const attendanceVal = data || {};
+        appState.attendanceData = attendanceVal;
+        this.setLocalStorageData(APP_CONFIG.storageKey, attendanceVal);
+        if (this.onDataUpdate) this.onDataUpdate('attendance', attendanceVal);
       }
     });
 
@@ -323,7 +356,7 @@ class FirebaseStorageManager {
     };
 
     this.onValue(dbRef, listener);
-    this.listeners.set(path, { ref: dbRef, callback });
+    this.listeners.set(path, { ref: dbRef, listener });
 
     console.log(`[FirebaseStorageManager] Listening to: ${path}`);
   }
@@ -333,14 +366,30 @@ class FirebaseStorageManager {
    */
   unlisten(path) {
     if (this.listeners.has(path)) {
-      const { ref } = this.listeners.get(path);
-      if (this.onValue) {
-        // Firebase v9+ doesn't have direct off(), we need to track callbacks
-        // For now, just remove from map
+      const { ref, listener } = this.listeners.get(path);
+      try {
+        ref.off('value', listener);
+        console.log(`[FirebaseStorageManager] Unlistening from: ${path}`);
+      } catch (e) {
+        console.warn(`[FirebaseStorageManager] Failed to unlisten from ${path}:`, e);
       }
       this.listeners.delete(path);
-      console.log(`[FirebaseStorageManager] Unlistening from: ${path}`);
     }
+  }
+
+  /**
+   * Stop listening to all registered paths
+   */
+  unlistenAll() {
+    for (const [path, { ref, listener }] of this.listeners.entries()) {
+      try {
+        ref.off('value', listener);
+        console.log(`[FirebaseStorageManager] Unlistened from: ${path}`);
+      } catch (e) {
+        console.warn(`[FirebaseStorageManager] Failed to unlisten from ${path}:`, e);
+      }
+    }
+    this.listeners.clear();
   }
 
   /**
@@ -638,7 +687,7 @@ class FirebaseStorageManager {
     if (op === 'set' || op === 'update') {
       await this.set(dbRef, {
         ...data,
-        _lastUpdated: Date.now(),
+        _lastUpdated: operation.queuedAt || Date.now(),
         _musyrifId: this.musyrifId,
         _syncedFromQueue: true
       });
@@ -756,11 +805,15 @@ class FirebaseStorageManager {
    */
   destroy() {
     // Remove connection listeners
-    window.removeEventListener('online', this.handleOnline);
-    window.removeEventListener('offline', this.handleOffline);
+    if (this.handleOnlineBound) {
+      window.removeEventListener('online', this.handleOnlineBound);
+    }
+    if (this.handleOfflineBound) {
+      window.removeEventListener('offline', this.handleOfflineBound);
+    }
 
-    // Clear listeners map
-    this.listeners.clear();
+    // Stop listening to all Firebase paths
+    this.unlistenAll();
 
     // Reset state
     this.db = null;

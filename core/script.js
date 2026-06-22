@@ -493,6 +493,10 @@ window.startAuthenticatedSession = function (targetClass, profile) {
   window.syncRoleModeUI();
   window.updateDashboard();
   window.updateProfileInfo();
+
+  // Initialize Firebase Storage Manager on manual login
+  const musyrifId = profile?.id || `class_${targetClass}`;
+  window.initFirebaseStorage?.(musyrifId);
 };
 
 // ==========================================
@@ -777,6 +781,10 @@ window.handleWaliSubmit = function () {
   window.updateDashboard();
   window.updateProfileInfo();
   window.showToast(`Selamat datang, Wali dari ${foundSantri.nama}!`, "success");
+
+  // Initialize Firebase Storage Manager on parent login
+  const musyrifId = `class_${foundKelas}`;
+  window.initFirebaseStorage?.(musyrifId);
 };
 
 window.getWaliStudentId = function (student = appState.waliSantri) {
@@ -4514,6 +4522,12 @@ window.toggleDarkMode = function () {
     JSON.stringify(appState.settings),
   );
   window.updateMetaThemeColor();
+
+  // Sync settings to Firebase
+  if (window.storageManager) {
+    window.storageManager.saveSettings(appState.settings);
+  }
+
   window.showToast(
     `Mode ${appState.settings.darkMode ? "Gelap" : "Terang"} Aktif`,
     "success",
@@ -4565,6 +4579,11 @@ window.toggleNotifications = async function () {
 
   const btn = document.getElementById("btn-notifications");
   if (btn) btn.classList.toggle("opacity-50", !appState.settings.notifications);
+
+  // Sync settings to Firebase
+  if (window.storageManager) {
+    window.storageManager.saveSettings(appState.settings);
+  }
 };
 
 window.saveData = async function () {

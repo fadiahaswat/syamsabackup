@@ -1,4 +1,64 @@
-const CACHE_VERSION = "v229-sync-fix";
+// Import Firebase SDKs for FCM
+importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js");
+
+// Initialize Firebase in service worker
+firebase.initializeApp({
+  apiKey: "AIzaSyDNCThjnwBxvwdrre7QxLD7IRR_YmdVXGg",
+  authDomain: "syamsa-a3395.firebaseapp.com",
+  databaseURL: "https://syamsa-a3395-default-rtdb.firebaseio.com",
+  projectId: "syamsa-a3395",
+  storageBucket: "syamsa-a3395.firebasestorage.app",
+  messagingSenderId: "166579449286",
+  appId: "1:166579449286:web:d0f6af6a59ce5d0c31d6c7"
+});
+
+const messaging = firebase.messaging();
+
+// Handle background push messages
+messaging.onBackgroundMessage((payload) => {
+  console.log("[SW] Received background message:", payload);
+
+  let notificationTitle = payload.notification?.title;
+  let notificationBody = payload.notification?.body;
+  let notificationIcon = payload.notification?.icon || "./assets/icons/icon.webp";
+  let notificationBadge = "./assets/icons/icon.png";
+  let notificationTag = "syamsa-background";
+  let notificationData = payload.data || {};
+  let clickUrl = payload.data?.url || "./index.html";
+
+  // If no notification data, use data payload
+  if (!notificationTitle) {
+    notificationTitle = payload.data?.title || "Syamsa";
+    notificationBody = payload.data?.body || "Ada notifikasi baru";
+    notificationIcon = payload.data?.icon || "./assets/icons/icon.webp";
+    notificationTag = payload.data?.tag || "syamsa-background";
+    clickUrl = payload.data?.url || "./index.html";
+  }
+
+  // Adjust URL for GitHub Pages deployment
+  const finalUrl = clickUrl.startsWith("./")
+    ? clickUrl.replace("./", "./syamsa/")
+    : clickUrl;
+
+  const notificationOptions = {
+    body: notificationBody,
+    icon: notificationIcon,
+    badge: notificationBadge,
+    tag: notificationTag,
+    vibrate: [200, 100, 200],
+    priority: "high",
+    ttl: 86400,
+    data: {
+      url: finalUrl,
+      ...notificationData
+    }
+  };
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+const CACHE_VERSION = "v230-sync-fix";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Assets to cache (static assets only)
@@ -14,7 +74,6 @@ const STATIC_ASSETS = [
   "./assets/branding/Primary%20Logo.webp",
   "./assets/branding/Logo%20Mu%27allimin.webp",
   "./assets/branding/Logo%20PP%20Muhammadiyah.webp",
-  "./assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp",
   "./assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp",
   "./assets/branding/Internastional%20Partners.webp",
   "./assets/screenshots/desktop-wide.png",
@@ -213,6 +272,25 @@ self.addEventListener("notificationclick", (event) => {
 });
 
 self.addEventListener("push", (event) => {
+  // If event has data and is an FCM payload, let Firebase SDK handle it
+  // FCM payloads typically contain "from" (sender ID or topic) or "collapse_key" or unique FCM markers
+  let isFCM = false;
+  try {
+    if (event.data) {
+      const dataJson = event.data.json();
+      if (dataJson.from || dataJson.collapse_key || dataJson.notification || dataJson.data || dataJson['gcm.message_id']) {
+        isFCM = true;
+      }
+    }
+  } catch (e) {
+    // Not JSON data
+  }
+
+  if (isFCM) {
+    console.log("[SW] Intercepted FCM push event, delegating to Firebase SDK");
+    return;
+  }
+
   let payload = {};
   try {
     payload = event.data ? event.data.json() : {};

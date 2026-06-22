@@ -107,8 +107,8 @@ class FCMManager {
     try {
       this.log("Registering service worker...");
 
-      // Register service worker
-      const registration = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+      // Register service worker (using consolidated sw.js to prevent scope collision)
+      const registration = await navigator.serviceWorker.register("./sw.js");
       this.log("Service worker registered:", registration);
 
       this.log("Getting FCM token...");
