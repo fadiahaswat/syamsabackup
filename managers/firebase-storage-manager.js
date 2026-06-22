@@ -327,8 +327,8 @@ class FirebaseStorageManager {
    * Setup real-time listeners for attendance data
    *
    * MODEL: Mirip permit-request-manager.js
-   * - Listener HANYA update data lokal (appState.attendanceData)
-   * - Listener TIDAK trigger save (avoid infinite loop)
+   * - Listener HANYA update appState dan UI
+   * - Listener TIDAK trigger save ke Firebase (avoid infinite loop)
    * - Cross-device sync realtime
    */
   setupRealtimeListeners() {
@@ -338,6 +338,8 @@ class FirebaseStorageManager {
     }
 
     const basePath = `/${this.musyrifId}`;
+
+    console.log(`[FirebaseStorageManager] 🔗 Listening to: attendance${basePath}`);
 
     // Listen to attendance changes from OTHER devices
     // CRITICAL: Ini hanya update appState, TIDAK trigger save
@@ -350,23 +352,31 @@ class FirebaseStorageManager {
       // Skip jika data sama (prevent unnecessary re-render)
       const newJson = JSON.stringify(newData);
       if (this._lastListenerData === newJson) {
+        console.log('[FirebaseStorageManager] ⏭️ Skipping - data unchanged');
         return;
       }
       this._lastListenerData = newJson;
 
       console.log('[FirebaseStorageManager] 🔄 Realtime update received - syncing attendance data');
 
-      // Update local state
+      // CRITICAL: Hanya update appState, JANGAN simpan lagi
+      // Inibeda dengan permit - attendance listener TIDAK menulis ke Firebase
       appState.attendanceData = newData;
       this.setLocalStorageData(APP_CONFIG.storageKey, newData);
 
-      // Update UI (mirip permit listener)
+      // Update UI (mirip permit listener - hanya render, tidak save)
       if (typeof window.updateDashboard === 'function') {
         window.updateDashboard();
       }
       if (typeof window.renderAttendanceList === 'function') {
         window.renderAttendanceList();
       }
+
+      console.log('[FirebaseStorageManager] ✅ Attendance synced from another device');
+    });
+
+    console.log('[FirebaseStorageManager] ✅ Realtime listeners ACTIVE for attendance');
+  }
     });
 
     console.log('[FirebaseStorageManager] Realtime listeners ACTIVE for attendance');
