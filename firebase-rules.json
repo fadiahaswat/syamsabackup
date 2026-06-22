@@ -1,0 +1,32 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": true,
+    "attendance": {
+      "$musyrifId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "settings": {
+      "$musyrifId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "permits": {
+      ".read": true,
+      ".write": true
+    },
+    "activity_log": {
+      "$musyrifId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "fcm_tokens": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

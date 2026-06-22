@@ -203,9 +203,12 @@ class FirebaseStorageManager {
     console.log('[FirebaseStorageManager] Loading from Firebase...');
 
     const basePath = `/${this.musyrifId}`;
+    console.log('[FirebaseStorageManager] Base path:', basePath);
+    console.log('[FirebaseStorageManager] Attendance path:', `attendance${basePath}`);
+    console.log('[FirebaseStorageManager] Settings path:', `settings${basePath}`);
 
     // Load attendance data
-    const attendanceRef = this.ref( `attendance${basePath}`);
+    const attendanceRef = this.ref(`attendance${basePath}`);
     const attendanceSnapshot = await this.get(attendanceRef);
     const localData = this.getLocalStorageData(APP_CONFIG.storageKey);
 
@@ -236,7 +239,7 @@ class FirebaseStorageManager {
     }
 
     // Load permits
-    const permitsRef = this.ref( 'permits');
+    const permitsRef = this.ref('permits');
     const permitsSnapshot = await this.get(permitsRef);
     const savedPermits = this.getLocalStorageData(APP_CONFIG.permitKey);
 
@@ -256,7 +259,7 @@ class FirebaseStorageManager {
     }
 
     // Load settings
-    const settingsRef = this.ref( `settings${basePath}`);
+    const settingsRef = this.ref(`settings${basePath}`);
     const settingsSnapshot = await this.get(settingsRef);
     const savedSettings = this.getLocalStorageData(APP_CONFIG.settingsKey);
 
@@ -777,8 +780,8 @@ class FirebaseStorageManager {
     if (this.isOnline && this.db) {
       try {
         const basePath = `/${this.musyrifId}`;
-        await this.remove(this.ref( `attendance${basePath}`));
-        await this.remove(this.ref( `settings${basePath}`));
+        await this.remove(this.ref(`attendance${basePath}`));
+        await this.remove(this.ref(`settings${basePath}`));
         console.log('[FirebaseStorageManager] Firebase data cleared');
       } catch (error) {
         console.error('[FirebaseStorageManager] Failed to clear Firebase data:', error);
