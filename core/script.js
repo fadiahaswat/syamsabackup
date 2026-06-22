@@ -1898,7 +1898,7 @@ window.updateDashboard = function () {
     if (window.isWaliMode()) {
       const rawName = window.getWaliDisplayName();
       const rawTrimmed = (rawName || "").trim();
-      if (rawTrimmed.length <= 18) {
+      if (rawTrimmed.length <= 22) {
         displayName = rawTrimmed;
       } else {
         let words = rawTrimmed.split(/\s+/).filter(w => w.length > 0);
@@ -1910,13 +1910,19 @@ window.updateDashboard = function () {
             words[0] = "A.";
           }
         }
-        const tempName = words.join(" ");
-        if (tempName.length <= 18) {
-          displayName = tempName;
-        } else if (words.length > 2) {
-          displayName = words.slice(0, 2).join(" ");
+        let resultWords = [];
+        for (let i = 0; i < words.length; i++) {
+          const nextWords = [...resultWords, words[i]];
+          if (nextWords.join(" ").length <= 22) {
+            resultWords.push(words[i]);
+          } else {
+            break;
+          }
+        }
+        if (resultWords.length === 0 && words.length > 0) {
+          displayName = words[0];
         } else {
-          displayName = tempName;
+          displayName = resultWords.join(" ");
         }
       }
     }
