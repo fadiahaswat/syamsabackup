@@ -85,8 +85,9 @@
         window.VAPID_KEY = VAPID_KEY;
 
         // Convenience functions for firebase-storage-manager
-        window.FIREBASE_REF = function(path) {
-          return firebaseDb.ref(path);
+        window.FIREBASE_REF = function(db, path) {
+          const actualPath = typeof db === 'string' ? db : path;
+          return firebaseDb.ref(actualPath);
         };
 
         window.FIREBASE_SET = function(ref, data) {
