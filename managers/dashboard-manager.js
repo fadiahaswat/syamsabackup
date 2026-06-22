@@ -3520,7 +3520,7 @@ window.forceSyncData = async function () {
     // First sync pending operations
     await window.storageManager.syncPendingOperations();
 
-    // Then refresh data from Firebase
+    // Then refresh data from storage
     await window.storageManager.refreshData();
 
     // Refresh UI

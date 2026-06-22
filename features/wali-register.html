@@ -165,15 +165,7 @@
   </div>
 
   <script>
-    // Load Firebase config
-    (function() {
-      const script = document.createElement('script');
-      script.src = '../firebase-config.js';
-      script.async = true;
-      script.onload = initApp;
-      document.head.appendChild(script);
-    })();
-
+    // Initialize app directly (no Firebase needed)
     async function initApp() {
       const form = document.getElementById('registerForm');
       const submitBtn = document.getElementById('submitBtn');
@@ -208,26 +200,6 @@
         }
       }
 
-      // Load FCM Manager
-      const fcmScript = document.createElement('script');
-      fcmScript.src = '../managers/fcm-manager.js';
-      fcmScript.async = true;
-      fcmScript.onload = async () => {
-        // Wait for FCM to initialize
-        await window.fcmManager?.init?.();
-        log('FCM Token:', window.fcmManager?.token?.substring(0, 20) + '...');
-      };
-      document.head.appendChild(fcmScript);
-
-      // Load Wali Manager
-      const waliScript = document.createElement('script');
-      waliScript.src = '../managers/wali-notification-manager.js';
-      waliScript.async = true;
-      waliScript.onload = () => {
-        window.waliNotificationManager?.init?.();
-      };
-      document.head.appendChild(waliScript);
-
       // Form submit
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -248,58 +220,29 @@
         setLoading(true);
 
         try {
-          // Wait for FCM token
-          if (!window.fcmManager?.token) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
-
-          const fcmToken = window.fcmManager?.token || localStorage.getItem('fcm_token');
-          log('FCM Token:', fcmToken ? fcmToken.substring(0, 20) + '...' : 'No token');
-
-          // Save to Firebase Realtime Database via REST API
-          const firebaseDbUrl = 'https://syamsa-a3395-default-rtdb.firebaseio.com/wali_tokens/' + nis + '.json';
-
           const data = {
             nis: nis,
             namaSantri: namaSantri,
             namaWali: namaWali,
             noHP: noHP,
             email: email || '',
-            fcmToken: fcmToken || null,
             registeredAt: Date.now(),
             lastActive: Date.now(),
             active: true
           };
 
-          // Try to save to Firebase
-          try {
-            const response = await fetch(firebaseDbUrl, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(data)
+          // Save to localStorage
+          localStorage.setItem(`wali_register_${nis}`, JSON.stringify(data));
+          log('Saved to localStorage successfully');
+          showSuccess(nis, namaSantri);
+
+          // Also send test notification
+          if (Notification.permission === 'granted') {
+            new Notification('Pendaftaran Berhasil! 🎉', {
+              body: `Pendaftaran wali ${namaSantri} berhasil disimpan.`,
+              icon: '../assets/icons/icon.webp',
+              tag: 'wali-registered'
             });
-
-            if (!response.ok) throw new Error('Firebase error');
-
-            log('Saved to Firebase successfully');
-            showSuccess(nis, namaSantri);
-
-            // Also send test notification
-            if (fcmToken && Notification.permission === 'granted') {
-              new Notification('Pendaftaran Berhasil! 🎉', {
-                body: `Anda akan menerima notifikasi jika ${namaSantri} tidak hadir.`,
-                icon: '../assets/icons/icon.webp',
-                tag: 'wali-registered'
-              });
-            }
-          } catch (firebaseErr) {
-            log('Firebase save failed:', firebaseErr);
-
-            // Fallback: save to localStorage
-            localStorage.setItem(`wali_register_${nis}`, JSON.stringify(data));
-            localStorage.setItem('wali_pending_sync', 'true');
-            log('Saved to localStorage as fallback');
-            showSuccess(nis, namaSantri);
           }
 
         } catch (err) {
@@ -310,6 +253,9 @@
         setLoading(false);
       });
     }
+
+    // Start initialization
+    initApp();
 
     function setLoading(loading) {
       const submitBtn = document.getElementById('submitBtn');

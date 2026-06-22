@@ -1,11 +1,10 @@
 /**
- * Consolidated Service Worker for Syamsa PWA
- * Handles offline caching and native Web Push Notifications.
- * No external Firebase SDK script dependencies inside the service worker.
+ * Service Worker for Syriansa PWA
+ * Handles offline caching and Web Push Notifications.
+ * No Firebase dependencies.
  */
 
-
-const CACHE_VERSION = "v230-sync-fix";
+const CACHE_VERSION = "v240-local-only";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Assets to cache (static assets only)
@@ -30,23 +29,19 @@ const STATIC_ASSETS = [
   "./manifest.json",
 ];
 
-// JS files that should ALWAYS be fetched from network (for sync)
+// JS files that should ALWAYS be fetched from network (for latest code)
 const ALWAYS_FRESH_JS = [
   "config/config.js",
   "core/app-core.js",
   "core/script.js",
-  "managers/firebase-storage-manager.js",
+  "managers/storage-manager.js",
   "managers/auth-manager.js",
   "managers/santri-manager.js",
   "managers/attendance-manager.js",
-  "managers/offline-queue-manager.js",
   "managers/notification-manager.js",
-  "managers/fcm-manager.js",
   "data/data-santri.js",
   "data/data-kelas.js",
   "data/tahfizh_metadata.json",
-  "firebase-config.js",
-  "firebase-messaging-sw.js",
   "features/qibla.js",
 ];
 
@@ -186,7 +181,7 @@ self.addEventListener("fetch", (event) => {
     );
 
   } else {
-    // ========== EXTERNAL FILES (CDN, Firebase, Google Fonts) ==========
+    // ========== EXTERNAL FILES (CDN, Google Fonts) ==========
     event.respondWith(
       fetch(event.request).catch(() => {
         return caches.match(event.request).then((response) => {
@@ -202,15 +197,9 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  
-  // Extract target URL from notification data, supporting multiple formats
+
+  // Extract target URL from notification data
   let targetUrl = event.notification.data?.url || "./index.html";
-  
-  // Fallback check: if there is an FCM payload wrapped inside the data
-  if (event.notification.data?.FCM_MSG) {
-    const fcmMsg = event.notification.data.FCM_MSG;
-    targetUrl = fcmMsg.data?.url || fcmMsg.notification?.click_action || fcmMsg.fcmOptions?.link || targetUrl;
-  }
 
   // Adjust URL for GitHub Pages if relative
   if (targetUrl.startsWith("./") && !targetUrl.includes("/syamsa/")) {
@@ -255,18 +244,14 @@ self.addEventListener("push", (event) => {
 
   console.log("[SW] Parsed push payload:", payload);
 
-  // Extract title and body (supporting both standard and FCM notification payloads)
+  // Extract title and body
   const title = payload.notification?.title || payload.data?.title || "Syamsa";
   const body = payload.notification?.body || payload.data?.body || "Ada pembaruan baru.";
   const icon = payload.notification?.icon || payload.data?.icon || "./assets/icons/icon.webp";
   const badge = payload.notification?.badge || payload.data?.badge || "./assets/icons/icon.png";
-  
+
   // Extract URL for click action
-  let clickUrl = payload.data?.url || 
-                    payload.notification?.click_action || 
-                    payload.data?.gcm_web_link || 
-                    payload.data?.link || 
-                    "./index.html";
+  let clickUrl = payload.data?.url || payload.notification?.click_action || "./index.html";
 
   // Adjust URL for GitHub Pages if relative
   if (clickUrl.startsWith("./") && !clickUrl.includes("/syamsa/")) {

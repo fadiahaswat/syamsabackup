@@ -1,15 +1,17 @@
 /**
  * permit-request-manager.js
- * 
- * Mengelola permohonan perizinan santri oleh Wali (Orang Tua)
+ *
+ * Mengelola permohonan perizinan siswa oleh Wali (Orang Tua)
  * dan sistem persetujuan oleh Musyrif kelas.
- * Terintegrasi dengan Firebase Realtime Database.
+ * Menggunakan localStorage untuk penyimpanan data.
  */
 
 (function() {
+  const STORAGE_KEY = 'permit_requests';
+
   const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
   const MONTHS = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
     "Juli", "Agustus", "September", "Oktober", "November", "Desember"
   ];
 
@@ -24,9 +26,25 @@
     return `${day}, ${dateNum} ${month} ${year}`;
   }
 
-  // State
-  let activeListenerRef = null;
-  let currentPendingRequests = [];
+  // Helper: Get all permit requests from localStorage
+  function getAllRequests() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    } catch (e) {
+      return {};
+    }
+  }
+
+  // Helper: Save all permit requests to localStorage
+  function saveAllRequests(requests) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
+  }
+
+  // Helper: Get requests by NIS
+  function getRequestsByNis(nis) {
+    const all = getAllRequests();
+    return Object.values(all).filter(r => r && String(r.nis) === String(nis));
+  }
 
   // =========================================================================
   // 1. FUNGSI UNTUK WALI (ORANG TUA)
@@ -40,20 +58,20 @@
       return window.showToast("Fitur ini khusus untuk akun Wali Santri.", "warning");
     }
 
-    const santri = appState.waliSantri;
-    if (!santri) return window.showToast("Data santri tidak ditemukan.", "error");
+    const siswa = appState.waliSantri;
+    if (!siswa) return window.showToast("Data siswa tidak ditemukan.", "error");
 
     // Reset Form
     const form = document.getElementById("wali-permit-form");
     if (form) form.reset();
 
     // Autofill & Lock Fields
-    const elNamaSantri = document.getElementById("wali-permit-nama-santri");
-    const elKelasSantri = document.getElementById("wali-permit-kelas-santri");
+    const elNamaSiswa = document.getElementById("wali-permit-nama-siswa");
+    const elKelasSiswa = document.getElementById("wali-permit-kelas-siswa");
     const elNamaWali = document.getElementById("wali-permit-nama-wali");
 
-    if (elNamaSantri) elNamaSantri.value = santri.nama || "";
-    if (elKelasSantri) elKelasSantri.value = appState.waliKelas || santri.kelas || "";
+    if (elNamaSiswa) elNamaSiswa.value = siswa.nama || "";
+    if (elKelasSiswa) elKelasSiswa.value = appState.waliKelas || siswa.kelas || "";
     if (elNamaWali) elNamaWali.value = appState.userProfile?.name?.replace("Wali ", "") || "";
 
     // Set Default Tanggal ke Hari Ini
@@ -63,7 +81,7 @@
     // Populate Time Dropdowns
     const elStartTime = document.getElementById("wali-permit-start-time");
     const elEndTime = document.getElementById("wali-permit-end-time");
-    
+
     if (elStartTime) populateTimeDropdown(elStartTime, 6, 21, "08:00");
     if (elEndTime) populateTimeDropdown(elEndTime, 6, 21, "17:00");
 
@@ -93,7 +111,7 @@
   }
 
   /**
-   * Mengirim permohonan izin Wali ke Firebase
+   * Mengirim permohonan izin Wali
    */
   window.submitWaliPermit = function(event) {
     if (event) event.preventDefault();
@@ -104,12 +122,12 @@
       return;
     }
 
-    const santri = appState.waliSantri;
-    if (!santri) return window.showToast("Sesi Wali Santri kedaluwarsa.", "error");
+    const siswa = appState.waliSantri;
+    if (!siswa) return window.showToast("Sesi Wali Santri kedaluwarsa.", "error");
 
     const namaWali = document.getElementById("wali-permit-nama-wali").value.trim();
     const alamatWali = document.getElementById("wali-permit-alamat-wali").value.trim();
-    const category = document.getElementById("wali-permit-category").value; // 'sakit' atau 'pulang' (all others are pulang)
+    const category = document.getElementById("wali-permit-category").value;
     const reason = document.getElementById("wali-permit-reason").value.trim();
     const date = document.getElementById("wali-permit-date").value;
     const startTime = document.getElementById("wali-permit-start-time").value;
@@ -124,15 +142,15 @@
     const requestId = 'req_' + Date.now() + Math.random().toString(36).substr(2, 5);
     const requestData = {
       id: requestId,
-      nis: String(santri.nis || santri.id || ""),
-      nama: santri.nama,
-      kelas: String(appState.waliKelas || santri.kelas || "").trim(),
+      nis: String(siswa.nis || siswa.id || ""),
+      nama: siswa.nama,
+      kelas: String(appState.waliKelas || siswa.kelas || "").trim(),
       nama_wali: namaWali,
       alamat_wali: alamatWali,
       category: category,
       reason: reason,
       start_date: date,
-      end_date: date, // Harian (same day)
+      end_date: date,
       start_time_limit: startTime,
       end_time_limit: endTime,
       destination: destination,
@@ -141,30 +159,14 @@
       status_label: category === 'sakit' ? 'S' : 'P'
     };
 
-    if (window.FIREBASE_DB) {
-      window.showLoading?.(true);
-      window.FIREBASE_DB.ref(`permit_requests/${requestId}`).set(requestData)
-        .then(() => {
-          window.showLoading?.(false);
-          window.showToast("Permohonan izin berhasil dikirim!", "success");
-          window.closeModal("modal-wali-permit");
-          window.loadWaliPermitHistory(); // Reload history
-        })
-        .catch(err => {
-          window.showLoading?.(false);
-          console.error('[PermitRequest] Firebase save error:', err);
-          window.showToast("Gagal menyimpan ke database cloud.", "error");
-        });
-    } else {
-      // Fallback LocalStorage
-      let localReqs = JSON.parse(localStorage.getItem("local_permit_requests") || "[]");
-      localReqs.push(requestData);
-      localStorage.setItem("local_permit_requests", JSON.stringify(localReqs));
-      
-      window.showToast("Permohonan disimpan secara lokal (Offline).", "info");
-      window.closeModal("modal-wali-permit");
-      window.loadWaliPermitHistory();
-    }
+    // Save to localStorage
+    const allRequests = getAllRequests();
+    allRequests[requestId] = requestData;
+    saveAllRequests(allRequests);
+
+    window.showToast("Permohonan izin berhasil disimpan!", "success");
+    window.closeModal("modal-wali-permit");
+    window.loadWaliPermitHistory();
   };
 
   /**
@@ -174,12 +176,12 @@
     const container = document.getElementById("wali-permit-history-list");
     if (!container) return;
 
-    const santri = appState.waliSantri;
-    if (!santri) {
+    const siswa = appState.waliSantri;
+    if (!siswa) {
       container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">Sesi tidak valid</div>`;
       return;
     }
-    const nis = String(santri.nis || santri.id || "");
+    const nis = String(siswa.nis || siswa.id || "");
 
     container.innerHTML = `
       <div class="flex flex-col items-center justify-center p-8 text-center text-slate-400">
@@ -188,24 +190,10 @@
       </div>
     `;
 
-    if (window.FIREBASE_DB) {
-      window.FIREBASE_DB.ref("permit_requests").once("value")
-        .then(snapshot => {
-          const data = snapshot.val() || {};
-          const list = Object.values(data).filter(r => r && String(r.nis) === nis);
-          list.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-          renderWaliPermitHistoryList(list);
-        })
-        .catch(err => {
-          console.error('[PermitRequest] Load history error:', err);
-          container.innerHTML = `<div class="p-4 text-center text-xs text-red-500 font-bold">Gagal memuat dari server.</div>`;
-        });
-    } else {
-      let localReqs = JSON.parse(localStorage.getItem("local_permit_requests") || "[]");
-      localReqs = localReqs.filter(r => String(r.nis) === nis);
-      localReqs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      renderWaliPermitHistoryList(localReqs);
-    }
+    // Load from localStorage
+    const requests = getRequestsByNis(nis);
+    requests.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    renderWaliPermitHistoryList(requests);
   };
 
   /**
@@ -239,7 +227,6 @@
         statusBadge = `<span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40">Menunggu</span>`;
       } else if (req.status === "approved") {
         statusBadge = `<span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/40">Disetujui</span>`;
-        // Stringify req securely to avoid syntax issues in HTML onclick
         const escapedData = encodeURIComponent(JSON.stringify(req));
         ticketBtn = `
           <button onclick="window.showExitTicket('${escapedData}')" class="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition-all">
@@ -262,7 +249,7 @@
           </div>
           ${statusBadge}
         </div>
-        
+
         <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-900/20 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
           <div>
             <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Waktu Keluar</span>
@@ -286,21 +273,21 @@
    */
   window.showExitTicket = function(escapedData) {
     const req = JSON.parse(decodeURIComponent(escapedData));
-    
+
     document.getElementById("ticket-student-name").textContent = req.nama;
     document.getElementById("ticket-student-nis").textContent = `NIS: ${req.nis}`;
     document.getElementById("ticket-student-class").textContent = `Kelas: ${req.kelas}`;
-    
+
     document.getElementById("ticket-wali-name").textContent = req.nama_wali || "-";
     document.getElementById("ticket-wali-address").textContent = req.alamat_wali || "-";
-    document.getElementById("ticket-destination").textContent = req.destination;
+    document.getElementById("ticket-destination").textContent = req.reason;
     document.getElementById("ticket-reason").textContent = req.reason;
-    
+
     const validDateStr = `${formatIndonesianDate(req.start_date)} Pukul ${req.start_time_limit} - ${req.end_time_limit} WIB`;
     document.getElementById("ticket-valid-time").textContent = validDateStr;
 
     document.getElementById("ticket-approver").textContent = req.approvedBy || "Musyrif";
-    
+
     const formattedApprovedAt = req.approvedAt ? new Date(req.approvedAt).toLocaleDateString('id-ID', {
       day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
     }) + " WIB" : "-";
@@ -310,24 +297,22 @@
     const svgBarcode = document.getElementById("ticket-barcode-svg");
     if (svgBarcode) {
       svgBarcode.innerHTML = "";
-      // Create random width vertical bars
       let x = 10;
       const barColor = '#0f172a';
       while (x < 290) {
         const width = [1, 2, 3, 4][Math.floor(Math.random() * 4)];
         const spacing = [2, 3, 4][Math.floor(Math.random() * 3)];
-        
+
         const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         rect.setAttribute("x", x);
         rect.setAttribute("y", "5");
         rect.setAttribute("width", width);
         rect.setAttribute("height", "40");
         rect.setAttribute("fill", barColor);
-        
+
         svgBarcode.appendChild(rect);
         x += width + spacing;
       }
-      // Add text label
       const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
       text.setAttribute("x", "150");
       text.setAttribute("y", "56");
@@ -348,48 +333,39 @@
   // 2. FUNGSI UNTUK MUSYRIF (PERSETUJUAN IZIN)
   // =========================================================================
 
+  // Track current pending requests
+  let currentPendingRequests = [];
+
   /**
-   * Inisialisasi Real-Time Listener untuk Musyrif
+   * Inisialisasi listener untuk Musyrif
    */
   window.initPermitRequestListener = function() {
-    if (!window.FIREBASE_DB) return;
-    
     const kelas = appState.selectedClass;
     if (!kelas) return;
 
-    // Bersihkan listener lama jika ada
-    window.cleanupPermitRequestListener();
+    console.log(`[PermitRequestManager] Loading requests for Class ${kelas}`);
 
-    console.log(`[PermitRequestManager] Listening to permit_requests for Class ${kelas}`);
-    
-    const ref = window.FIREBASE_DB.ref("permit_requests");
-    activeListenerRef = ref;
-
-    ref.on("value", snapshot => {
-      try {
-        const data = snapshot.val() || {};
-        const requests = Object.values(data).filter(r => r && String(r.kelas).trim() === String(kelas).trim());
-        
-        // Filter pending requests for widget
-        currentPendingRequests = requests.filter(r => r.status === "pending");
-        
-        renderMusyrifApprovalWidget(currentPendingRequests.length);
-      } catch (err) {
-        console.error('[PermitRequestManager] Listener value error:', err);
-      }
-    });
+    // Load requests from localStorage
+    loadMusyrifRequests();
   };
 
   /**
-   * Membersihkan listener real-time Firebase
+   * Load requests for musyrif from localStorage
    */
-  window.cleanupPermitRequestListener = function() {
-    if (activeListenerRef) {
-      activeListenerRef.off();
-      activeListenerRef = null;
-      console.log("[PermitRequestManager] Listener removed.");
-    }
-  };
+  function loadMusyrifRequests() {
+    const kelas = appState.selectedClass;
+    if (!kelas) return;
+
+    const allRequests = getAllRequests();
+    const requests = Object.values(allRequests).filter(r =>
+      r && String(r.kelas).trim() === String(kelas).trim()
+    );
+
+    // Filter pending requests for widget
+    currentPendingRequests = requests.filter(r => r.status === "pending");
+
+    renderMusyrifApprovalWidget(currentPendingRequests.length);
+  }
 
   /**
    * Merender Widget Badge Pending Izin di Dasbor Musyrif
@@ -404,11 +380,10 @@
     }
 
     elWidget.classList.remove("hidden");
-    
-    // Update label text & count
+
     const elCount = document.getElementById("approval-pending-count");
     const elBadge = document.getElementById("approval-pending-badge");
-    
+
     if (elCount) elCount.textContent = `${count} Pengajuan Pending`;
     if (elBadge) elBadge.textContent = count;
   }
@@ -417,6 +392,7 @@
    * Membuka modal daftar persetujuan Musyrif
    */
   window.openMusyrifApprovalModal = function() {
+    loadMusyrifRequests();
     window.updateMusyrifApprovalModalList();
     window.openModal("modal-musyrif-approval");
   };
@@ -450,8 +426,8 @@
 
       const formattedDate = formatIndonesianDate(req.start_date);
       const categoryLabel = req.category === "sakit" ? "Sakit / Medis" : "Izin / Pulang";
-      const badgeColor = req.category === "sakit" 
-        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border border-amber-200/50" 
+      const badgeColor = req.category === "sakit"
+        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 border border-amber-200/50"
         : "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400 border border-purple-200/50";
 
       el.innerHTML = `
@@ -475,7 +451,7 @@
             Tolak
           </button>
           <button onclick="window.processPermitRequest('${req.id}', 'approve')" class="py-2 px-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
-            Setujui (Approve)
+            Setujui
           </button>
         </div>
       `;
@@ -487,25 +463,20 @@
    * Menangani persetujuan atau penolakan pengajuan izin oleh Musyrif
    */
   window.processPermitRequest = function(requestId, action) {
-    if (!window.FIREBASE_DB) {
-      return window.showToast("Database cloud tidak tersedia. Pengoperasian dibatalkan.", "error");
-    }
-
-    const requestData = currentPendingRequests.find(r => r.id === requestId);
+    const allRequests = getAllRequests();
+    const requestData = allRequests[requestId];
     if (!requestData) return window.showToast("Data pengajuan tidak ditemukan.", "error");
 
     const musyrifName = appState.userProfile?.name || "Musyrif";
 
-    window.showLoading?.(true);
-
     if (action === "approve") {
       const permitId = 'p_' + Date.now() + Math.random().toString(36).substr(2, 4);
-      
-      // 1. Buat object permit utama
+
+      // Create permit object
       const newPermit = {
         id: permitId,
         nis: requestData.nis,
-        category: requestData.category, // 'sakit' atau 'pulang'
+        category: requestData.category,
         reason: requestData.reason,
         start_date: requestData.start_date,
         end_date: requestData.end_date,
@@ -516,85 +487,40 @@
         timestamp: new Date().toISOString()
       };
 
-      // Simpan ke node permits utama
-      if (window.storageManager && window.storageManager.savePermit) {
-        window.storageManager.savePermit(newPermit)
-          .then(() => {
-            // Update lokal appState
-            if (!appState.permits) appState.permits = [];
-            appState.permits.push(newPermit);
-            localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-
-            // Update status pengajuan
-            return window.FIREBASE_DB.ref(`permit_requests/${requestId}`).update({
-              status: 'approved',
-              approvedBy: musyrifName,
-              approvedAt: new Date().toISOString()
-            });
-          })
-          .then(() => {
-            window.showLoading?.(false);
-            window.showToast("Izin berhasil disetujui dan dicatat!", "success");
-            window.refreshPermitSurfaces?.();
-            
-            // Render ulang modal
-            currentPendingRequests = currentPendingRequests.filter(r => r.id !== requestId);
-            window.updateMusyrifApprovalModalList();
-          })
-          .catch(err => {
-            window.showLoading?.(false);
-            console.error('[PermitApproval] Error approving permit:', err);
-            window.showToast("Gagal menyimpan persetujuan.", "error");
-          });
-      } else {
-        // Fallback jika storageManager error
-        window.FIREBASE_DB.ref(`permits/${permitId}`).set(newPermit)
-          .then(() => {
-            return window.FIREBASE_DB.ref(`permit_requests/${requestId}`).update({
-              status: 'approved',
-              approvedBy: musyrifName,
-              approvedAt: new Date().toISOString()
-            });
-          })
-          .then(() => {
-            window.showLoading?.(false);
-            window.showToast("Izin berhasil disetujui!", "success");
-            
-            // Reload local permits dari Firebase
-            if (window.storageManager?.refreshData) {
-              window.storageManager.refreshData();
-            } else {
-              window.refreshPermitSurfaces?.();
-            }
-
-            currentPendingRequests = currentPendingRequests.filter(r => r.id !== requestId);
-            window.updateMusyrifApprovalModalList();
-          })
-          .catch(err => {
-            window.showLoading?.(false);
-            console.error(err);
-            window.showToast("Gagal menyetujui izin.", "error");
-          });
+      // Save permit to localStorage
+      if (window.storageManager) {
+        window.storageManager.savePermit(newPermit);
       }
+
+      // Update local appState
+      if (!appState.permits) appState.permits = [];
+      appState.permits.push(newPermit);
+      localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
+
+      // Update request status
+      allRequests[requestId].status = 'approved';
+      allRequests[requestId].approvedBy = musyrifName;
+      allRequests[requestId].approvedAt = new Date().toISOString();
+      saveAllRequests(allRequests);
+
+      window.showToast("Izin berhasil disetujui dan dicatat!", "success");
+      window.refreshPermitSurfaces?.();
+
+      // Reload list
+      currentPendingRequests = currentPendingRequests.filter(r => r.id !== requestId);
+      window.updateMusyrifApprovalModalList();
+
     } else if (action === "reject") {
-      // Tolak pengajuan
-      window.FIREBASE_DB.ref(`permit_requests/${requestId}`).update({
-        status: 'rejected',
-        rejectedBy: musyrifName,
-        rejectedAt: new Date().toISOString()
-      })
-      .then(() => {
-        window.showLoading?.(false);
-        window.showToast("Pengajuan izin ditolak.", "info");
-        
-        currentPendingRequests = currentPendingRequests.filter(r => r.id !== requestId);
-        window.updateMusyrifApprovalModalList();
-      })
-      .catch(err => {
-        window.showLoading?.(false);
-        console.error('[PermitApproval] Error rejecting permit:', err);
-        window.showToast("Gagal menolak pengajuan.", "error");
-      });
+      // Update request status
+      allRequests[requestId].status = 'rejected';
+      allRequests[requestId].rejectedBy = musyrifName;
+      allRequests[requestId].rejectedAt = new Date().toISOString();
+      saveAllRequests(allRequests);
+
+      window.showToast("Pengajuan izin ditolak.", "info");
+
+      currentPendingRequests = currentPendingRequests.filter(r => r.id !== requestId);
+      window.updateMusyrifApprovalModalList();
     }
   };
 

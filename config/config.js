@@ -119,51 +119,24 @@ window.APP_CONSTANTS = {
 };
 
 // ==========================================
-// FIREBASE STORAGE CONFIGURATION
+// LOCAL STORAGE CONFIGURATION
 // ==========================================
-window.APP_FIREBASE = {
-  // Enable Firebase as primary storage (default: true)
-  enabled: true,
+window.APP_STORAGE = {
+  // Storage version for future migrations
+  version: 1,
 
-  // Firebase database paths configuration
-  paths: {
-    attendance: 'attendance',           // /{musyrifId}/{date}/{slotId}
-    permits: 'permits',                 // /{permitId}
-    settings: 'settings',               // /{musyrifId}
-    activityLog: 'activity_log',        // /{musyrifId}
-    offlineQueue: 'offline_queue',      // /{musyrifId}/{timestamp}
-    fcmTokens: 'fcm_tokens'             // (existing)
+  // Data storage keys
+  keys: {
+    attendance: 'musyrif_app_v5_fix',
+    permits: 'musyrif_permits_db',
+    settings: 'musyrif_settings',
+    activityLog: 'musyrif_activity_log',
+    googleAuth: 'musyrif_google_session',
   },
 
-  // Sync configuration
-  sync: {
-    // Auto-sync when coming online (default: true)
-    autoSyncOnReconnect: true,
-    // Debounce delay for batch saves (ms)
-    saveDebounceMs: 500,
-    // Max concurrent sync operations
-    maxConcurrentSync: 3,
-    // Retry failed operations
-    retryFailedOps: true,
-    // Max retry attempts per operation
-    maxRetryAttempts: 3
-  },
-
-  // Offline mode configuration
-  offline: {
-    // Use localStorage as fallback when offline (default: true)
-    useLocalStorageFallback: true,
-    // Show offline indicator (default: true)
-    showOfflineIndicator: true,
-    // Cache data locally for offline access (default: true)
-    cacheForOffline: true,
-    // Queue operations for sync when back online (default: true)
-    queueOperations: true
-  },
-
-  // Conflict resolution strategy
-  conflictResolution: 'remote_wins',  // 'remote_wins' | 'local_wins' | 'merge'
-  // 'remote_wins': Firebase data takes precedence (recommended for multi-device)
-  // 'local_wins': Local changes take precedence
-  // 'merge': Attempt to merge conflicting data
+  // Auto-save configuration
+  autoSave: {
+    debounceMs: 500,
+    enabled: true
+  }
 };

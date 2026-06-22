@@ -127,13 +127,13 @@ window.updatePermitCount = function () {
 };
 
 window.persistPermits = window.persistPermits || function () {
-  // Always save to localStorage as backup
+  // Always save to localStorage
   localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
 
-  // Try to save to Firebase if storage manager is available
+  // Try to save via storage manager if available
   if (window.storageManager) {
     window.storageManager.savePermits(appState.permits || []).catch(err => {
-      console.error('[PermitManager] Firebase save error:', err);
+      console.error('[PermitManager] Save error:', err);
     });
   }
 };

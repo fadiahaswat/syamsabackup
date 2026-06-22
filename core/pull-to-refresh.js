@@ -247,15 +247,13 @@
       localStorage.removeItem("cache_data_santri_full");
       localStorage.removeItem("time_data_santri");
 
-      // B. Jalankan sinkronisasi Firebase (jika online)
+      // B. Simpan data lokal (jika online)
       if (window.storageManager && window.isStorageOnline()) {
         try {
-          console.log("[PullToRefresh] Syncing Firebase pending operations...");
-          await window.storageManager.syncPendingOperations();
-          console.log("[PullToRefresh] Fetching fresh data from Firebase...");
-          await window.storageManager.refreshData();
-        } catch (fbError) {
-          console.warn("[PullToRefresh] Firebase sync warning:", fbError);
+          console.log("[PullToRefresh] Saving local data...");
+          window.storageManager.saveNow();
+        } catch (err) {
+          console.warn("[PullToRefresh] Local save warning:", err);
         }
       }
 

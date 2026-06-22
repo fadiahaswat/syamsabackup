@@ -6,9 +6,8 @@ let lucideTimeout = null;
 let modalStack = [];
 
 // ==========================================
-// FIREBASE STORAGE MANAGER INSTANCE
+// STORAGE MANAGER INSTANCE (LocalStorage-based)
 // ==========================================
-let storageManager = null;
 
 window.addEventListener("beforeunload", () => {
   if (clockInterval) clearInterval(clockInterval);
@@ -22,12 +21,9 @@ window.addEventListener("beforeunload", () => {
         APP_CONFIG.storageKey,
         JSON.stringify(appState.attendanceData),
       );
-      // Jika storage manager ada, trigger sync
-      if (storageManager && window.OfflineQueueManager) {
-        const queue = window.OfflineQueueManager.getQueue();
-        if (queue.length > 0) {
-          console.log(`[beforeunload] ${queue.length} operations queued for sync`);
-        }
+      // Force save if storage manager exists
+      if (window.storageManager) {
+        window.storageManager.saveNow();
       }
     }
   }
@@ -49,24 +45,19 @@ const APP_CONFIG = {
 };
 
 // ==========================================
-// FIREBASE STORAGE HELPER FUNCTIONS
+// STORAGE HELPER FUNCTIONS (LocalStorage)
 // ==========================================
 
 /**
- * Initialize Firebase Storage Manager
+ * Initialize Storage Manager
  * Call this after user login to set the musyrifId
  */
-window.initFirebaseStorage = async function(musyrifId) {
-  if (!window.APP_FIREBASE?.enabled) {
-    console.log('[FirebaseStorage] Firebase storage disabled in config');
-    return null;
-  }
+window.initStorage = function(musyrifId) {
+  console.log('[Storage] Initializing with musyrifId:', musyrifId);
 
   try {
-    // Create new instance if not exists
-    if (!storageManager) {
-      storageManager = new window.FirebaseStorageManager();
-    }
+    // Use the global storage manager instance
+    const sm = window.storageManager;
 
     // Force musyrifId to be class-based if appState.selectedClass is available
     let finalMusyrifId = musyrifId;
@@ -92,33 +83,13 @@ window.initFirebaseStorage = async function(musyrifId) {
     }
 
     // Initialize with musyrif ID
-    await storageManager.init(finalMusyrifId);
+    sm.init(finalMusyrifId);
 
-    // Make available globally
-    window.storageManager = storageManager;
+    console.log('[Storage] Initialized for musyrifId:', finalMusyrifId);
 
-    // REALTIME LISTENERS SUDAH AKTIF
-    // Sync realtime untuk attendance, permits, dan settings
-    // Debounce 500ms mencegah flickering icon
-
-    console.log('[FirebaseStorage] Initialized for musyrifId:', finalMusyrifId);
-
-    // Sync pending operations if online at startup
-    if (storageManager.isOnline && storageManager.db) {
-      console.log('[FirebaseStorage] Online at startup, triggering pending queue sync...');
-      storageManager.syncPendingOperations().catch(err => {
-        console.warn('[FirebaseStorage] Startup sync failed:', err);
-      });
-    }
-
-    // ========== REMOVED: Force refresh di startup ==========
-    // Force refresh menyebabkan infinite loop dengan Firebase listener.
-    // Data sudah di-load via setupRealtimeListeners(), jadi tidak perlu force refresh.
-    // Jika butuh refresh manual, gunakan window.manualSync() atau pull-to-refresh.
-
-    return storageManager;
+    return sm;
   } catch (error) {
-    console.error('[FirebaseStorage] Initialization failed:', error);
+    console.error('[Storage] Initialization failed:', error);
     return null;
   }
 };
@@ -127,42 +98,41 @@ window.initFirebaseStorage = async function(musyrifId) {
  * Get current storage manager instance
  */
 window.getStorageManager = function() {
-  return storageManager;
+  return window.storageManager;
 };
 
 /**
  * Check if storage manager is online
  */
 window.isStorageOnline = function() {
-  return storageManager?.isOnline ?? navigator.onLine;
+  return window.storageManager?.isOnline ?? navigator.onLine;
 };
 
 /**
- * Force sync pending operations
+ * Force save all data
  */
-window.syncPendingData = async function() {
-  if (!storageManager) {
-    console.warn('[FirebaseStorage] Storage manager not initialized');
-    return { status: 'not_initialized' };
+window.saveAllData = function() {
+  if (window.storageManager) {
+    window.storageManager.saveNow();
+    console.log('[Storage] All data saved');
   }
-  return await storageManager.syncPendingOperations();
 };
 
 /**
  * Get storage status info
  */
 window.getStorageStatus = function() {
-  if (!storageManager) {
+  if (!window.storageManager) {
     return { initialized: false };
   }
-  return storageManager.getStatus();
+  return window.storageManager.getStatus();
 };
 
 /**
- * Manual sync - Force refresh from Firebase (PWA Fix)
+ * Manual sync - Reload data from localStorage
  */
 window.manualSync = async function() {
-  console.log('[ManualSync] Starting manual sync...');
+  console.log('[ManualSync] Refreshing data from localStorage...');
 
   const syncBtn = document.getElementById('pwa-sync-btn');
   if (syncBtn) {
@@ -170,25 +140,22 @@ window.manualSync = async function() {
   }
 
   try {
-    // Force refresh from Firebase
-    if (storageManager) {
-      await storageManager.refreshData();
+    // Reload data from localStorage
+    if (window.storageManager) {
+      window.storageManager._loadFromStorage();
 
       // Update UI
       if (typeof window.updateDashboard === 'function') {
         window.updateDashboard();
       }
 
-      // Show success
-      window.showToast?.('Sinkronisasi berhasil!', 'success');
+      window.showToast?.('Data diperbarui!', 'success');
     } else {
-      // If no storage manager, try direct Firebase fetch
-      console.log('[ManualSync] No storage manager, refreshing page...');
       window.location.reload();
     }
   } catch (error) {
-    console.error('[ManualSync] Sync failed:', error);
-    window.showToast?.('Sinkronisasi gagal: ' + error.message, 'error');
+    console.error('[ManualSync] Refresh failed:', error);
+    window.showToast?.('Gagal memperbarui data', 'error');
   } finally {
     if (syncBtn) {
       syncBtn.classList.remove('animate-spin');
@@ -196,18 +163,23 @@ window.manualSync = async function() {
   }
 };
 
+// Keep old function for backward compatibility
+window.syncPendingData = window.saveAllData;
+
 /**
  * Get debug info for troubleshooting
  */
 window.getDebugInfo = function() {
+  const sm = window.storageManager;
+  const usage = sm?.getStorageUsage?.() || null;
+
   const info = {
     appVersion: window.APP_VERSION || 'unknown',
-    storageInitialized: !!storageManager,
+    storageInitialized: !!sm,
     isOnline: navigator.onLine,
-    storageManagerStatus: storageManager?.getStatus(),
-    localStorageKeys: Object.keys(localStorage),
-    lastFirebaseSync: storageManager?.lastSyncTime,
-    musyrifId: storageManager?.musyrifId,
+    storageUsage: usage,
+    musyrifId: sm?.musyrifId,
+    storageAvailable: sm?.isStorageAvailable?.() ?? true,
   };
   console.table(info);
   return info;

@@ -129,9 +129,9 @@ window.initApp = async function () {
                 500,
               );
 
-              // Initialize Firebase Storage Manager
+              // Initialize Storage Manager
               const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
-              window.initFirebaseStorage?.(musyrifId);
+              window.initStorage?.(musyrifId);
 
               // Request GPS Permission SEKALI saat login berhasil
               // Ini akan meminta izin GPS di awal, bukan saat buka presensi
@@ -494,9 +494,9 @@ window.startAuthenticatedSession = function (targetClass, profile) {
   window.updateDashboard();
   window.updateProfileInfo();
 
-  // Initialize Firebase Storage Manager on manual login
+  // Initialize Storage Manager on manual login
   const musyrifId = profile?.id || `class_${targetClass}`;
-  window.initFirebaseStorage?.(musyrifId);
+  window.initStorage?.(musyrifId);
 };
 
 // ==========================================
@@ -782,9 +782,9 @@ window.handleWaliSubmit = function () {
   window.updateProfileInfo();
   window.showToast(`Selamat datang, Wali dari ${foundSantri.nama}!`, "success");
 
-  // Initialize Firebase Storage Manager on parent login
+  // Initialize Storage Manager on parent login
   const musyrifId = `class_${foundKelas}`;
-  window.initFirebaseStorage?.(musyrifId);
+  window.initStorage?.(musyrifId);
 };
 
 window.getWaliStudentId = function (student = appState.waliSantri) {
@@ -4576,7 +4576,7 @@ window.toggleDarkMode = function () {
   );
   window.updateMetaThemeColor();
 
-  // Sync settings to Firebase
+  // Sync settings to local storage
   if (window.storageManager) {
     window.storageManager.saveSettings(appState.settings);
   }
@@ -4593,30 +4593,19 @@ window.toggleNotifications = async function () {
   if (newState) {
     // Enabling notifications - request permission
     if (Notification.permission === "default") {
-      // Request FCM permission
-      if (window.fcmManager && window.fcmManager.isSupported) {
-        const granted = await window.fcmManager.init();
-        if (granted) {
+      // Request notification permission
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
           appState.settings.notifications = true;
           localStorage.setItem(APP_CONFIG.settingsKey, JSON.stringify(appState.settings));
-          window.showToast("Notifikasi Push Aktif", "success");
+          window.showToast("Notifikasi Aktif", "success");
         } else {
           window.showToast("Izin notifikasi ditolak", "error");
         }
-      } else {
-        // Fallback for browsers without FCM support
-        try {
-          const permission = await Notification.requestPermission();
-          if (permission === "granted") {
-            appState.settings.notifications = true;
-            localStorage.setItem(APP_CONFIG.settingsKey, JSON.stringify(appState.settings));
-            window.showToast("Notifikasi Aktif", "success");
-          } else {
-            window.showToast("Izin notifikasi ditolak", "error");
-          }
-        } catch (err) {
-          window.showToast("Notifikasi tidak didukung", "error");
-        }
+      } catch (err) {
+        window.showToast("Notifikasi tidak didukung", "error");
+      }
       }
     } else if (Notification.permission === "granted") {
       appState.settings.notifications = true;
@@ -4633,7 +4622,7 @@ window.toggleNotifications = async function () {
   const btn = document.getElementById("btn-notifications");
   if (btn) btn.classList.toggle("opacity-50", !appState.settings.notifications);
 
-  // Sync settings to Firebase
+  // Sync settings to local storage
   if (window.storageManager) {
     window.storageManager.saveSettings(appState.settings);
   }
@@ -4671,17 +4660,12 @@ window.saveData = async function () {
             // Always save to localStorage as backup
             localStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
-            // Try to save to Firebase if storage manager is available
+            // Try to save to storage if storage manager is available
             if (window.storageManager) {
               const dateKey = appState.date;
               const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
               await window.storageManager.saveAttendance(dateKey, slotId, appState.attendanceData[dateKey]?.[slotId] || {});
             }
-
-            // ==========================================
-            // WALI NOTIFICATION - Check for Alpa changes
-            // ==========================================
-            await window.checkAndNotifyWaliForAlpa?.();
 
             if (indicator) {
               if (indicator.dataset.attendanceReviewStatus) {
@@ -4706,17 +4690,12 @@ window.saveData = async function () {
         // Always save to localStorage as backup
         localStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
-        // Try to save to Firebase if storage manager is available
+        // Try to save to storage if storage manager is available
         if (window.storageManager) {
           const dateKey = appState.date;
           const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
           await window.storageManager.saveAttendance(dateKey, slotId, appState.attendanceData[dateKey]?.[slotId] || {});
         }
-
-        // ==========================================
-        // WALI NOTIFICATION - Check for Alpa changes
-        // ==========================================
-        await window.checkAndNotifyWaliForAlpa?.();
       }
     } catch (e) {
       if (e.name === "QuotaExceededError") {

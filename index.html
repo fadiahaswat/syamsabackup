@@ -5832,19 +5832,14 @@
     <script src="data/data-kelas.js"></script>
     <script src="data/data-santri.js"></script>
     <script src="managers/santri-manager.js"></script>
-    <script src="managers/offline-queue-manager.js"></script>
+    <script src="managers/storage-manager.js"></script>
     <script src="core/app-core.js"></script>
     <script src="managers/notification-manager.js"></script>
-    <!-- Firebase Config - loads SDKs dynamically, must init before firebase-storage-manager -->
-    <script src="firebase-config.js"></script>
-    <script src="managers/firebase-storage-manager.js"></script>
     <script src="features/qibla.js"></script>
     <script src="managers/permit-request-manager.js"></script>
     <script src="core/script.js"></script>
     <script src="core/pull-to-refresh.js"></script>
     <script src="tahfizh/tahfizh-manager.js"></script>
-    <script src="managers/fcm-manager.js"></script>
-    <script src="managers/wali-notification-manager.js"></script>
 
     <script>
       // Mendaftarkan Service Worker agar aplikasi bisa di-install & jalan offline
@@ -5866,24 +5861,23 @@
           }
         });
 
-        // Initialize FCM - Auto-init if already granted, do not auto-request on load
+        // Notification Permission Check
         window.addEventListener("load", async () => {
           // Tunda sebentar agar semua script load dulu
           await new Promise(resolve => setTimeout(resolve, 500));
 
-          console.log("[FCM-UI] Checking notification permission state:", Notification.permission);
+          console.log("[Notification] Checking permission state:", Notification.permission);
 
           // AUTO INIT: Langsung inisialisasi jika izin sudah diberikan
           if (Notification.permission === "granted") {
-            console.log("[FCM-UI] Permission already granted, initializing FCM...");
-            await window.fcmManager?.init();
+            console.log("[Notification] Permission already granted");
             window.updateNotificationUI?.("granted");
           } else if (Notification.permission === "denied") {
-            console.log("[FCM-UI] Permission denied - user blocked notifications");
+            console.log("[Notification] Permission denied - user blocked notifications");
             window.updateNotificationUI?.("denied");
           } else {
             // "default" - Wait for user gesture, do NOT auto-request on page load (prevents browser blocking)
-            console.log("[FCM-UI] Permission is default. Waiting for user click to request permission.");
+            console.log("[Notification] Permission is default. Waiting for user click to request permission.");
             window.updateNotificationUI?.("default");
           }
         });
@@ -5899,14 +5893,12 @@
               }
 
               if (Notification.permission === "granted") {
-                await window.fcmManager?.init();
                 window.showToast?.("Notifikasi sudah aktif!", "info");
                 return;
               }
 
               const permission = await Notification.requestPermission();
               if (permission === "granted") {
-                await window.fcmManager?.init();
                 window.updateNotificationUI?.("granted");
                 window.showToast?.("Notifikasi aktif! 🎉", "success");
               } else {
@@ -5919,7 +5911,7 @@
       } else {
         console.log("[SW] Service workers not available or running from file://");
         if (window.location.protocol === "file:") {
-          console.log("[SW] NOTE: Push notifications require HTTPS or localhost, not file:// protocol");
+          console.log("[SW] NOTE: Notifications require HTTPS or localhost, not file:// protocol");
         }
       }
     </script>
