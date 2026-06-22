@@ -151,17 +151,21 @@ class FCMManager {
       // Check for existing token for this user/device
       const existingKey = await this.findExistingTokenKey(userInfo.userId, deviceInfo.platform);
 
-      // Create token data
+      // Create token data (remove undefined values - Firebase doesn't allow them)
       const tokenData = {
         token: token,
         userId: userInfo.userId || "anonymous",
         userName: userInfo.userName || "Unknown",
         kelas: userInfo.kelas || null,
         device: deviceInfo,
-        createdAt: existingKey ? undefined : Date.now(), // Only set createdAt for new tokens
         lastActive: Date.now(),
         active: true
       };
+
+      // Only set createdAt for new tokens
+      if (!existingKey) {
+        tokenData.createdAt = Date.now();
+      }
 
       if (existingKey) {
         // Update existing token
@@ -371,4 +375,4 @@ if (typeof window !== "undefined") {
   });
 }
 
-this.log("[FCM] FCM Manager loaded");
+console.log("[FCM] FCM Manager loaded");
