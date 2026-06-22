@@ -5807,45 +5807,68 @@
           }
         });
 
-        // Initialize FCM - handle all permission states
+        // Initialize FCM - AUTO REQUEST on page load (no need to click button)
         window.addEventListener("load", async () => {
+          // Tunda sebentar agar semua script load dulu
+          await new Promise(resolve => setTimeout(resolve, 500));
+
           console.log("[FCM-UI] Checking notification permission state:", Notification.permission);
 
-          // Check current permission state
+          // AUTO INIT: Langsung minta izin notifikasi saat halaman load
           if (Notification.permission === "granted") {
             console.log("[FCM-UI] Permission already granted, initializing FCM...");
             await window.fcmManager?.init();
+            window.updateNotificationUI?.("granted");
           } else if (Notification.permission === "denied") {
             console.log("[FCM-UI] Permission denied - user blocked notifications");
+            window.updateNotificationUI?.("denied");
           } else {
-            // "default" - need to ask
-            console.log("[FCM-UI] Permission not decided yet, waiting for user action...");
+            // "default" - AUTO REQUEST permission
+            console.log("[FCM-UI] Auto-requesting notification permission...");
+            try {
+              const permission = await Notification.requestPermission();
+              console.log("[FCM-UI] Permission result:", permission);
 
-            // Auto-init FCM on first user interaction (any click)
-            const initOnInteraction = async () => {
-              if (Notification.permission === "default") {
-                console.log("[FCM-UI] User interaction detected, initializing FCM...");
+              if (permission === "granted") {
                 await window.fcmManager?.init();
+                window.updateNotificationUI?.("granted");
+                window.showToast?.("Notifikasi aktif! 🎉", "success");
+              } else {
+                window.updateNotificationUI?.(permission);
               }
-              document.removeEventListener("click", initOnInteraction);
-            };
-            document.addEventListener("click", initOnInteraction);
-
-            // Also handle button click specifically
-            const notifyBtn = document.getElementById("notification-permission-btn");
-            if (notifyBtn) {
-              notifyBtn.addEventListener("click", async (e) => {
-                e.stopPropagation();
-                console.log("[FCM-UI] Notification button clicked");
-                const granted = await window.fcmManager?.init();
-                if (granted) {
-                  notifyBtn.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="bell-ring" class="w-4 h-4"></i> Notifikasi Aktif</span>';
-                  notifyBtn.classList.remove("bg-slate-100", "dark:bg-slate-800");
-                  notifyBtn.classList.add("bg-green-100", "dark:bg-green-900/30", "text-green-700", "dark:text-green-400");
-                  if (window.lucide) window.lucide.createIcons();
-                }
-              });
+            } catch (err) {
+              console.error("[FCM-UI] Error requesting permission:", err);
+              window.updateNotificationUI?.("error");
             }
+          }
+        });
+
+        // Button click handler
+        window.addEventListener("load", () => {
+          const notifyBtn = document.getElementById("notification-permission-btn");
+          if (notifyBtn) {
+            notifyBtn.addEventListener("click", async () => {
+              if (Notification.permission === "denied") {
+                window.showToast?.("Buka pengaturan browser untuk aktifkan notifikasi", "warning");
+                return;
+              }
+
+              if (Notification.permission === "granted") {
+                await window.fcmManager?.init();
+                window.showToast?.("Notifikasi sudah aktif!", "info");
+                return;
+              }
+
+              const permission = await Notification.requestPermission();
+              if (permission === "granted") {
+                await window.fcmManager?.init();
+                window.updateNotificationUI?.("granted");
+                window.showToast?.("Notifikasi aktif! 🎉", "success");
+              } else {
+                window.updateNotificationUI?.("denied");
+                window.showToast?.("Izin notifikasi diperlukan", "warning");
+              }
+            });
           }
         });
       } else {
@@ -5854,6 +5877,41 @@
           console.log("[SW] NOTE: Push notifications require HTTPS or localhost, not file:// protocol");
         }
       }
+    </script>
+
+    <!-- Global function untuk update UI notifikasi (di luar script block agar accessible) -->
+    <script>
+      // Function to update notification UI based on permission state
+      window.updateNotificationUI = function(permission) {
+        const notifyBtn = document.getElementById("notification-permission-btn");
+        if (!notifyBtn) return;
+
+        if (permission === "granted") {
+          // Aktif - hijau
+          notifyBtn.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="bell-ring" class="w-4 h-4"></i> Notifikasi Aktif</span>';
+          notifyBtn.classList.remove("bg-slate-100", "dark:bg-slate-800", "bg-red-100", "dark:bg-red-900/30");
+          notifyBtn.classList.add("bg-green-100", "dark:bg-green-900/30", "text-green-700", "dark:text-green-400");
+        } else if (permission === "denied") {
+          // Ditolak - merah
+          notifyBtn.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="bell-off" class="w-4 h-4"></i> Notifikasi Ditolak</span>';
+          notifyBtn.classList.remove("bg-slate-100", "dark:bg-slate-800", "bg-green-100", "dark:bg-green-900/30");
+          notifyBtn.classList.add("bg-red-100", "dark:bg-red-900/30", "text-red-700", "dark:text-red-400");
+        } else {
+          // Default - abu-abu
+          notifyBtn.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="bell" class="w-4 h-4"></i> Aktifkan Notifikasi</span>';
+          notifyBtn.classList.remove("bg-green-100", "dark:bg-green-900/30", "bg-red-100", "dark:bg-red-900/30");
+          notifyBtn.classList.add("bg-slate-100", "dark:bg-slate-800", "text-slate-700", "dark:text-slate-300");
+        }
+
+        // Update lucide icons
+        if (window.lucide) window.lucide.createIcons();
+
+        // Save permission state
+        if (appState?.settings) {
+          appState.settings.notifications = permission === "granted";
+          localStorage.setItem("musyrif_settings", JSON.stringify(appState.settings));
+        }
+      };
     </script>
 
     <!-- Tambahkan sebelum </body> -->
