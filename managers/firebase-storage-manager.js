@@ -316,26 +316,39 @@ class FirebaseStorageManager {
   _lastKnownDataHash = null;
 
   /**
-   * Setup real-time listeners for data sync
+   * Setup real-time listeners for CROSS-DEVICE sync only
+   *
+   * NOTE: This listener should ONLY update local data when changes come from
+   * OTHER devices. Local saves (via saveAttendance) should NOT trigger this
+   * listener to avoid infinite loops.
+   *
+   * For manual sync, use refreshData() or manualSync()
    */
   setupRealtimeListeners() {
     if (!this.db || !this.musyrifId) return;
 
     const basePath = `/${this.musyrifId}`;
 
-    // Listen to attendance changes
+    // Listen to attendance changes from OTHER devices only
     this.listenTo(`attendance${basePath}`, (data) => {
-      // INFINITE LOOP GUARD: Skip if we're currently saving to Firebase
-      // This prevents: Firebase write → listener fires → render → save → Firebase write → loop
+      // CRITICAL: Skip if we're currently saving to Firebase (local change)
+      // This prevents infinite loop: save → listener fires → save → loop
       if (this._isSavingToFirebase) {
-        console.log('[FirebaseStorageManager] Skipping listener callback - currently saving');
+        console.log('[FirebaseStorageManager] Skipping listener - local save in progress');
+        return;
+      }
+
+      // Also skip if this is our own data being confirmed (debounce late-firing listeners)
+      const now = Date.now();
+      if (this._lastSaveTime && (now - this._lastSaveTime) < 2000) {
+        console.log('[FirebaseStorageManager] Skipping listener - recent local save detected');
         return;
       }
 
       if (typeof appState !== 'undefined') {
         const attendanceVal = data || {};
 
-        // Check if data actually changed (shallow compare by JSON length + first/last key)
+        // Check if data actually changed
         const newHash = this._hashData(attendanceVal);
         if (newHash === this._lastKnownDataHash) {
           console.log('[FirebaseStorageManager] Skipping listener - data unchanged');
@@ -343,6 +356,8 @@ class FirebaseStorageManager {
         }
         this._lastKnownDataHash = newHash;
 
+        // This is external change - update local data and UI
+        console.log('[FirebaseStorageManager] External data change detected - updating UI');
         appState.attendanceData = attendanceVal;
         this.setLocalStorageData(APP_CONFIG.storageKey, attendanceVal);
         if (this.onDataUpdate) this.onDataUpdate('attendance', attendanceVal);
@@ -495,6 +510,7 @@ class FirebaseStorageManager {
         // INFINITE LOOP GUARD: Set flag BEFORE writing to Firebase
         // This tells the listener to skip processing when it fires
         this._isSavingToFirebase = true;
+        this._lastSaveTime = Date.now();  // Track save time for 2-second window
         this._lastKnownDataHash = this._hashData(data);
 
         const dbPath = path.replace(/\//g, '_').replace(/^_/, '');
@@ -508,10 +524,10 @@ class FirebaseStorageManager {
 
         console.log(`[FirebaseStorageManager] Saved to Firebase: ${path}`);
 
-        // Reset flag AFTER write completes, with small delay to catch any late-firing listeners
+        // Reset flag AFTER write completes, with delay to catch late-firing listeners
         setTimeout(() => {
           this._isSavingToFirebase = false;
-        }, 100);
+        }, 2000);  // 2 second window to ignore our own writes
 
         return { success: true, source: 'firebase' };
       } catch (error) {
