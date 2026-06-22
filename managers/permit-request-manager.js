@@ -66,8 +66,8 @@
     if (form) form.reset();
 
     // Autofill & Lock Fields
-    const elNamaSiswa = document.getElementById("wali-permit-nama-siswa");
-    const elKelasSiswa = document.getElementById("wali-permit-kelas-siswa");
+    const elNamaSiswa = document.getElementById("wali-permit-nama-santri");
+    const elKelasSiswa = document.getElementById("wali-permit-kelas-santri");
     const elNamaWali = document.getElementById("wali-permit-nama-wali");
 
     if (elNamaSiswa) elNamaSiswa.value = siswa.nama || "";
