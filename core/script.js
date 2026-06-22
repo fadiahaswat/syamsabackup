@@ -405,8 +405,16 @@ window.syncRoleModeUI = function () {
       body:not(.wali-mode) .wali-only {
         display: none !important;
       }
+      body.wali-mode .report-action-bar {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
     `;
     document.head.appendChild(style);
+  }
+
+  const reportBadge = document.getElementById("report-badge-label");
+  if (reportBadge) {
+    reportBadge.textContent = isWali ? "Laporan Presensi" : "Rekap & Analisis";
   }
 
   const reportTitle = document.querySelector("#tab-report header h1 span");
@@ -5275,6 +5283,8 @@ window.updateReportTab = function () {
     if (legendEl) legendEl.classList.add("hidden");
     const footerEl = tableEl?.parentElement?.nextElementSibling;
     if (footerEl && footerEl.textContent.includes("Kalkulasi nilai")) footerEl.classList.add("hidden");
+    const wrapper = tbody?.closest(".bg-white\\/90");
+    if (wrapper) wrapper.classList.add("hidden");
 
     // 2. Siapkan container Wali
     let waliContainer = document.getElementById("wali-report-container");
@@ -5282,9 +5292,9 @@ window.updateReportTab = function () {
       waliContainer = document.createElement("div");
       waliContainer.id = "wali-report-container";
       waliContainer.className = "space-y-6 pt-4";
-      const wrapper = tbody?.closest(".bg-white\\/90");
-      if (wrapper) {
-        wrapper.appendChild(waliContainer);
+      const reportSection = document.getElementById("report-section");
+      if (reportSection) {
+        reportSection.appendChild(waliContainer);
       }
     }
     if (waliContainer) {
@@ -5933,6 +5943,8 @@ window.updateReportTab = function () {
   if (legendEl) legendEl.classList.remove("hidden");
   const footerEl = tableEl?.parentElement?.nextElementSibling;
   if (footerEl && footerEl.textContent.includes("Kalkulasi nilai")) footerEl.classList.remove("hidden");
+  const wrapper = tbody?.closest(".bg-white\\/90");
+  if (wrapper) wrapper.classList.remove("hidden");
   const waliContainer = document.getElementById("wali-report-container");
   if (waliContainer) waliContainer.classList.add("hidden");
 

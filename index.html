@@ -2669,12 +2669,12 @@
                 </span>
               </h1>
               <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100/50 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] w-fit">
-                <span class="font-bold uppercase tracking-widest text-[8px]">Rekap & Analisis</span>
+                <span id="report-badge-label" class="font-bold uppercase tracking-widest text-[8px]">Rekap & Analisis</span>
               </div>
             </div>
           </div>
 
-          <div class="flex p-1 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl w-auto shrink-0">
+          <div class="musyrif-only flex p-1 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl w-auto shrink-0">
           <button
             id="report-view-btn"
             onclick="window.switchReportView('report')"
@@ -3925,7 +3925,7 @@
                 </div>
               </div>
             </div>
-            <div class="tahfizh-header-summary shrink-0 flex items-center gap-2">
+            <div class="tahfizh-header-summary musyrif-only shrink-0 flex items-center gap-2">
               <button onclick="window.switchTahfizhSubTab('analisis')" class="h-10 w-10 rounded-2xl bg-white/80 dark:bg-slate-950/50 border border-orange-100/80 dark:border-orange-500/15 text-orange-500 dark:text-orange-300 flex items-center justify-center shadow-sm active:scale-95 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-all" title="Analisis Tahfizh">
                 <i data-lucide="user-search" class="w-4 h-4"></i>
               </button>

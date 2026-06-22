@@ -245,9 +245,8 @@ function cacheTahfizhDOM() {
 
 // Sub-tab Navigation
 window.switchTahfizhSubTab = function(subtabName) {
-    if (window.isWaliMode?.() && subtabName === 'form') {
-        subtabName = 'beranda';
-        if (window.showToast) window.showToast('Mode Wali hanya dapat melihat data tahfizh.', 'info');
+    if (window.isWaliMode?.()) {
+        subtabName = 'analisis';
     }
 
     document.querySelectorAll('.tahfizh-page-content').forEach(el => el.classList.add('hidden'));
