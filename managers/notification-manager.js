@@ -214,25 +214,28 @@ function notifLog(...args) {
 // 2. Fungsi Mengirim Notifikasi (IMPROVED)
 window.sendLocalNotification = function (title, body, type = "info") {
   // Debug log
-  notifLog("sendLocalNotification called:", title, body, type);
+  console.log("[NOTIF] sendLocalNotification called:", title, body, type);
 
   // Check if notifications are enabled
   if (appState.settings && appState.settings.notifications === false) {
-    notifLog("Notifications are disabled in settings");
+    console.log("[NOTIF] ❌ Notifications disabled in settings");
     return;
   }
+  console.log("[NOTIF] ✅ Settings check passed");
 
   // Check browser support
   if (!("Notification" in window)) {
-    notifLog("Browser does not support notifications");
+    console.log("[NOTIF] ❌ Browser does not support notifications");
     return;
   }
+  console.log("[NOTIF] ✅ Notification API supported");
 
   // Check permission
   if (Notification.permission !== "granted") {
-    notifLog("Notification permission not granted:", Notification.permission);
+    console.log("[NOTIF] ❌ Permission not granted:", Notification.permission);
     return;
   }
+  console.log("[NOTIF] ✅ Permission granted");
 
   const options = {
     body: body,
@@ -245,19 +248,31 @@ window.sendLocalNotification = function (title, body, type = "info") {
     data: { url: location.href, type },
   };
 
+  console.log("[NOTIF] Options:", options);
+
   // Try using Service Worker first
   if ("serviceWorker" in navigator) {
+    console.log("[NOTIF] Using Service Worker...");
     navigator.serviceWorker.ready
       .then((registration) => {
-        notifLog("Showing notification via Service Worker:", title);
-        return registration.showNotification(title, options);
+        console.log("[NOTIF] SW ready, registration:", registration.scope);
+        registration.showNotification(title, options)
+          .then(() => {
+            console.log("[NOTIF] ✅ Notification shown via SW!");
+          })
+          .catch((err) => {
+            console.error("[NOTIF] ❌ SW showNotification failed:", err);
+            console.log("[NOTIF] Falling back to direct Notification");
+            new Notification(title, options);
+          });
       })
       .catch((err) => {
-        notifLog("SW failed, falling back to direct Notification:", err);
+        console.error("[NOTIF] ❌ SW.ready failed:", err);
+        console.log("[NOTIF] Falling back to direct Notification");
         new Notification(title, options);
       });
   } else {
-    notifLog("No SW, using direct Notification:", title);
+    console.log("[NOTIF] No SW, using direct Notification");
     new Notification(title, options);
   }
 };
