@@ -3,7 +3,7 @@
 let saveTimeout = null;
 let clockInterval = null;
 let lucideTimeout = null;
-let modalStack = null;
+let modalStack = [];
 
 // ==========================================
 // FIREBASE STORAGE MANAGER INSTANCE

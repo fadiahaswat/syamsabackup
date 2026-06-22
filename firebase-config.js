@@ -119,11 +119,13 @@
             firebaseMessaging = firebase.messaging(firebaseApp);
 
             window.FIREBASE_MESSAGING = firebaseMessaging;
-            window.FIREBASE_GET_TOKEN = function(options) {
-              return firebaseMessaging.getToken(options);
+            window.FIREBASE_GET_TOKEN = function(messaging, options) {
+              const opt = options || messaging;
+              return firebaseMessaging.getToken(opt);
             };
-            window.FIREBASE_ON_MESSAGE = function(callback) {
-              return firebaseMessaging.onMessage(callback);
+            window.FIREBASE_ON_MESSAGE = function(messaging, callback) {
+              const cb = typeof messaging === 'function' ? messaging : callback;
+              return firebaseMessaging.onMessage(cb);
             };
 
             console.log('[FirebaseConfig] Firebase Messaging initialized');
