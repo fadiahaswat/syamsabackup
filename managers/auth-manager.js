@@ -132,16 +132,32 @@ window.handleDevTap = function () {
   }, 2000); // Reset count jika tidak ada klik dalam 2 detik
 };
 
-window.startAuthenticatedSession = function (targetClass, profile) {
+window.startAuthenticatedSession = async function (targetClass, profile, supabaseSession = null) {
   const authData = {
     kelas: targetClass,
     profile: profile,
+    supabaseSession: supabaseSession,
     timestamp: new Date().toISOString(),
   };
   localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
 
   appState.selectedClass = targetClass;
   appState.userProfile = profile;
+
+  // ========== SUPABASE INTEGRATION ==========
+  // Initialize hybrid storage if cloud mode is enabled
+  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
+    try {
+      // Get kelas ID for the selected class
+      const kelasInfo = MASTER_KELAS?.[targetClass];
+      const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || targetClass;
+
+      await window.hybridStorageManager.init(kelasId);
+      console.log('[AuthManager] Hybrid storage initialized for class:', targetClass);
+    } catch (error) {
+      console.warn('[AuthManager] Hybrid storage init failed:', error);
+    }
+  }
 
   // ========== PWA UPDATE CHECK ==========
   // Cek update PWA setiap login untuk memastikan dapat data terbaru
@@ -213,7 +229,7 @@ window.handleLogin = async function () {
   }
 };
 
-window.handleGoogleCallback = function (response) {
+window.handleGoogleCallback = async function (response) {
   try {
     const profile = window.parseJwt(response.credential);
     console.log(profile);
@@ -260,8 +276,25 @@ window.handleGoogleCallback = function (response) {
       );
     }
 
-    // 3. JIKA LOLOS -> SIMPAN SESI
-    window.startAuthenticatedSession(targetClass, profile);
+    // 3. SUPABASE AUTH (jika cloud mode enabled)
+    let supabaseSession = null;
+    if (window.APP_STORAGE?.mode !== 'local-only' && window.supabaseClient) {
+      try {
+        const { data: sbData } = await window.supabaseClient.signInWithGoogle(
+          response.credential
+        );
+        if (sbData?.session) {
+          supabaseSession = sbData.session;
+          console.log('[AuthManager] Supabase auth successful');
+        }
+      } catch (sbError) {
+        console.warn('[AuthManager] Supabase sign-in failed:', sbError);
+        // Continue without Supabase - local storage still works
+      }
+    }
+
+    // 4. JIKA LOLOS -> SIMPAN SESI
+    await window.startAuthenticatedSession(targetClass, profile, supabaseSession);
     window.closeModal("modal-google-auth");
     window.showToast("Login Berhasil!", "success");
   } catch (e) {
@@ -270,16 +303,30 @@ window.handleGoogleCallback = function (response) {
   }
 };
 
-window.handleLogout = function () {
+window.handleLogout = async function () {
   window.showConfirmModal(
     "Keluar dari Akun?",
     "Sesi saat ini akan ditutup dan Anda kembali ke layar login.",
     "Keluar",
     "Batal",
-    () => {
+    async () => {
   if (clockInterval) {
     clearInterval(clockInterval);
     clockInterval = null;
+  }
+
+  // Supabase sign out
+  if (window.supabaseClient) {
+    try {
+      await window.supabaseClient.signOut();
+    } catch (e) {
+      console.warn('[AuthManager] Supabase sign-out error:', e);
+    }
+  }
+
+  // Cleanup hybrid storage
+  if (window.hybridStorageManager) {
+    window.hybridStorageManager.destroy();
   }
 
   localStorage.removeItem(APP_CONFIG.googleAuthKey);

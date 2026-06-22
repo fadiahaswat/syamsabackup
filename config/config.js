@@ -123,7 +123,13 @@ window.APP_CONSTANTS = {
 // ==========================================
 window.APP_STORAGE = {
   // Storage version for future migrations
-  version: 1,
+  version: 2,
+
+  // Storage mode: 'local-only' | 'hybrid' | 'cloud-primary'
+  // 'local-only': Default, no cloud sync (existing behavior)
+  // 'hybrid': Cloud backup + offline-first (recommended)
+  // 'cloud-primary': Cloud-first with local cache
+  mode: 'local-only',
 
   // Data storage keys
   keys: {
@@ -138,5 +144,48 @@ window.APP_STORAGE = {
   autoSave: {
     debounceMs: 500,
     enabled: true
+  },
+
+  // ==========================================
+  // SUPABASE CLOUD STORAGE CONFIG
+  // ==========================================
+  // Aktifkan dengan mengisi URL dan anon key dari project Supabase Anda.
+  // Daftar di https://supabase.com untuk membuat project gratis.
+  supabase: {
+    url: '',  // Contoh: 'https://xxxxx.supabase.co'
+    anonKey: '',  // Contoh: 'eyJhbGciOiJIUzI1NiIs...'
+  },
+
+  // Sync configuration
+  sync: {
+    // Enable automatic background sync
+    autoSync: true,
+
+    // Sync interval in milliseconds (default: 30 seconds)
+    syncInterval: 30000,
+
+    // Conflict resolution: 'server-wins' | 'client-wins' | 'manual'
+    // 'server-wins': Server data overwrites local (safer)
+    // 'client-wins': Local changes overwrite server
+    // 'manual': Prompt user to resolve conflicts
+    conflictResolution: 'server-wins',
+
+    // Max retry attempts for failed syncs
+    retryAttempts: 3,
+
+    // Batch size for bulk operations
+    batchSize: 50,
+  },
+
+  // File upload configuration
+  fileUpload: {
+    // Max file size in bytes (default: 5MB)
+    maxSizeBytes: 5 * 1024 * 1024,
+
+    // Allowed MIME types
+    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+
+    // Storage bucket name
+    bucket: 'permit-documents',
   }
 };

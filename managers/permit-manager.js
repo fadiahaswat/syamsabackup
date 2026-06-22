@@ -127,11 +127,20 @@ window.updatePermitCount = function () {
 };
 
 window.persistPermits = window.persistPermits || function () {
-  // Always save to localStorage
+  // Always save to localStorage as primary storage
   localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
 
-  // Try to save via storage manager if available
-  if (window.storageManager) {
+  // Use HybridStorageManager if cloud mode is enabled
+  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
+    // Save each permit individually to enable proper sync
+    const permits = appState.permits || [];
+    permits.forEach(permit => {
+      window.hybridStorageManager.savePermit(permit).catch(err => {
+        console.error('[PermitManager] Hybrid save error:', err);
+      });
+    });
+  } else if (window.storageManager) {
+    // Local-only mode: use traditional storage manager
     window.storageManager.savePermits(appState.permits || []).catch(err => {
       console.error('[PermitManager] Save error:', err);
     });
@@ -192,8 +201,16 @@ window.deletePermit = function (id) {
     "Status kehadiran santri akan dikembalikan ke default.",
     "Hapus",
     "Batal",
-    () => {
+    async () => {
   appState.permits = appState.permits.filter((p) => p.id !== id);
+
+  // Use HybridStorageManager if cloud mode is enabled
+  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
+    await window.hybridStorageManager.deletePermit(id).catch(err => {
+      console.error('[PermitManager] Delete permit error:', err);
+    });
+  }
+
   window.persistPermits();
 
   window.showToast("Data izin dihapus", "info");
@@ -635,15 +652,28 @@ window.savePermitLogic = async function () {
     const diffDays = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
 
     // VALIDASI: Jika lebih dari 2 hari, harus ada surat dokter
-    let suratDokterBase64 = null;
+    let suratDokterUrl = null;
     if (diffDays > 2) {
       const suratDokterFile = document.getElementById("permit-surat-dokter")?.files[0];
       if (!suratDokterFile) {
         return window.showToast("Sakit lebih dari 2 hari wajib upload surat dokter!", "warning");
       }
-      // Convert file to base64
+      // Upload using FileUploadManager (supports Supabase Storage + local fallback)
       try {
-        suratDokterBase64 = await window.fileToBase64(suratDokterFile);
+        if (window.fileUploadManager) {
+          // Generate temporary permit ID for upload
+          const tempPermitId = `temp_${Date.now()}`;
+          const userId = window.supabaseClient?.getUser()?.id || 'anonymous';
+          const uploadResult = await window.fileUploadManager.uploadDocument(
+            userId,
+            tempPermitId,
+            suratDokterFile
+          );
+          suratDokterUrl = uploadResult.finalUrl;
+        } else {
+          // Fallback to direct base64 conversion
+          suratDokterUrl = await window.fileToBase64(suratDokterFile);
+        }
       } catch (e) {
         return window.showToast("Gagal upload surat dokter. Coba lagi.", "error");
       }
@@ -654,7 +684,7 @@ window.savePermitLogic = async function () {
     permitData.end_session = null;
     permitData.status_label = "S";
     permitData.requires_surat_dokter = diffDays > 2;
-    permitData.surat_dokter = suratDokterBase64;
+    permitData.surat_dokter = suratDokterUrl;
   } else {
     // IZIN & PULANG: Punya Deadline
     const endDate = document.getElementById("permit-end-date").value;

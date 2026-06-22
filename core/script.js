@@ -4667,11 +4667,18 @@ window.saveData = async function () {
             // Always save to localStorage as backup
             localStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
-            // Try to save to storage if storage manager is available
-            if (window.storageManager) {
-              const dateKey = appState.date;
-              const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
-              await window.storageManager.saveAttendance(dateKey, slotId, appState.attendanceData[dateKey]?.[slotId] || {});
+            // Determine which storage manager to use
+            const dateKey = appState.date;
+            const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
+            const slotData = appState.attendanceData[dateKey]?.[slotId] || {};
+
+            // Use HybridStorageManager if cloud mode is enabled, otherwise use local StorageManager
+            if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
+              // Cloud mode: Use hybrid storage (adds to sync queue + tries immediate sync)
+              await window.hybridStorageManager.saveAttendance(dateKey, slotId, slotData);
+            } else if (window.storageManager) {
+              // Local-only mode: Use traditional storage manager
+              await window.storageManager.saveAttendance(dateKey, slotId, slotData);
             }
 
             if (indicator) {
@@ -4697,11 +4704,15 @@ window.saveData = async function () {
         // Always save to localStorage as backup
         localStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
-        // Try to save to storage if storage manager is available
-        if (window.storageManager) {
-          const dateKey = appState.date;
-          const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
-          await window.storageManager.saveAttendance(dateKey, slotId, appState.attendanceData[dateKey]?.[slotId] || {});
+        // Determine which storage manager to use
+        const dateKey = appState.date;
+        const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
+        const slotData = appState.attendanceData[dateKey]?.[slotId] || {};
+
+        if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
+          await window.hybridStorageManager.saveAttendance(dateKey, slotId, slotData);
+        } else if (window.storageManager) {
+          await window.storageManager.saveAttendance(dateKey, slotId, slotData);
         }
       }
     } catch (e) {
