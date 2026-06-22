@@ -310,7 +310,7 @@ class FirebaseStorageManager {
   }
 
   /**
-   * Flag to prevent infinite loop between Firebase listener and local saves
+   * Flag to prevent infinite loop (not used now but kept for future)
    */
   _isSavingToFirebase = false;
   _lastKnownDataHash = null;
@@ -325,52 +325,23 @@ class FirebaseStorageManager {
    * 2. Ubah data → Simpan ke Firebase saja, UI tetap
    * 3. Mau lihat perubahan dari device lain → Reload / Pull-to-refresh manual
    *
-   * Untuk enable realtime sync lagi, hapus/dikomentari kode di bawah ini.
+   * Untuk enable realtime sync lagi, aktifkan kode di dalam fungsi ini.
    */
   setupRealtimeListeners() {
     console.log('[FirebaseStorageManager] Realtime listeners DISABLED - using manual sync only');
-    // Listen to attendance changes from OTHER devices only
-    // DISABLED: Realtime sync menyebabkan infinite loop dan behavior tidak predictable
+
+    // REALTIME LISTENER UNTUK ATTENDANCE DIHAPUS KARENA MENYEBABKAN INFINITE LOOP
+    // Jika ingin enable lagi, uncomment kode di bawah:
+    //
     // if (this.db && this.musyrifId) {
     //   const basePath = `/${this.musyrifId}`;
     //   this.listenTo(`attendance${basePath}`, (data) => {
-    //     // ... listener logic here ...
+    //     if (typeof appState !== 'undefined' && data) {
+    //       appState.attendanceData = data;
+    //       this.setLocalStorageData(APP_CONFIG.storageKey, data);
+    //     }
     //   });
     // }
-  }
-
-    // Listen to permits changes
-    this.listenTo(`permits`, (data) => {
-      if (typeof appState !== 'undefined') {
-        const permitsArray = data ? Object.values(data).filter(p => p) : [];
-        appState.permits = permitsArray;
-        this.setLocalStorageData(APP_CONFIG.permitKey, permitsArray);
-        if (window.refreshPermitSurfaces) window.refreshPermitSurfaces();
-      }
-    });
-
-    // Listen to settings changes
-    this.listenTo(`settings${basePath}`, (data) => {
-      if (data && typeof appState !== 'undefined') {
-        appState.settings = { ...appState.settings, ...data };
-        this.setLocalStorageData(APP_CONFIG.settingsKey, data);
-        if (this.onDataUpdate) this.onDataUpdate('settings', data);
-      }
-    });
-  }
-
-  /**
-   * Simple hash to detect data changes
-   */
-  _hashData(data) {
-    if (!data) return 'null';
-    try {
-      const json = JSON.stringify(data);
-      // Use first 50 chars + length as quick hash
-      return `${json.length}-${json.substring(0, 50)}`;
-    } catch {
-      return String(Date.now());
-    }
   }
 
   /**
