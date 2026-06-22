@@ -1712,6 +1712,11 @@ window.handleGoogleCallback = async function (response) {
     let supabaseSession = null;
     if (window.APP_STORAGE?.mode !== 'local-only' && window.supabaseClient) {
       try {
+        // Ensure Supabase client is initialized
+        if (!window.supabaseClient.isInitialized) {
+          console.log('[Auth] Initializing Supabase client...');
+          await window.supabaseClient.init();
+        }
         const { data: sbData } = await window.supabaseClient.signInWithGoogle(
           response.credential
         );
