@@ -166,8 +166,12 @@
 
           // Haptic feedback saat mencapai threshold
           if (pullDistance >= threshold && !hasVibrated) {
-            if (navigator.vibrate) {
-              navigator.vibrate(15); // Getar singkat 15ms
+            try {
+              if (navigator.vibrate) {
+                navigator.vibrate(15); // Getar singkat 15ms
+              }
+            } catch (e) {
+              // Ignore vibration errors (user hasn't interacted with frame)
             }
             hasVibrated = true;
             arrowWrapper.style.color = "#22c55e"; // Ubah jadi hijau saat siap lepas
@@ -241,87 +245,44 @@
   // 4. Integrasikan fungsi update data global
   window.performPullToRefresh = async function () {
     try {
-      console.log("🔄 Pull-To-Refresh: Memulai sinkronisasi...");
+      console.log("🔄 Pull-To-Refresh: Sinkronisasi dengan Cloud...");
 
-      // A. Hapus cache lokal Google Sheets
-      localStorage.removeItem("cache_data_kelas");
-      localStorage.removeItem("cache_data_santri_full");
-      localStorage.removeItem("time_data_santri");
-
-      // B. SYNC DENGAN CLOUD (Supabase)
-      // 1. Upload data lokal ke cloud
+      // SYNC DENGAN SUPABASE (Attendance & Permits)
       if (window.hybridStorageManager && navigator.onLine && window.APP_STORAGE?.mode !== 'local-only') {
+        // 1. Upload data lokal ke cloud
         try {
           console.log("[PullToRefresh] Upload to cloud...");
           await window.hybridStorageManager.syncNow();
-          console.log("[PullToRefresh] Cloud upload complete");
         } catch (err) {
-          console.warn("[PullToRefresh] Cloud upload warning:", err);
+          console.warn("[PullToRefresh] Upload warning:", err);
         }
 
         // 2. Download data dari cloud
         try {
           console.log("[PullToRefresh] Download from cloud...");
           await window.hybridStorageManager._downloadCloudData();
-          console.log("[PullToRefresh] Cloud download complete");
         } catch (err) {
-          console.warn("[PullToRefresh] Cloud download warning:", err);
+          console.warn("[PullToRefresh] Download warning:", err);
         }
-      }
-
-      // C. Unduh data baru dari Google Sheets
-      console.log("[PullToRefresh] Downloading from Google Sheets...");
-      const [kelasData, siswaData] = await Promise.all([
-        window.loadClassData ? window.loadClassData() : Promise.resolve({}),
-        window.loadSantriData ? window.loadSantriData() : Promise.resolve([]),
-      ]);
-
-      // Update variabel global
-      if (kelasData && Object.keys(kelasData).length > 0) {
-        window.classData = kelasData;
-        if (typeof MASTER_KELAS !== "undefined") MASTER_KELAS = kelasData;
-      }
-      if (siswaData && siswaData.length > 0) {
-        window.santriData = siswaData;
-        if (typeof MASTER_SANTRI !== "undefined") MASTER_SANTRI = siswaData;
-
-        // Sinkronisasi data siswa terfilter
-        if (typeof appState !== "undefined" && typeof FILTERED_SANTRI !== "undefined") {
-          if (appState.waliMode && appState.waliSantri) {
-            const found = siswaData.find(s => s.nis === appState.waliSantri.nis);
-            if (found) {
-              appState.waliSantri = found;
-              FILTERED_SANTRI = [found];
-            }
-          } else if (appState.selectedClass) {
-            FILTERED_SANTRI = siswaData.filter((s) => {
-              const sKelas = String(s.kelas || s.rombel || "").trim();
-              return sKelas === appState.selectedClass;
-            }).sort((a, b) => a.nama.localeCompare(b.nama));
-          }
+      } else {
+        // Mode local-only - simpan saja
+        if (window.storageManager) {
+          window.storageManager.saveNow();
         }
+        window.showToast("Mode offline - data tersimpan lokal", "info");
+        return;
       }
 
-      // D. Refresh seluruh antarmuka (UI)
-      if (window.populateClassDropdown) window.populateClassDropdown();
-      if (window.syncRoleModeUI) window.syncRoleModeUI();
+      // Refresh UI setelah sync
       if (window.updateDashboard) window.updateDashboard();
-      if (window.updateProfileInfo) window.updateProfileInfo();
       if (window.renderAttendanceList) window.renderAttendanceList();
+      if (window.renderPermitList) window.renderPermitList();
+      if (window.refreshPermitSurfaces) window.refreshPermitSurfaces();
 
-      if (typeof appState !== "undefined" && appState.waliMode && window.renderWaliView) {
-        window.renderWaliView();
-      }
-
-      const activeTab = document.querySelector(".tab-content:not(.hidden)");
-      if (activeTab && activeTab.id === "tab-tahfizh" && window.initTahfizhTab) {
-        window.initTahfizhTab();
-      }
-
-      window.showToast("Data berhasil disinkronkan!", "success");
+      window.showToast("Sinkronisasi selesai!", "success");
     } catch (error) {
       console.error("[PullToRefresh] Error:", error);
-      window.showToast("Gagal menyinkronkan: " + error.message, "error");
+      window.showToast("Gagal sinkronisasi: " + error.message, "error");
     }
   };
 

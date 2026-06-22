@@ -133,13 +133,36 @@ class HybridStorageManager {
       }
 
       // Trigger UI refresh
-      if (this.onDataUpdate) {
-        this.onDataUpdate('cloud_sync_complete');
-      }
+      this._refreshUI();
 
       console.log('[HybridStorageManager] Cloud data download complete');
     } catch (error) {
       console.error('[HybridStorageManager] Cloud download failed:', error);
+    }
+  }
+
+  /**
+   * Refresh UI after sync
+   */
+  _refreshUI() {
+    // Trigger global refresh callbacks
+    if (this.onDataUpdate) {
+      this.onDataUpdate('cloud_sync_complete');
+    }
+
+    // Refresh attendance list if available
+    if (typeof window.renderAttendanceList === 'function') {
+      window.renderAttendanceList();
+    }
+
+    // Refresh dashboard
+    if (typeof window.updateDashboard === 'function') {
+      window.updateDashboard();
+    }
+
+    // Refresh permit surfaces
+    if (typeof window.refreshPermitSurfaces === 'function') {
+      window.refreshPermitSurfaces();
     }
   }
 
