@@ -316,53 +316,28 @@ class FirebaseStorageManager {
   _lastKnownDataHash = null;
 
   /**
-   * Setup real-time listeners for CROSS-DEVICE sync only
+   * Setup real-time listeners - DISABLED
    *
-   * NOTE: This listener should ONLY update local data when changes come from
-   * OTHER devices. Local saves (via saveAttendance) should NOT trigger this
-   * listener to avoid infinite loops.
+   * REALTIME SYNC DISABLED untuk menghindari infinite loop dan behavior yang tidak predictable.
    *
-   * For manual sync, use refreshData() or manualSync()
+   * Alur sync yang diinginkan:
+   * 1. Buka app → Ambil data dari Firebase (sekali)
+   * 2. Ubah data → Simpan ke Firebase saja, UI tetap
+   * 3. Mau lihat perubahan dari device lain → Reload / Pull-to-refresh manual
+   *
+   * Untuk enable realtime sync lagi, hapus/dikomentari kode di bawah ini.
    */
   setupRealtimeListeners() {
-    if (!this.db || !this.musyrifId) return;
-
-    const basePath = `/${this.musyrifId}`;
-
+    console.log('[FirebaseStorageManager] Realtime listeners DISABLED - using manual sync only');
     // Listen to attendance changes from OTHER devices only
-    this.listenTo(`attendance${basePath}`, (data) => {
-      // CRITICAL: Skip if we're currently saving to Firebase (local change)
-      // This prevents infinite loop: save → listener fires → save → loop
-      if (this._isSavingToFirebase) {
-        console.log('[FirebaseStorageManager] Skipping listener - local save in progress');
-        return;
-      }
-
-      // Also skip if this is our own data being confirmed (debounce late-firing listeners)
-      const now = Date.now();
-      if (this._lastSaveTime && (now - this._lastSaveTime) < 2000) {
-        console.log('[FirebaseStorageManager] Skipping listener - recent local save detected');
-        return;
-      }
-
-      if (typeof appState !== 'undefined') {
-        const attendanceVal = data || {};
-
-        // Check if data actually changed
-        const newHash = this._hashData(attendanceVal);
-        if (newHash === this._lastKnownDataHash) {
-          console.log('[FirebaseStorageManager] Skipping listener - data unchanged');
-          return;
-        }
-        this._lastKnownDataHash = newHash;
-
-        // This is external change - update local data and UI
-        console.log('[FirebaseStorageManager] External data change detected - updating UI');
-        appState.attendanceData = attendanceVal;
-        this.setLocalStorageData(APP_CONFIG.storageKey, attendanceVal);
-        if (this.onDataUpdate) this.onDataUpdate('attendance', attendanceVal);
-      }
-    });
+    // DISABLED: Realtime sync menyebabkan infinite loop dan behavior tidak predictable
+    // if (this.db && this.musyrifId) {
+    //   const basePath = `/${this.musyrifId}`;
+    //   this.listenTo(`attendance${basePath}`, (data) => {
+    //     // ... listener logic here ...
+    //   });
+    // }
+  }
 
     // Listen to permits changes
     this.listenTo(`permits`, (data) => {
@@ -507,12 +482,6 @@ class FirebaseStorageManager {
 
     if (this.isOnline && this.db) {
       try {
-        // INFINITE LOOP GUARD: Set flag BEFORE writing to Firebase
-        // This tells the listener to skip processing when it fires
-        this._isSavingToFirebase = true;
-        this._lastSaveTime = Date.now();  // Track save time for 2-second window
-        this._lastKnownDataHash = this._hashData(data);
-
         const dbPath = path.replace(/\//g, '_').replace(/^_/, '');
         const dbRef = this.ref(path);
 
@@ -523,17 +492,10 @@ class FirebaseStorageManager {
         });
 
         console.log(`[FirebaseStorageManager] Saved to Firebase: ${path}`);
-
-        // Reset flag AFTER write completes, with delay to catch late-firing listeners
-        setTimeout(() => {
-          this._isSavingToFirebase = false;
-        }, 2000);  // 2 second window to ignore our own writes
-
         return { success: true, source: 'firebase' };
       } catch (error) {
         console.error(`[FirebaseStorageManager] Firebase save error for ${path}:`, error);
         this.lastError = error;
-        this._isSavingToFirebase = false; // Reset on error too
 
         // Queue for later sync
         OfflineQueueManager.enqueue(type, 'set', path, data);

@@ -97,49 +97,12 @@ window.initFirebaseStorage = async function(musyrifId) {
     // Make available globally
     window.storageManager = storageManager;
 
-    // DEBOUNCE: Prevent rapid-fire UI updates from Firebase listener
-    let dataUpdateDebounceTimer = null;
-    const DATA_UPDATE_DEBOUNCE_MS = 300;
-
-    // Set callback to refresh UI when data changes in Firebase
-    storageManager.onDataUpdate = function(type, data) {
-      console.log(`[FirebaseStorage] Realtime update received for: ${type}`);
-
-      // Clear any pending update
-      if (dataUpdateDebounceTimer) {
-        clearTimeout(dataUpdateDebounceTimer);
-      }
-
-      // Debounce UI updates to prevent flickering
-      dataUpdateDebounceTimer = setTimeout(() => {
-        dataUpdateDebounceTimer = null;
-
-        if (type === 'attendance') {
-          if (typeof window.updateDashboard === 'function') {
-            window.updateDashboard();
-          }
-          if (typeof window.renderAttendanceList === 'function') {
-            window.renderAttendanceList();
-          }
-        } else if (type === 'settings') {
-          if (data) {
-            // Apply settings changes (dark mode, notifications)
-            if (typeof data.darkMode !== 'undefined' && data.darkMode !== appState.settings.darkMode) {
-              appState.settings.darkMode = data.darkMode;
-              document.documentElement.classList.toggle("dark", data.darkMode);
-              if (typeof window.updateMetaThemeColor === 'function') {
-                window.updateMetaThemeColor();
-              }
-            }
-            if (typeof data.notifications !== 'undefined' && data.notifications !== appState.settings.notifications) {
-              appState.settings.notifications = data.notifications;
-              const btn = document.getElementById("btn-notifications");
-              if (btn) btn.classList.toggle("opacity-50", !data.notifications);
-            }
-          }
-        }
-      }, DATA_UPDATE_DEBOUNCE_MS);
-    };
+    // REALTIME LISTENERS DISABLED
+    // Data sync hanya terjadi saat:
+    // 1. Buka aplikasi (load dari Firebase)
+    // 2. Pull-to-refresh manual
+    // 3. Reload halaman manual
+    // Jika realtime sync dibutuhkan lagi, aktifkan setupRealtimeListeners() di firebase-storage-manager.js
 
     console.log('[FirebaseStorage] Initialized for musyrifId:', finalMusyrifId);
 
