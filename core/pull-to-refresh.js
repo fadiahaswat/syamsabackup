@@ -1,6 +1,7 @@
 /**
  * File: pull-to-refresh.js
  * Deskripsi: Menambahkan perilaku tarik-ke-bawah untuk menyegarkan (Pull to Refresh) pada kontainer tab aplikasi.
+ * Updated: Support cloud sync dengan Supabase
  */
 
 (function () {
@@ -16,7 +17,7 @@
       .tab-content {
         position: relative;
       }
-      
+
       /* PTR Floating Indicator */
       .ptr-indicator {
         position: absolute;
@@ -37,13 +38,13 @@
         border: 1px solid rgba(148, 163, 184, 0.15);
         transition: transform 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
       }
-      
+
       html.dark .ptr-indicator {
         background: #1e293b;
         border-color: rgba(148, 163, 184, 0.1);
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
       }
-      
+
       /* Spinner Animation */
       .ptr-spinner {
         display: none;
@@ -54,12 +55,12 @@
         border-radius: 50%;
         animation: ptr-spin-anim 0.8s linear infinite;
       }
-      
+
       html.dark .ptr-spinner {
         border-top-color: #11c4d4;
         border-solid-color: rgba(17, 196, 212, 0.15);
       }
-      
+
       .ptr-arrow-wrapper {
         display: flex;
         align-items: center;
@@ -69,15 +70,15 @@
         color: #0c81e4;
         transition: transform 0.1s linear, color 0.2s ease;
       }
-      
+
       html.dark .ptr-arrow-wrapper {
         color: #11c4d4;
       }
-      
+
       @keyframes ptr-spin-anim {
         to { transform: rotate(360deg); }
       }
-      
+
       /* Membatasi scroll-bounce iOS bawaan jika memungkinkan */
       .tab-content.ptr-dragging {
         overscroll-behavior-y: contain;
@@ -224,7 +225,7 @@
       const resetIndicator = () => {
         indicator.style.transform = "translate(-50%, -80px) scale(0.3)";
         indicator.style.opacity = "0";
-        
+
         // Kembalikan konten visual setelah animasi keluar selesai
         setTimeout(() => {
           arrowWrapper.style.display = "flex";
@@ -240,26 +241,37 @@
   // 4. Integrasikan fungsi update data global
   window.performPullToRefresh = async function () {
     try {
-      console.log("🔄 Melakukan Sinkronisasi Manual (Pull-To-Refresh)...");
+      console.log("🔄 Pull-To-Refresh: Memulai sinkronisasi...");
 
       // A. Hapus cache lokal Google Sheets
       localStorage.removeItem("cache_data_kelas");
       localStorage.removeItem("cache_data_santri_full");
       localStorage.removeItem("time_data_santri");
 
-      // B. Simpan data lokal (jika online)
-      if (window.storageManager && window.isStorageOnline()) {
+      // B. SYNC DENGAN CLOUD (Supabase)
+      // 1. Upload data lokal ke cloud
+      if (window.hybridStorageManager && navigator.onLine && window.APP_STORAGE?.mode !== 'local-only') {
         try {
-          console.log("[PullToRefresh] Saving local data...");
-          window.storageManager.saveNow();
+          console.log("[PullToRefresh] Upload to cloud...");
+          await window.hybridStorageManager.syncNow();
+          console.log("[PullToRefresh] Cloud upload complete");
         } catch (err) {
-          console.warn("[PullToRefresh] Local save warning:", err);
+          console.warn("[PullToRefresh] Cloud upload warning:", err);
+        }
+
+        // 2. Download data dari cloud
+        try {
+          console.log("[PullToRefresh] Download from cloud...");
+          await window.hybridStorageManager._downloadCloudData();
+          console.log("[PullToRefresh] Cloud download complete");
+        } catch (err) {
+          console.warn("[PullToRefresh] Cloud download warning:", err);
         }
       }
 
       // C. Unduh data baru dari Google Sheets
-      console.log("[PullToRefresh] Downloading fresh data from Google Sheets...");
-      const [kelasData, santriData] = await Promise.all([
+      console.log("[PullToRefresh] Downloading from Google Sheets...");
+      const [kelasData, siswaData] = await Promise.all([
         window.loadClassData ? window.loadClassData() : Promise.resolve({}),
         window.loadSantriData ? window.loadSantriData() : Promise.resolve([]),
       ]);
@@ -269,20 +281,20 @@
         window.classData = kelasData;
         if (typeof MASTER_KELAS !== "undefined") MASTER_KELAS = kelasData;
       }
-      if (santriData && santriData.length > 0) {
-        window.santriData = santriData;
-        if (typeof MASTER_SANTRI !== "undefined") MASTER_SANTRI = santriData;
-        
-        // Sinkronisasi data santri terfilter
+      if (siswaData && siswaData.length > 0) {
+        window.santriData = siswaData;
+        if (typeof MASTER_SANTRI !== "undefined") MASTER_SANTRI = siswaData;
+
+        // Sinkronisasi data siswa terfilter
         if (typeof appState !== "undefined" && typeof FILTERED_SANTRI !== "undefined") {
           if (appState.waliMode && appState.waliSantri) {
-            const found = santriData.find(s => s.nis === appState.waliSantri.nis);
+            const found = siswaData.find(s => s.nis === appState.waliSantri.nis);
             if (found) {
               appState.waliSantri = found;
               FILTERED_SANTRI = [found];
             }
           } else if (appState.selectedClass) {
-            FILTERED_SANTRI = santriData.filter((s) => {
+            FILTERED_SANTRI = siswaData.filter((s) => {
               const sKelas = String(s.kelas || s.rombel || "").trim();
               return sKelas === appState.selectedClass;
             }).sort((a, b) => a.nama.localeCompare(b.nama));
@@ -296,7 +308,7 @@
       if (window.updateDashboard) window.updateDashboard();
       if (window.updateProfileInfo) window.updateProfileInfo();
       if (window.renderAttendanceList) window.renderAttendanceList();
-      
+
       if (typeof appState !== "undefined" && appState.waliMode && window.renderWaliView) {
         window.renderWaliView();
       }
@@ -306,10 +318,10 @@
         window.initTahfizhTab();
       }
 
-      window.showToast("Data berhasil diperbarui", "success");
+      window.showToast("Data berhasil disinkronkan!", "success");
     } catch (error) {
       console.error("[PullToRefresh] Error:", error);
-      window.showToast("Gagal memperbarui data: " + error.message, "error");
+      window.showToast("Gagal menyinkronkan: " + error.message, "error");
     }
   };
 
