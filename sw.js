@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v228-sync-fix";
+const CACHE_VERSION = "v229-sync-fix";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Assets to cache (static assets only)

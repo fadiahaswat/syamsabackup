@@ -75,6 +75,25 @@ window.initFirebaseStorage = async function(musyrifId) {
     window.storageManager = storageManager;
 
     console.log('[FirebaseStorage] Initialized for musyrifId:', musyrifId);
+
+    // ========== FORCE REFRESH FROM FIREBASE (PWA Fix) ==========
+    // PWA memiliki localStorage terpisah, jadi kita harus force pull dari Firebase
+    // Tunda 1 detik agar Firebase SDK selesai load
+    setTimeout(async () => {
+      try {
+        console.log('[FirebaseStorage] Force refreshing from Firebase for PWA...');
+        await storageManager.refreshData();
+
+        // Update UI setelah data di-refresh
+        if (typeof window.updateDashboard === 'function') {
+          window.updateDashboard();
+        }
+        console.log('[FirebaseStorage] Force refresh complete');
+      } catch (refreshError) {
+        console.warn('[FirebaseStorage] Force refresh failed:', refreshError);
+      }
+    }, 1000);
+
     return storageManager;
   } catch (error) {
     console.error('[FirebaseStorage] Initialization failed:', error);
@@ -115,6 +134,61 @@ window.getStorageStatus = function() {
     return { initialized: false };
   }
   return storageManager.getStatus();
+};
+
+/**
+ * Manual sync - Force refresh from Firebase (PWA Fix)
+ */
+window.manualSync = async function() {
+  console.log('[ManualSync] Starting manual sync...');
+
+  const syncBtn = document.getElementById('pwa-sync-btn');
+  if (syncBtn) {
+    syncBtn.classList.add('animate-spin');
+  }
+
+  try {
+    // Force refresh from Firebase
+    if (storageManager) {
+      await storageManager.refreshData();
+
+      // Update UI
+      if (typeof window.updateDashboard === 'function') {
+        window.updateDashboard();
+      }
+
+      // Show success
+      window.showToast?.('Sinkronisasi berhasil!', 'success');
+    } else {
+      // If no storage manager, try direct Firebase fetch
+      console.log('[ManualSync] No storage manager, refreshing page...');
+      window.location.reload();
+    }
+  } catch (error) {
+    console.error('[ManualSync] Sync failed:', error);
+    window.showToast?.('Sinkronisasi gagal: ' + error.message, 'error');
+  } finally {
+    if (syncBtn) {
+      syncBtn.classList.remove('animate-spin');
+    }
+  }
+};
+
+/**
+ * Get debug info for troubleshooting
+ */
+window.getDebugInfo = function() {
+  const info = {
+    appVersion: window.APP_VERSION || 'unknown',
+    storageInitialized: !!storageManager,
+    isOnline: navigator.onLine,
+    storageManagerStatus: storageManager?.getStatus(),
+    localStorageKeys: Object.keys(localStorage),
+    lastFirebaseSync: storageManager?.lastSyncTime,
+    musyrifId: storageManager?.musyrifId,
+  };
+  console.table(info);
+  return info;
 };
 
 // ==========================================
