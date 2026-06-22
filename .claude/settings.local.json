@@ -16,7 +16,9 @@
       "Bash(powershell -Command \"Get-Content 'Design System for SYAMSA/src/imports/design.md' | Select-Object -First 20\")",
       "Bash(xxd)",
       "Bash(curl -s -I \"https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js\")",
-      "WebSearch"
+      "WebSearch",
+      "Bash(supabase link *)",
+      "Bash(npx supabase *)"
     ]
   }
 }

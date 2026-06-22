@@ -129,7 +129,7 @@ window.APP_STORAGE = {
   // 'local-only': Default, no cloud sync (existing behavior)
   // 'hybrid': Cloud backup + offline-first (recommended)
   // 'cloud-primary': Cloud-first with local cache
-  mode: 'local-only',
+  mode: 'hybrid', // Aktifkan hybrid mode untuk cloud sync
 
   // Data storage keys
   keys: {
@@ -149,11 +149,9 @@ window.APP_STORAGE = {
   // ==========================================
   // SUPABASE CLOUD STORAGE CONFIG
   // ==========================================
-  // Aktifkan dengan mengisi URL dan anon key dari project Supabase Anda.
-  // Daftar di https://supabase.com untuk membuat project gratis.
   supabase: {
-    url: '',  // Contoh: 'https://xxxxx.supabase.co'
-    anonKey: '',  // Contoh: 'eyJhbGciOiJIUzI1NiIs...'
+    url: 'https://ioyqnmvrnpzdztpkgaxt.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlveXFubXZycG56ZHp0cGtnYXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MzI2NjAsImV4cCI6MjA2NTEwODY2MH0.sb_publishable_1ipdE1TbfNSTGCmz91vqDg_SFREVaF5',
   },
 
   // Sync configuration
