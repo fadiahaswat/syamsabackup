@@ -520,7 +520,11 @@ class HybridStorageManager {
     for (const [studentId, studentData] of Object.entries(data)) {
       if (studentId.startsWith('_')) continue; // Skip metadata keys
 
+      // Generate unique ID for each record
+      const recordId = `${this.kelasId}_${studentId}_${dateKey}_${slotId}`.replace(/\s+/g, '_');
+
       records.push({
+        id: recordId,
         kelas_id: this.kelasId,
         student_id: studentId,
         date_key: dateKey,
@@ -548,11 +552,14 @@ class HybridStorageManager {
       return this.remote.deletePermit(change.entityId);
     }
 
+    // Generate ID if missing
+    const permitId = permit.id || `permit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     // Transform to remote format
     const remotePermit = {
-      id: permit.id,
+      id: permitId,
       kelas_id: this.kelasId,
-      student_id: permit.studentId || null,
+      student_id: permit.studentId || permit.nis,
       nis: permit.nis,
       category: permit.category,
       reason: permit.reason,
@@ -565,10 +572,10 @@ class HybridStorageManager {
       location: permit.location,
       pickup: permit.pickup,
       vehicle: permit.vehicle,
-      status: permit.status,
+      status: permit.status || 'approved',
       status_label: permit.status_label,
-      is_active: permit.is_active,
-      requires_surat_dokter: permit.requires_surat_dokter,
+      is_active: permit.is_active !== false,
+      requires_surat_dokter: permit.requires_surat_dokter || false,
       document_url: permit.surat_dokter || permit.document,
       audit_trail: permit.audit_trail || [],
     };
