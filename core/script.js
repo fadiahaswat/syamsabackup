@@ -1897,14 +1897,16 @@ window.updateDashboard = function () {
     let displayName = "Ustadz";
     if (window.isWaliMode()) {
       const rawName = window.getWaliDisplayName();
-      const words = (rawName || "").trim().split(/\s+/).filter(w => w.length > 0);
-      if (words.length > 2) {
-        const firstTwo = words.slice(0, 2).join(" ");
-        const rest = words.slice(2).map(w => w.charAt(0).toUpperCase() + ".").join(" ");
-        displayName = `${firstTwo} ${rest}`;
-      } else {
-        displayName = rawName;
+      let words = (rawName || "").trim().split(/\s+/).filter(w => w.length > 0);
+      if (words.length > 1) {
+        const first = words[0].toLowerCase().replace(/\.$/, "");
+        if (["muhammad", "mohammad", "muh", "mohd"].includes(first)) {
+          words[0] = "M.";
+        } else if (first === "ahmad") {
+          words[0] = "A.";
+        }
       }
+      displayName = words.slice(0, 2).join(" ");
     }
     if (appState.selectedClass && typeof MASTER_KELAS !== "undefined" && MASTER_KELAS[appState.selectedClass]) {
       const musyrifName = MASTER_KELAS[appState.selectedClass].musyrif;
