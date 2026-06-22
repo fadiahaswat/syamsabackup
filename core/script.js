@@ -4606,7 +4606,6 @@ window.toggleNotifications = async function () {
       } catch (err) {
         window.showToast("Notifikasi tidak didukung", "error");
       }
-      }
     } else if (Notification.permission === "granted") {
       appState.settings.notifications = true;
       localStorage.setItem(APP_CONFIG.settingsKey, JSON.stringify(appState.settings));
