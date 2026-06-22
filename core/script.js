@@ -6128,6 +6128,15 @@ window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) 
   const startOrder = SESSION_ORDER[permit.start_session] ?? 0;
   const endOrder = SESSION_ORDER[permit.end_session] ?? 999;
 
+  // Sesi Absensi dengan Jam Mulai dan Jam Selesai
+  const SLOT_HOURS = {
+    shubuh: { start: 4, end: 6 },
+    sekolah: { start: 6, end: 15 },
+    ashar: { start: 15, end: 17 },
+    maghrib: { start: 18, end: 19 },
+    isya: { start: 19, end: 21 }
+  };
+
   // --- LOGIKA SAKIT ---
   if (permit.category === "sakit") {
     // Validasi Awal Tanggal
@@ -6145,10 +6154,6 @@ window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) 
 
       // Jika hari ini tanggal sembuh, cek sesinya
       if (currentDateStr === permit.end_date && permit.end_session) {
-        // Logic: Jika sesi sekarang SUDAH MELEWATI atau SAMA DENGAN sesi sembuh -> Sehat
-        // Contoh: End Session = Shubuh. Buka Ashar (2) > Shubuh (1) -> Sehat.
-        // Tapi tunggu, "End Session" biasanya menandakan sesi TERAKHIR dia sakit.
-        // Jadi: Jika Sesi Sekarang > Sesi Terakhir Sakit, maka Null.
         if (currentOrder > endOrder) {
           return null;
         }
@@ -6164,16 +6169,29 @@ window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) 
 
   // --- LOGIKA IZIN & PULANG ---
   else {
-    if (!permit.end_date) return null;
     if (currentDateStr < permit.start_date) return null;
+
+    // Cek Waktu Mulai Izin (jika hari ini mulai izin dan ada jam mulai spesifik)
+    if (currentDateStr === permit.start_date && permit.start_time_limit) {
+      const startTime = permit.start_time_limit;
+      const startHour = parseInt(startTime.split(":")[0]);
+      const slotConfig = SLOT_HOURS[currentSlotId];
+      if (slotConfig && slotConfig.end <= startHour) {
+        return null; // Sesi absensi berakhir sebelum izin dimulai
+      }
+    }
+
+    // Cek jika start_session ada (metode izin presensi manual musyrif)
     if (
       currentDateStr === permit.start_date &&
+      permit.start_session &&
       currentOrder < startOrder
-    )
+    ) {
       return null;
+    }
 
     // Cek Deadline Kembali
-    if (currentDateStr > permit.end_date) {
+    if (permit.end_date && currentDateStr > permit.end_date) {
       return {
         type: "Alpa",
         label: "A",
@@ -6182,13 +6200,13 @@ window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) 
       };
     }
 
-    if (currentDateStr === permit.end_date) {
+    if (permit.end_date && currentDateStr === permit.end_date) {
       const deadlineTime = permit.end_time_limit || "17:00";
       const deadlineHour = parseInt(deadlineTime.split(":")[0]);
-      const slotStartHour = SLOT_WAKTU[currentSlotId].startHour;
+      const slotConfig = SLOT_HOURS[currentSlotId];
 
-      // Jika waktu presensi sudah melewati jam deadline -> Alpa
-      if (slotStartHour >= deadlineHour) {
+      // Jika sesi absensi dimulai pada atau setelah jam deadline kembali -> Alpa
+      if (slotConfig && slotConfig.start >= deadlineHour) {
         return {
           type: "Alpa",
           label: "A",

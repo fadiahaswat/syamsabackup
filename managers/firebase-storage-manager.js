@@ -291,6 +291,16 @@ class FirebaseStorageManager {
       }
     });
 
+    // Listen to permits changes
+    this.listenTo(`permits`, (data) => {
+      if (typeof appState !== 'undefined') {
+        const permitsArray = data ? Object.values(data).filter(p => p) : [];
+        appState.permits = permitsArray;
+        this.setLocalStorageData(APP_CONFIG.permitKey, permitsArray);
+        if (window.refreshPermitSurfaces) window.refreshPermitSurfaces();
+      }
+    });
+
     // Listen to settings changes
     this.listenTo(`settings${basePath}`, (data) => {
       if (data && typeof appState !== 'undefined') {
@@ -309,9 +319,7 @@ class FirebaseStorageManager {
 
     const dbRef = this.ref( path);
     const listener = (snapshot) => {
-      if (snapshot.exists()) {
-        callback(snapshot.val());
-      }
+      callback(snapshot.exists() ? snapshot.val() : null);
     };
 
     this.onValue(dbRef, listener);
