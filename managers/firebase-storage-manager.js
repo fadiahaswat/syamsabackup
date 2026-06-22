@@ -201,6 +201,7 @@ class FirebaseStorageManager {
     }
 
     console.log('[FirebaseStorageManager] Loading from Firebase...');
+    console.log('[FirebaseStorageManager] musyrifId:', this.musyrifId);
 
     const basePath = `/${this.musyrifId}`;
     console.log('[FirebaseStorageManager] Base path:', basePath);
@@ -215,6 +216,10 @@ class FirebaseStorageManager {
     if (attendanceSnapshot.exists()) {
       const remoteData = attendanceSnapshot.val();
 
+      // DEBUG: Log data dates received
+      const dates = remoteData ? Object.keys(remoteData) : [];
+      console.log('[FirebaseStorageManager] Remote dates:', dates);
+
       // Merge data: prefer remote (Firebase) as source of truth
       if (localData && typeof localData === 'object') {
         // Merge with conflict resolution (last-write-wins based on timestamp)
@@ -223,15 +228,18 @@ class FirebaseStorageManager {
         if (typeof appState !== 'undefined') {
           appState.attendanceData = mergedData;
         }
+        console.log('[FirebaseStorageManager] Attendance data MERGED from Firebase');
+        console.log('[FirebaseStorageManager] Merged dates:', Object.keys(mergedData || {}));
       } else {
         if (typeof appState !== 'undefined') {
           appState.attendanceData = remoteData;
         }
         this.setLocalStorageData(APP_CONFIG.storageKey, remoteData);
+        console.log('[FirebaseStorageManager] Attendance data LOADED from Firebase (no local)');
       }
-      console.log('[FirebaseStorageManager] Attendance data loaded from Firebase');
     } else {
       // Firebase has no data yet, load local data if it exists
+      console.log('[FirebaseStorageManager] No remote data in Firebase, using local cache');
       if (localData && typeof appState !== 'undefined') {
         appState.attendanceData = localData;
       }
@@ -316,32 +324,52 @@ class FirebaseStorageManager {
   _lastKnownDataHash = null;
 
   /**
-   * Setup real-time listeners - DISABLED
+   * Setup real-time listeners for attendance data
    *
-   * REALTIME SYNC DISABLED untuk menghindari infinite loop dan behavior yang tidak predictable.
-   *
-   * Alur sync yang diinginkan:
-   * 1. Buka app → Ambil data dari Firebase (sekali)
-   * 2. Ubah data → Simpan ke Firebase saja, UI tetap
-   * 3. Mau lihat perubahan dari device lain → Reload / Pull-to-refresh manual
-   *
-   * Untuk enable realtime sync lagi, aktifkan kode di dalam fungsi ini.
+   * MODEL: Mirip permit-request-manager.js
+   * - Listener HANYA update data lokal (appState.attendanceData)
+   * - Listener TIDAK trigger save (avoid infinite loop)
+   * - Cross-device sync realtime
    */
   setupRealtimeListeners() {
-    console.log('[FirebaseStorageManager] Realtime listeners DISABLED - using manual sync only');
+    if (!this.db || !this.musyrifId) {
+      console.log('[FirebaseStorageManager] Skipping realtime listeners - no db or musyrifId');
+      return;
+    }
 
-    // REALTIME LISTENER UNTUK ATTENDANCE DIHAPUS KARENA MENYEBABKAN INFINITE LOOP
-    // Jika ingin enable lagi, uncomment kode di bawah:
-    //
-    // if (this.db && this.musyrifId) {
-    //   const basePath = `/${this.musyrifId}`;
-    //   this.listenTo(`attendance${basePath}`, (data) => {
-    //     if (typeof appState !== 'undefined' && data) {
-    //       appState.attendanceData = data;
-    //       this.setLocalStorageData(APP_CONFIG.storageKey, data);
-    //     }
-    //   });
-    // }
+    const basePath = `/${this.musyrifId}`;
+
+    // Listen to attendance changes from OTHER devices
+    // CRITICAL: Ini hanya update appState, TIDAK trigger save
+    this.listenTo(`attendance${basePath}`, (data) => {
+      if (typeof appState === 'undefined') return;
+      if (!data) return;
+
+      const newData = data;
+
+      // Skip jika data sama (prevent unnecessary re-render)
+      const newJson = JSON.stringify(newData);
+      if (this._lastListenerData === newJson) {
+        return;
+      }
+      this._lastListenerData = newJson;
+
+      console.log('[FirebaseStorageManager] 🔄 Realtime update received - syncing attendance data');
+
+      // Update local state
+      appState.attendanceData = newData;
+      this.setLocalStorageData(APP_CONFIG.storageKey, newData);
+
+      // Update UI (mirip permit listener)
+      if (typeof window.updateDashboard === 'function') {
+        window.updateDashboard();
+      }
+      if (typeof window.renderAttendanceList === 'function') {
+        window.renderAttendanceList();
+      }
+    });
+
+    console.log('[FirebaseStorageManager] Realtime listeners ACTIVE for attendance');
   }
 
   /**
