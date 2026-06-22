@@ -133,6 +133,16 @@ window.initApp = async function () {
               const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
               window.initStorage?.(musyrifId);
 
+              // Initialize Hybrid Storage (cloud sync)
+              if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
+                const kelasId = MASTER_KELAS?.[authData.kelas]?.supabaseId || authData.kelas;
+                window.hybridStorageManager.init(kelasId).then(() => {
+                  console.log('[Auth] Hybrid storage initialized for:', authData.kelas);
+                }).catch(err => {
+                  console.warn('[Auth] Hybrid storage init failed:', err);
+                });
+              }
+
               // Request GPS Permission SEKALI saat login berhasil
               // Ini akan meminta izin GPS di awal, bukan saat buka presensi
               if (GEO_CONFIG.useGeofencing) {
