@@ -353,7 +353,7 @@ class FirebaseStorageManager {
   listenTo(path, callback) {
     if (!this.db || !this.ref || !this.onValue) return;
 
-    const dbRef = this.ref( path);
+    const dbRef = this.ref(path);
     const listener = (snapshot) => {
       callback(snapshot.exists() ? snapshot.val() : null);
     };
@@ -457,7 +457,7 @@ class FirebaseStorageManager {
     if (this.isOnline && this.db) {
       try {
         const dbPath = path.replace(/\//g, '_').replace(/^_/, '');
-        const dbRef = this.ref( path);
+        const dbRef = this.ref(path);
 
         await this.set(dbRef, {
           ...data,
@@ -490,7 +490,7 @@ class FirebaseStorageManager {
 
     if (this.isOnline && this.db) {
       try {
-        const dbRef = this.ref( path);
+        const dbRef = this.ref(path);
         await this.remove(dbRef);
         console.log(`[FirebaseStorageManager] Deleted from Firebase: ${path}`);
         return { success: true, source: 'firebase' };
@@ -685,7 +685,7 @@ class FirebaseStorageManager {
   async executeOperation(operation) {
     const { type, operation: op, path, data } = operation;
 
-    const dbRef = this.ref( path);
+    const dbRef = this.ref(path);
 
     if (op === 'set' || op === 'update') {
       await this.set(dbRef, {

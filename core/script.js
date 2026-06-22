@@ -5307,7 +5307,7 @@ window.updateReportTab = function () {
     }
     datesList.reverse(); // Urutkan tanggal terbaru di atas
 
-    // Akumulasi statistik kehadiran anak
+    // Akumulasi statistik kehadiran anak (untuk header)
     let statsCounts = { Hadir: 0, Telat: 0, Sakit: 0, Izin: 0, Pulang: 0, Alpa: 0, total: 0 };
     datesList.forEach(dateKey => {
       Object.values(SLOT_WAKTU).forEach(slot => {
@@ -5326,36 +5326,501 @@ window.updateReportTab = function () {
     const totalSessions = statsCounts.total || 1;
     const presenceRate = Math.round(((statsCounts.Hadir + statsCounts.Telat) / totalSessions) * 100);
 
-    // 5. Render kartu statistik ringkasan kehadiran anak
-    let statsCardHTML = `
-      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-5 border border-white/10 shadow-lg relative overflow-hidden group">
-        <div class="absolute -right-10 -top-10 w-36 h-36 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <span class="text-[9px] font-black uppercase tracking-wider text-slate-400 block mb-1">Persentase Kehadiran</span>
-            <h3 class="text-3xl font-black text-white">${presenceRate}% <span class="text-xs font-bold text-slate-400">Hadir</span></h3>
-            <p class="text-[10px] text-slate-400 mt-1">Total sesi terdata: ${statsCounts.total} kegiatan</p>
-          </div>
-          <div class="grid grid-cols-3 gap-2 w-full md:w-auto text-center shrink-0">
-            <div class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10">
-              <span class="block text-emerald-400 font-extrabold text-sm">${statsCounts.Hadir}</span>
-              <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Tepat Waktu</span>
+    // --- KALKULASI DETAIL NILAI DAN KATEGORI (Sama seperti Musyrif) ---
+    const STATUS_WEIGHT = {
+      Hadir: 100,
+      Telat: 90,
+      Izin: 75,
+      Sakit: 75,
+      Pulang: 0,
+      Alpa: -50,
+      Ya: 100,
+      Tidak: 0,
+    };
+    const getPoint = (status) => window.getStatusScore?.(status) ?? STATUS_WEIGHT[status] ?? 0;
+
+    const stats = {
+      shalat: { score: 0, total: 0, h: 0 },
+      sunnah: { score: 0, total: 0, y: 0 },
+      sekolah: { score: 0, total: 0, h: 0 },
+      mahad: { score: 0, total: 0, h: 0 },
+    };
+
+    const startTime = range.start.getTime();
+    const endTime = range.end.getTime();
+    const dayInMs = 24 * 60 * 60 * 1000;
+    const totalDays = Math.min(
+      Math.ceil((endTime - startTime) / dayInMs) + 1,
+      370,
+    );
+    const trendPrevRange = (() => {
+      if (appState.reportMode === "weekly") {
+        const prevBase = new Date(range.start);
+        prevBase.setDate(prevBase.getDate() - 7);
+        return window.getDateRange("weekly", window.getLocalDateStr(prevBase));
+      }
+      if (appState.reportMode === "monthly") {
+        const prevBase = new Date(range.start.getFullYear(), range.start.getMonth() - 1, 1);
+        return window.getDateRange("monthly", window.getLocalDateStr(prevBase));
+      }
+      if (appState.reportMode === "semester") {
+        const prevBase = new Date(range.start.getFullYear(), range.start.getMonth() - 6, 1);
+        return window.getDateRange("semester", window.getLocalDateStr(prevBase));
+      }
+      return null;
+    })();
+
+    // Loop data kehadiran persis Musyrif
+    for (let i = 0; i < totalDays; i++) {
+      const currentDate = new Date(startTime + i * dayInMs);
+      const dateKey = window.getLocalDateStr(currentDate);
+      const dayNum = currentDate.getDay();
+      const dayData = appState.attendanceData[dateKey];
+
+      if (!dayData) continue;
+
+      Object.values(SLOT_WAKTU).forEach((slot) => {
+        if (window.isSlotHoliday(slot.id, dateKey)) return;
+        const slotData = dayData[slot.id];
+        if (!window.isAttendanceSlotFinalForReport(slotData)) return;
+
+        const sData = slotData?.[studentId];
+        if (!sData) return;
+
+        slot.activities.forEach((act) => {
+          if (act.showOnDays && !act.showOnDays.includes(dayNum)) return;
+          if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return;
+          if (window.isActivityHoliday(dateKey, slot.id, act.id)) return;
+          if (window.isCategoryHoliday(dateKey, act.category)) return;
+
+          const st = sData.status[act.id];
+          const point = getPoint(st) ?? 0;
+
+          if (act.category === "fardu") {
+            stats.shalat.score += point;
+            stats.shalat.total++;
+            if (st === "Hadir" || st === "Telat") {
+              stats.shalat.h++;
+            }
+          } else if (act.category === "sunnah") {
+            stats.sunnah.score += point;
+            stats.sunnah.total++;
+            if (st === "Ya" || st === "Hadir") {
+              stats.sunnah.y++;
+            }
+          } else if (act.category === "school") {
+            stats.sekolah.score += point;
+            stats.sekolah.total++;
+            if (st === "Hadir" || st === "Telat") {
+              stats.sekolah.h++;
+            }
+          } else if (act.category === "kbm") {
+            stats.mahad.score += point;
+            stats.mahad.total++;
+            if (st === "Hadir" || st === "Telat") {
+              stats.mahad.h++;
+            }
+          }
+        });
+      });
+    }
+
+    const shalatPct = stats.shalat.total ? Math.round(stats.shalat.score / stats.shalat.total) : null;
+    const sunnahPct = stats.sunnah.total ? Math.round(stats.sunnah.score / stats.sunnah.total) : null;
+    const sekolahPct = stats.sekolah.total ? Math.round(stats.sekolah.score / stats.sekolah.total) : null;
+    const mahadPct = stats.mahad.total ? Math.round(stats.mahad.score / stats.mahad.total) : null;
+
+    const scoreList = [];
+    if (stats.shalat.total > 0) scoreList.push(shalatPct);
+    if (stats.sekolah.total > 0) scoreList.push(sekolahPct);
+    if (stats.mahad.total > 0) scoreList.push(mahadPct);
+    if (stats.sunnah.total > 0) scoreList.push(sunnahPct);
+
+    const hasReportScore = scoreList.length > 0;
+    const finalScore = hasReportScore
+      ? Math.round(scoreList.reduce((a, b) => a + b, 0) / scoreList.length)
+      : null;
+
+    const shalatGrade = stats.shalat.total ? window.getGrade(Math.round(shalatPct)) : "-";
+    const sunnahGrade = stats.sunnah.total ? window.getGrade(Math.round(sunnahPct)) : "-";
+    const sekolahGrade = stats.sekolah.total ? window.getGrade(Math.round(sekolahPct)) : "-";
+    const mahadGrade = stats.mahad.total ? window.getGrade(Math.round(mahadPct)) : "-";
+    const grade = hasReportScore ? window.getGrade(finalScore) : "-";
+
+    const shalatPredikat = stats.shalat.total ? window.getPredikat(shalatGrade) : "Tidak dinilai";
+    const sunnahPredikat = stats.sunnah.total ? window.getPredikat(sunnahGrade) : "Tidak dinilai";
+    const sekolahPredikat = stats.sekolah.total ? window.getPredikat(sekolahGrade) : "Tidak dinilai";
+    const mahadPredikat = stats.mahad.total ? window.getPredikat(mahadGrade) : "Tidak dinilai";
+    const predikat = hasReportScore ? window.getPredikat(grade) : "Tidak dinilai";
+
+    // Hitung trend jika berkala
+    let trendHTML = "";
+    if (trendPrevRange && hasReportScore) {
+      const previous = window.calculateReportScoreForStudentRange(studentId, trendPrevRange);
+      const renderTrend = (currentScore, previousScore) => {
+        if (currentScore === null) {
+          return `<span class="inline-flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 px-2.5 py-1 text-[10px] font-black">Belum</span>`;
+        }
+        if (previousScore === null) {
+          return `<span class="inline-flex items-center gap-1 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 px-2.5 py-1 text-[10px] font-black"><i data-lucide="sparkles" class="w-3 h-3"></i> Baru</span>`;
+        }
+        const diff = currentScore - previousScore;
+        if (diff >= 5) {
+          return `<span class="inline-flex items-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 px-2.5 py-1 text-[10px] font-black"><i data-lucide="trending-up" class="w-3 h-3"></i> Naik ${diff}</span>`;
+        }
+        if (diff <= -5) {
+          return `<span class="inline-flex items-center gap-1 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 px-2.5 py-1 text-[10px] font-black"><i data-lucide="trending-down" class="w-3 h-3"></i> Turun ${Math.abs(diff)}</span>`;
+        }
+        return `<span class="inline-flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-1 text-[10px] font-black"><i data-lucide="minus" class="w-3 h-3"></i> Stabil</span>`;
+      };
+      trendHTML = renderTrend(finalScore, previous.score);
+    }
+
+    // --- 5. RENDER UTAMA ---
+    // A. Main Summary Card (Glassmorphism / Gradient)
+    let summaryHTML = "";
+    if (appState.reportMode === "daily") {
+      const dateKey = appState.reportDate || appState.date;
+      const formattedDate = window.formatDate(dateKey);
+      summaryHTML = `
+        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-5 border border-white/10 shadow-lg relative overflow-hidden group">
+          <div class="absolute -right-10 -top-10 w-36 h-36 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+          <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <span class="text-[9px] font-black uppercase tracking-wider text-slate-400 block mb-1">Evaluasi Kehadiran Harian</span>
+              <h3 class="text-2xl font-black text-white">${formattedDate}</h3>
+              <p class="text-[10px] text-slate-400 mt-1">Status kehadiran kumulatif hari ini: <span class="text-white font-extrabold">${presenceRate}%</span></p>
             </div>
-            <div class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10">
-              <span class="block text-amber-400 font-extrabold text-sm">${statsCounts.Telat}</span>
-              <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Telat</span>
-            </div>
-            <div class="px-3 py-2 rounded-2xl bg-white/5 border border-white/10">
-              <span class="block text-blue-400 font-extrabold text-sm">${statsCounts.Sakit + statsCounts.Izin}</span>
-              <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Sakit/Izin</span>
+            <div class="grid grid-cols-4 gap-2 w-full md:w-auto text-center shrink-0">
+              <div class="px-2.5 py-2 rounded-2xl bg-white/5 border border-white/10">
+                <span class="block text-emerald-400 font-extrabold text-sm">${statsCounts.Hadir}</span>
+                <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Hadir</span>
+              </div>
+              <div class="px-2.5 py-2 rounded-2xl bg-white/5 border border-white/10">
+                <span class="block text-amber-400 font-extrabold text-sm">${statsCounts.Telat}</span>
+                <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Telat</span>
+              </div>
+              <div class="px-2.5 py-2 rounded-2xl bg-white/5 border border-white/10">
+                <span class="block text-blue-400 font-extrabold text-sm">${statsCounts.Sakit + statsCounts.Izin}</span>
+                <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Sakit/Izin</span>
+              </div>
+              <div class="px-2.5 py-2 rounded-2xl bg-white/5 border border-white/10">
+                <span class="block text-rose-400 font-extrabold text-sm">${statsCounts.Alpa}</span>
+                <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">Alpa</span>
+              </div>
             </div>
           </div>
         </div>
+      `;
+    } else {
+      let scoreColor = "text-slate-400";
+      let gradeBg = "bg-slate-100 dark:bg-slate-800 text-slate-400";
+      if (hasReportScore && finalScore >= 85) {
+        scoreColor = "text-emerald-500";
+        gradeBg = "bg-emerald-500 text-white";
+      } else if (hasReportScore && finalScore >= 70) {
+        scoreColor = "text-blue-500";
+        gradeBg = "bg-blue-500 text-white";
+      } else if (hasReportScore && finalScore >= 50) {
+        scoreColor = "text-amber-500";
+        gradeBg = "bg-amber-500 text-white";
+      } else if (hasReportScore) {
+        scoreColor = "text-red-500";
+        gradeBg = "bg-red-500 text-white";
+      }
+
+      summaryHTML = `
+        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-5 border border-white/10 shadow-lg relative overflow-hidden group">
+          <div class="absolute -right-10 -top-10 w-36 h-36 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+          <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
+            <!-- Nilai Akhir -->
+            <div class="flex items-center gap-4">
+              <div class="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center justify-center shrink-0">
+                <span class="text-[9px] font-black text-slate-400 uppercase">Nilai</span>
+                <span class="text-2xl font-black text-white">${finalScore !== null ? finalScore : "-"}</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-lg font-black text-white">Rangkuman Rapor</h3>
+                  ${grade !== "-" ? `<span class="px-2 py-0.5 text-[9px] font-black rounded ${gradeBg}">${grade}</span>` : ""}
+                </div>
+                <p class="text-xs font-bold text-slate-300 mt-0.5">${predikat}</p>
+                <div class="flex items-center gap-2 mt-1.5">
+                  ${trendHTML}
+                  <span class="text-[9px] text-slate-400">Tren dibanding periode sebelumnya</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Rasio Kehadiran -->
+            <div class="border-t border-white/5 md:border-t-0 md:border-l md:border-white/10 pt-4 md:pt-0 md:pl-5 flex flex-col justify-center">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[9px] font-black uppercase text-slate-400">Kehadiran Kumulatif</span>
+                <span class="text-xs font-black text-emerald-400">${presenceRate}% <span class="text-[9px] text-slate-400 font-bold">Hadir</span></span>
+              </div>
+              <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-3">
+                <div class="h-full bg-emerald-500 rounded-full" style="width: ${presenceRate}%"></div>
+              </div>
+              <div class="grid grid-cols-3 gap-2 text-center text-white">
+                <div class="px-2 py-1 rounded-xl bg-white/5 border border-white/5">
+                  <span class="block text-emerald-400 font-black text-xs">${statsCounts.Hadir}</span>
+                  <span class="block text-[7px] font-bold text-slate-400 uppercase tracking-tight">Tepat Waktu</span>
+                </div>
+                <div class="px-2 py-1 rounded-xl bg-white/5 border border-white/5">
+                  <span class="block text-amber-400 font-black text-xs">${statsCounts.Telat}</span>
+                  <span class="block text-[7px] font-bold text-slate-400 uppercase tracking-tight">Terlambat</span>
+                </div>
+                <div class="px-2 py-1 rounded-xl bg-white/5 border border-white/5">
+                  <span class="block text-blue-400 font-black text-xs">${statsCounts.Sakit + statsCounts.Izin}</span>
+                  <span class="block text-[7px] font-bold text-slate-400 uppercase tracking-tight">Sakit/Izin</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    if (waliContainer) waliContainer.innerHTML += summaryHTML;
+
+    // B. Category Breakdown Dashboard (4 Cards)
+    let categoryGridHTML = `
+      <div class="space-y-3">
+        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider pl-1">Analisis Berdasarkan Kategori</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    `;
+
+    // Helpers to build category cards dynamically
+    const buildCategoryContent = (categoryKey) => {
+      const dateKey = appState.reportDate || appState.date;
+      if (appState.reportMode === "daily") {
+        if (categoryKey === "shalat") {
+          let shalatDailyHTML = `<div class="flex items-center justify-between w-full gap-2">`;
+          ["shubuh", "ashar", "maghrib", "isya"].forEach((sid) => {
+            const meta = window.getDailyReportStatusMeta(dateKey, sid, studentId, "shalat");
+            const labelMap = { shubuh: "Subuh", ashar: "Ashar", maghrib: "Maghrib", isya: "Isya" };
+            const label = labelMap[sid];
+            
+            let pillClass = "";
+            let statusText = meta.label;
+            if (meta.status === "Hadir") {
+              pillClass = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/20";
+            } else if (meta.status === "Telat") {
+              pillClass = "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/20";
+            } else if (meta.status === "Sakit") {
+              pillClass = "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 border-blue-100 dark:border-blue-900/20";
+            } else if (meta.status === "Izin" || meta.status === "Pulang") {
+              pillClass = "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/20";
+              statusText = meta.status === "Pulang" ? "Pulang" : "Izin";
+            } else if (meta.status === "Alpa") {
+              pillClass = "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 border-rose-100 dark:border-rose-900/20";
+            } else if (meta.status === "Libur") {
+              pillClass = "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border-slate-200/50 dark:border-slate-700/50";
+              statusText = "Libur";
+            } else {
+              pillClass = "bg-slate-50 text-slate-400 dark:bg-slate-900/30 dark:text-slate-600 border-slate-100 dark:border-slate-800/80 text-center";
+              statusText = "-";
+            }
+            
+            shalatDailyHTML += `
+              <div class="flex flex-col items-center gap-1 flex-1 min-w-0">
+                <span class="text-[8px] font-black text-slate-400 uppercase tracking-tight">${label}</span>
+                <span class="flex items-center justify-center w-full py-1.5 rounded-xl text-[9px] font-black tracking-tight ${pillClass} truncate" title="${meta.aria}">
+                  ${statusText}
+                </span>
+              </div>
+            `;
+          });
+          shalatDailyHTML += `</div>`;
+          return makeDailyCategoryCard("Shalat Fardhu", "moon", shalatDailyHTML, "Ketepatan waktu shalat hari ini", "bg-emerald-500");
+        } else if (categoryKey === "sekolah") {
+          const schoolMeta = window.getDailyReportStatusMeta(dateKey, "sekolah", studentId, "kbm_sekolah");
+          let schoolPillClass = "";
+          let schoolStatusText = schoolMeta.status || "-";
+          if (schoolMeta.status === "Hadir") {
+            schoolPillClass = "bg-cyan-50 text-cyan-600 dark:bg-cyan-950/20 dark:text-cyan-400 border border-cyan-100 dark:border-cyan-900/20";
+          } else if (schoolMeta.status === "Telat") {
+            schoolPillClass = "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-100 dark:border-amber-900/20";
+          } else if (schoolMeta.status === "Sakit") {
+            schoolPillClass = "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-100 dark:border-blue-900/20";
+          } else if (schoolMeta.status === "Izin" || schoolMeta.status === "Pulang") {
+            schoolPillClass = "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/20";
+            schoolStatusText = schoolMeta.status === "Pulang" ? "Pulang" : "Izin";
+          } else if (schoolMeta.status === "Alpa") {
+            schoolPillClass = "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-100 dark:border-rose-900/20";
+          } else if (schoolMeta.status === "Libur") {
+            schoolPillClass = "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-slate-200/50 dark:border-slate-700/50";
+            schoolStatusText = "Libur";
+          } else {
+            schoolPillClass = "bg-slate-50 text-slate-400 dark:bg-slate-900/30 dark:text-slate-600 border border-slate-100 dark:border-slate-800/80";
+            schoolStatusText = "Nihil";
+          }
+          const schoolDailyHTML = `
+            <div class="flex items-center justify-between w-full">
+              <span class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight">Status Kehadiran</span>
+              <span class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black border ${schoolPillClass}">
+                <i data-lucide="graduation-cap" class="w-3.5 h-3.5"></i>
+                ${schoolStatusText}
+              </span>
+            </div>
+          `;
+          return makeDailyCategoryCard("KBM Sekolah", "graduation-cap", schoolDailyHTML, "Kehadiran KBM sekolah formal", "bg-cyan-500");
+        } else if (categoryKey === "mahad") {
+          const isKbmActiveToday = window.isReportCategoryActiveOnDate(dateKey, "kbm");
+          const mahadTotal = stats.mahad.total || 0;
+          const mahadHadir = stats.mahad.h || 0;
+          let mahadDailyHTML = "";
+          if (!isKbmActiveToday) {
+            mahadDailyHTML = `
+              <div class="flex items-center justify-between w-full">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-tight">Jadwal Asrama</span>
+                <span class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-slate-200/50 dark:border-slate-700/50">
+                  <i data-lucide="calendar-x" class="w-3.5 h-3.5"></i> Libur
+                </span>
+              </div>
+            `;
+          } else {
+            const pct = mahadTotal ? Math.round((mahadHadir / mahadTotal) * 100) : 0;
+            mahadDailyHTML = `
+              <div class="flex items-center justify-between w-full">
+                <span class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight">Aktivitas Asrama</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-black text-blue-600 dark:text-blue-400">${mahadHadir} <span class="text-[9px] font-bold text-slate-400">/ ${mahadTotal}</span></span>
+                  <span class="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] font-black border border-blue-100 dark:border-blue-900/20">${pct}%</span>
+                </div>
+              </div>
+            `;
+          }
+          return makeDailyCategoryCard("Ma'had Asrama", "book-open", mahadDailyHTML, "Pembinaan asrama & kajian", "bg-blue-500");
+        } else if (categoryKey === "sunnah") {
+          const isSunnahActiveToday = window.isReportCategoryActiveOnDate(dateKey, "sunnah");
+          const sunnahTotal = stats.sunnah.total || 0;
+          const sunnahY = stats.sunnah.y || 0;
+          let sunnahDailyHTML = "";
+          if (!isSunnahActiveToday) {
+            sunnahDailyHTML = `
+              <div class="flex items-center justify-between w-full">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-tight">Amalan Sunnah</span>
+                <span class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] font-black bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-slate-200/50 dark:border-slate-700/50">
+                  <i data-lucide="calendar-x" class="w-3.5 h-3.5"></i> Libur
+                </span>
+              </div>
+            `;
+          } else {
+            const pct = sunnahTotal ? Math.round((sunnahY / sunnahTotal) * 100) : 0;
+            sunnahDailyHTML = `
+              <div class="flex items-center justify-between w-full">
+                <span class="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight">Amalan Sunnah</span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-black text-amber-600 dark:text-amber-400">${sunnahY} <span class="text-[9px] font-bold text-slate-400">/ ${sunnahTotal}</span></span>
+                  <span class="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-black border border-amber-100 dark:border-amber-900/20">${pct}%</span>
+                </div>
+              </div>
+            `;
+          }
+          return makeDailyCategoryCard("Kegiatan Sunnah", "sparkles", sunnahDailyHTML, "Amalan sunnah mandiri & ekstra", "bg-amber-500");
+        }
+      } else {
+        // Periodic view cards (Weekly, Monthly, Semester)
+        if (categoryKey === "shalat") {
+          const detail = `${stats.shalat.h} / ${stats.shalat.total} waktu shalat tepat waktu`;
+          let color = "text-emerald-500";
+          if (shalatPct !== null && shalatPct < 60) color = "text-red-500";
+          else if (shalatPct !== null && shalatPct < 75) color = "text-amber-500";
+          return makeCategoryCard("Shalat Fardhu", "moon", shalatPct, shalatGrade, shalatPredikat, detail, color, "bg-emerald-500", "bg-emerald-500");
+        } else if (categoryKey === "sekolah") {
+          const detail = `${stats.sekolah.h} / ${stats.sekolah.total} sesi KBM sekolah tepat waktu`;
+          let color = "text-cyan-500";
+          if (sekolahPct !== null && sekolahPct < 60) color = "text-red-500";
+          else if (sekolahPct !== null && sekolahPct < 75) color = "text-amber-500";
+          return makeCategoryCard("KBM Sekolah", "graduation-cap", sekolahPct, sekolahGrade, sekolahPredikat, detail, color, "bg-cyan-500", "bg-cyan-500");
+        } else if (categoryKey === "mahad") {
+          const detail = `${stats.mahad.h} / ${stats.mahad.total} kegiatan asrama diikuti`;
+          let color = "text-blue-500";
+          if (mahadPct !== null && mahadPct < 60) color = "text-red-500";
+          else if (mahadPct !== null && mahadPct < 75) color = "text-amber-500";
+          return makeCategoryCard("Ma'had Asrama", "book-open", mahadPct, mahadGrade, mahadPredikat, detail, color, "bg-blue-500", "bg-blue-500");
+        } else if (categoryKey === "sunnah") {
+          const detail = `${stats.sunnah.y} / ${stats.sunnah.total} amalan sunnah terlaksana`;
+          let color = "text-amber-500";
+          if (sunnahPct !== null && sunnahPct < 60) color = "text-red-500";
+          else if (sunnahPct !== null && sunnahPct < 75) color = "text-amber-500";
+          return makeCategoryCard("Kegiatan Sunnah", "sparkles", sunnahPct, sunnahGrade, sunnahPredikat, detail, color, "bg-amber-500", "bg-amber-500");
+        }
+      }
+    };
+
+    // Render helper functions
+    function makeCategoryCard(title, icon, pct, grade, predikat, detailsText, colorClass, barColorClass, iconBgClass) {
+      const hasValue = pct !== null && pct !== undefined;
+      const displayPct = hasValue ? `${pct}%` : "-";
+      const safePct = hasValue ? Math.max(0, Math.min(100, pct)) : 0;
+      
+      return `
+        <div class="bg-white/85 dark:bg-slate-900/85 rounded-2xl p-4 border border-slate-200/70 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 backdrop-blur-xl">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl ${iconBgClass} flex items-center justify-center text-white shadow-sm shrink-0">
+                <i data-lucide="${icon}" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h4 class="text-xs font-black text-slate-800 dark:text-white leading-tight">${title}</h4>
+                <p class="text-[10px] font-bold text-slate-400 mt-0.5">${detailsText}</p>
+              </div>
+            </div>
+            ${hasValue ? `
+              <div class="text-right shrink-0">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-xs font-black ${colorClass}">${grade}</span>
+                <span class="block text-[8px] font-bold text-slate-400 mt-0.5">${predikat}</span>
+              </div>
+            ` : `
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight shrink-0">Tidak Ada Data</span>
+            `}
+          </div>
+          
+          <div class="mt-4 space-y-1">
+            <div class="flex items-center justify-between text-[9px] font-black text-slate-600 dark:text-slate-300">
+              <span>Kehadiran</span>
+              <span class="${hasValue ? colorClass : "text-slate-400"}">${displayPct}</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full ${hasValue ? barColorClass : "bg-slate-200 dark:bg-slate-700"} rounded-full transition-all duration-500" style="width: ${safePct}%"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function makeDailyCategoryCard(title, icon, mainContentHTML, detailsText, iconBgClass) {
+      return `
+        <div class="bg-white/85 dark:bg-slate-900/85 rounded-2xl p-4 border border-slate-200/70 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-300 backdrop-blur-xl">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-10 h-10 rounded-xl ${iconBgClass} flex items-center justify-center text-white shadow-sm shrink-0">
+              <i data-lucide="${icon}" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-black text-slate-800 dark:text-white leading-tight">${title}</h4>
+              <p class="text-[10px] font-bold text-slate-400 mt-0.5">${detailsText}</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-center w-full min-h-[40px] py-1.5 bg-slate-50/50 dark:bg-slate-950/40 rounded-xl border border-slate-100 dark:border-slate-800/60 px-3">
+            ${mainContentHTML}
+          </div>
+        </div>
+      `;
+    }
+
+    categoryGridHTML += buildCategoryContent("shalat");
+    categoryGridHTML += buildCategoryContent("sekolah");
+    categoryGridHTML += buildCategoryContent("mahad");
+    categoryGridHTML += buildCategoryContent("sunnah");
+
+    categoryGridHTML += `
+        </div>
       </div>
     `;
-    if (waliContainer) waliContainer.innerHTML += statsCardHTML;
+    if (waliContainer) waliContainer.innerHTML += categoryGridHTML;
 
-    // 6. Render list harian (timeline)
+    // C. Riwayat Harian Kehadiran (Daily Timeline)
     let timelineHTML = `
       <div class="space-y-3">
         <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider pl-1">Riwayat Harian Kehadiran</h4>
@@ -5385,23 +5850,23 @@ window.updateReportTab = function () {
         } else if (status) {
           activeSlotsCount++;
           if (status === "Hadir") {
-            badgeColor = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/20";
+            badgeColor = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/20";
             statusLabel = "Hadir";
             iconName = "check-circle";
           } else if (status === "Telat") {
-            badgeColor = "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 border-amber-100 dark:border-amber-900/20";
+            badgeColor = "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400 border border-amber-100/50 dark:border-amber-900/20";
             statusLabel = "Telat";
             iconName = "clock";
           } else if (status === "Sakit") {
-            badgeColor = "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 border-blue-100 dark:border-blue-900/20";
+            badgeColor = "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/20";
             statusLabel = "Sakit";
             iconName = "heart-handshake";
           } else if (status === "Izin" || status === "Pulang") {
-            badgeColor = "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/20";
+            badgeColor = "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 border border-indigo-100/50 dark:border-indigo-900/20";
             statusLabel = status === "Pulang" ? "Pulang" : "Izin";
             iconName = "file-text";
           } else if (status === "Alpa") {
-            badgeColor = "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 border-rose-100 dark:border-rose-900/20";
+            badgeColor = "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-100/50 dark:border-rose-900/20";
             statusLabel = "Alpa";
             iconName = "alert-circle";
           }
@@ -5420,15 +5885,15 @@ window.updateReportTab = function () {
       
       const dayUid = `day-card-${dateKey}`;
       timelineHTML += `
-        <div class="bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 transition-all duration-300">
+        <div class="bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 p-4 transition-all duration-300 backdrop-blur-xl">
           <div onclick="document.getElementById('${dayUid}').classList.toggle('hidden')" class="flex items-center justify-between cursor-pointer select-none">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shadow-sm shrink-0">
                 <i data-lucide="calendar" class="w-4 h-4"></i>
               </div>
               <div>
-                <h5 class="text-xs font-black text-slate-800 dark:text-white">${dateDisplay} ${isToday ? '<span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white uppercase ml-1.5">Hari Ini</span>' : ''}</h5>
-                <p class="text-[9px] font-bold text-slate-400 mt-0.5">${activeSlotsCount} sesi terisi</p>
+                <h5 class="text-xs font-black text-slate-800 dark:text-white leading-none">${dateDisplay} ${isToday ? '<span class="text-[8px] font-black px-1.5 py-0.5 rounded bg-emerald-500 text-white uppercase ml-1.5">Hari Ini</span>' : ''}</h5>
+                <p class="text-[9px] font-bold text-slate-400 mt-1">${activeSlotsCount} sesi terisi</p>
               </div>
             </div>
             <div class="w-6 h-6 rounded-md bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-400">
