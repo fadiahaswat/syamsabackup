@@ -442,10 +442,6 @@ class FirebaseStorageManager {
       console.log('[FirebaseStorageManager] ✅ UI updated (debounced)');
     }, this._UI_UPDATE_DEBOUNCE);
   }
-    });
-
-    console.log('[FirebaseStorageManager] Realtime listeners ACTIVE for attendance');
-  }
 
   /**
    * Listen to a Firebase path for real-time updates
