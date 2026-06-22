@@ -11,7 +11,7 @@ window.APP_CREDENTIALS = {
 
   // Google OAuth Client ID (untuk login Musyrif)
   googleClientId:
-    "694043281368-cqf9tji9rsv2k2gtfu7pbicdsc1gcvk7.apps.googleusercontent.com",
+    "336443539411-b7uv4udqqhbqpdmeuja54dhfsda4q7cm.apps.googleusercontent.com",
 };
 
 // ==========================================

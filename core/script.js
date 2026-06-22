@@ -475,10 +475,11 @@ window.sha256Hex = async function (input) {
     .join("");
 };
 
-window.startAuthenticatedSession = function (targetClass, profile) {
+window.startAuthenticatedSession = async function (targetClass, profile, supabaseSession = null) {
   const authData = {
     kelas: targetClass,
     profile: profile,
+    supabaseSession: supabaseSession,
     timestamp: new Date().toISOString(),
   };
   localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
@@ -488,6 +489,21 @@ window.startAuthenticatedSession = function (targetClass, profile) {
   appState.waliMode = false;
   appState.waliSantri = null;
   appState.waliKelas = null;
+
+  // ========== SUPABASE HYBRID STORAGE INITIALIZATION ==========
+  // Initialize hybrid storage if cloud mode is enabled
+  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
+    try {
+      // Get kelas ID for the selected class
+      const kelasInfo = MASTER_KELAS?.[targetClass];
+      const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || targetClass;
+
+      await window.hybridStorageManager.init(kelasId);
+      console.log('[AuthManager] Hybrid storage initialized for class:', targetClass);
+    } catch (error) {
+      console.warn('[AuthManager] Hybrid storage init failed:', error);
+    }
+  }
 
   FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
     const sKelas = String(s.kelas || s.rombel || "").trim();
@@ -1682,8 +1698,25 @@ window.handleGoogleCallback = function (response) {
       );
     }
 
-    // 3. JIKA LOLOS -> SIMPAN SESI
-    window.startAuthenticatedSession(targetClass, profile);
+    // 3. SUPABASE AUTH (jika cloud mode enabled)
+    let supabaseSession = null;
+    if (window.APP_STORAGE?.mode !== 'local-only' && window.supabaseClient) {
+      try {
+        const { data: sbData } = await window.supabaseClient.signInWithGoogle(
+          response.credential
+        );
+        if (sbData?.session) {
+          supabaseSession = sbData.session;
+          console.log('[Auth] Supabase auth successful');
+        }
+      } catch (sbError) {
+        console.warn('[Auth] Supabase sign-in failed:', sbError);
+        // Continue without Supabase - local storage still works
+      }
+    }
+
+    // 4. JIKA LOLOS -> SIMPAN SESI
+    await window.startAuthenticatedSession(targetClass, profile, supabaseSession);
     window.closeModal("modal-google-auth");
     window.showToast("Login Berhasil!", "success");
   } catch (e) {
