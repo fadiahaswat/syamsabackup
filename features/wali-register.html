@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register Wali - Systa</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="manifest" href="./manifest.json">
+  <link rel="manifest" href="../manifest.json">
   <style>
     body {
       font-family: 'Inter', system-ui, sans-serif;
@@ -168,7 +168,7 @@
     // Load Firebase config
     (function() {
       const script = document.createElement('script');
-      script.src = './firebase-config.js';
+      script.src = '../firebase-config.js';
       script.async = true;
       script.onload = initApp;
       document.head.appendChild(script);
@@ -210,7 +210,7 @@
 
       // Load FCM Manager
       const fcmScript = document.createElement('script');
-      fcmScript.src = './managers/fcm-manager.js';
+      fcmScript.src = '../managers/fcm-manager.js';
       fcmScript.async = true;
       fcmScript.onload = async () => {
         // Wait for FCM to initialize
@@ -221,7 +221,7 @@
 
       // Load Wali Manager
       const waliScript = document.createElement('script');
-      waliScript.src = './managers/wali-notification-manager.js';
+      waliScript.src = '../managers/wali-notification-manager.js';
       waliScript.async = true;
       waliScript.onload = () => {
         window.waliNotificationManager?.init?.();
@@ -288,7 +288,7 @@
             if (fcmToken && Notification.permission === 'granted') {
               new Notification('Pendaftaran Berhasil! 🎉', {
                 body: `Anda akan menerima notifikasi jika ${namaSantri} tidak hadir.`,
-                icon: './assets/icons/icon.webp',
+                icon: '../assets/icons/icon.webp',
                 tag: 'wali-registered'
               });
             }
@@ -350,7 +350,7 @@
       if (Notification.permission === 'granted') {
         new Notification('Pendaftaran Berhasil! 🎉', {
           body: `Anda akan menerima notifikasi jika ${namaSantri} tidak hadir.`,
-          icon: './assets/icons/icon.webp'
+          icon: '../assets/icons/icon.webp'
         });
       }
 

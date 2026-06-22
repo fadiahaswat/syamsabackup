@@ -1,62 +1,9 @@
-// Import Firebase SDKs for FCM
-importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js");
+/**
+ * Consolidated Service Worker for Syamsa PWA
+ * Handles offline caching and native Web Push Notifications.
+ * No external Firebase SDK script dependencies inside the service worker.
+ */
 
-// Initialize Firebase in service worker
-firebase.initializeApp({
-  apiKey: "AIzaSyDNCThjnwBxvwdrre7QxLD7IRR_YmdVXGg",
-  authDomain: "syamsa-a3395.firebaseapp.com",
-  databaseURL: "https://syamsa-a3395-default-rtdb.firebaseio.com",
-  projectId: "syamsa-a3395",
-  storageBucket: "syamsa-a3395.firebasestorage.app",
-  messagingSenderId: "166579449286",
-  appId: "1:166579449286:web:d0f6af6a59ce5d0c31d6c7"
-});
-
-const messaging = firebase.messaging();
-
-// Handle background push messages
-messaging.onBackgroundMessage((payload) => {
-  console.log("[SW] Received background message:", payload);
-
-  let notificationTitle = payload.notification?.title;
-  let notificationBody = payload.notification?.body;
-  let notificationIcon = payload.notification?.icon || "./assets/icons/icon.webp";
-  let notificationBadge = "./assets/icons/icon.png";
-  let notificationTag = "syamsa-background";
-  let notificationData = payload.data || {};
-  let clickUrl = payload.data?.url || "./index.html";
-
-  // If no notification data, use data payload
-  if (!notificationTitle) {
-    notificationTitle = payload.data?.title || "Syamsa";
-    notificationBody = payload.data?.body || "Ada notifikasi baru";
-    notificationIcon = payload.data?.icon || "./assets/icons/icon.webp";
-    notificationTag = payload.data?.tag || "syamsa-background";
-    clickUrl = payload.data?.url || "./index.html";
-  }
-
-  // Adjust URL for GitHub Pages deployment
-  const finalUrl = clickUrl.startsWith("./")
-    ? clickUrl.replace("./", "./syamsa/")
-    : clickUrl;
-
-  const notificationOptions = {
-    body: notificationBody,
-    icon: notificationIcon,
-    badge: notificationBadge,
-    tag: notificationTag,
-    vibrate: [200, 100, 200],
-    priority: "high",
-    ttl: 86400,
-    data: {
-      url: finalUrl,
-      ...notificationData
-    }
-  };
-
-  return self.registration.showNotification(notificationTitle, notificationOptions);
-});
 
 const CACHE_VERSION = "v230-sync-fix";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
@@ -255,57 +202,92 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || "./";
+  
+  // Extract target URL from notification data, supporting multiple formats
+  let targetUrl = event.notification.data?.url || "./index.html";
+  
+  // Fallback check: if there is an FCM payload wrapped inside the data
+  if (event.notification.data?.FCM_MSG) {
+    const fcmMsg = event.notification.data.FCM_MSG;
+    targetUrl = fcmMsg.data?.url || fcmMsg.notification?.click_action || fcmMsg.fcmOptions?.link || targetUrl;
+  }
+
+  // Adjust URL for GitHub Pages if relative
+  if (targetUrl.startsWith("./") && !targetUrl.includes("/syamsa/")) {
+    targetUrl = targetUrl.replace("./", "./syamsa/");
+  }
+
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if ("focus" in client) {
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // Find open window and focus it
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
           client.focus();
-          if ("navigate" in client) return client.navigate(targetUrl);
+          if ("navigate" in client) {
+            return client.navigate(targetUrl);
+          }
           return client;
         }
       }
-      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
-      return null;
-    }),
+      // If no open window, open a new one
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
   );
 });
 
 self.addEventListener("push", (event) => {
-  // If event has data and is an FCM payload, let Firebase SDK handle it
-  // FCM payloads typically contain "from" (sender ID or topic) or "collapse_key" or unique FCM markers
-  let isFCM = false;
-  try {
-    if (event.data) {
-      const dataJson = event.data.json();
-      if (dataJson.from || dataJson.collapse_key || dataJson.notification || dataJson.data || dataJson['gcm.message_id']) {
-        isFCM = true;
-      }
-    }
-  } catch (e) {
-    // Not JSON data
-  }
-
-  if (isFCM) {
-    console.log("[SW] Intercepted FCM push event, delegating to Firebase SDK");
-    return;
-  }
+  console.log("[SW] Push event received:", event);
 
   let payload = {};
-  try {
-    payload = event.data ? event.data.json() : {};
-  } catch (error) {
-    payload = { body: event.data?.text() || "" };
+  if (event.data) {
+    try {
+      payload = event.data.json();
+    } catch (e) {
+      try {
+        payload = { body: event.data.text() };
+      } catch (err) {
+        payload = { body: "Ada notifikasi baru." };
+      }
+    }
   }
 
-  const title = payload.title || "Syamsa";
-  const options = {
-    body: payload.body || "Ada pembaruan baru.",
-    icon: payload.icon || "./assets/icons/icon.webp",
-    badge: payload.badge || "./assets/icons/icon.png",
-    tag: payload.tag || "syamsa-push",
-    data: payload.data || { url: "./" },
+  console.log("[SW] Parsed push payload:", payload);
+
+  // Extract title and body (supporting both standard and FCM notification payloads)
+  const title = payload.notification?.title || payload.data?.title || "Syamsa";
+  const body = payload.notification?.body || payload.data?.body || "Ada pembaruan baru.";
+  const icon = payload.notification?.icon || payload.data?.icon || "./assets/icons/icon.webp";
+  const badge = payload.notification?.badge || payload.data?.badge || "./assets/icons/icon.png";
+  
+  // Extract URL for click action
+  let clickUrl = payload.data?.url || 
+                    payload.notification?.click_action || 
+                    payload.data?.gcm_web_link || 
+                    payload.data?.link || 
+                    "./index.html";
+
+  // Adjust URL for GitHub Pages if relative
+  if (clickUrl.startsWith("./") && !clickUrl.includes("/syamsa/")) {
+    clickUrl = clickUrl.replace("./", "./syamsa/");
+  }
+
+  const notificationOptions = {
+    body: body,
+    icon: icon,
+    badge: badge,
+    vibrate: [200, 100, 200],
+    tag: payload.data?.tag || payload.notification?.tag || "syamsa-push",
+    data: {
+      url: clickUrl,
+      ...payload.data
+    },
+    // Keep interaction for important alerts (like Alpa notifications)
+    requireInteraction: payload.data?.type === "alpa_notification" || payload.notification?.requireInteraction === "true" || false
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    self.registration.showNotification(title, notificationOptions)
+  );
 });

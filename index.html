@@ -5802,29 +5802,25 @@
 
       if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
         window.addEventListener("load", async () => {
-          console.log("[SW] Window loaded, registering service workers...");
+          console.log("[SW] Window loaded, registering service worker...");
 
           try {
-            // Register main service worker
+            // Register consolidated service worker
             const swReg = await navigator.serviceWorker.register("./sw.js");
-            console.log("[SW] Main SW registered:", swReg);
-
-            // Register Firebase Messaging service worker
-            const fcmReg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
-            console.log("[SW] Firebase Messaging SW registered:", fcmReg);
+            console.log("[SW] Consolidated SW registered:", swReg);
           } catch (err) {
             console.warn("[SW] Gagal daftar SW:", err);
           }
         });
 
-        // Initialize FCM - AUTO REQUEST on page load (no need to click button)
+        // Initialize FCM - Auto-init if already granted, do not auto-request on load
         window.addEventListener("load", async () => {
           // Tunda sebentar agar semua script load dulu
           await new Promise(resolve => setTimeout(resolve, 500));
 
           console.log("[FCM-UI] Checking notification permission state:", Notification.permission);
 
-          // AUTO INIT: Langsung minta izin notifikasi saat halaman load
+          // AUTO INIT: Langsung inisialisasi jika izin sudah diberikan
           if (Notification.permission === "granted") {
             console.log("[FCM-UI] Permission already granted, initializing FCM...");
             await window.fcmManager?.init();
@@ -5833,23 +5829,9 @@
             console.log("[FCM-UI] Permission denied - user blocked notifications");
             window.updateNotificationUI?.("denied");
           } else {
-            // "default" - AUTO REQUEST permission
-            console.log("[FCM-UI] Auto-requesting notification permission...");
-            try {
-              const permission = await Notification.requestPermission();
-              console.log("[FCM-UI] Permission result:", permission);
-
-              if (permission === "granted") {
-                await window.fcmManager?.init();
-                window.updateNotificationUI?.("granted");
-                window.showToast?.("Notifikasi aktif! 🎉", "success");
-              } else {
-                window.updateNotificationUI?.(permission);
-              }
-            } catch (err) {
-              console.error("[FCM-UI] Error requesting permission:", err);
-              window.updateNotificationUI?.("error");
-            }
+            // "default" - Wait for user gesture, do NOT auto-request on page load (prevents browser blocking)
+            console.log("[FCM-UI] Permission is default. Waiting for user click to request permission.");
+            window.updateNotificationUI?.("default");
           }
         });
 

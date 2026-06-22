@@ -659,7 +659,6 @@ async function processPendingNotifications() {
             sentAt: Date.now(),
           });
 
-          log("info", `Sent queued notification to ${nis}`);
         } catch (err) {
           log("error", `Failed to send to ${nis}:`, err.message);
         }
@@ -667,6 +666,53 @@ async function processPendingNotifications() {
     }
   } catch (error) {
     log("error", "Process pending notifications error:", error.message);
+  }
+}
+
+/**
+ * Listener real-time untuk node pending_notifications di Firebase Realtime Database.
+ * Mengirim notifikasi secara instan ketika ada permintaan baru dari client.
+ */
+function startPendingNotificationsListener() {
+  try {
+    const db = admin.database();
+    const pendingRef = db.ref("pending_notifications");
+
+    log("info", "Starting real-time listener on 'pending_notifications'...");
+
+    pendingRef.on("child_added", async (snapshot) => {
+      const key = snapshot.key;
+      const data = snapshot.val();
+
+      if (!data || data.processed) return;
+
+      log("info", `[PendingNotif] Processing real-time notification for key: ${key}`);
+
+      const result = await sendToToken(data.token, {
+        title: data.title,
+        body: data.body,
+        link: data.data?.url || data.link || BASE_URL,
+        tag: data.tag || "syamsa-notification",
+        data: data.data || {},
+      });
+
+      if (result.success) {
+        log("info", `[PendingNotif] Successfully sent notification: ${key}`);
+        // Hapus data setelah berhasil dikirim agar database tetap bersih
+        await pendingRef.child(key).remove();
+      } else {
+        log("error", `[PendingNotif] Failed to send notification: ${key}. Error: ${result.error}`);
+        // Tandai sebagai gagal agar tidak looping terus
+        await pendingRef.child(key).update({
+          processed: true,
+          success: false,
+          error: result.error,
+          processedAt: Date.now()
+        });
+      }
+    });
+  } catch (error) {
+    log("error", `Failed to start pending notifications listener: ${error.message}`);
   }
 }
 
@@ -831,6 +877,14 @@ if (args.includes("--send-now")) {
 
     // Start scheduler
     scheduleDailyNotifications();
+
+    // CRITICAL FIX: Run pending notifications queue polling every 30 seconds
+    setInterval(processPendingNotifications, 30 * 1000);
+    console.log("✓ Scheduled background task: processPendingNotifications running every 30s");
+
+    // CRITICAL FIX: Start real-time database listener for pending_notifications
+    startPendingNotificationsListener();
+
     console.log("✅ Server ready and accepting requests");
   });
 }

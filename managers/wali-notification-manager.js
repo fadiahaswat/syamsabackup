@@ -191,7 +191,13 @@ class WaliNotificationManager {
       // Simpan ke history
       await this.saveNotificationHistory(nis, notification);
 
-      this.log(`Notification queued for wali of ${namaSantri}:`, notification);
+      // CRITICAL FIX: Actually trigger sending the notification via Firebase Realtime Database for the server to process!
+      const sent = await this.sendFCMToToken(wali.fcmToken, notification);
+      if (!sent) {
+        this.log(`Failed to queue FCM token message for wali of ${namaSantri}`);
+      }
+
+      this.log(`Notification sent & queued for wali of ${namaSantri}:`, notification);
       return { success: true, notification };
 
     } catch (error) {
