@@ -2,6 +2,7 @@
   "name": "Student Activity Attendance and Monitoring System Application",
   "short_name": "Syamsa",
   "description": "Aplikasi absensi dan pemantauan kegiatan pelajar",
+  "version": "2.2.8",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",

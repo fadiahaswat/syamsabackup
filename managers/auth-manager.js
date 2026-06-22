@@ -4,6 +4,59 @@
 // 2. LOGIN LOGIC
 // ==========================================
 
+// ==========================================
+// PWA UPDATE CHECKER
+// ==========================================
+window.checkForPWAUpdate = async function() {
+  if (!('serviceWorker' in navigator)) return;
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) return;
+
+    // Check if there's a waiting Service Worker
+    if (registration.waiting) {
+      console.log('[PWA Update] New version waiting');
+      window.showToast('Update tersedia! Refresh untuk memperbarui.', 'info');
+
+      // Auto-update after 3 seconds
+      setTimeout(() => {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        window.location.reload();
+      }, 3000);
+      return;
+    }
+
+    // Check for updates
+    await registration.update();
+    console.log('[PWA Update] Checked for updates');
+  } catch (error) {
+    console.warn('[PWA Update] Check failed:', error);
+  }
+};
+
+// Force update Service Worker
+window.forceSWUpdate = async function() {
+  if (!('serviceWorker' in navigator)) return;
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (registration && registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      window.location.reload();
+    } else {
+      await registration?.update();
+      window.showToast('Service Worker diperbarui', 'success');
+    }
+  } catch (error) {
+    console.error('[SW Update] Failed:', error);
+  }
+};
+
+// ==========================================
+// AUTH MODE HELPERS
+// ==========================================
+
 window.getAuthMode = function () {
   const override = localStorage.getItem("override_login_mode");
   if (override === "testing" || override === "production") {
@@ -89,6 +142,10 @@ window.startAuthenticatedSession = function (targetClass, profile) {
 
   appState.selectedClass = targetClass;
   appState.userProfile = profile;
+
+  // ========== PWA UPDATE CHECK ==========
+  // Cek update PWA setiap login untuk memastikan dapat data terbaru
+  window.checkForPWAUpdate();
 
   FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
     const sKelas = String(s.kelas || s.rombel || "").trim();

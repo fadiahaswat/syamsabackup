@@ -86,6 +86,16 @@ window.APP_AUTH = {
 };
 
 // ==========================================
+// VERSI APLIKASI (untuk cache busting PWA)
+// ==========================================
+window.APP_VERSION = "2.2.8";
+
+// Helper: Generate versioned script tag
+window.versionedScript = function(src) {
+  return src + '?v=' + window.APP_VERSION;
+};
+
+// ==========================================
 // KONSTANTA APLIKASI (MAGIC NUMBERS)
 // ==========================================
 window.APP_CONSTANTS = {
