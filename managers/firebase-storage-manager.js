@@ -310,6 +310,12 @@ class FirebaseStorageManager {
   }
 
   /**
+   * Flag to prevent infinite loop between Firebase listener and local saves
+   */
+  _isSavingToFirebase = false;
+  _lastKnownDataHash = null;
+
+  /**
    * Setup real-time listeners for data sync
    */
   setupRealtimeListeners() {
@@ -319,8 +325,24 @@ class FirebaseStorageManager {
 
     // Listen to attendance changes
     this.listenTo(`attendance${basePath}`, (data) => {
+      // INFINITE LOOP GUARD: Skip if we're currently saving to Firebase
+      // This prevents: Firebase write → listener fires → render → save → Firebase write → loop
+      if (this._isSavingToFirebase) {
+        console.log('[FirebaseStorageManager] Skipping listener callback - currently saving');
+        return;
+      }
+
       if (typeof appState !== 'undefined') {
         const attendanceVal = data || {};
+
+        // Check if data actually changed (shallow compare by JSON length + first/last key)
+        const newHash = this._hashData(attendanceVal);
+        if (newHash === this._lastKnownDataHash) {
+          console.log('[FirebaseStorageManager] Skipping listener - data unchanged');
+          return;
+        }
+        this._lastKnownDataHash = newHash;
+
         appState.attendanceData = attendanceVal;
         this.setLocalStorageData(APP_CONFIG.storageKey, attendanceVal);
         if (this.onDataUpdate) this.onDataUpdate('attendance', attendanceVal);
@@ -345,6 +367,20 @@ class FirebaseStorageManager {
         if (this.onDataUpdate) this.onDataUpdate('settings', data);
       }
     });
+  }
+
+  /**
+   * Simple hash to detect data changes
+   */
+  _hashData(data) {
+    if (!data) return 'null';
+    try {
+      const json = JSON.stringify(data);
+      // Use first 50 chars + length as quick hash
+      return `${json.length}-${json.substring(0, 50)}`;
+    } catch {
+      return String(Date.now());
+    }
   }
 
   /**
@@ -456,6 +492,11 @@ class FirebaseStorageManager {
 
     if (this.isOnline && this.db) {
       try {
+        // INFINITE LOOP GUARD: Set flag BEFORE writing to Firebase
+        // This tells the listener to skip processing when it fires
+        this._isSavingToFirebase = true;
+        this._lastKnownDataHash = this._hashData(data);
+
         const dbPath = path.replace(/\//g, '_').replace(/^_/, '');
         const dbRef = this.ref(path);
 
@@ -466,10 +507,17 @@ class FirebaseStorageManager {
         });
 
         console.log(`[FirebaseStorageManager] Saved to Firebase: ${path}`);
+
+        // Reset flag AFTER write completes, with small delay to catch any late-firing listeners
+        setTimeout(() => {
+          this._isSavingToFirebase = false;
+        }, 100);
+
         return { success: true, source: 'firebase' };
       } catch (error) {
         console.error(`[FirebaseStorageManager] Firebase save error for ${path}:`, error);
         this.lastError = error;
+        this._isSavingToFirebase = false; // Reset on error too
 
         // Queue for later sync
         OfflineQueueManager.enqueue(type, 'set', path, data);

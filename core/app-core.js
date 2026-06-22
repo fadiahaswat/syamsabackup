@@ -97,33 +97,48 @@ window.initFirebaseStorage = async function(musyrifId) {
     // Make available globally
     window.storageManager = storageManager;
 
+    // DEBOUNCE: Prevent rapid-fire UI updates from Firebase listener
+    let dataUpdateDebounceTimer = null;
+    const DATA_UPDATE_DEBOUNCE_MS = 300;
+
     // Set callback to refresh UI when data changes in Firebase
     storageManager.onDataUpdate = function(type, data) {
       console.log(`[FirebaseStorage] Realtime update received for: ${type}`);
-      if (type === 'attendance') {
-        if (typeof window.updateDashboard === 'function') {
-          window.updateDashboard();
-        }
-        if (typeof window.renderAttendanceList === 'function') {
-          window.renderAttendanceList();
-        }
-      } else if (type === 'settings') {
-        if (data) {
-          // Apply settings changes (dark mode, notifications)
-          if (typeof data.darkMode !== 'undefined' && data.darkMode !== appState.settings.darkMode) {
-            appState.settings.darkMode = data.darkMode;
-            document.documentElement.classList.toggle("dark", data.darkMode);
-            if (typeof window.updateMetaThemeColor === 'function') {
-              window.updateMetaThemeColor();
+
+      // Clear any pending update
+      if (dataUpdateDebounceTimer) {
+        clearTimeout(dataUpdateDebounceTimer);
+      }
+
+      // Debounce UI updates to prevent flickering
+      dataUpdateDebounceTimer = setTimeout(() => {
+        dataUpdateDebounceTimer = null;
+
+        if (type === 'attendance') {
+          if (typeof window.updateDashboard === 'function') {
+            window.updateDashboard();
+          }
+          if (typeof window.renderAttendanceList === 'function') {
+            window.renderAttendanceList();
+          }
+        } else if (type === 'settings') {
+          if (data) {
+            // Apply settings changes (dark mode, notifications)
+            if (typeof data.darkMode !== 'undefined' && data.darkMode !== appState.settings.darkMode) {
+              appState.settings.darkMode = data.darkMode;
+              document.documentElement.classList.toggle("dark", data.darkMode);
+              if (typeof window.updateMetaThemeColor === 'function') {
+                window.updateMetaThemeColor();
+              }
+            }
+            if (typeof data.notifications !== 'undefined' && data.notifications !== appState.settings.notifications) {
+              appState.settings.notifications = data.notifications;
+              const btn = document.getElementById("btn-notifications");
+              if (btn) btn.classList.toggle("opacity-50", !data.notifications);
             }
           }
-          if (typeof data.notifications !== 'undefined' && data.notifications !== appState.settings.notifications) {
-            appState.settings.notifications = data.notifications;
-            const btn = document.getElementById("btn-notifications");
-            if (btn) btn.classList.toggle("opacity-50", !data.notifications);
-          }
         }
-      }
+      }, DATA_UPDATE_DEBOUNCE_MS);
     };
 
     console.log('[FirebaseStorage] Initialized for musyrifId:', finalMusyrifId);
@@ -136,23 +151,10 @@ window.initFirebaseStorage = async function(musyrifId) {
       });
     }
 
-    // ========== FORCE REFRESH FROM FIREBASE (PWA Fix) ==========
-    // PWA memiliki localStorage terpisah, jadi kita harus force pull dari Firebase
-    // Tunda 1 detik agar Firebase SDK selesai load
-    setTimeout(async () => {
-      try {
-        console.log('[FirebaseStorage] Force refreshing from Firebase for PWA...');
-        await storageManager.refreshData();
-
-        // Update UI setelah data di-refresh
-        if (typeof window.updateDashboard === 'function') {
-          window.updateDashboard();
-        }
-        console.log('[FirebaseStorage] Force refresh complete');
-      } catch (refreshError) {
-        console.warn('[FirebaseStorage] Force refresh failed:', refreshError);
-      }
-    }, 1000);
+    // ========== REMOVED: Force refresh di startup ==========
+    // Force refresh menyebabkan infinite loop dengan Firebase listener.
+    // Data sudah di-load via setupRealtimeListeners(), jadi tidak perlu force refresh.
+    // Jika butuh refresh manual, gunakan window.manualSync() atau pull-to-refresh.
 
     return storageManager;
   } catch (error) {
