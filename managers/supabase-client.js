@@ -12,11 +12,14 @@ class SupabaseClient {
     this.isOnline = navigator.onLine;
     this.currentSession = null;
     this.currentUser = null;
+    this.realtimeChannels = [];
 
     // Callbacks
     this.onAuthStateChange = null;
     this.onConnectionChange = null;
     this.onSyncStatusChange = null;
+    this.onAttendanceChange = null;
+    this.onPermitChange = null;
 
     // Setup connection listeners
     this._setupConnectionListeners();
@@ -122,6 +125,77 @@ class SupabaseClient {
         this.onConnectionChange(false);
       }
     });
+  }
+
+  /**
+   * Subscribe to realtime changes (attendance & permits)
+   */
+  async subscribeToRealtime(kelasId) {
+    if (!this.client) {
+      console.warn('[SupabaseClient] Cannot subscribe - client not initialized');
+      return;
+    }
+
+    // Unsubscribe from previous channels
+    this.unsubscribeRealtime();
+
+    console.log('[SupabaseClient] Subscribing to realtime for kelas:', kelasId);
+
+    // Subscribe to attendance changes
+    const attendanceChannel = this.client
+      .channel('attendance-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'attendance_record',
+          filter: `kelas_id=eq.${kelasId}`
+        },
+        (payload) => {
+          console.log('[SupabaseClient] Attendance changed:', payload);
+          if (this.onAttendanceChange) {
+            this.onAttendanceChange(payload);
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to permit changes
+    const permitChannel = this.client
+      .channel('permit-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'permit',
+          filter: `kelas_id=eq.${kelasId}`
+        },
+        (payload) => {
+          console.log('[SupabaseClient] Permit changed:', payload);
+          if (this.onPermitChange) {
+            this.onPermitChange(payload);
+          }
+        }
+      )
+      .subscribe();
+
+    this.realtimeChannels = [attendanceChannel, permitChannel];
+    console.log('[SupabaseClient] Realtime subscribed');
+  }
+
+  /**
+   * Unsubscribe from realtime channels
+   */
+  unsubscribeRealtime() {
+    if (this.realtimeChannels.length > 0) {
+      console.log('[SupabaseClient] Unsubscribing from realtime');
+      this.realtimeChannels.forEach(channel => {
+        this.client?.removeChannel(channel);
+      });
+      this.realtimeChannels = [];
+    }
   }
 
   /**

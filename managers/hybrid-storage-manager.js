@@ -98,6 +98,14 @@ class HybridStorageManager {
       };
     }
 
+    // Setup realtime callbacks
+    this._setupRealtimeCallbacks();
+
+    // Subscribe to realtime changes
+    if (this.supabaseConfigured && this.mode !== 'local-only' && this.remote.isInitialized) {
+      await this._subscribeToRealtime();
+    }
+
     this.isInitialized = true;
     console.log('[HybridStorageManager] Initialized', {
       mode: this.mode,
@@ -143,8 +151,9 @@ class HybridStorageManager {
 
   /**
    * Refresh UI after sync
+   * @param {string} source - The source of the refresh ('cloud_sync' or 'realtime')
    */
-  _refreshUI() {
+  _refreshUI(source = 'cloud_sync') {
     // Trigger global refresh callbacks
     if (this.onDataUpdate) {
       this.onDataUpdate('cloud_sync_complete');
@@ -163,6 +172,11 @@ class HybridStorageManager {
     // Refresh permit surfaces
     if (typeof window.refreshPermitSurfaces === 'function') {
       window.refreshPermitSurfaces();
+    }
+
+    // Show subtle notification for realtime updates (not for local sync)
+    if (source === 'realtime' && window.showToast) {
+      window.showToast('🔄 Data diperbarui secara real-time', 'info', false, 2000);
     }
   }
 
@@ -216,6 +230,15 @@ class HybridStorageManager {
             // Jika ada local dan cloud, tetap pakai local (last-write-wins dari user)
             // Karena sync queue sudah handle upload
           }
+
+          // Sync slot metadata (review status) dari cloud
+          // Cek dari record pertama yang punya slot metadata
+          const firstRecord = Object.values(students).find(r => r && typeof r === 'object' && r.review_confirmed !== undefined);
+          if (firstRecord && firstRecord.review_confirmed === true) {
+            appState.attendanceData[dateKey][slotId].__reviewConfirmed = true;
+            appState.attendanceData[dateKey][slotId].__reviewedAt = firstRecord.reviewed_at;
+            appState.attendanceData[dateKey][slotId].__reviewedBy = firstRecord.reviewed_by;
+          }
         }
       }
 
@@ -248,6 +271,134 @@ class HybridStorageManager {
   }
 
   /**
+   * Setup realtime callbacks on the remote client
+   */
+  _setupRealtimeCallbacks() {
+    if (!this.remote) return;
+
+    // Handle realtime attendance changes
+    this.remote.onAttendanceChange = (payload) => {
+      console.log('[HybridStorageManager] Realtime attendance change:', payload);
+      this._handleRealtimeAttendanceChange(payload);
+    };
+
+    // Handle realtime permit changes
+    this.remote.onPermitChange = (payload) => {
+      console.log('[HybridStorageManager] Realtime permit change:', payload);
+      this._handleRealtimePermitChange(payload);
+    };
+  }
+
+  /**
+   * Subscribe to realtime changes for the current class
+   */
+  async _subscribeToRealtime() {
+    if (!this.kelasId) {
+      console.warn('[HybridStorageManager] Cannot subscribe to realtime - no kelasId');
+      return;
+    }
+
+    try {
+      await this.remote.subscribeToRealtime(this.kelasId);
+      console.log('[HybridStorageManager] Subscribed to realtime for kelas:', this.kelasId);
+    } catch (error) {
+      console.error('[HybridStorageManager] Failed to subscribe to realtime:', error);
+    }
+  }
+
+  /**
+   * Unsubscribe from realtime changes
+   */
+  unsubscribeRealtime() {
+    if (this.remote) {
+      this.remote.unsubscribeRealtime();
+      console.log('[HybridStorageManager] Unsubscribed from realtime');
+    }
+  }
+
+  /**
+   * Handle realtime attendance change from another client
+   */
+  _handleRealtimeAttendanceChange(payload) {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+
+    // Update local appState with the changed data
+    if (eventType === 'INSERT' || eventType === 'UPDATE') {
+      const { date_key, slot_id, student_id, status, timestamps, audit_trail, note } = newRecord;
+
+      if (!appState.attendanceData[date_key]) {
+        appState.attendanceData[date_key] = {};
+      }
+      if (!appState.attendanceData[date_key][slot_id]) {
+        appState.attendanceData[date_key][slot_id] = {};
+      }
+
+      // Update student attendance
+      appState.attendanceData[date_key][slot_id][student_id] = {
+        status: status || {},
+        timestamps: timestamps || {},
+        auditTrail: audit_trail || [],
+        note: note || '',
+      };
+
+      // Sync slot metadata if present
+      if (newRecord.review_confirmed === true) {
+        appState.attendanceData[date_key][slot_id].__reviewConfirmed = true;
+        appState.attendanceData[date_key][slot_id].__reviewedAt = newRecord.reviewed_at;
+        appState.attendanceData[date_key][slot_id].__reviewedBy = newRecord.reviewed_by;
+      }
+
+      // Save to localStorage
+      localStorage.setItem('musyrif_app_v5_fix', JSON.stringify(appState.attendanceData));
+    }
+
+    if (eventType === 'DELETE') {
+      const { date_key, slot_id, student_id } = oldRecord;
+      if (appState.attendanceData[date_key]?.[slot_id]?.[student_id]) {
+        delete appState.attendanceData[date_key][slot_id][student_id];
+        localStorage.setItem('musyrif_app_v5_fix', JSON.stringify(appState.attendanceData));
+      }
+    }
+
+    // Trigger UI refresh
+    this._refreshUI('realtime');
+  }
+
+  /**
+   * Handle realtime permit change from another client
+   */
+  _handleRealtimePermitChange(payload) {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+
+    if (eventType === 'INSERT' || eventType === 'UPDATE') {
+      const permit = this._transformRemotePermit(newRecord);
+
+      // Find existing permit index
+      const existingIndex = appState.permits.findIndex(p => p.id === permit.id);
+
+      if (existingIndex >= 0) {
+        // Update existing
+        appState.permits[existingIndex] = permit;
+      } else {
+        // Add new permit at the beginning
+        appState.permits.unshift(permit);
+      }
+
+      // Save to localStorage
+      localStorage.setItem('musyrif_permits_db', JSON.stringify(appState.permits));
+    }
+
+    if (eventType === 'DELETE') {
+      const permitId = oldRecord.id;
+      appState.permits = appState.permits.filter(p => p.id !== permitId);
+      localStorage.setItem('musyrif_permits_db', JSON.stringify(appState.permits));
+    }
+
+    // Trigger UI refresh
+    this._refreshUI('realtime');
+  }
+
+  /**
    * Initialize remote storage (Supabase)
    */
   async _initRemote() {
@@ -270,6 +421,10 @@ class HybridStorageManager {
         console.log('[HybridStorageManager] Auth changed:', event);
         if (session) {
           this._processQueue();
+          // Re-subscribe to realtime on successful auth
+          if (this.supabaseConfigured && this.kelasId) {
+            this._subscribeToRealtime();
+          }
         }
       };
 
@@ -292,6 +447,10 @@ class HybridStorageManager {
       // Trigger sync when coming online
       if (this.mode !== 'local-only') {
         this._processQueue();
+        // Re-subscribe to realtime after coming online
+        if (this.supabaseConfigured && this.kelasId) {
+          this._subscribeToRealtime();
+        }
       }
     });
 
@@ -665,10 +824,25 @@ class HybridStorageManager {
     const records = [];
 
     for (const [studentId, studentData] of Object.entries(data)) {
-      if (studentId.startsWith('_')) continue; // Skip metadata keys
+      // Skip metadata keys BUT include slot status metadata
+      if (studentId.startsWith('_')) {
+        // Sync slot metadata status (requires_review, review_confirmed, reviewed_at, reviewed_by)
+        if (studentId === '__requiresReview' || studentId === '__reviewConfirmed' ||
+            studentId === '__reviewedAt' || studentId === '__reviewedBy') {
+          // These are slot-level metadata - we'll sync them with each record
+          continue;
+        }
+        continue;
+      }
 
       // Generate unique ID for each record
       const recordId = `${this.kelasId}_${studentId}_${dateKey}_${slotId}`.replace(/\s+/g, '_');
+
+      // Get slot-level metadata from parent 'data' object
+      const slotReviewConfirmed = data.__reviewConfirmed;
+      const slotRequiresReview = data.__requiresReview;
+      const slotReviewedAt = data.__reviewedAt;
+      const slotReviewedBy = data.__reviewedBy;
 
       records.push({
         id: recordId,
@@ -681,6 +855,11 @@ class HybridStorageManager {
         audit_trail: studentData.auditTrail || [],
         note: studentData.note || '',
         permit_manual_override: studentData.permitManualOverride || false,
+        // Slot metadata
+        requires_review: slotRequiresReview,
+        review_confirmed: slotReviewConfirmed,
+        reviewed_at: slotReviewedAt || null,
+        reviewed_by: slotReviewedBy || null,
       });
     }
 
@@ -893,6 +1072,7 @@ class HybridStorageManager {
    */
   destroy() {
     this.stopAutoSync();
+    this.unsubscribeRealtime();
     if (this.local) {
       this.local.destroy();
     }
