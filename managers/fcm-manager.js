@@ -1,5 +1,6 @@
 /**
  * FCM Manager - Handle Firebase Cloud Messaging for Push Notifications
+ * Fixed: Update existing token instead of creating new one
  */
 
 class FCMManager {
@@ -9,28 +10,47 @@ class FCMManager {
     this.isSupported = false;
     this.db = null;
     this.userId = null;
+    this.isInitialized = false;
+    this.debugMode = true; // Enable debug logging
+  }
+
+  /**
+   * Debug log helper
+   */
+  log(...args) {
+    if (this.debugMode) {
+      console.log(`[FCM]`, ...args);
+    }
   }
 
   /**
    * Initialize FCM - request permission and get token
    */
   async init() {
+    if (this.isInitialized) {
+      this.log("Already initialized, skipping...");
+      return true;
+    }
+
     // Check if messaging is supported
     if (!("Notification" in window)) {
-      console.log("This browser does not support notifications");
+      this.log("This browser does not support notifications");
       return false;
     }
 
     if (!("serviceWorker" in navigator)) {
-      console.log("Service workers are not supported");
+      this.log("Service workers are not supported");
       return false;
     }
 
     this.isSupported = true;
 
     try {
+      this.log("Starting FCM initialization...");
+
       // Wait for Firebase to be initialized
       if (window.initFirebase) {
+        this.log("Waiting for Firebase init...");
         await window.initFirebase();
       }
 
@@ -45,20 +65,37 @@ class FCMManager {
       this.dbPush = window.FIREBASE_PUSH;
       this.vapidKey = window.VAPID_KEY;
 
+      if (!this.messaging) {
+        this.log("Firebase Messaging not available");
+        return false;
+      }
+
+      this.log("Firebase Messaging is available");
+
       // Request notification permission
       const permission = await Notification.requestPermission();
+      this.log("Permission result:", permission);
 
       if (permission === "granted") {
-        console.log("Notification permission granted");
+        this.log("Notification permission granted");
+
+        // Get and save FCM token
         await this.getFCMToken();
+
+        // Listen for foreground messages
         this.listenForForegroundMessages();
+
+        // Setup token refresh listener
+        this.setupTokenRefresh();
+
+        this.isInitialized = true;
         return true;
       } else {
-        console.log("Notification permission denied");
+        this.log("Notification permission denied");
         return false;
       }
     } catch (error) {
-      console.error("Error initializing FCM:", error);
+      console.error("[FCM] Error initializing FCM:", error);
       return false;
     }
   }
@@ -68,8 +105,13 @@ class FCMManager {
    */
   async getFCMToken() {
     try {
+      this.log("Registering service worker...");
+
       // Register service worker
       const registration = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+      this.log("Service worker registered:", registration);
+
+      this.log("Getting FCM token...");
 
       // Get token
       this.token = await this.getToken(this.messaging, {
@@ -78,9 +120,9 @@ class FCMManager {
       });
 
       if (this.token) {
-        console.log("FCM Token:", this.token);
+        this.log("FCM Token obtained:", this.token.substring(0, 20) + "...");
 
-        // Save token to Firebase Realtime Database
+        // Save token to Firebase Realtime Database (will update if exists)
         await this.saveTokenToFirebase(this.token);
 
         // Also save to localStorage as backup
@@ -89,18 +131,25 @@ class FCMManager {
         return this.token;
       }
     } catch (error) {
-      console.error("Error getting FCM token:", error);
+      console.error("[FCM] Error getting FCM token:", error);
     }
     return null;
   }
 
   /**
    * Save token to Firebase Realtime Database
+   * FIXED: Check for existing token first, update if exists
    */
   async saveTokenToFirebase(token) {
     try {
+      this.log("Saving token to Firebase...");
+
       // Get user info from app state (if available)
       const userInfo = this.getUserInfo();
+      const deviceInfo = this.getDeviceInfo();
+
+      // Check for existing token for this user/device
+      const existingKey = await this.findExistingTokenKey(userInfo.userId, deviceInfo.platform);
 
       // Create token data
       const tokenData = {
@@ -108,27 +157,61 @@ class FCMManager {
         userId: userInfo.userId || "anonymous",
         userName: userInfo.userName || "Unknown",
         kelas: userInfo.kelas || null,
-        device: this.getDeviceInfo(),
-        createdAt: Date.now(),
+        device: deviceInfo,
+        createdAt: existingKey ? undefined : Date.now(), // Only set createdAt for new tokens
         lastActive: Date.now(),
         active: true
       };
 
-      // Save to Firebase Realtime Database
-      // Path: fcm_tokens/{pushId}
-      const tokensRef = this.dbRef(this.database, "fcm_tokens");
-      const newTokenRef = this.dbPush(tokensRef);
-      await this.dbSet(newTokenRef, tokenData);
+      if (existingKey) {
+        // Update existing token
+        this.log("Updating existing token:", existingKey);
+        const tokenRef = this.dbRef(this.database, `fcm_tokens/${existingKey}`);
+        await this.dbSet(tokenRef, tokenData, { merge: true });
+        localStorage.setItem("fcm_token_key", existingKey);
+        this.log("Token updated successfully");
+      } else {
+        // Create new token
+        this.log("Creating new token entry...");
+        const tokensRef = this.dbRef(this.database, "fcm_tokens");
+        const newTokenRef = this.dbPush(tokensRef);
+        await this.dbSet(newTokenRef, tokenData);
+        localStorage.setItem("fcm_token_key", newTokenRef.key);
+        this.log("New token saved:", newTokenRef.key);
+      }
 
-      // Also save the key for easy retrieval/update
-      localStorage.setItem("fcm_token_key", newTokenRef.key);
-
-      console.log("Token saved to Firebase:", newTokenRef.key);
-      return newTokenRef.key;
+      return localStorage.getItem("fcm_token_key");
     } catch (error) {
-      console.error("Error saving token to Firebase:", error);
+      console.error("[FCM] Error saving token to Firebase:", error);
       // Fallback to localStorage
       localStorage.setItem("fcm_token", token);
+    }
+  }
+
+  /**
+   * Find existing token key for this user/device
+   */
+  async findExistingTokenKey(userId, platform) {
+    try {
+      if (!this.database) return null;
+
+      const tokensRef = this.dbRef(this.database, "fcm_tokens");
+      const snapshot = await this.dbGet(tokensRef);
+
+      if (!snapshot.exists()) return null;
+
+      // Look for existing token with same userId and device platform
+      for (const [key, data] of Object.entries(snapshot.val() || {})) {
+        if (data.userId === userId && data.device?.platform === platform && data.active) {
+          this.log("Found existing token for:", userId, platform);
+          return key;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      this.log("Error finding existing token:", error);
+      return null;
     }
   }
 
@@ -171,8 +254,15 @@ class FCMManager {
    * Listen for messages when app is in foreground
    */
   listenForForegroundMessages() {
+    if (!this.onMessage || !this.messaging) {
+      this.log("Cannot listen for messages - messaging not available");
+      return;
+    }
+
+    this.log("Setting up foreground message listener...");
+
     this.onMessage(this.messaging, (payload) => {
-      console.log("Foreground message received:", payload);
+      this.log("Foreground message received:", payload);
 
       const notificationTitle = payload.notification?.title || "Syamsa";
       const notificationOptions = {
@@ -188,6 +278,37 @@ class FCMManager {
         new Notification(notificationTitle, notificationOptions);
       }
     });
+  }
+
+  /**
+   * Setup token refresh listener
+   * FCM tokens can change, we need to handle this
+   */
+  setupTokenRefresh() {
+    if (!this.messaging) return;
+
+    this.log("Setting up token refresh listener...");
+
+    // Listen for token refresh
+    if (this.messaging.onTokenRefresh) {
+      this.messaging.onTokenRefresh(async () => {
+        this.log("Token refresh triggered!");
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const newToken = await this.getToken(this.messaging, {
+            vapidKey: this.vapidKey,
+            serviceWorkerRegistration: registration,
+          });
+
+          if (newToken) {
+            this.log("New token after refresh:", newToken.substring(0, 20) + "...");
+            await this.saveTokenToFirebase(newToken);
+          }
+        } catch (error) {
+          console.error("[FCM] Error refreshing token:", error);
+        }
+      });
+    }
   }
 
   /**
@@ -208,7 +329,7 @@ class FCMManager {
         await this.dbSet(tokenRef, { lastActive: Date.now() }, { merge: true });
       }
     } catch (error) {
-      console.error("Error updating last active:", error);
+      console.error("[FCM] Error updating last active:", error);
     }
   }
 
@@ -229,9 +350,9 @@ class FCMManager {
       localStorage.removeItem("fcm_token_key");
       this.token = null;
 
-      console.log("Token deleted");
+      this.log("Token deleted");
     } catch (error) {
-      console.error("Error deleting token:", error);
+      console.error("[FCM] Error deleting token:", error);
     }
   }
 }
@@ -240,10 +361,14 @@ class FCMManager {
 window.fcmManager = new FCMManager();
 
 // Periodically update last active (every 5 minutes)
-if ("Notification" in window && Notification.permission === "granted") {
-  setInterval(() => {
-    if (window.fcmManager && window.fcmManager.updateLastActive) {
-      window.fcmManager.updateLastActive();
-    }
-  }, 5 * 60 * 1000);
+if (typeof window !== "undefined") {
+  window.addEventListener("load", () => {
+    setInterval(() => {
+      if (window.fcmManager && window.fcmManager.updateLastActive && Notification.permission === "granted") {
+        window.fcmManager.updateLastActive();
+      }
+    }, 5 * 60 * 1000);
+  });
 }
+
+this.log("[FCM] FCM Manager loaded");

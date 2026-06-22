@@ -3,8 +3,14 @@
   "version": "1.0.0",
   "description": "FCM Notification Server for Syamsa App - handles push notifications scheduling",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js",
+    "start:prod": "NODE_ENV=production node server.js",
+    "start:github-pages": "DEPLOYMENT_MODE=github-pages node server.js",
+    "start:firebase": "DEPLOYMENT_MODE=firebase node server.js",
     "send-test": "node server.js --send-now",
     "list-tokens": "node server.js --list-tokens",
     "scheduler": "node server.js --schedule"

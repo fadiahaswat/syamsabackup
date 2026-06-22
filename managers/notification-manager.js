@@ -200,37 +200,106 @@ window.requestNotificationPermission = async function () {
   }
 };
 
-// 2. Fungsi Mengirim Notifikasi
-window.sendLocalNotification = function (title, body, type = "info") {
-  if (!appState.settings.notifications) return;
-  if (Notification.permission === "granted") {
-    const options = {
-      body: body,
-      icon: "https://api.iconify.design/lucide/shield-check.svg?color=%2310b981", 
-      badge: "https://api.iconify.design/lucide/bell.svg?color=%23ffffff",
-      vibrate: [200, 100, 200], 
-      tag: title, 
-    };
+// ==========================================
+// DEBUG MODE - Set true untuk melihat log notifikasi
+// ==========================================
+window.NOTIF_DEBUG = false; // Ubah ke true untuk debug
 
+function notifLog(...args) {
+  if (window.NOTIF_DEBUG) {
+    console.log("[NOTIF]", ...args);
+  }
+}
+
+// 2. Fungsi Mengirim Notifikasi (IMPROVED)
+window.sendLocalNotification = function (title, body, type = "info") {
+  // Debug log
+  notifLog("sendLocalNotification called:", title, body, type);
+
+  // Check if notifications are enabled
+  if (appState.settings && appState.settings.notifications === false) {
+    notifLog("Notifications are disabled in settings");
+    return;
+  }
+
+  // Check browser support
+  if (!("Notification" in window)) {
+    notifLog("Browser does not support notifications");
+    return;
+  }
+
+  // Check permission
+  if (Notification.permission !== "granted") {
+    notifLog("Notification permission not granted:", Notification.permission);
+    return;
+  }
+
+  const options = {
+    body: body,
+    icon: "./assets/icons/icon.webp",
+    badge: "./assets/icons/icon.png",
+    vibrate: [200, 100, 200],
+    tag: title,
+    renotify: false,
+    requireInteraction: false,
+    data: { url: location.href, type },
+  };
+
+  // Try using Service Worker first
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        notifLog("Showing notification via Service Worker:", title);
+        return registration.showNotification(title, options);
+      })
+      .catch((err) => {
+        notifLog("SW failed, falling back to direct Notification:", err);
+        new Notification(title, options);
+      });
+  } else {
+    notifLog("No SW, using direct Notification:", title);
     new Notification(title, options);
   }
 };
 
 // 3. Penjadwal Otomatis (Cek Waktu Setiap Menit)
 window.checkScheduledNotifications = function () {
-  if (!("Notification" in window)) return;
-  if (Notification.permission !== "granted") return;
-  if (!appState.settings.notifications) return;
+  // Debug logging
+  notifLog("=== checkScheduledNotifications called ===");
+  notifLog("Notification in window:", "Notification" in window);
+
+  if (!("Notification" in window)) {
+    notifLog("Browser does not support notifications");
+    return;
+  }
+
+  notifLog("Notification.permission:", Notification.permission);
+  if (Notification.permission !== "granted") {
+    notifLog("Permission not granted, skipping");
+    return;
+  }
+
+  notifLog("appState.settings:", appState.settings);
+  if (appState.settings && appState.settings.notifications === false) {
+    notifLog("Notifications disabled in settings");
+    return;
+  }
 
   const now = new Date();
   const h = now.getHours();
   const m = now.getMinutes();
   const s = now.getSeconds();
 
+  notifLog(`Current time: ${h}:${m}:${s}`);
+
   // Eksekusi hanya di detik ke-0 (setiap menit pas) agar tidak spam
-  if (s !== 0) return;
+  if (s !== 0) {
+    notifLog("Not at second 0, skipping");
+    return;
+  }
 
   const types = appState.settings.notificationTypes || {};
+  notifLog("Notification types settings:", types);
 
   // 1. Sesi presensi telah dimulai (sesi_presensi_mulai)
   if (types.sesi_presensi_mulai && m === 0) {

@@ -5175,7 +5175,7 @@
           Login Wali / Santri
         </h3>
         <p class="text-sm text-slate-500 mb-6">
-          Masukkan NIS dan Password NIS putra/putri Anda.
+          Masukkan NIS putra/putri Anda untuk memulai.
         </p>
 
         <div class="space-y-3">
@@ -5183,24 +5183,37 @@
             type="text"
             id="wali-nis"
             placeholder="NIS Santri"
+            oninput="window.onWaliNisInput(this.value)"
             class="w-full py-3.5 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-center"
           />
 
-          <input
-            type="password"
-            id="wali-password"
-            placeholder="Password NIS"
-            class="w-full py-3.5 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-center"
-          />
+          <!-- Suggestion info, hidden initially -->
+          <div
+            id="wali-suggestion-info"
+            class="hidden p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-2 animate-fade-in"
+          >
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">✓</span>
+            <span class="truncate">NIS terdeteksi: <span id="wali-suggested-name" class="font-extrabold text-slate-800 dark:text-emerald-300"></span></span>
+          </div>
+
+          <!-- Password and Submit Section, hidden initially -->
+          <div id="wali-password-section" class="hidden space-y-3 pt-1 animate-fade-in">
+            <input
+              type="password"
+              id="wali-password"
+              placeholder="Password NIS"
+              class="w-full py-3.5 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold text-slate-700 dark:text-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all text-center"
+            />
+
+            <button
+              onclick="handleWaliSubmit()"
+              class="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base shadow-lg shadow-emerald-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <i data-lucide="log-in" class="w-5 h-5"></i>
+              <span>Masuk</span>
+            </button>
+          </div>
         </div>
-
-        <button
-          onclick="handleWaliSubmit()"
-          class="mt-6 w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base shadow-lg shadow-emerald-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-        >
-          <i data-lucide="log-in" class="w-5 h-5"></i>
-          <span>Masuk</span>
-        </button>
 
         <button
           onclick="window.closeModal('modal-wali-login')"
@@ -5772,43 +5785,73 @@
     <script>
       // Mendaftarkan Service Worker agar aplikasi bisa di-install & jalan offline
       // Hanya register jika menggunakan HTTP/HTTPS (bukan file://)
+      console.log("[SW] Starting service worker registration...");
+      console.log("[SW] Protocol:", window.location.protocol);
+      console.log("[SW] SW supported:", "serviceWorker" in navigator);
+
       if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
         window.addEventListener("load", async () => {
+          console.log("[SW] Window loaded, registering service workers...");
+
           try {
             // Register main service worker
-            await navigator.serviceWorker.register("./sw.js");
-            console.log("Main SW registered");
+            const swReg = await navigator.serviceWorker.register("./sw.js");
+            console.log("[SW] Main SW registered:", swReg);
 
             // Register Firebase Messaging service worker
-            const reg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
-            console.log("Firebase Messaging SW registered", reg);
+            const fcmReg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+            console.log("[SW] Firebase Messaging SW registered:", fcmReg);
           } catch (err) {
-            console.warn("Gagal daftar SW:", err);
+            console.warn("[SW] Gagal daftar SW:", err);
           }
         });
 
-        // Initialize FCM after user interaction (to comply with browser policies)
+        // Initialize FCM - handle all permission states
         window.addEventListener("load", async () => {
-          // Check if we have notification permission
-          if (Notification.permission === "default") {
-            // Show notification permission prompt on first load
+          console.log("[FCM-UI] Checking notification permission state:", Notification.permission);
+
+          // Check current permission state
+          if (Notification.permission === "granted") {
+            console.log("[FCM-UI] Permission already granted, initializing FCM...");
+            await window.fcmManager?.init();
+          } else if (Notification.permission === "denied") {
+            console.log("[FCM-UI] Permission denied - user blocked notifications");
+          } else {
+            // "default" - need to ask
+            console.log("[FCM-UI] Permission not decided yet, waiting for user action...");
+
+            // Auto-init FCM on first user interaction (any click)
+            const initOnInteraction = async () => {
+              if (Notification.permission === "default") {
+                console.log("[FCM-UI] User interaction detected, initializing FCM...");
+                await window.fcmManager?.init();
+              }
+              document.removeEventListener("click", initOnInteraction);
+            };
+            document.addEventListener("click", initOnInteraction);
+
+            // Also handle button click specifically
             const notifyBtn = document.getElementById("notification-permission-btn");
             if (notifyBtn) {
-              notifyBtn.addEventListener("click", async () => {
-                const granted = await window.fcmManager.init();
+              notifyBtn.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                console.log("[FCM-UI] Notification button clicked");
+                const granted = await window.fcmManager?.init();
                 if (granted) {
                   notifyBtn.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="bell-ring" class="w-4 h-4"></i> Notifikasi Aktif</span>';
                   notifyBtn.classList.remove("bg-slate-100", "dark:bg-slate-800");
                   notifyBtn.classList.add("bg-green-100", "dark:bg-green-900/30", "text-green-700", "dark:text-green-400");
-                  lucide.createIcons();
+                  if (window.lucide) window.lucide.createIcons();
                 }
               });
             }
-          } else if (Notification.permission === "granted") {
-            // Permission already granted, initialize FCM
-            await window.fcmManager.init();
           }
         });
+      } else {
+        console.log("[SW] Service workers not available or running from file://");
+        if (window.location.protocol === "file:") {
+          console.log("[SW] NOTE: Push notifications require HTTPS or localhost, not file:// protocol");
+        }
       }
     </script>
 

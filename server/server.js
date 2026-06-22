@@ -1,5 +1,5 @@
 /**
- * FCM Notification Server
+ * FCM Notification Server - Production Ready
  *
  * Server backend untuk mengirim push notifications via Firebase Cloud Messaging
  * juga bisa digunakan untuk cron job penjadwalan notifikasi otomatis
@@ -10,9 +10,17 @@
  *   node server.js --schedule         # Run scheduler (for cron job)
  *   node server.js --list-tokens      # List all registered tokens
  *
- * Deployment:
- *   DEPLOYMENT_MODE=github-pages npm start   # For GitHub Pages
- *   npm start                                  # For local/Firebase Hosting
+ * Environment Variables:
+ *   PORT                    - Server port (default: 3000)
+ *   DEPLOYMENT_MODE         - "github-pages" or "firebase" (default: github-pages)
+ *   FIREBASE_PRIVATE_KEY    - Firebase private key (from service account)
+ *   FIREBASE_CLIENT_EMAIL   - Firebase client email
+ *   NODE_ENV                - "production" or "development"
+ *
+ * Deployment (Recommended: Railway, Render, Fly.io):
+ *   1. Railway: railway up
+ *   2. Render: Create Web Service with build command "npm install"
+ *   3. Fly.io: fly launch && fly deploy
  */
 
 const admin = require("firebase-admin");
@@ -22,14 +30,33 @@ const schedule = require("node-schedule");
 const fs = require("fs");
 const path = require("path");
 
-// Deployment configuration
+// Configuration
+const PORT = parseInt(process.env.PORT || "3000", 10);
+const NODE_ENV = process.env.NODE_ENV || "development";
 const DEPLOYMENT_MODE = process.env.DEPLOYMENT_MODE || "github-pages";
 const BASE_URL = DEPLOYMENT_MODE === "github-pages"
   ? "https://fadiahaswat.github.io/syamsa/"
   : "https://syamsa-a3395.firebaseapp.com/";
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 30;
+const requestCounts = new Map();
+
+// Logging utility
+function log(level, ...args) {
+  const timestamp = new Date().toISOString();
+  const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
+  if (NODE_ENV === "development" || level === "error") {
+    console.log(prefix, ...args);
+  }
+}
+
+// Deployment configuration
 console.log(`📍 Deployment Mode: ${DEPLOYMENT_MODE}`);
 console.log(`📍 Base URL: ${BASE_URL}`);
+console.log(`📍 Node Env: ${NODE_ENV}`);
+console.log(`📍 Port: ${PORT}`);
 
 // Load environment variables if .env exists
 try {
@@ -94,8 +121,46 @@ try {
 
 // Initialize Express
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// Security middleware
+app.use(cors({
+  origin: NODE_ENV === "production"
+    ? ["https://fadiahaswat.github.io", "https://syamsa-a3395.firebaseapp.com"]
+    : "*",
+  methods: ["GET", "POST"],
+}));
+
+// Body parser with size limit
+app.use(express.json({ limit: "1mb" }));
+
+// Rate limiting middleware
+app.use((req, res, next) => {
+  const ip = req.ip || req.connection.remoteAddress;
+  const count = requestCounts.get(ip) || 0;
+
+  if (count >= RATE_LIMIT_MAX_REQUESTS) {
+    log("warn", `Rate limit exceeded for IP: ${ip}`);
+    return res.status(429).json({
+      error: "Too many requests. Please try again later.",
+      retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000)
+    });
+  }
+
+  requestCounts.set(ip, count + 1);
+
+  // Reset counter after window
+  setTimeout(() => {
+    requestCounts.delete(ip);
+  }, RATE_LIMIT_WINDOW);
+
+  next();
+});
+
+// Request logging middleware
+app.use((req, res, next) => {
+  log("info", `${req.method} ${req.path}`);
+  next();
+});
 
 // ============================================
 // HELPER FUNCTIONS
@@ -452,28 +517,31 @@ if (args.includes("--send-now")) {
   console.log("Scheduler running. Press Ctrl+C to stop.");
 } else {
   // Start full server
-  const PORT = process.env.PORT || 3000;
-
-  app.listen(PORT, () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════╗
-║           FCM Notification Server Started               ║
+║         FCM Notification Server Started 🚀              ║
 ╠═══════════════════════════════════════════════════════╣
-║  Port: ${PORT}                                              ║
-║  Mode: Full Server                                      ║
+║  Environment: ${NODE_ENV.padEnd(40)}║
+║  Port: ${String(PORT).padEnd(46)}║
+║  Deployment: ${DEPLOYMENT_MODE.padEnd(41)}║
 ╠═══════════════════════════════════════════════════════╣
-║  Endpoints:                                             ║
-║  - GET  /health              Health check               ║
-║  - GET  /api/tokens         List all tokens            ║
-║  - POST /api/send-all        Send to all devices        ║
-║  - POST /api/send-token     Send to specific token     ║
-║  - POST /api/send-kelas     Send by class              ║
+║  API Endpoints:                                        ║
+║  - GET  /health           Health check                ║
+║  - GET  /api/tokens       List all tokens             ║
+║  - POST /api/send-all     Send to all devices         ║
+║  - POST /api/send-token   Send to specific token      ║
+║  - POST /api/send-kelas   Send by class               ║
 ╠═══════════════════════════════════════════════════════╣
-║  Scheduled: Shalat (5x) + Pembinaan (weekdays 7AM)     ║
+║  Scheduled Jobs:                                       ║
+║  - Shalat 5x daily (Subuh, Dzuhur, Ashar, Maghrib,    ║
+║    Isya)                                              ║
+║  - Pembinaan reminder (weekdays at 7 AM)              ║
 ╚═══════════════════════════════════════════════════════╝
     `);
 
     // Start scheduler
     scheduleDailyNotifications();
+    console.log("✅ Server ready and accepting requests");
   });
 }

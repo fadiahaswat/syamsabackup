@@ -631,21 +631,64 @@ window.handleMusyrifSubmit = async function () {
 // WALI/SANTRI LOGIN
 // ==========================================
 
+let waliConfirmedStudent = null;
+
 window.handleWaliLogin = function () {
   const modal = document.getElementById("modal-wali-login");
   if (modal) {
+    // Reset state & fields when modal opens
+    waliConfirmedStudent = null;
+    const nisInput = document.getElementById("wali-nis");
+    const passInput = document.getElementById("wali-password");
+    const suggInfo = document.getElementById("wali-suggestion-info");
+    const passSec = document.getElementById("wali-password-section");
+
+    if (nisInput) nisInput.value = "";
+    if (passInput) passInput.value = "";
+    if (suggInfo) suggInfo.classList.add("hidden");
+    if (passSec) passSec.classList.add("hidden");
+
     window.openModal("modal-wali-login");
+
+    setTimeout(() => {
+      if (nisInput) nisInput.focus();
+    }, 100);
   } else {
     window.showToast("Fitur login wali belum tersedia.", "info");
   }
 };
 
-window.handleWaliLogin = function () {
-  const modal = document.getElementById("modal-wali-login");
-  if (modal) {
-    window.openModal("modal-wali-login");
+window.onWaliNisInput = function (val) {
+  const cleanVal = String(val || "").trim();
+  const suggInfo = document.getElementById("wali-suggestion-info");
+  const suggName = document.getElementById("wali-suggested-name");
+  const passSec = document.getElementById("wali-password-section");
+  const passInput = document.getElementById("wali-password");
+
+  if (cleanVal.length < 2) {
+    waliConfirmedStudent = null;
+    if (suggInfo) suggInfo.classList.add("hidden");
+    if (passSec) passSec.classList.add("hidden");
+    return;
+  }
+
+  const foundSantri = window.findWaliSantriByNis(cleanVal);
+  if (foundSantri) {
+    waliConfirmedStudent = foundSantri;
+    if (suggName) suggName.textContent = foundSantri.nama || "Santri";
+    if (suggInfo) suggInfo.classList.remove("hidden");
+    if (passSec) passSec.classList.remove("hidden");
+    
+    // Smooth transition / focus password
+    setTimeout(() => {
+      if (passInput && document.activeElement !== passInput) {
+        passInput.focus();
+      }
+    }, 100);
   } else {
-    window.showToast("Fitur login wali belum tersedia.", "info");
+    waliConfirmedStudent = null;
+    if (suggInfo) suggInfo.classList.add("hidden");
+    if (passSec) passSec.classList.add("hidden");
   }
 };
 
@@ -8029,148 +8072,6 @@ window.requestGPSPermissionOnStartup = async function () {
   );
 };
 
-// 2. Meminta Izin Notifikasi (Dipanggil tombol lonceng)
-window.requestNotificationPermission = async function () {
-  if (!("Notification" in window)) {
-    return window.showToast("Browser Anda tidak mendukung notifikasi", "error");
-  }
-
-  if (Notification.permission === "granted") {
-    // Jika sudah aktif, kirim tes notifikasi
-    window.sendLocalNotification(
-      "Notifikasi Aktif ✅",
-      "Anda akan diingatkan saat waktu presensi tiba.",
-      "info",
-    );
-  } else {
-    // Jika belum, minta izin
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      window.showToast("Notifikasi berhasil diaktifkan!", "success");
-      window.sendLocalNotification(
-        "Assalamu'alaikum!",
-        "Sistem pengingat presensi Syamsa aktif.",
-        "info",
-      );
-
-      // Sembunyikan badge merah di tombol jika ada
-      const badge = document.getElementById("notif-badge");
-      if (badge) badge.classList.add("hidden");
-    } else {
-      window.showToast("Izin notifikasi ditolak", "warning");
-    }
-  }
-};
-
-// 2. Fungsi Mengirim Notifikasi
-window.sendLocalNotification = function (title, body, type = "info") {
-  if (Notification.permission === "granted") {
-    // Cek mode HP (Vibrate)
-    const options = {
-      body: body,
-      icon: "https://api.iconify.design/lucide/shield-check.svg?color=%2310b981", // Icon App
-      badge: "https://api.iconify.design/lucide/bell.svg?color=%23ffffff",
-      vibrate: [200, 100, 200], // Getaran: zzz-z-zzz
-      tag: title, // Agar notifikasi dengan judul sama tidak menumpuk
-    };
-
-    new Notification(title, options);
-  }
-};
-
-// 3. Penjadwal Otomatis (Cek Waktu Setiap Menit)
-window.checkScheduledNotifications = function () {
-  if (!("Notification" in window)) return;
-  if (Notification.permission !== "granted") return;
-
-  const now = new Date();
-  const h = now.getHours();
-  const m = now.getMinutes();
-  const s = now.getSeconds();
-
-  // Eksekusi hanya di detik ke-0 (setiap menit pas) agar tidak spam
-  if (s !== 0) return;
-
-  // --- TIPE 1: REMINDER MASUK WAKTU (Saat jam mulai pas) ---
-  // Shubuh (04:00), Ashar (15:00), Maghrib (18:00), Isya (19:00)
-  Object.values(SLOT_WAKTU).forEach((slot) => {
-    if (h === slot.startHour && m === 0) {
-      window.sendLocalNotification(
-        `Waktunya ${slot.label}! 🕌`,
-        `Sudah masuk waktu ${slot.label}. Silakan cek kehadiran santri.`,
-      );
-    }
-  });
-
-  // --- TIPE 2: REMINDER DEADLINE (30 Menit Sebelum Habis) ---
-  // Shubuh habis jam 06:00 -> Ingatkan jam 05:30
-  if (h === 5 && m === 30) {
-    window.sendLocalNotification(
-      "30 Menit Lagi! ⏳",
-      "Waktu presensi Shubuh segera berakhir.",
-    );
-  }
-  // Ashar habis jam 17:00 -> Ingatkan jam 16:30
-  if (h === 16 && m === 30) {
-    window.sendLocalNotification(
-      "Hampir Habis! ⏳",
-      "Segera selesaikan presensi Ashar.",
-    );
-  }
-  // Maghrib habis jam 19:00 -> Ingatkan jam 18:45 (15 menit aja karena singkat)
-  if (h === 18 && m === 45) {
-    window.sendLocalNotification(
-      "Segera Isya! ⚠️",
-      "Waktu Maghrib tinggal 15 menit.",
-    );
-  }
-  // Isya habis jam 21:00 -> Ingatkan jam 20:30
-  if (h === 20 && m === 30) {
-    window.sendLocalNotification(
-      "Jangan Lupa! 🌙",
-      "Pastikan semua santri sudah diabsen Isya.",
-    );
-  }
-
-  // --- TIPE 3: MOTIVASI HARIAN (Opsional) ---
-  // Jam 08:00 Pagi
-  if (h === 8 && m === 0) {
-    window.sendLocalNotification(
-      "Semangat Pagi! ☀️",
-      "Semoga hari ini penuh keberkahan dalam mengasuh santri.",
-    );
-  }
-};
-
-window.requestNotificationPermission = async function () {
-  if (!("Notification" in window)) {
-    return window.showToast("Browser Anda tidak mendukung notifikasi", "error");
-  }
-
-  if (Notification.permission === "granted") {
-    window.sendLocalNotification(
-      "Notifikasi Aktif",
-      "Anda akan diingatkan saat waktu presensi tiba.",
-      "info",
-      "notification-test",
-    );
-    return;
-  }
-
-  const permission = await Notification.requestPermission();
-  if (permission === "granted") {
-    window.showToast("Notifikasi berhasil diaktifkan!", "success");
-    window.sendLocalNotification(
-      "Assalamu'alaikum!",
-      "Sistem pengingat presensi Syamsa aktif.",
-      "info",
-      "notification-enabled",
-    );
-    document.getElementById("notif-badge")?.classList.add("hidden");
-  } else {
-    window.showToast("Izin notifikasi ditolak", "warning");
-  }
-};
 
 window.isNotificationTypeEnabled = function (key) {
   const types = appState.settings.notificationTypes || {};
