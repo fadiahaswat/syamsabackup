@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panduan Perizinan Santri - Asrama 1 Abu Bakar Ash-Shiddiq</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc; /* Latar belakang yang lebih lembut */
+            color: #1e293b; /* Warna teks default slate-800 */
+        }
+
+        /* Animasi saat scroll */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(25px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .animate-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Styling Akordeon */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), padding-top 0.5s cubic-bezier(0.4, 0, 0.2, 1), padding-bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .accordion-button[aria-expanded="true"] + .accordion-content {
+            max-height: 2500px; /* Nilai besar untuk menampung konten apa pun */
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+        }
+        .accordion-button .icon {
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .accordion-button[aria-expanded="true"] .icon {
+            transform: rotate(135deg);
+        }
+
+        /* Styling Tombol Interaktif */
+        .btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .btn:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Fokus yang terlihat untuk aksesibilitas */
+        :focus-visible {
+            outline: 3px solid #60a5fa; /* blue-400 */
+            outline-offset: 2px;
+            border-radius: 0.5rem;
+        }
+
+        /* Styling Modal */
+        .modal-backdrop {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease-in-out;
+            transform: translateY(20px) scale(0.98);
+            opacity: 0;
+        }
+        #form-modal.is-open .modal-content {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        
+        /* Styling Input Form */
+        .form-input {
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-input:focus {
+            border-color: #3b82f6; /* blue-500 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Modal untuk Formulir Online -->
+    <div id="form-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div id="modal-backdrop" class="absolute inset-0 bg-slate-900/60 modal-backdrop"></div>
+        <div class="modal-content bg-white w-full max-w-lg rounded-2xl shadow-xl relative max-h-[90vh] overflow-y-auto">
+            <div class="p-6 sm:p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="modal-title" class="text-xl font-bold text-blue-700">Formulir Izin Online</h3>
+                    <button id="close-modal-btn" class="text-slate-400 hover:text-slate-800 transition-colors" aria-label="Tutup formulir">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <form id="izin-form" class="space-y-5" novalidate>
+                    <input type="hidden" id="recipient-type" value="">
+                    
+                    <div>
+                        <label for="nama-wali" class="block text-sm font-medium text-slate-700 mb-1.5">Nama Wali Santri</label>
+                        <input type="text" id="nama-wali" required class="form-input w-full p-3 border border-slate-300 rounded-lg" placeholder="Contoh: Budi Santoso">
+                    </div>
+                    <div>
+                        <label for="alamat-wali" class="block text-sm font-medium text-slate-700 mb-1.5">Alamat Wali Santri</label>
+                        <input type="text" id="alamat-wali" required class="form-input w-full p-3 border border-slate-300 rounded-lg" placeholder="Contoh: Jl. Merdeka No. 10, Yogyakarta">
+                    </div>
+                    <div>
+                        <label for="nama-santri" class="block text-sm font-medium text-slate-700 mb-1.5">Nama Santri</label>
+                        <select id="nama-santri" required class="form-input w-full p-3 border border-slate-300 rounded-lg bg-white appearance-none">
+                            <option value="" disabled selected>Pilih Nama Santri</option>
+                            <!-- Opsi akan diisi oleh JavaScript -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="kelas-santri" class="block text-sm font-medium text-slate-700 mb-1.5">Kelas Santri</label>
+                        <input type="text" id="kelas-santri" readonly class="w-full p-3 border border-slate-300 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label for="keperluan" class="block text-sm font-medium text-slate-700 mb-1.5">Keperluan</label>
+                        <textarea id="keperluan" rows="3" required class="form-input w-full p-3 border border-slate-300 rounded-lg" placeholder="Contoh: menghadiri acara keluarga, kontrol kesehatan, dll."></textarea>
+                        <p class="text-xs text-slate-500 mt-2">Mohon isi keperluan dengan jelas dan rinci. Keperluan yang kurang jelas bisa tidak disetujui.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="tanggal-izin" class="block text-sm font-medium text-slate-700 mb-1.5">Tanggal Izin/Keluar</label>
+                            <input type="date" id="tanggal-izin" required class="form-input w-full p-3 border border-slate-300 rounded-lg">
+                        </div>
+                        <div id="tanggal-kembali-wrapper" class="hidden">
+                            <label for="tanggal-kembali" class="block text-sm font-medium text-slate-700 mb-1.5">Tanggal Kembali</label>
+                            <input type="text" id="tanggal-kembali" readonly class="w-full p-3 border border-slate-300 rounded-lg bg-slate-100 text-slate-500 cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Waktu Izin</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="jam-keluar" class="text-xs text-slate-500">Jam Keluar</label>
+                                <select id="jam-keluar" required class="form-input w-full p-3 border border-slate-300 rounded-lg bg-white appearance-none">
+                                    <option value="" disabled selected>Pilih</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="jam-kembali" class="text-xs text-slate-500">Jam Kembali</label>
+                                <select id="jam-kembali" required class="form-input w-full p-3 border border-slate-300 rounded-lg bg-white appearance-none">
+                                    <option value="" disabled selected>Pilih</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="tujuan" class="block text-sm font-medium text-slate-700 mb-1.5">Tempat Tujuan</label>
+                        <input type="text" id="tujuan" required class="form-input w-full p-3 border border-slate-300 rounded-lg" placeholder="Alamat atau lokasi yang dituju">
+                    </div>
+                    <div id="form-error" class="text-red-600 text-sm hidden font-medium"></div>
+                    <div class="pt-6 border-t border-slate-200">
+                        <button type="submit" class="btn w-full bg-green-500 text-white font-bold py-3.5 px-8 rounded-lg shadow-lg hover:bg-green-600">
+                            Buat & Kirim Surat Izin via WhatsApp
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto max-w-3xl p-4 sm:p-6 md:p-8">
+
+        <!-- Bagian Hero -->
+        <header class="text-center py-16 sm:py-24 animate-on-scroll">
+            <div class="mx-auto mb-6 w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-3xl shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+            </div>
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+                Panduan Perizinan Santri
+            </h1>
+            <p class="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
+                Prosedur resmi untuk pengajuan izin di Asrama 1 Abu Bakar Ash-Shiddiq, Madrasah Mu'allimin Muhammadiyah Yogyakarta.
+            </p>
+            <div class="mt-8">
+                <a href="#main-content" id="scroll-to-procedures" class="btn bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-blue-700">
+                    Lihat Prosedur
+                </a>
+            </div>
+        </header>
+
+        <main id="main-content">
+            <!-- Ketentuan Umum -->
+            <section class="mb-16 animate-on-scroll" aria-labelledby="ketentuan-umum-heading">
+                <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <h2 id="ketentuan-umum-heading" class="text-xl sm:text-2xl font-bold mb-6 text-slate-800">📜 Ketentuan Umum</h2>
+                    <ul class="space-y-4 text-slate-700">
+                        <li class="flex items-start gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Prosedur ini adalah <strong>acuan resmi</strong> untuk mendukung ketertiban dan kelancaran kegiatan di madrasah.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Santri hanya diperkenankan meninggalkan asrama setelah <strong>mendapatkan izin resmi</strong> dari pihak yang berwenang.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            <span>Pelanggaran terhadap aturan, seperti keluar tanpa izin atau melebihi batas waktu, akan <strong>dikenakan pembinaan</strong> sesuai peraturan yang berlaku.</span>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Prosedur -->
+            <section aria-labelledby="prosedur-izin-heading">
+                <h2 id="prosedur-izin-heading" class="text-xl sm:text-2xl font-bold text-center mb-8 animate-on-scroll text-slate-800">Prosedur Pengajuan Izin</h2>
+                <div class="space-y-4" id="accordion-container">
+
+                    <!-- Akordeon 1: Izin Keluar & Kembali di Hari yang Sama -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 animate-on-scroll">
+                        <button class="accordion-button w-full text-left p-5 sm:p-6 flex justify-between items-center" aria-expanded="false" aria-controls="accordion-content-1">
+                            <span class="font-bold text-base sm:text-lg text-slate-800">☀️ Izin Keluar & Kembali Hari yang Sama</span>
+                            <span class="icon h-6 w-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            </span>
+                        </button>
+                        <div class="accordion-content px-5 sm:px-6" id="accordion-content-1" role="region" aria-labelledby="accordion-btn-1">
+                            <div class="accordion-content-inner border-t border-slate-200 pt-6">
+                                <p class="mb-4 text-slate-600">Diajukan kepada <strong>Musyrif Kelas</strong>. Silakan gunakan formulir online untuk pengajuan yang lebih mudah.</p>
+                                <button class="btn open-form-btn bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm" data-recipient="musyrif">📝 Buka Formulir Izin Online</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Akordeon 2: Izin Terlambat Pasca Perpulangan -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 animate-on-scroll">
+                        <button class="accordion-button w-full text-left p-5 sm:p-6 flex justify-between items-center" aria-expanded="false" aria-controls="accordion-content-2">
+                            <span class="font-bold text-base sm:text-lg text-slate-800">⏰ Izin Terlambat Pasca Perpulangan</span>
+                            <span class="icon h-6 w-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            </span>
+                        </button>
+                        <div class="accordion-content px-5 sm:px-6" id="accordion-content-2" role="region" aria-labelledby="accordion-btn-2">
+                            <div class="accordion-content-inner border-t border-slate-200 pt-6">
+                                <p class="mb-4 text-slate-600">Wali santri <strong>wajib mengisi surat permohonan</strong> dan mengirimkannya ke Koordinator Musyrif.</p>
+                                <div class="flex flex-wrap gap-4">
+                                   <a href="https://docs.google.com/document/d/1pDJLZe5SrC2-Djql9Sw_pU-z3Nnpfx5KgNwqaMkIKNw/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm">📄 Unduh Format</a>
+                                   <a href="https://wa.me/6285339213109" target="_blank" rel="noopener noreferrer" class="btn bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Kirim ke Koordinator</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Akordeon 3: Izin Menginap -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 animate-on-scroll">
+                        <button class="accordion-button w-full text-left p-5 sm:p-6 flex justify-between items-center" aria-expanded="false" aria-controls="accordion-content-3">
+                            <span class="font-bold text-base sm:text-lg text-slate-800">🌙 Izin Menginap (1-3 Hari)</span>
+                            <span class="icon h-6 w-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            </span>
+                        </button>
+                        <div class="accordion-content px-5 sm:px-6" id="accordion-content-3" role="region" aria-labelledby="accordion-btn-3">
+                            <div class="accordion-content-inner border-t border-slate-200 pt-6 space-y-8">
+                                <div class="step">
+                                    <h4 class="font-semibold text-green-700 mb-3">A. Izin Menginap 1 Malam</h4>
+                                    <p class="mb-4 text-slate-600">Diajukan kepada <strong>Pamong Asrama</strong>. Silakan gunakan formulir online untuk pengajuan yang lebih mudah.</p>
+                                    <button class="btn open-form-btn bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm" data-recipient="pamong">📝 Buka Formulir Izin Online</button>
+                                </div>
+                                <div class="step">
+                                    <h4 class="font-semibold text-green-700 mb-3">B. Izin Menginap 2-3 Hari</h4>
+                                    <p class="mb-4 text-slate-600">Wali santri <strong>wajib mengisi surat permohonan</strong> dan mengirimkannya ke Pamong Asrama.</p>
+                                    <div class="flex flex-wrap gap-4">
+                                        <a href="https://docs.google.com/document/d/1oQtCWzwcrBeHEeM6h3CKhEYX3dFNr5ZzzAGb3zoQFMc/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm">📄 Unduh Format</a>
+                                        <a href="https://wa.me/6282145575016" target="_blank" rel="noopener noreferrer" class="btn bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Kirim ke Pamong</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Akordeon 4: Izin Khusus -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 animate-on-scroll">
+                        <button class="accordion-button w-full text-left p-5 sm:p-6 flex justify-between items-center" aria-expanded="false" aria-controls="accordion-content-4">
+                            <span class="font-bold text-base sm:text-lg text-slate-800">✈️ Izin Khusus (> 3 Hari / Cuti Sakit)</span>
+                            <span class="icon h-6 w-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+                            </span>
+                        </button>
+                        <div class="accordion-content px-5 sm:px-6" id="accordion-content-4" role="region" aria-labelledby="accordion-btn-4">
+                            <div class="accordion-content-inner border-t border-slate-200 pt-6 space-y-8">
+                                <div class="step">
+                                    <h4 class="font-semibold text-red-700 mb-3">Langkah 1: Siapkan Surat Permohonan</h4>
+                                    <p class="mb-4 text-slate-600">Wali santri membuat <strong>surat permohonan resmi</strong> yang ditujukan kepada <strong>Direktur Madrasah</strong>.</p>
+                                    <a href="https://docs.google.com/document/d/1dbbqi0mpVuBX3VPmcHOoKsvx22uDy6Oo92PswLTYFDo/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm inline-block">📄 Unduh Format Surat</a>
+                                </div>
+                                <div class="step">
+                                    <h4 class="font-semibold text-red-700 mb-3">Langkah 2: Kirim Surat</h4>
+                                    <p class="mb-4 text-slate-600">Surat dapat dikirimkan melalui <strong>Email</strong> atau diserahkan dalam bentuk <strong>Fisik (Hard Copy)</strong>.</p>
+                                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
+                                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                            <span class="text-sm font-medium text-slate-700"><strong>Email:</strong> <span id="email-address">humas@muallimin.sch.id</span></span>
+                                            <button onclick="copyEmail(this)" data-copy-target="email-address" aria-label="Salin alamat email" class="p-1.5 rounded-md hover:bg-slate-200 transition-colors self-start sm:self-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard text-slate-500" viewBox="0 0 16 16" role="img"><title>Salin</title><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>
+                                            </button>
+                                        </div>
+                                        <hr class="border-slate-200/80">
+                                        <div>
+                                            <p class="font-semibold text-slate-800"><strong>Alamat Fisik:</strong></p>
+                                            <p class="text-slate-600 text-sm mt-1">Madrasah Mu'allimin Muhammadiyah Yogyakarta<br>Jl. Letjen S.Parman No.68, Wirobrajan, Kota Yogyakarta, DIY 55252.</p>
+                                            <a href="https://maps.app.goo.gl/PKobJLu6FH3eb3H36" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-alt-fill" viewBox="0 0 16 16"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+                                                Lihat di Google Maps
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-16 md:mt-20 pt-8 md:pt-10 border-t border-slate-200/80">
+            <p class="text-slate-500 text-sm">&copy; 2025 Didesain oleh fadiahaswat</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            
+            // --- DATA ---
+            // Data santri dan kelasnya
+            const santriData = [
+                { name: "Adelio Daffa Syahrizha", class: "2A" }, { name: "Ahmad Ahsanur Rizqi", class: "2A" }, { name: "Arkana El Sabilly", class: "2A" },
+                { name: "Athaya Auza'I Mubarak", class: "2A" }, { name: "Dama Arza Evannova", class: "2A" }, { name: "Danar Nizam Daniswara", class: "2A" },
+                { name: "Devgan Jadid Sahlvatico", class: "2A" }, { name: "Fariq Imtiyas Aufaa Kamil", class: "2A" }, { name: "Firaas Izzulhaq", class: "2A" },
+                { name: "Gilang Omar F", class: "2A" }, { name: "Jaladri Arif Wirasena", class: "2A" }, { name: "Kemal Mubarak Siregar", class: "2A" },
+                { name: "Khairil Nizam", class: "2A" }, { name: "Mirza Nasyath Ahza Attaillah", class: "2A" }, { name: "Muhammad Farros Linggar Cahyono", class: "2A" },
+                { name: "Muhammad Fathir Alfalah", class: "2A" }, { name: "Narendra Wibawa", class: "2A" }, { name: "Naufal Zhafran Purnama", class: "2A" },
+                { name: "Ahmad Arkan Sya'Bani", class: "2A" }, { name: "Ahmad Darwis", class: "2A" }, { name: "Ahmad Ghozi El Muntazhor", class: "2A" },
+                { name: "Aldan 'Izzul Islam", class: "2A" }, { name: "Fawwaz Elfareza Zuhri", class: "2A" }, { name: "M. Fathan Alfarisi Harahap", class: "2A" },
+                { name: "Muhammad Ahsani Taqwim", class: "2A" }, { name: "Muhammad Ayyub Al Fatih", class: "2A" }, { name: "Muhammad Gibran Rafassya", class: "2A" },
+                { name: "Narendra Gerrardi Kusumah", class: "2A" }, { name: "Rijal Abdul A'Ziz", class: "2A" }, { name: "Rizki Chandra Dewantara", class: "2A" },
+                { name: "Alano Faaiq Alfeno", class: "2B" }, { name: "Arfandhika Fakhrul Islam", class: "2B" }, { name: "Aydin Rafif", class: "2B" },
+                { name: "Danish Alzahid Dinasti", class: "2B" }, { name: "Ghani Arif Witjaksono", class: "2B" }, { name: "Haidarrafid Satriaa Ardhani", class: "2B" },
+                { name: "Iqbal Zulfikar Al Hanif", class: "2B" }, { name: "Jangky Dausat", class: "2B" }, { name: "Kumara Banyu Argani", class: "2B" },
+                { name: "M. Dede Afkar", class: "2B" }, { name: "Mekha Ilham Lutfianto", class: "2B" }, { name: "Muhammad Aiman Naim", class: "2B" },
+                { name: "Muhammad Karel Ashiddiq", class: "2B" }, { name: "Naufal Fahmi Darsono", class: "2B" }, { name: "Nazhif Fahreza Zuhairy", class: "2B" },
+                { name: "Rais Abqari Ash Shidqi", class: "2B" }, { name: "William Ramadhan Al Ghazali", class: "2B" }, { name: "Zia El Ibrahim Aqeela Putra Wijaya", class: "2B" },
+                { name: "Ahmad Miqdad", class: "2B" }, { name: "Dzaky Salman Al Farisi", class: "2B" }, { name: "Muhammad Alvi Mumtaz Brillian Hafizh", class: "2B" },
+                { name: "Muhammad Mahdi Hafidz", class: "2B" }, { name: "Muhammad Naufal Rasyid Arafi", class: "2B" }, { name: "Nahsif Ilman Hazim Purwono", class: "2B" },
+                { name: "Nawwaf Bahy Rafif", class: "2B" }, { name: "Nizar Adhyatma Aryanda", class: "2B" }, { name: "Rafa Agitananda Az Zayyan", class: "2B" },
+                { name: "Rafa Faeyza Fa'Iz", class: "2B" }, { name: "Rizqi Satria Putra Surya", class: "2B" }, { name: "Umar Ubaidillah Tsaqif", class: "2B" },
+                { name: "Wildan Faiz Mahendra", class: "2B" }, { name: "Faiq Fauzil Adhim", class: "2C" }, { name: "Fairuz Azzam Mahfuzh", class: "2C" },
+                { name: "Muhammad Arkhan Attaqi", class: "2C" }, { name: "Muhammad Daffa Naufal Alaika", class: "2C" }, { name: "Muzakki Fairuzzaman", class: "2C" },
+                { name: "Neymar Tsaqif Hikmatyar", class: "2C" }, { name: "Rifqi Maliki", class: "2C" }, { name: "Yasykur Slamer'Abqariy", class: "2C" },
+                { name: "Zhafran Dhiaurrahman Hakim", class: "2C" }, { name: "Achmad Adi Darwis Elfaza", class: "2D" }, { name: "Galang Afkar Artyanto", class: "2D" },
+                { name: "Gilang Asytar Artyanto", class: "2D" }, { name: "Muhammad Alif Al-Fatih", class: "2D" }, { name: "Muhammad Faiz Ibnu Zakaria", class: "2D" },
+                { name: "Muhammad Mahdi Hanafi", class: "2D" }, { name: "Muhammad Muhdi Hafidz", class: "2D" }, { name: "Rizqi Ahmad Altaf Zafar", class: "2D" },
+                { name: "Dzaky Anthony Akbar", class: "2G" }, { name: "Muwafaqi Amru Ahmad", class: "2G" }, { name: "Abdul Ghani Irfan Rafif", class: "2H" },
+                { name: "Abid Fadhil Abiyah", class: "2H" }, { name: "Ahmad Dahlan Asy'Ari", class: "2H" }, { name: "Athallah Azmi Ghaisan Muhammad", class: "2H" },
+                { name: "Azmi Zulfadli Syafiq", class: "2H" }, { name: "Azri Labibul Khawarizmi", class: "2H" }, { name: "Dzar Al Ghifari", class: "2H" },
+                { name: "Fatihan Al Ghifari", class: "2H" }, { name: "Hisyam Nabil Pasha", class: "2H" }, { name: "Ibadillah Kaiazmi Mubarak", class: "2H" },
+                { name: "Kashvi Jabbar Azana", class: "2H" }, { name: "Khawarizmi Fakhrulhaq", class: "2H" }, { name: "Muh. Naufal Alif", class: "2H" },
+                { name: "Muhammad Aghna Ilman Rafa", class: "2H" }, { name: "Royyan Abdurrahman Ibtisam", class: "2H" }, { name: "Sakhi Arkan Elfariza", class: "2H" }
+            ];
+            
+            // Data kontak Musyrif per kelas
+            const musyrifData = {
+                '2A': { name: 'Ustadz Andi Aqillah Fadia Haswat', number: '6285339213109' },
+                '2B': { name: 'Ustadz Abdullah', number: '62881025916368' },
+                '2C': { name: 'Ustadz Muhammad Zhafir Setiaji', number: '6287717412804' },
+                '2D': { name: 'Ustadz Muhammad Zhafir Setiaji', number: '6287717412804' },
+                '2G': { name: 'Ustadz Muhammad Zhafir Setiaji', number: '6287717412804' },
+                '2H': { name: 'Ustadz Muhammad Zhafir Setiaji', number: '6287717412804' }
+            };
+            
+            // Data kontak Pamong Asrama
+            const pamongData = { name: 'Ustadz Muhammad Ahnaf Lubab', number: '6282145575016' };
+
+            // --- DOM Elements ---
+            const modal = document.getElementById('form-modal');
+            const modalBackdrop = document.getElementById('modal-backdrop');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const openModalButtons = document.querySelectorAll('.open-form-btn');
+            const izinForm = document.getElementById('izin-form');
+            const santriDropdown = document.getElementById('nama-santri');
+            const kelasField = document.getElementById('kelas-santri');
+            const tanggalIzinField = document.getElementById('tanggal-izin');
+            const tanggalKembaliField = document.getElementById('tanggal-kembali');
+            const tanggalKembaliWrapper = document.getElementById('tanggal-kembali-wrapper');
+            const recipientTypeInput = document.getElementById('recipient-type');
+            const jamKeluarSelect = document.getElementById('jam-keluar');
+            const jamKembaliSelect = document.getElementById('jam-kembali');
+            const accordionContainer = document.getElementById('accordion-container');
+            
+            // --- FUNCTIONS ---
+
+            /**
+             * Mengisi dropdown nama santri dari data yang ada.
+             */
+            function populateSantriDropdown() {
+                santriData.sort((a, b) => a.name.localeCompare(b.name)); // Urutkan nama secara alfabetis
+                santriData.forEach(santri => {
+                    const option = document.createElement('option');
+                    option.value = `${santri.name}|${santri.class}`;
+                    option.textContent = santri.name;
+                    santriDropdown.appendChild(option);
+                });
+            }
+            
+            /**
+             * Mengisi dropdown waktu dengan interval 15 menit.
+             * @param {HTMLSelectElement} selectElement - Elemen select yang akan diisi.
+             * @param {number} startHour - Jam mulai.
+             * @param {number} endHour - Jam selesai.
+             */
+            function populateTimeDropdowns(selectElement, startHour, endHour) {
+                selectElement.innerHTML = '<option value="" disabled selected>Pilih</option>'; // Hapus opsi lama
+                for (let i = startHour; i <= endHour; i++) {
+                    for (let j = 0; j < 60; j += 15) {
+                        if (i === endHour && j > 0) continue;
+                        const hour = i.toString().padStart(2, '0');
+                        const minute = j.toString().padStart(2, '0');
+                        const time = `${hour}:${minute}`;
+                        const option = document.createElement('option');
+                        option.value = time;
+                        option.textContent = time;
+                        selectElement.appendChild(option);
+                    }
+                }
+            }
+
+            /**
+             * Membuka modal formulir dan mengaturnya berdasarkan tipe penerima.
+             * @param {string} recipientType - Tipe penerima ('musyrif' atau 'pamong').
+             */
+            function openModal(recipientType) {
+                recipientTypeInput.value = recipientType;
+                
+                // Atur form berdasarkan tipe izin
+                if (recipientType === 'musyrif') {
+                    populateTimeDropdowns(jamKeluarSelect, 6, 21);
+                    populateTimeDropdowns(jamKembaliSelect, 6, 21);
+                    tanggalKembaliWrapper.classList.add('hidden');
+                    tanggalKembaliField.removeAttribute('required');
+                } else { // pamong
+                    populateTimeDropdowns(jamKeluarSelect, 6, 21);
+                    populateTimeDropdowns(jamKembaliSelect, 6, 21);
+                    tanggalKembaliWrapper.classList.remove('hidden');
+                    tanggalKembaliField.setAttribute('required', 'true');
+                }
+
+                izinForm.reset();
+                kelasField.value = '';
+                tanggalKembaliField.value = '';
+                document.getElementById('form-error').classList.add('hidden');
+                
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.add('is-open'), 10);
+                document.body.style.overflow = 'hidden'; // Mencegah scroll di belakang modal
+            }
+
+            /**
+             * Menutup modal formulir.
+             */
+            function closeModal() {
+                modal.classList.remove('is-open');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = ''; // Mengembalikan scroll
+                }, 300);
+            }
+
+            /**
+             * Menangani pengiriman formulir izin.
+             * @param {Event} event - Event submit.
+             */
+            function handleFormSubmit(event) {
+                event.preventDefault();
+                if (!izinForm.checkValidity()) {
+                    izinForm.reportValidity();
+                    return;
+                }
+
+                const recipientType = recipientTypeInput.value;
+                const namaWali = document.getElementById('nama-wali').value.trim();
+                const alamatWali = document.getElementById('alamat-wali').value.trim();
+                const [namaSantri, kelas] = santriDropdown.value.split('|');
+                const keperluan = document.getElementById('keperluan').value.trim();
+                const tanggal = tanggalIzinField.value;
+                const jamKeluarValue = jamKeluarSelect.value;
+                const jamKembaliValue = jamKembaliSelect.value;
+                const tujuan = document.getElementById('tujuan').value.trim();
+                const formError = document.getElementById('form-error');
+
+                let targetRecipient, recipientTitle, waktuText;
+                const hariTanggalIzin = new Date(tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+                if (recipientType === 'musyrif') {
+                    targetRecipient = musyrifData[kelas];
+                    if (!targetRecipient) {
+                        formError.textContent = 'Data Musyrif untuk kelas ini tidak ditemukan. Silakan hubungi admin.';
+                        formError.classList.remove('hidden');
+                        return;
+                    }
+                    recipientTitle = `Musyrif Kelas ${kelas}\nAsrama 1 Abu Bakar Ash - Shiddiq.`;
+                    waktuText = `*Hari, Tanggal* : ${hariTanggalIzin}\n*Waktu* : ${jamKeluarValue} - ${jamKembaliValue}`;
+                } else { // pamong
+                    targetRecipient = pamongData;
+                    recipientTitle = "Pamong Asrama 1 Abu Bakar Ash - Shiddiq.";
+                    waktuText = `*Waktu* : Mulai ${hariTanggalIzin} pukul ${jamKeluarValue},\nkembali pada ${tanggalKembaliField.value} pukul ${jamKembaliValue}.`;
+                }
+                
+                formError.classList.add('hidden');
+                
+                const tanggalSurat = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                
+                const message = `
+*SURAT PERMOHONAN IZIN MENINGGALKAN ASRAMA*
+
+Yogyakarta, ${tanggalSurat}
+Kepada Yth.
+*${targetRecipient.name}*
+${recipientTitle}
+
+_Assalamu’alaikum warahmatullahi wabarakatuh,_
+
+Dengan hormat, saya selaku wali santri dari putra kami:
+
+*Nama Santri* : ${namaSantri}
+*Kelas* : ${kelas}
+*Nama Wali* : ${namaWali}
+*Alamat Wali* : ${alamatWali}
+
+Dengan ini kami mengajukan permohonan izin meninggalkan asrama bagi putra kami dengan rincian sebagai berikut:
+${waktuText}
+*Keperluan* : ${keperluan}
+*Tempat Tujuan* : ${tujuan}
+
+Kami memastikan bahwa putra kami akan dijemput dan dalam pengawasan kami selama meninggalkan asrama, serta akan kembali sesuai waktu yang telah ditentukan.
+
+Demikian surat ini kami sampaikan. Besar harapan kami agar Ustadz berkenan memberikan izin. Atas perhatian dan kebijaksanaan Ustadz, kami ucapkan terima kasih.
+
+_Wassalamu’alaikum warahmatullahi wabarakatuh._
+
+Hormat kami,
+
+*${namaWali}*
+                `.trim();
+                
+                const whatsappUrl = `https://wa.me/${targetRecipient.number}?text=${encodeURIComponent(message)}`;
+                
+                window.open(whatsappUrl, '_blank');
+                closeModal();
+            }
+
+            /**
+             * Menangani klik pada akordeon untuk membuka/menutup konten.
+             * @param {Event} event - Event klik.
+             */
+            function handleAccordionClick(event) {
+                const button = event.target.closest('.accordion-button');
+                if (button) {
+                    const isAlreadyActive = button.getAttribute('aria-expanded') === 'true';
+                    // Tutup semua akordeon
+                    accordionContainer.querySelectorAll('.accordion-button').forEach(btn => {
+                        btn.setAttribute('aria-expanded', 'false');
+                    });
+                    // Buka akordeon yang diklik jika sebelumnya tertutup
+                    if (!isAlreadyActive) {
+                        button.setAttribute('aria-expanded', 'true');
+                    }
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+
+            // Inisialisasi dropdown saat halaman dimuat
+            populateSantriDropdown();
+
+            // Event listener untuk tombol buka modal
+            openModalButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const recipient = button.getAttribute('data-recipient');
+                    openModal(recipient);
+                });
+            });
+
+            // Event listener untuk tombol tutup modal dan latar belakangnya
+            closeModalBtn.addEventListener('click', closeModal);
+            modalBackdrop.addEventListener('click', closeModal);
+
+            // Event listener untuk pengiriman formulir
+            izinForm.addEventListener('submit', handleFormSubmit);
+
+            // Event listener untuk dropdown santri -> isi kelas otomatis
+            santriDropdown.addEventListener('change', function() {
+                kelasField.value = this.value ? this.value.split('|')[1] : '';
+            });
+
+            // Event listener untuk tanggal izin -> isi tanggal kembali otomatis untuk izin pamong
+            tanggalIzinField.addEventListener('input', function() {
+                const recipientType = recipientTypeInput.value;
+                if (recipientType === 'pamong' && this.value) {
+                    const tglIzin = new Date(this.value);
+                    tglIzin.setDate(tglIzin.getDate() + 1);
+                    tanggalKembaliField.value = tglIzin.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                }
+            });
+
+            // Event listener untuk akordeon
+            if (accordionContainer) {
+                accordionContainer.addEventListener('click', handleAccordionClick);
+            }
+
+            // --- ANIMATION OBSERVER ---
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.transitionDelay = `${index * 100}ms`;
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.animate-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+        });
+
+        /**
+         * Menyalin teks ke clipboard.
+         * @param {HTMLButtonElement} button - Tombol yang diklik.
+         */
+        function copyEmail(button) {
+            const targetId = button.getAttribute('data-copy-target');
+            const emailSpan = document.getElementById(targetId);
+            const email = emailSpan.textContent;
+
+            // Buat elemen textarea sementara untuk menyalin
+            const textarea = document.createElement('textarea');
+            textarea.value = email;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                // Beri feedback visual
+                const originalText = button.innerHTML;
+                button.innerHTML = '<span class="text-green-500">Tersalin!</span>';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error('Gagal menyalin email: ', err);
+                // Beri feedback error jika perlu
+                const originalText = button.innerHTML;
+                button.innerHTML = '<span class="text-red-500">Gagal</span>';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                }, 2000);
+            }
+            document.body.removeChild(textarea);
+        }
+    </script>
+</body>
+</html>

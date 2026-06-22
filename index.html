@@ -2013,6 +2013,29 @@
               </div>
             </section>
 
+            <!-- WIDGET: Persetujuan Izin Pending (Hanya muncul untuk Musyrif jika ada pending) -->
+            <div id="musyrif-approval-widget" class="hidden musyrif-only animate-slide-up delay-120ms">
+              <div onclick="window.openMusyrifApprovalModal()" class="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 dark:from-amber-500/15 dark:to-amber-500/5 backdrop-blur-xl border border-amber-500/20 shadow-md w-full transition-all duration-300 hover:shadow-lg hover:border-amber-500/40 select-none cursor-pointer active:scale-98">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-8 h-8 shrink-0 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div>
+                    <h3 id="approval-pending-count" class="text-xs sm:text-sm font-black text-amber-800 dark:text-amber-400 leading-tight">
+                      0 Pengajuan Pending
+                    </h3>
+                    <p class="text-[9px] sm:text-[10px] font-medium text-amber-600 dark:text-amber-500/80 mt-0.5">
+                      Ada permohonan izin dari orang tua yang memerlukan persetujuan.
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span id="approval-pending-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">0</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </div>
+            </div>
+
             <!-- GPS Location Status Banner (Compact) -->
             <div
               id="location-status-card"
@@ -2346,7 +2369,7 @@
 
 
 
-        <div class="animate-slide-up lg:mb-6 lg:mt-4 w-full delay-250ms">
+        <div class="musyrif-only animate-slide-up lg:mb-6 lg:mt-4 w-full delay-250ms">
           <!-- Container Utama -->
           <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-2.5 sm:p-3 shadow-lg shadow-slate-200/50 dark:shadow-black/20 border border-white dark:border-slate-700/50 flex flex-col gap-2.5">
 
@@ -2425,6 +2448,46 @@
               <!-- Area List -->
               <div id="dashboard-active-permits-list" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                 <!-- Data dynamically rendered here by JS -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- WIDGET: Perizinan Wali (Hanya muncul di Wali Mode) -->
+        <div class="wali-only animate-slide-up lg:mb-6 lg:mt-4 w-full delay-250ms">
+          <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-4 shadow-lg shadow-slate-200/50 dark:shadow-black/20 border border-white dark:border-slate-700/50 flex flex-col gap-4">
+            
+            <!-- Header Section -->
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/80 dark:from-blue-500/10 dark:to-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 shadow-sm shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 12 2 2 4-4"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white leading-tight tracking-tight">
+                    Pengajuan Izin Harian
+                  </h3>
+                  <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                    Kirim permohonan izin ke Musyrif
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tombol Pengajuan -->
+            <button onclick="window.openWaliPermitModal()" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-br from-palette-blue to-palette-blue/90 hover:from-palette-blue/90 hover:to-palette-blue text-white text-xs font-black shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              <span>Ajukan Izin Baru</span>
+            </button>
+
+            <!-- Riwayat Pengajuan Izin -->
+            <div class="mt-2">
+              <h4 class="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 px-1">
+                Riwayat Pengajuan Izin
+              </h4>
+              <div id="wali-permit-history-list" class="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                <!-- Diisi dinamis oleh JS -->
               </div>
             </div>
 
@@ -4450,6 +4513,224 @@
       </div>
     </div>
 
+    <!-- MODAL: Wali Pengajuan Izin -->
+    <div id="modal-wali-permit" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] p-6 animate-slide-up border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="text-xl font-black text-slate-800 dark:text-white">
+              Formulir Izin Harian
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Isi detail permohonan izin untuk santri.</p>
+          </div>
+          <button onclick="window.closeModal('modal-wali-permit')" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <form id="wali-permit-form" onsubmit="window.submitWaliPermit(event)" class="flex-1 overflow-y-auto pr-1 pb-4 hide-scrollbar space-y-4">
+          <!-- Nama Wali -->
+          <div>
+            <label for="wali-permit-nama-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Nama Wali Santri</label>
+            <input type="text" id="wali-permit-nama-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue" placeholder="Contoh: Budi Santoso">
+          </div>
+
+          <!-- Alamat Wali -->
+          <div>
+            <label for="wali-permit-alamat-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Alamat Wali</label>
+            <input type="text" id="wali-permit-alamat-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue" placeholder="Contoh: Yogyakarta">
+          </div>
+
+          <!-- Nama & Kelas Santri (Readonly) -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="wali-permit-nama-santri" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Nama Santri</label>
+              <input type="text" id="wali-permit-nama-santri" readonly class="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 cursor-not-allowed">
+            </div>
+            <div>
+              <label for="wali-permit-kelas-santri" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Kelas</label>
+              <input type="text" id="wali-permit-kelas-santri" readonly class="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 cursor-not-allowed">
+            </div>
+          </div>
+
+          <!-- Kategori Izin (Dropdown) -->
+          <div>
+            <label for="wali-permit-category" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Kategori Izin</label>
+            <select id="wali-permit-category" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue">
+              <option value="pulang">Izin Lainnya (Keluarga, dll.) - Status: Pulang</option>
+              <option value="sakit">Sakit / Periksa Kesehatan - Status: Sakit</option>
+            </select>
+          </div>
+
+          <!-- Keperluan -->
+          <div>
+            <label for="wali-permit-reason" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Keperluan / Alasan</label>
+            <textarea id="wali-permit-reason" rows="3" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue" placeholder="Tuliskan keperluan dengan jelas..."></textarea>
+          </div>
+
+          <!-- Tanggal Izin -->
+          <div>
+            <label for="wali-permit-date" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Tanggal Izin/Keluar</label>
+            <input type="date" id="wali-permit-date" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue">
+          </div>
+
+          <!-- Waktu Izin -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="wali-permit-start-time" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Jam Keluar</label>
+              <select id="wali-permit-start-time" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue"></select>
+            </div>
+            <div>
+              <label for="wali-permit-end-time" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Jam Kembali</label>
+              <select id="wali-permit-end-time" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue"></select>
+            </div>
+          </div>
+
+          <!-- Tempat Tujuan -->
+          <div>
+            <label for="wali-permit-destination" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Tempat Tujuan</label>
+            <input type="text" id="wali-permit-destination" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue" placeholder="Lokasi yang dituju">
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="w-full py-4 mt-2 rounded-2xl bg-gradient-to-br from-palette-blue to-palette-blue/90 hover:from-palette-blue/90 hover:to-palette-blue text-white text-xs font-black shadow-lg hover:shadow-xl active:scale-95 transition-all duration-300">
+            Kirim Permohonan Izin
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Persetujuan Izin Musyrif -->
+    <div id="modal-musyrif-approval" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[2.5rem] p-6 animate-slide-up border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="text-xl font-black text-slate-800 dark:text-white">
+              Persetujuan Izin Santri
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Daftar permohonan izin yang menunggu keputusan.</p>
+          </div>
+          <button onclick="window.closeModal('modal-musyrif-approval')" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <div id="musyrif-approval-list" class="flex-1 overflow-y-auto pr-1 pb-4 hide-scrollbar space-y-4">
+          <!-- Diisi dinamis oleh JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Tiket Keluar Digital (Satpam) -->
+    <div id="modal-exit-ticket" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
+      <div class="bg-white dark:bg-slate-950 w-full max-w-md rounded-[2.5rem] p-6 animate-slide-up border border-slate-200/10 dark:border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+        
+        <div class="flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-850/80 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-xs font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Tiket Keluar Aktif</span>
+          </div>
+          <button onclick="window.closeModal('modal-exit-ticket')" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Scrollable Ticket Container -->
+        <div class="flex-1 overflow-y-auto pr-1 pb-4 hide-scrollbar">
+          
+          <!-- Ticket Premium Card design -->
+          <div class="bg-gradient-to-br from-slate-900 via-slate-955 to-black rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-white/10 flex flex-col gap-6">
+            
+            <!-- Glow effect background -->
+            <div class="absolute top-0 right-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+            
+            <!-- Logo Header -->
+            <div class="flex justify-between items-start z-10">
+              <div>
+                <h3 class="text-lg font-black tracking-tight text-white leading-none">ASRAMA 1</h3>
+                <span class="text-[7.5px] font-bold text-slate-400 tracking-wider uppercase mt-1 block">Abu Bakar Ash-Shiddiq</span>
+              </div>
+              <img src="assets/branding/Primary Logo.webp" class="h-6 w-auto opacity-80" alt="Logo" />
+            </div>
+
+            <!-- Student Profile -->
+            <div class="flex items-center gap-3 bg-white/5 p-3 rounded-2xl border border-white/5 z-10">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-extrabold text-sm shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div class="min-w-0">
+                <h4 id="ticket-student-name" class="text-sm font-black truncate">Nama Santri</h4>
+                <div class="flex gap-2 text-[9px] font-bold text-slate-400 mt-0.5">
+                  <span id="ticket-student-nis">NIS: -</span>
+                  <span id="ticket-student-class">Kelas: -</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ticket Info details -->
+            <div class="space-y-4 text-xs z-10">
+              <div>
+                <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Masa Berlaku Izin</span>
+                <p id="ticket-valid-time" class="font-extrabold text-white bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl text-emerald-400">Senin, 22 Juni 2026 pukul 08:00 - 17:00 WIB</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Penjemput / Wali</span>
+                  <p id="ticket-wali-name" class="font-black text-slate-200">Nama Wali</p>
+                  <p id="ticket-wali-address" class="text-[10px] text-slate-400 mt-0.5 truncate">Alamat Wali</p>
+                </div>
+                <div>
+                  <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Tempat Tujuan</span>
+                  <p id="ticket-destination" class="font-black text-slate-200 truncate font-semibold">Tempat Tujuan</p>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Keperluan / Alasan</span>
+                <p id="ticket-reason" class="text-slate-300 font-medium leading-relaxed italic">"Keperluan"</p>
+              </div>
+            </div>
+
+            <!-- Approval Verification (Musyrif Seal) -->
+            <div class="flex justify-between items-center bg-white/5 border border-white/5 p-3 rounded-2xl z-10 relative">
+              <div>
+                <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">Diverifikasi Oleh</span>
+                <p id="ticket-approver" class="font-black text-slate-200">Ustadz Andi</p>
+                <span id="ticket-approved-time" class="text-[8px] font-bold text-slate-400 block mt-0.5">Waktu</span>
+              </div>
+              
+              <!-- Digital Seal (Stamp) -->
+              <div class="flex items-center justify-center border-2 border-emerald-500/30 text-emerald-400 rounded-full w-14 h-14 rotate-[12deg] shrink-0">
+                <div class="text-center font-black flex flex-col justify-center items-center">
+                  <span class="text-[7px] tracking-widest uppercase leading-none">PASSED</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="my-0.5 text-emerald-400"><path d="M20 6 9 17l-5-5"/></svg>
+                  <span class="text-[5px] tracking-wider uppercase leading-none">APPROVED</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Barcode Decoration -->
+            <div class="flex flex-col items-center justify-center bg-white rounded-2xl p-3 z-10 shadow-inner">
+              <svg id="ticket-barcode-svg" class="w-full h-16" viewBox="0 0 300 65"></svg>
+            </div>
+
+          </div>
+
+          <!-- Satpam Info Card -->
+          <div class="mt-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-955/20 border border-amber-200/50 dark:border-amber-900/30 text-amber-800 dark:text-amber-300 flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+            <div class="text-xs">
+              <p class="font-bold mb-0.5">Perhatian untuk Wali / Satpam:</p>
+              <p class="leading-relaxed opacity-90">Tunjukkan tiket digital ini saat melewati gerbang pos satpam asrama. Tiket ini sah karena disahkan secara digital oleh Musyrif kelas.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
     <div
       id="modal-permit"
       class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all"
@@ -5488,6 +5769,7 @@
     <script src="firebase-config.js"></script>
     <script src="managers/firebase-storage-manager.js"></script>
     <script src="features/qibla.js"></script>
+    <script src="managers/permit-request-manager.js"></script>
     <script src="core/script.js"></script>
     <script src="core/pull-to-refresh.js"></script>
     <script src="tahfizh/tahfizh-manager.js"></script>

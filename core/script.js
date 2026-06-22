@@ -399,6 +399,12 @@ window.syncRoleModeUI = function () {
       body.wali-mode #analysis-santri {
         pointer-events: none;
       }
+      body.wali-mode .musyrif-only {
+        display: none !important;
+      }
+      body:not(.wali-mode) .wali-only {
+        display: none !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -433,6 +439,14 @@ window.syncRoleModeUI = function () {
 
   const tahfizhForm = document.getElementById("tahfizh-page-form");
   if (isWali && tahfizhForm) tahfizhForm.classList.add("hidden");
+
+  // Sync Wali-Musyrif permit request listeners
+  if (isWali) {
+    if (window.loadWaliPermitHistory) window.loadWaliPermitHistory();
+    if (window.cleanupPermitRequestListener) window.cleanupPermitRequestListener();
+  } else {
+    if (window.initPermitRequestListener) window.initPermitRequestListener();
+  }
 };
 
 window.applyLoginModeUI = function () {
@@ -1025,6 +1039,8 @@ window.handleWaliLogout = function () {
   FILTERED_SANTRI = [];
   localStorage.removeItem(APP_CONFIG.googleAuthKey);
   document.body.classList.remove("wali-mode");
+
+  if (window.cleanupPermitRequestListener) window.cleanupPermitRequestListener();
 
   document.getElementById("view-wali")?.classList.add("hidden");
   document.getElementById("view-main")?.classList.add("hidden");
