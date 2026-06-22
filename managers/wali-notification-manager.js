@@ -312,7 +312,7 @@ class WaliNotificationManager {
       "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
     const [year, month, day] = dateStr.split("-");
-    return `${parseInt(day)} ${bulan[parseInt(month)])} ${year}`;
+    return `${parseInt(day)} ${bulan[parseInt(month)]} ${year}`;
   }
 
   /**
