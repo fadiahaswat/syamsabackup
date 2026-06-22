@@ -1897,16 +1897,28 @@ window.updateDashboard = function () {
     let displayName = "Ustadz";
     if (window.isWaliMode()) {
       const rawName = window.getWaliDisplayName();
-      let words = (rawName || "").trim().split(/\s+/).filter(w => w.length > 0);
-      if (words.length > 1) {
-        const first = words[0].toLowerCase().replace(/\.$/, "");
-        if (["muhammad", "mohammad", "muh", "mohd"].includes(first)) {
-          words[0] = "M.";
-        } else if (first === "ahmad") {
-          words[0] = "A.";
+      const rawTrimmed = (rawName || "").trim();
+      if (rawTrimmed.length <= 18) {
+        displayName = rawTrimmed;
+      } else {
+        let words = rawTrimmed.split(/\s+/).filter(w => w.length > 0);
+        if (words.length > 1) {
+          const first = words[0].toLowerCase().replace(/\.$/, "");
+          if (["muhammad", "mohammad", "muh", "mohd"].includes(first)) {
+            words[0] = "M.";
+          } else if (first === "ahmad") {
+            words[0] = "A.";
+          }
+        }
+        const tempName = words.join(" ");
+        if (tempName.length <= 18) {
+          displayName = tempName;
+        } else if (words.length > 2) {
+          displayName = words.slice(0, 2).join(" ");
+        } else {
+          displayName = tempName;
         }
       }
-      displayName = words.slice(0, 2).join(" ");
     }
     if (appState.selectedClass && typeof MASTER_KELAS !== "undefined" && MASTER_KELAS[appState.selectedClass]) {
       const musyrifName = MASTER_KELAS[appState.selectedClass].musyrif;
