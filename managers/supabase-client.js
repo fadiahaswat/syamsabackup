@@ -214,6 +214,28 @@ class SupabaseClient {
   }
 
   /**
+   * Load all attendance records for a class (no date filter)
+   */
+  async loadAllAttendance(kelasId) {
+    if (!this.client || !this.isOnline) {
+      return { data: null, error: 'Offline or not initialized' };
+    }
+
+    try {
+      const { data, error } = await this.client
+        .from('attendance_record')
+        .select('*')
+        .eq('kelas_id', kelasId);
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('[SupabaseClient] Load all attendance error:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
    * Save attendance record (upsert)
    */
   async saveAttendance(record) {

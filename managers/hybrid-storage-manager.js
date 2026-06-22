@@ -61,7 +61,7 @@ class HybridStorageManager {
    * Initialize the hybrid storage
    */
   async init(kelasId) {
-    if (this.isInitialized) {
+    if (this.isInitialized && this.kelasId === kelasId) {
       console.log('[HybridStorageManager] Already initialized');
       return;
     }
@@ -77,6 +77,12 @@ class HybridStorageManager {
     // Initialize Supabase if configured and in hybrid/cloud mode
     if (this.supabaseConfigured && this.mode !== 'local-only') {
       await this._initRemote();
+
+      // DOWNLOAD data dari cloud saat init (jika online)
+      if (this.isOnline && this.remote.isAuthenticated()) {
+        console.log('[HybridStorageManager] Downloading cloud data...');
+        await this._downloadCloudData();
+      }
     }
 
     // Start auto-sync if enabled
@@ -98,6 +104,124 @@ class HybridStorageManager {
       supabaseConfigured: this.supabaseConfigured,
       isOnline: this.isOnline,
     });
+  }
+
+  /**
+   * Download data dari cloud
+   */
+  async _downloadCloudData() {
+    if (!this.kelasId) return;
+
+    try {
+      // Download attendance data
+      const { data: attendanceData, error: attError } = await this.remote.loadAllAttendance(this.kelasId);
+      if (attError) {
+        console.warn('[HybridStorageManager] Download attendance error:', attError);
+      } else if (attendanceData && attendanceData.length > 0) {
+        console.log('[HybridStorageManager] Downloaded', attendanceData.length, 'attendance records from cloud');
+        // Merge dengan local data
+        await this._mergeAttendanceData(attendanceData);
+      }
+
+      // Download permits
+      const { data: permitsData, error: permitError } = await this.remote.loadPermits(this.kelasId);
+      if (permitError) {
+        console.warn('[HybridStorageManager] Download permits error:', permitError);
+      } else if (permitsData && permitsData.length > 0) {
+        console.log('[HybridStorageManager] Downloaded', permitsData.length, 'permits from cloud');
+        await this._mergePermitsData(permitsData);
+      }
+
+      // Trigger UI refresh
+      if (this.onDataUpdate) {
+        this.onDataUpdate('cloud_sync_complete');
+      }
+
+      console.log('[HybridStorageManager] Cloud data download complete');
+    } catch (error) {
+      console.error('[HybridStorageManager] Cloud download failed:', error);
+    }
+  }
+
+  /**
+   * Merge attendance data dari cloud ke local
+   */
+  async _mergeAttendanceData(cloudRecords) {
+    if (!cloudRecords || cloudRecords.length === 0) return;
+
+    // Transform cloud records ke format local
+    const mergedData = {};
+
+    for (const record of cloudRecords) {
+      const dateKey = record.date_key;
+      const slotId = record.slot_id;
+      const studentId = record.student_id;
+
+      if (!mergedData[dateKey]) {
+        mergedData[dateKey] = {};
+      }
+      if (!mergedData[dateKey][slotId]) {
+        mergedData[dateKey][slotId] = {};
+      }
+
+      mergedData[dateKey][slotId][studentId] = {
+        status: record.status || {},
+        timestamps: record.timestamps || {},
+        auditTrail: record.audit_trail || [],
+        note: record.note || '',
+        permitManualOverride: record.permit_manual_override || false,
+      };
+    }
+
+    // Merge dengan appState.attendanceData (cloud wins untuk data yang lebih baru)
+    if (typeof appState !== 'undefined' && appState.attendanceData) {
+      for (const [dateKey, slots] of Object.entries(mergedData)) {
+        if (!appState.attendanceData[dateKey]) {
+          appState.attendanceData[dateKey] = {};
+        }
+        for (const [slotId, students] of Object.entries(slots)) {
+          if (!appState.attendanceData[dateKey][slotId]) {
+            appState.attendanceData[dateKey][slotId] = {};
+          }
+          for (const [studentId, data] of Object.entries(students)) {
+            // Check jika local data lebih lama dari cloud
+            const localRecord = appState.attendanceData[dateKey][slotId][studentId];
+            if (!localRecord) {
+              // Tidak ada local, pakai cloud
+              appState.attendanceData[dateKey][slotId][studentId] = data;
+            }
+            // Jika ada local dan cloud, tetap pakai local (last-write-wins dari user)
+            // Karena sync queue sudah handle upload
+          }
+        }
+      }
+
+      // Simpan ke localStorage
+      localStorage.setItem('musyrif_app_v5_fix', JSON.stringify(appState.attendanceData));
+      console.log('[HybridStorageManager] Merged attendance data with local storage');
+    }
+  }
+
+  /**
+   * Merge permits data dari cloud ke local
+   */
+  async _mergePermitsData(cloudPermits) {
+    if (!cloudPermits || cloudPermits.length === 0) return;
+
+    if (typeof appState !== 'undefined' && appState.permits) {
+      const localPermitIds = new Set(appState.permits.map(p => p.id));
+
+      // Add permits yang tidak ada di local
+      for (const permit of cloudPermits) {
+        if (!localPermitIds.has(permit.id)) {
+          appState.permits.push(permit);
+        }
+      }
+
+      // Simpan ke localStorage
+      localStorage.setItem('musyrif_permits_db', JSON.stringify(appState.permits));
+      console.log('[HybridStorageManager] Merged permits data with local storage');
+    }
   }
 
   /**
