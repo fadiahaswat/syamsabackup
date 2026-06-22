@@ -451,9 +451,31 @@ class FirebaseStorageManager {
    */
   saveToLocalStorage(path, data) {
     try {
-      // Map Firebase path to localStorage key
-      const key = this.pathToLocalKey(path);
-      localStorage.setItem(key, JSON.stringify(data));
+      const segments = path.split('/');
+      const firstSegment = segments[0];
+
+      if (firstSegment === 'attendance' && segments.length === 4) {
+        const dateKey = segments[2];
+        const slotId = segments[3];
+        const localData = this.getLocalStorageData(APP_CONFIG.storageKey) || {};
+        if (!localData[dateKey]) localData[dateKey] = {};
+        localData[dateKey][slotId] = data;
+        this.setLocalStorageData(APP_CONFIG.storageKey, localData);
+      } else if (firstSegment === 'permits' && segments.length === 2) {
+        const permitId = segments[1];
+        let localData = this.getLocalStorageData(APP_CONFIG.permitKey) || [];
+        if (!Array.isArray(localData)) localData = [];
+        const index = localData.findIndex(p => p && String(p.id) === String(permitId));
+        if (index !== -1) {
+          localData[index] = data;
+        } else {
+          localData.push(data);
+        }
+        this.setLocalStorageData(APP_CONFIG.permitKey, localData);
+      } else {
+        const key = this.pathToLocalKey(path);
+        localStorage.setItem(key, JSON.stringify(data));
+      }
     } catch (error) {
       console.error('[FirebaseStorageManager] localStorage save error:', error);
       if (error.name === 'QuotaExceededError') {
@@ -490,8 +512,31 @@ class FirebaseStorageManager {
    * Delete from localStorage
    */
   deleteFromLocalStorage(path) {
-    const key = this.pathToLocalKey(path);
-    localStorage.removeItem(key);
+    const segments = path.split('/');
+    const firstSegment = segments[0];
+
+    if (firstSegment === 'permits' && segments.length === 2) {
+      const permitId = segments[1];
+      let localData = this.getLocalStorageData(APP_CONFIG.permitKey) || [];
+      if (Array.isArray(localData)) {
+        localData = localData.filter(p => p && String(p.id) !== String(permitId));
+        this.setLocalStorageData(APP_CONFIG.permitKey, localData);
+      }
+    } else if (firstSegment === 'attendance' && segments.length === 4) {
+      const dateKey = segments[2];
+      const slotId = segments[3];
+      const localData = this.getLocalStorageData(APP_CONFIG.storageKey);
+      if (localData && localData[dateKey]) {
+        delete localData[dateKey][slotId];
+        if (Object.keys(localData[dateKey]).length === 0) {
+          delete localData[dateKey];
+        }
+        this.setLocalStorageData(APP_CONFIG.storageKey, localData);
+      }
+    } else {
+      const key = this.pathToLocalKey(path);
+      localStorage.removeItem(key);
+    }
   }
 
   /**

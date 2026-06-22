@@ -4167,7 +4167,7 @@ window.exportToPDF = function () {
 window.viewRekapBulanan = function () {
   const modal = document.getElementById("modal-rekap");
   if (modal) {
-    modal.classList.remove("hidden");
+    window.openModal("modal-rekap");
     window.generateRekapBulanan();
   }
 };
@@ -4229,7 +4229,20 @@ window.generateRekapBulanan = function () {
       const dayData = appState.attendanceData[dateKey];
       if (dayData) {
         Object.values(SLOT_WAKTU).forEach((slot) => {
-          const st = dayData[slot.id]?.[id]?.status?.shalat;
+          const slotData = dayData[slot.id];
+          if (!slotData) return;
+
+          const dayNum = new Date(dateKey).getDay();
+          const mainAct = slot.activities.find((act) => {
+            if (act.showOnDays && !act.showOnDays.includes(dayNum)) return false;
+            if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return false;
+            if (window.isActivityHoliday && window.isActivityHoliday(dateKey, slot.id, act.id)) return false;
+            if (window.isCategoryHoliday && window.isCategoryHoliday(dateKey, act.category)) return false;
+            return true;
+          });
+          if (!mainAct) return;
+
+          const st = slotData[id]?.status?.[mainAct.id];
           if (st === "Hadir" || st === "Telat") h++;
           else if (st === "Sakit") s++;
           else if (st === "Izin") i++;
@@ -4302,7 +4315,7 @@ window.logActivity = function (action, detail) {
 window.viewActivityLog = function () {
   const modal = document.getElementById("modal-activity");
   if (modal) {
-    modal.classList.remove("hidden");
+    window.openModal("modal-activity");
     const container = document.getElementById("activity-list");
     if (!container) return;
 
@@ -4671,7 +4684,7 @@ window.updateQuickStats = function () {
       Object.values(SLOT_WAKTU).forEach(slot => {
         const sStats = window.calculateSlotStats(slot.id, dateKey);
         if (sStats.isFilled) {
-          hadir += sStats.h;
+          hadir += sStats.h + sStats.t;
           total += sStats.total;
         }
       });
@@ -6005,6 +6018,9 @@ window.deletePermit = function (id) {
     () => {
   appState.permits = appState.permits.filter((p) => p.id !== id);
   window.persistPermits();
+  if (window.storageManager) {
+    window.storageManager.deletePermit(id);
+  }
 
   window.showToast("Data izin dihapus", "info");
   window.refreshPermitSurfaces();
@@ -7360,9 +7376,8 @@ window.getTimesheetMetrics = function (year, month, totalDays) {
   for (let d = 1; d <= totalDays; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
-    // Jika bulan lalu (bukan bulan ini) → hitung semua hari
-    // Jika bulan ini → hanya hitung hari <= today
-    if (isCurrentMonth && dateStr > todayStr) continue;
+    // Lewati semua tanggal di masa depan untuk penghitungan metrik expected
+    if (dateStr > todayStr) continue;
 
     Object.values(SLOT_WAKTU).forEach((slot) => {
       if (window.isSlotHoliday(slot.id, dateStr)) return;
@@ -8510,7 +8525,11 @@ window.savePermitLogic = function () {
   selectedNis.forEach((nis) => {
     const uniqueId =
       Date.now().toString() + Math.random().toString(36).substr(2, 5);
-    appState.permits.push({ ...permitData, id: uniqueId, nis: nis });
+    const newPermit = { ...permitData, id: uniqueId, nis: nis };
+    appState.permits.push(newPermit);
+    if (window.storageManager) {
+      window.storageManager.savePermit(newPermit);
+    }
   });
 
   window.persistPermits();
@@ -8551,6 +8570,9 @@ window.markSickPermitRecoveredBeforeSlot = function (permitId, slotId) {
   permit.end_session = window.getPreviousAttendanceSessionId(slotId);
   permit.is_active = true;
   window.persistPermits();
+  if (window.storageManager) {
+    window.storageManager.savePermit(permit);
+  }
   return true;
 };
 
@@ -8578,6 +8600,9 @@ window.markAsRecovered = function (id) {
 
     // Simpan
     window.persistPermits();
+    if (window.storageManager) {
+      window.storageManager.savePermit(permit);
+    }
     window.showToast("Status kesembuhan diperbarui", "success");
 
     window.refreshPermitSurfaces();
@@ -8612,6 +8637,9 @@ window.markAsReturned = function (id) {
     permit.is_active = false;
 
     window.persistPermits();
+    if (window.storageManager) {
+      window.storageManager.savePermit(permit);
+    }
     window.showToast(
       "Santri sudah kembali. Silakan presensi manual.",
       "success",
@@ -8647,6 +8675,9 @@ window.extendPermit = function (id) {
   }
 
   window.persistPermits();
+  if (window.storageManager) {
+    window.storageManager.savePermit(permit);
+  }
   window.refreshPermitSurfaces();
 
   // Notifikasi: Izin pulang diperpanjang
@@ -8755,8 +8786,8 @@ window.showStatDetails = function (statusType) {
   const title = document.getElementById("stat-detail-title");
   let filledSantri = 0;
 
-  // 1. Setup UI Modal
-  modal.classList.remove("hidden");
+  // 1. Setup UI Modal dengan Stack Helper
+  window.openModal("modal-stat-detail");
   container.innerHTML =
     '<div class="text-center py-4"><span class="loading-spinner"></span></div>';
 
@@ -9820,6 +9851,9 @@ window.deleteHistoryPermit = function (id) {
 
   // Simpan perubahan ke LocalStorage
   window.persistPermits();
+  if (window.storageManager) {
+    window.storageManager.deletePermit(id);
+  }
 
   window.showToast("Data izin berhasil dihapus", "success");
   window.refreshPermitSurfaces();
@@ -9846,11 +9880,17 @@ window.togglePermitStatus = function (id) {
       () => {
       permit.end_date = null;
       window.persistPermits();
+      if (window.storageManager) {
+        window.storageManager.savePermit(permit);
+      }
       window.showToast("Status sakit diaktifkan kembali", "info");
       window.refreshPermitSurfaces();
       },
       () => {
       window.persistPermits();
+      if (window.storageManager) {
+        window.storageManager.savePermit(permit);
+      }
       window.showToast("Status izin: AKTIF", "info");
       window.refreshPermitSurfaces();
       },
@@ -9859,6 +9899,9 @@ window.togglePermitStatus = function (id) {
   }
 
   window.persistPermits();
+  if (window.storageManager) {
+    window.storageManager.savePermit(permit);
+  }
 
   window.showToast(
     `Status izin: ${permit.is_active ? "AKTIF" : "SELESAI"}`,
@@ -9879,9 +9922,8 @@ window.openEditHistory = function (id) {
   document.getElementById("edit-permit-end").value = permit.end_date || "";
   document.getElementById("edit-permit-active").checked = permit.is_active !== false;
 
-  // Buka Modal
-  const modal = document.getElementById("modal-edit-permit");
-  modal.classList.remove("hidden");
+  // Buka Modal dengan Stack Helper
+  window.openModal("modal-edit-permit");
 };
 
 // 4. Fungsi Simpan Edit
@@ -9910,6 +9952,9 @@ window.savePermitEdit = function () {
 
   // Simpan ke Storage
   window.persistPermits();
+  if (window.storageManager) {
+    window.storageManager.savePermit(appState.permits[index]);
+  }
 
   // Tutup Modal & Refresh
   window.closeModal("modal-edit-permit");

@@ -276,14 +276,10 @@ async function initTahfizhTab() {
     setupTahfizhEventListeners();
     setupAdditionalInputListeners();
     
-    if (!TahfizhState.isLoaded) {
-        await reloadTahfizhData();
-        TahfizhState.isLoaded = true;
-    } else {
-        // Hanya sinkronkan data kelas/santri aktif jika musyrif ganti kelas
-        syncSiswaFromMainApp();
-        renderAllTahfizhUI();
-    }
+    // Selalu muat ulang data untuk menyinkronkan filter kelas bimbingan aktif
+    await reloadTahfizhData();
+    TahfizhState.isLoaded = true;
+
     window.syncRoleModeUI?.();
 }
 
@@ -573,14 +569,14 @@ function calculateTahfizhSantriStats() {
 
         if (validSetoran.length === 0) return;
 
-        // Akumulasi total halaman setoran untuk progres visual dan rekap aktivitas.
         santri.totalPages = validSetoran.reduce((sum, s) => {
             let pageCount = parseFloat(s.halaman) || 0;
-            if (isHalfJuz(s.juz)) pageCount = getHalfJuzPages();
-            else if (!pageCount && s.surat && TahfizhConfig.hafalanData?.surahData[s.juz]) {
-                pageCount = TahfizhConfig.hafalanData.surahData[s.juz].pages[s.surat] || 0;
+            if (isHalfJuz(s.juz)) {
+                pageCount = getHalfJuzPages();
             } else if (s.jenis === 'Mutqin' && TahfizhConfig.hafalanData?.juzPageCounts[s.juz]) {
                 pageCount = TahfizhConfig.hafalanData.juzPageCounts[s.juz];
+            } else if (!pageCount && s.surat && TahfizhConfig.hafalanData?.surahData[s.juz]) {
+                pageCount = TahfizhConfig.hafalanData.surahData[s.juz].pages[s.surat] || 0;
             }
             return sum + pageCount;
         }, 0);
