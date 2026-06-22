@@ -39,6 +39,7 @@ const ALWAYS_FRESH_JS = [
   "managers/sync-queue.js",
   "managers/hybrid-storage-manager.js",
   "managers/file-upload.js",
+  "managers/sync-debug.js",
   "managers/auth-manager.js",
   "managers/santri-manager.js",
   "managers/attendance-manager.js",
