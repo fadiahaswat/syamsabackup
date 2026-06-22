@@ -151,7 +151,7 @@ window.APP_STORAGE = {
   // ==========================================
   supabase: {
     url: 'https://ioyqnmvrnpzdztpkgaxt.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlveXFubXZycG56ZHp0cGtnYXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MzI2NjAsImV4cCI6MjA2NTEwODY2MH0.sb_publishable_1ipdE1TbfNSTGCmz91vqDg_SFREVaF5',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlveXFubXZybnB6ZHp0cGtnYXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNDk2MjksImV4cCI6MjA5NzcyNTYyOX0.A06ba5XCyR7wU2c67YQjgJ8oG2j2fNnEpdf3zvdkT0Y',
   },
 
   // Sync configuration
