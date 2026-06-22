@@ -754,3 +754,122 @@ window.checkScheduledNotifications = function () {
     });
   }
 };
+
+// ==========================================
+// WALI NOTIFICATION - Kirim notifikasi saat Alpa
+// ==========================================
+
+/**
+ * Check dan notify wali ketika ada perubahan status ke Alpa
+ * Dipanggil setelah saveData() selesai
+ */
+window.checkAndNotifyWaliForAlpa = async function () {
+  // Cek apakah fitur wali notification aktif
+  if (appState.settings?.waliNotification !== true) {
+    notifLog("Wali notification disabled in settings");
+    return;
+  }
+
+  // Cek apakah ada wali notification manager
+  if (!window.waliNotificationManager) {
+    notifLog("Wali notification manager not loaded");
+    return;
+  }
+
+  const dateKey = appState.date;
+  const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
+  const slotData = appState.attendanceData?.[dateKey]?.[slotId];
+
+  if (!slotData) return;
+
+  notifLog("Checking for Alpa changes to notify wali...");
+
+  // Dapatkan slot label
+  const slotLabel = SLOT_WAKTU[slotId]?.label || slotId;
+
+  // Loop melalui setiap siswa
+  for (const nis in slotData) {
+    const studentData = slotData[nis];
+    const status = studentData.status || studentData;
+
+    // Cek apakah status Alpa
+    if (status === "Alpa" || status === "A") {
+      // Cek apakah sudah pernah di-notify hari ini
+      const notifKey = `wali_notified_${nis}_${dateKey}_${slotId}`;
+      if (localStorage.getItem(notifKey) === "true") {
+        notifLog(`Already notified wali for ${nis} on ${dateKey} ${slotId}`);
+        continue;
+      }
+
+      // Dapatkan nama siswa
+      const student = FILTERED_SANTRI?.find(
+        (s) => String(s.nis || s.id) === String(nis)
+      );
+      const namaSantri = student?.nama || student?.name || nis;
+
+      // Dapatkan kelas
+      const kelas = appState.selectedClass || student?.kelas || "";
+
+      notifLog(`Notifying wali for Alpa: ${namaSantri} (${nis})`);
+
+      // Kirim notifikasi
+      try {
+        const result = await window.waliNotificationManager.notifyWaliAlpa(
+          nis,
+          namaSantri,
+          kelas,
+          slotLabel,
+          dateKey
+        );
+
+        if (result.success) {
+          notifLog(`✅ Wali notified for ${namaSantri}`);
+          // Tandai sudah di-notify
+          localStorage.setItem(notifKey, "true");
+        } else {
+          notifLog(`⚠️ Could not notify wali: ${result.reason}`, result.queued ? "(queued)" : "");
+        }
+      } catch (err) {
+        console.error("[NOTIF] Error notifying wali:", err);
+      }
+    }
+  }
+};
+
+/**
+ * Enable/disable wali notification
+ */
+window.toggleWaliNotification = function () {
+  if (!appState.settings) appState.settings = {};
+  appState.settings.waliNotification = !appState.settings.waliNotification;
+  localStorage.setItem(APP_CONFIG.settingsKey, JSON.stringify(appState.settings));
+
+  window.showToast(
+    `Notifikasi Wali ${appState.settings.waliNotification ? "Aktif" : "Nonaktif"}`,
+    "info"
+  );
+};
+
+/**
+ * Register wali (dipanggil dari halaman register wali)
+ */
+window.registerWaliForStudent = async function (nis, namaWali, noHP, email) {
+  if (!window.waliNotificationManager) {
+    console.error("Wali notification manager not loaded");
+    return false;
+  }
+
+  return await window.waliNotificationManager.registerWali(nis, {
+    namaWali,
+    noHP,
+    email,
+  });
+};
+
+/**
+ * Get wali info (untuk debugging)
+ */
+window.getWaliInfo = async function (nis) {
+  if (!window.waliNotificationManager) return null;
+  return await window.waliNotificationManager.getWaliByNis(nis);
+};

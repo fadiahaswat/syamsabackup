@@ -394,6 +394,295 @@ app.post("/api/send-kelas", async (req, res) => {
 });
 
 // ============================================
+// WALI NOTIFICATION ENDPOINTS
+// ============================================
+
+/**
+ * Get all registered wali tokens
+ */
+app.get("/api/wali/tokens", async (req, res) => {
+  try {
+    const db = admin.database();
+    const tokensRef = db.ref("wali_tokens");
+    const snapshot = await tokensRef.orderByChild("active").equalTo(true).once("value");
+
+    const tokens = [];
+    snapshot.forEach((child) => {
+      const data = child.val();
+      if (data.fcmToken && data.active) {
+        tokens.push({
+          nis: child.key,
+          ...data,
+        });
+      }
+    });
+
+    res.json({
+      total: tokens.length,
+      tokens,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get wali info by NIS
+ */
+app.get("/api/wali/:nis", async (req, res) => {
+  try {
+    const db = admin.database();
+    const ref = db.ref(`wali_tokens/${req.params.nis}`);
+    const snapshot = await ref.once("value");
+
+    if (!snapshot.exists()) {
+      return res.status(404).json({ error: "Wali not found" });
+    }
+
+    res.json(snapshot.val());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Register or update wali
+ */
+app.post("/api/wali/register", async (req, res) => {
+  try {
+    const { nis, namaWali, noHP, email, fcmToken } = req.body;
+
+    if (!nis) {
+      return res.status(400).json({ error: "NIS is required" });
+    }
+
+    const db = admin.database();
+    const ref = db.ref(`wali_tokens/${nis}`);
+
+    const waliData = {
+      nis: nis,
+      namaWali: namaWali || "Wali",
+      noHP: noHP || "",
+      email: email || "",
+      fcmToken: fcmToken || null,
+      lastActive: Date.now(),
+      active: true,
+    };
+
+    await ref.set(waliData, { merge: true });
+
+    res.json({ success: true, message: "Wali registered successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Send Alpa notification to wali
+ * Body: { nis, namaSantri, kelas, slotLabel, tanggal }
+ */
+app.post("/api/wali/notify-alpa", async (req, res) => {
+  try {
+    const { nis, namaSantri, kelas, slotLabel, tanggal } = req.body;
+
+    if (!nis || !namaSantri || !kelas || !slotLabel || !tanggal) {
+      return res.status(400).json({
+        error: "nis, namaSantri, kelas, slotLabel, tanggal are required"
+      });
+    }
+
+    const db = admin.database();
+    const ref = db.ref(`wali_tokens/${nis}`);
+    const snapshot = await ref.once("value");
+
+    if (!snapshot.exists()) {
+      // Queue notification for later
+      const queueRef = db.ref(`notif_queue/${nis}`).push();
+      await queueRef.set({
+        type: "alpa",
+        nis,
+        namaSantri,
+        kelas,
+        slotLabel,
+        tanggal,
+        queuedAt: Date.now(),
+        sent: false,
+      });
+
+      return res.json({
+        success: false,
+        reason: "wali_not_registered",
+        message: "Wali belum register, notification queued",
+        queued: true,
+      });
+    }
+
+    const wali = snapshot.val();
+
+    if (!wali.fcmToken) {
+      // Queue notification
+      const queueRef = db.ref(`notif_queue/${nis}`).push();
+      await queueRef.set({
+        type: "alpa",
+        nis,
+        namaSantri,
+        kelas,
+        slotLabel,
+        tanggal,
+        queuedAt: Date.now(),
+        sent: false,
+      });
+
+      return res.json({
+        success: false,
+        reason: "no_fcm_token",
+        message: "Wali belum setup notification, queued",
+        queued: true,
+      });
+    }
+
+    // Format tanggal ke Indonesia
+    const formattedDate = formatTanggalIndonesia(tanggal);
+
+    // Kirim notification
+    const message = {
+      token: wali.fcmToken,
+      notification: {
+        title: `⚠️ Info Presensi: ${namaSantri}`,
+        body: `${namaSantri} (${kelas}) tidak hadir (Alpa) pada sesi ${slotLabel} tanggal ${formattedDate}.`,
+      },
+      webpush: {
+        fcm_options: {
+          link: `${BASE_URL}?view=alpa-history&nis=${nis}`,
+        },
+        notification: {
+          icon: "./assets/icons/icon.webp",
+          badge: "./assets/icons/icon.png",
+          tag: `alpa-${nis}-${tanggal}`,
+          requireInteraction: true,
+        },
+      },
+      data: {
+        type: "alpa_notification",
+        nis,
+        namaSantri,
+        kelas,
+        slotLabel,
+        tanggal,
+        url: `${BASE_URL}?view=alpa-history&nis=${nis}`,
+      },
+      android: {
+        priority: "high",
+      },
+    };
+
+    const response = await admin.messaging().send(message);
+
+    // Save to history
+    const historyRef = db.ref(`notif_history/${nis}`).push();
+    await historyRef.set({
+      type: "alpa",
+      title: message.notification.title,
+      body: message.notification.body,
+      sentAt: Date.now(),
+      messageId: response,
+    });
+
+    log("info", `Alpa notification sent to wali of ${namaSantri} (NIS: ${nis})`);
+
+    res.json({
+      success: true,
+      message: "Notification sent",
+      messageId: response,
+    });
+  } catch (error) {
+    log("error", "Failed to send alpa notification:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Process pending notifications for all wali
+ * Automatically called every minute
+ */
+async function processPendingNotifications() {
+  try {
+    const db = admin.database();
+    const queueRef = db.ref("notif_queue");
+    const snapshot = await queueRef.once("value");
+
+    if (!snapshot.exists()) return;
+
+    const batch = snapshot.val();
+
+    for (const nis in batch) {
+      const nisQueue = batch[nis];
+
+      for (const key in nisQueue) {
+        const item = nisQueue[key];
+
+        if (item.sent) continue;
+
+        // Get wali token
+        const waliRef = db.ref(`wali_tokens/${nis}`);
+        const waliSnap = await waliRef.once("value");
+
+        if (!waliSnap.exists() || !waliSnap.val().fcmToken) continue;
+
+        const wali = waliSnap.val();
+        const formattedDate = formatTanggalIndonesia(item.tanggal);
+
+        const message = {
+          token: wali.fcmToken,
+          notification: {
+            title: `⚠️ Info Presensi: ${item.namaSantri}`,
+            body: `${item.namaSantri} (${item.kelas}) tidak hadir (Alpa) pada sesi ${item.slotLabel} tanggal ${formattedDate}.`,
+          },
+          webpush: {
+            fcm_options: {
+              link: `${BASE_URL}?view=alpa-history&nis=${nis}`,
+            },
+          },
+          data: {
+            type: "alpa_notification",
+            nis: item.nis,
+            namaSantri: item.namaSantri,
+          },
+        };
+
+        try {
+          await admin.messaging().send(message);
+
+          // Mark as sent
+          await db.ref(`notif_queue/${nis}/${key}`).update({
+            sent: true,
+            sentAt: Date.now(),
+          });
+
+          log("info", `Sent queued notification to ${nis}`);
+        } catch (err) {
+          log("error", `Failed to send to ${nis}:`, err.message);
+        }
+      }
+    }
+  } catch (error) {
+    log("error", "Process pending notifications error:", error.message);
+  }
+}
+
+/**
+ * Format tanggal ke Indonesia
+ */
+function formatTanggalIndonesia(dateStr) {
+  const bulan = [
+    "", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
+  const [year, month, day] = dateStr.split("-");
+  return `${parseInt(day)} ${bulan[parseInt(month)]} ${year}`;
+}
+
+// ============================================
 // SCHEDULED NOTIFICATIONS
 // ============================================
 

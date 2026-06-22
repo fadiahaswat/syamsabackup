@@ -4602,6 +4602,11 @@ window.saveData = async function () {
               await window.storageManager.saveAttendance(dateKey, slotId, appState.attendanceData[dateKey]?.[slotId] || {});
             }
 
+            // ==========================================
+            // WALI NOTIFICATION - Check for Alpa changes
+            // ==========================================
+            await window.checkAndNotifyWaliForAlpa?.();
+
             if (indicator) {
               if (indicator.dataset.attendanceReviewStatus) {
                 const latestReviewStatus = indicator.dataset.attendanceReviewStatus;
@@ -4631,6 +4636,11 @@ window.saveData = async function () {
           const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
           await window.storageManager.saveAttendance(dateKey, slotId, appState.attendanceData[dateKey]?.[slotId] || {});
         }
+
+        // ==========================================
+        // WALI NOTIFICATION - Check for Alpa changes
+        // ==========================================
+        await window.checkAndNotifyWaliForAlpa?.();
       }
     } catch (e) {
       if (e.name === "QuotaExceededError") {
