@@ -164,12 +164,7 @@ class StorageManager {
   /**
    * Save attendance data for a specific slot
    */
-  saveAttendance(dateKey, slotId, data, fromHybrid = false) {
-    if (!fromHybrid && window.hybridStorageManager && window.hybridStorageManager.isInitialized && window.APP_STORAGE?.mode !== 'local-only') {
-      window.hybridStorageManager.saveAttendance(dateKey, slotId, data);
-      return;
-    }
-
+  saveAttendance(dateKey, slotId, data) {
     if (typeof appState === 'undefined' || !appState.attendanceData) {
       appState.attendanceData = {};
     }
@@ -214,12 +209,7 @@ class StorageManager {
   /**
    * Save a single permit
    */
-  savePermit(permit, fromHybrid = false) {
-    if (!fromHybrid && window.hybridStorageManager && window.hybridStorageManager.isInitialized && window.APP_STORAGE?.mode !== 'local-only') {
-      window.hybridStorageManager.savePermit(permit);
-      return;
-    }
-
+  savePermit(permit) {
     if (typeof appState === 'undefined') {
       appState.permits = [];
     }
@@ -244,12 +234,7 @@ class StorageManager {
   /**
    * Delete a permit
    */
-  deletePermit(permitId, fromHybrid = false) {
-    if (!fromHybrid && window.hybridStorageManager && window.hybridStorageManager.isInitialized && window.APP_STORAGE?.mode !== 'local-only') {
-      window.hybridStorageManager.deletePermit(permitId);
-      return;
-    }
-
+  deletePermit(permitId) {
     if (typeof appState !== 'undefined' && Array.isArray(appState.permits)) {
       appState.permits = appState.permits.filter(p => p && String(p.id) !== String(permitId));
       this._set(this.keys.permits, appState.permits);

@@ -53,10 +53,6 @@ class HybridStorageManager {
     // Pending sync count
     this.pendingCount = 0;
 
-    // Student ID mappings (NIS <-> UUID)
-    this.studentMap = {}; // Maps NIS -> UUID
-    this.studentUuidMap = {}; // Maps UUID -> NIS
-
     // Setup listeners
     this._setupListeners();
   }
@@ -65,59 +61,23 @@ class HybridStorageManager {
    * Initialize the hybrid storage
    */
   async init(kelasId) {
-    // 1. Resolve UUID for kelasId if it's a name (e.g. '10-A')
-    let resolvedKelasId = kelasId;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
-    // We need to initialize the remote client first if it's not initialized, so we can resolve the name
-    if (this.supabaseConfigured && this.mode !== 'local-only' && !this.remote.isInitialized) {
-      await this._initRemote();
-    }
-
-    if (kelasId && !uuidRegex.test(kelasId) && this.remote.isInitialized && this.isOnline) {
-      console.log('[HybridStorageManager] resolving class name to UUID:', kelasId);
-      const uuid = await this.remote.getKelasIdByName(kelasId);
-      if (uuid) {
-        console.log('[HybridStorageManager] resolved class name', kelasId, 'to UUID:', uuid);
-        resolvedKelasId = uuid;
-      }
-    }
-
-    if (this.isInitialized && this.kelasId === resolvedKelasId) {
-      console.log('[HybridStorageManager] Already initialized for:', resolvedKelasId);
+    if (this.isInitialized && this.kelasId === kelasId) {
+      console.log('[HybridStorageManager] Already initialized');
       return;
     }
 
-    console.log('[HybridStorageManager] Initializing for:', resolvedKelasId);
-    this.kelasId = resolvedKelasId;
+    console.log('[HybridStorageManager] Initializing...');
+    this.kelasId = kelasId;
 
-    // Initialize local storage (keep the original friendly name for local storage keys)
+    // Initialize local storage
     if (this.local) {
       this.local.init(kelasId);
     }
 
-    // Load student mappings if online
-    if (this.supabaseConfigured && this.mode !== 'local-only' && this.remote.isInitialized && this.isOnline) {
-      try {
-        const { data: studentData } = await this.remote.loadStudentMapping(resolvedKelasId);
-        if (studentData) {
-          this.studentMap = {};
-          this.studentUuidMap = {};
-          studentData.forEach(s => {
-            if (s.nis && s.id) {
-              this.studentMap[s.nis] = s.id;
-              this.studentUuidMap[s.id] = s.nis;
-            }
-          });
-          console.log('[HybridStorageManager] Student mapping loaded for', studentData.length, 'students');
-        }
-      } catch (e) {
-        console.warn('[HybridStorageManager] Failed to load student mapping:', e);
-      }
-    }
-
     // Initialize Supabase if configured and in hybrid/cloud mode
     if (this.supabaseConfigured && this.mode !== 'local-only') {
+      await this._initRemote();
+
       // DOWNLOAD data dari cloud saat init (jika online)
       if (this.isOnline && (this.remote.isAuthenticated() || (typeof appState !== 'undefined' && appState.waliMode))) {
         console.log('[HybridStorageManager] Downloading cloud data...');
@@ -404,9 +364,6 @@ class HybridStorageManager {
     if (eventType === 'INSERT' || eventType === 'UPDATE') {
       const { date_key, slot_id, student_id, status, timestamps, audit_trail, note } = newRecord;
 
-      // Translate UUID to NIS
-      const studentNis = this.studentUuidMap[student_id] || student_id;
-
       if (!appState.attendanceData[date_key]) {
         appState.attendanceData[date_key] = {};
       }
@@ -415,7 +372,7 @@ class HybridStorageManager {
       }
 
       // Update student attendance
-      appState.attendanceData[date_key][slot_id][studentNis] = {
+      appState.attendanceData[date_key][slot_id][student_id] = {
         status: status || {},
         timestamps: timestamps || {},
         auditTrail: audit_trail || [],
@@ -435,9 +392,8 @@ class HybridStorageManager {
 
     if (eventType === 'DELETE') {
       const { date_key, slot_id, student_id } = oldRecord;
-      const studentNis = this.studentUuidMap[student_id] || student_id;
-      if (appState.attendanceData[date_key]?.[slot_id]?.[studentNis]) {
-        delete appState.attendanceData[date_key][slot_id][studentNis];
+      if (appState.attendanceData[date_key]?.[slot_id]?.[student_id]) {
+        delete appState.attendanceData[date_key][slot_id][student_id];
         localStorage.setItem('musyrif_app_v5_fix', JSON.stringify(appState.attendanceData));
       }
     }
@@ -584,7 +540,7 @@ class HybridStorageManager {
 
     // 1. Always save locally first (instant)
     if (this.local) {
-      this.local.saveAttendance(dateKey, slotId, data, true);
+      this.local.saveAttendance(dateKey, slotId, data);
     }
 
     // 2. Add to sync queue
@@ -592,9 +548,8 @@ class HybridStorageManager {
       await this.queue.addAttendanceChange(dateKey, slotId, data);
     }
 
-    // 3. Try immediate sync if online and authenticated (or Wali mode)
-    const isWali = typeof appState !== 'undefined' && appState.waliMode;
-    if (this.isOnline && this.supabaseConfigured && (this.remote.isAuthenticated() || isWali)) {
+    // 3. Try immediate sync if online and authenticated
+    if (this.isOnline && this.supabaseConfigured && this.remote.isAuthenticated()) {
       this._processQueue();
     }
 
@@ -643,9 +598,6 @@ class HybridStorageManager {
     for (const record of remoteData) {
       const { date_key, slot_id, student_id, status, timestamps, audit_trail, note } = record;
 
-      // Translate UUID to NIS
-      const studentNis = this.studentUuidMap[student_id] || student_id;
-
       if (!result[date_key]) {
         result[date_key] = {};
       }
@@ -654,7 +606,7 @@ class HybridStorageManager {
         result[date_key][slot_id] = {};
       }
 
-      result[date_key][slot_id][studentNis] = {
+      result[date_key][slot_id][student_id] = {
         status: status || {},
         timestamps: timestamps || {},
         auditTrail: audit_trail || [],
@@ -677,7 +629,7 @@ class HybridStorageManager {
 
     // 1. Save locally first
     if (this.local) {
-      this.local.savePermit(permit, true);
+      this.local.savePermit(permit);
     }
 
     // 2. Add to sync queue
@@ -685,9 +637,8 @@ class HybridStorageManager {
       await this.queue.addPermitChange(permit);
     }
 
-    // 3. Try immediate sync if online and authenticated (or Wali mode)
-    const isWali = typeof appState !== 'undefined' && appState.waliMode;
-    if (this.isOnline && this.supabaseConfigured && (this.remote.isAuthenticated() || isWali)) {
+    // 3. Try immediate sync
+    if (this.isOnline && this.supabaseConfigured && this.remote.isAuthenticated()) {
       this._processQueue();
     }
 
@@ -705,7 +656,7 @@ class HybridStorageManager {
 
     // 1. Delete locally
     if (this.local) {
-      this.local.deletePermit(permitId, true);
+      this.local.deletePermit(permitId);
     }
 
     // 2. Add to queue as delete operation
@@ -718,9 +669,8 @@ class HybridStorageManager {
       });
     }
 
-    // 3. Try immediate sync if online and authenticated (or Wali mode)
-    const isWali = typeof appState !== 'undefined' && appState.waliMode;
-    if (this.isOnline && this.supabaseConfigured && (this.remote.isAuthenticated() || isWali)) {
+    // 3. Try immediate sync
+    if (this.isOnline && this.supabaseConfigured && this.remote.isAuthenticated()) {
       this._processQueue();
     }
   }
@@ -759,7 +709,6 @@ class HybridStorageManager {
     return {
       id: remote.id,
       nis: remote.nis,
-      studentId: this.studentUuidMap[remote.student_id] || remote.student_id || remote.nis,
       category: remote.category,
       reason: remote.reason,
       start_date: remote.start_date,
@@ -843,11 +792,9 @@ class HybridStorageManager {
       const pending = await this.queue.getPending(this.config.batchSize);
       console.log('[HybridStorageManager] Processing', pending.length, 'pending changes');
 
+      for (const change of pending) {
         try {
-          const result = await this._syncChange(change);
-          if (result && result.error) {
-            throw result.error;
-          }
+          await this._syncChange(change);
           await this.queue.markSynced(change.id);
         } catch (error) {
           console.error('[HybridStorageManager] Sync error for', change.id, error);
@@ -930,15 +877,8 @@ class HybridStorageManager {
         continue;
       }
 
-      // Map local studentId (NIS) to Supabase UUID
-      const studentUuid = this.studentMap[studentId];
-      if (!studentUuid) {
-        console.warn('[HybridStorageManager] Student UUID not found for NIS during sync:', studentId);
-        continue; // Skip unsynced student record
-      }
-
-      // Generate unique ID for each record using UUID
-      const recordId = `${this.kelasId}_${studentUuid}_${dateKey}_${slotId}`.replace(/\s+/g, '_');
+      // Generate unique ID for each record
+      const recordId = `${this.kelasId}_${studentId}_${dateKey}_${slotId}`.replace(/\s+/g, '_');
 
       // Get slot-level metadata from parent 'data' object
       const slotReviewConfirmed = data.__reviewConfirmed;
@@ -949,7 +889,7 @@ class HybridStorageManager {
       records.push({
         id: recordId,
         kelas_id: this.kelasId,
-        student_id: studentUuid, // Use UUID
+        student_id: studentId,
         date_key: dateKey,
         slot_id: slotId,
         status: studentData.status || {},
@@ -983,17 +923,11 @@ class HybridStorageManager {
     // Generate ID if missing
     const permitId = permit.id || `permit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Get student UUID
-    const studentUuid = this.studentMap[permit.nis] || permit.studentId;
-    if (!studentUuid) {
-      console.warn('[HybridStorageManager] Student UUID not found for permit NIS during sync:', permit.nis);
-    }
-
     // Transform to remote format
     const remotePermit = {
       id: permitId,
       kelas_id: this.kelasId || permit.kelas_id || permit.kelas || (typeof appState !== 'undefined' ? appState.waliKelas : null),
-      student_id: studentUuid, // Use UUID
+      student_id: permit.studentId || permit.nis,
       nis: permit.nis,
       category: permit.category,
       reason: permit.reason,

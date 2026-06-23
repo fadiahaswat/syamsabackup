@@ -154,7 +154,7 @@ class SupabaseClient {
 
     // Subscribe to attendance changes
     const attendanceChannel = this.client
-      .channel(`attendance-changes-${kelasId}`)
+      .channel('attendance-changes')
       .on(
         'postgres_changes',
         {
@@ -174,7 +174,7 @@ class SupabaseClient {
 
     // Subscribe to permit changes
     const permitChannel = this.client
-      .channel(`permit-changes-${kelasId}`)
+      .channel('permit-changes')
       .on(
         'postgres_changes',
         {
@@ -710,51 +710,6 @@ class SupabaseClient {
     } catch (error) {
       console.error('[SupabaseClient] Update sync metadata error:', error);
       return { error };
-    }
-  }
-
-  /**
-   * Get class ID (UUID) by class name (e.g. '10-A')
-   */
-  async getKelasIdByName(namaKelas) {
-    if (!this.client) return null;
-    try {
-      const { data, error } = await this.client
-        .from('kelas')
-        .select('id')
-        .eq('nama_kelas', namaKelas)
-        .maybeSingle();
-
-      if (error) {
-        console.error('[SupabaseClient] getKelasIdByName error:', error);
-        return null;
-      }
-      return data?.id || null;
-    } catch (error) {
-      console.error('[SupabaseClient] getKelasIdByName exception:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Load student mapping (NIS <-> UUID) for a class
-   */
-  async loadStudentMapping(kelasId) {
-    if (!this.client || !this.isOnline) {
-      return { data: null, error: 'Offline or not initialized' };
-    }
-
-    try {
-      const { data, error } = await this.client
-        .from('student')
-        .select('id, nis')
-        .eq('kelas_id', kelasId);
-
-      if (error) throw error;
-      return { data, error: null };
-    } catch (error) {
-      console.error('[SupabaseClient] loadStudentMapping error:', error);
-      return { data: null, error };
     }
   }
 }
