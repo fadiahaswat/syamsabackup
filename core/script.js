@@ -3999,7 +3999,7 @@ window.queueAttendanceNotification = function (id, actId, slotId, dateKey, stude
       }
     }
     delete window.attendanceNotificationTimeouts[cacheKey];
-  }, 2000); // Tunggu 2 detik setelah klik terakhir
+  }, 5000); // Tunggu 5 detik setelah klik terakhir
 };
 
 window.toggleStatus = function (id, actId, type) {
