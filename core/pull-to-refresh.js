@@ -248,7 +248,10 @@
       console.log("🔄 Pull-To-Refresh: Sinkronisasi dengan Cloud...");
 
       // SYNC DENGAN SUPABASE (Attendance & Permits)
-      if (window.hybridStorageManager && navigator.onLine && window.APP_STORAGE?.mode !== 'local-only') {
+      const isHybridMode = window.APP_STORAGE?.mode !== 'local-only';
+      const shouldSync = window.hybridStorageManager && isHybridMode;
+
+      if (shouldSync) {
         // 1. Upload data lokal ke cloud
         try {
           console.log("[PullToRefresh] Upload to cloud...");
@@ -263,6 +266,11 @@
           await window.hybridStorageManager._downloadCloudData();
         } catch (err) {
           console.warn("[PullToRefresh] Download warning:", err);
+        }
+
+        // Tampilkan peringatan kecil hanya jika browser benar-benar melaporkan offline
+        if (!navigator.onLine && window.showToast) {
+          window.showToast("Koneksi tidak stabil, sinkronisasi mungkin tertunda", "warning", false, 2500);
         }
       } else {
         // Mode local-only - simpan saja
