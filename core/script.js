@@ -2684,7 +2684,7 @@ window.renderWeeklyCalendar = function () {
   let html = `
     <div class="flex items-center justify-between gap-1 w-full">
       <!-- Prev Week -->
-      <button onclick="window.changeWeekView(-1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Sebelumnya">
+      <button onclick="window.changeWeekView(-1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Sebelumnya">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"></path></svg>
       </button>
 
@@ -2728,49 +2728,54 @@ window.renderWeeklyCalendar = function () {
     const maxArcLength = 51.8;
     const filledArcLength = progressPercent * maxArcLength;
 
-    // Select color class
-    let arcColorClass = "text-slate-200 dark:text-slate-800";
+    // Select color class with enhanced contrast
+    let arcColorClass = "text-slate-300 dark:text-white/20";
     if (isCompleted) {
-      arcColorClass = "text-emerald-500 dark:text-emerald-400";
+      arcColorClass = "text-emerald-600 dark:text-emerald-400";
     } else if (isAllLocked) {
-      arcColorClass = "text-slate-200 dark:text-slate-800";
+      arcColorClass = "text-slate-300 dark:text-white/20";
     } else if (progressPercent > 0) {
       if (dateStr < todayStr) {
-        arcColorClass = "text-red-500 dark:text-red-400"; // Past incomplete
+        arcColorClass = "text-red-600 dark:text-red-400"; // Past incomplete
       } else {
-        arcColorClass = "text-palette-blue dark:text-palette-cyan"; // Today in-progress
+        arcColorClass = "text-blue-600 dark:text-cyan-400"; // Today in-progress
       }
     } else {
       // 0% progress and active (past or today)
       if (dateStr <= todayStr) {
-        arcColorClass = "text-red-500/40 dark:text-red-500/20"; // Red faint warning
+        arcColorClass = "text-red-500/40 dark:text-red-450/30"; // Red faint warning
       }
     }
 
+    // High contrast border and background colors
     const cardBgClass = isSelected
-      ? "bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 shadow-sm font-bold scale-[1.03]"
-      : "bg-transparent border border-transparent hover:bg-slate-50/50 dark:hover:bg-slate-800/10";
+      ? "bg-slate-100/90 dark:bg-white/10 border border-slate-300 dark:border-white/20 shadow-md font-bold scale-[1.03]"
+      : "bg-transparent border border-transparent hover:bg-slate-100/50 dark:hover:bg-white/5";
 
     const textPrimaryClass = isSelected
-      ? "text-slate-800 dark:text-white"
-      : "text-slate-700 dark:text-slate-300";
+      ? "text-slate-900 dark:text-white font-black"
+      : "text-slate-700 dark:text-slate-200 font-bold";
+
+    const textSecondaryClass = isSelected
+      ? "text-slate-500 dark:text-slate-300 font-bold"
+      : "text-slate-400 dark:text-slate-450";
 
     html += `
       <div onclick="window.handleDateChange('${dateStr}')" class="flex flex-col items-center justify-center p-1 sm:p-2 rounded-2xl transition-all duration-300 cursor-pointer min-w-0 ${cardBgClass}" title="${window.formatDate(dateStr)}">
         <!-- Today Indicator Dot -->
-        <span class="w-1.5 h-1.5 rounded-full mb-0.5 ${isToday ? 'bg-palette-blue dark:bg-palette-cyan animate-pulse' : 'bg-transparent'}"></span>
+        <span class="w-1.5 h-1.5 rounded-full mb-0.5 ${isToday ? 'bg-blue-600 dark:bg-palette-cyan animate-pulse' : 'bg-transparent'}"></span>
         
         <!-- Day Label -->
-        <span class="text-[8px] sm:text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500 text-center truncate w-full">${dayLabel}</span>
+        <span class="text-[8px] sm:text-[10px] uppercase tracking-wider text-center truncate w-full ${textSecondaryClass}">${dayLabel}</span>
         
         <!-- Date Number -->
-        <span class="text-xs sm:text-sm font-black text-center mt-0.5 ${textPrimaryClass}">${dayNum}</span>
+        <span class="text-xs sm:text-sm text-center mt-0.5 ${textPrimaryClass}">${dayNum}</span>
         
         <!-- 3/4 Circular Progress Arc -->
         <div class="flex justify-center mt-1 w-full">
           <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 32 32">
-            <!-- Faint background arc -->
-            <circle class="text-slate-100 dark:text-slate-800/40" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" cx="16" cy="16" r="11" stroke-dasharray="51.8 69.1" transform="rotate(135 16 16)" />
+            <!-- Faint background arc (enhanced contrast) -->
+            <circle class="text-slate-200/50 dark:text-white/5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" cx="16" cy="16" r="11" stroke-dasharray="51.8 69.1" transform="rotate(135 16 16)" />
             <!-- Progress arc -->
             <circle class="${arcColorClass}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" cx="16" cy="16" r="11" stroke-dasharray="${filledArcLength} 69.1" transform="rotate(135 16 16)" />
           </svg>
@@ -2783,7 +2788,7 @@ window.renderWeeklyCalendar = function () {
       </div>
 
       <!-- Next Week -->
-      <button onclick="window.changeWeekView(1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Berikutnya">
+      <button onclick="window.changeWeekView(1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Berikutnya">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
       </button>
     </div>
