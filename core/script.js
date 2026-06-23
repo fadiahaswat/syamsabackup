@@ -183,6 +183,21 @@ window.initApp = async function () {
       }, 500);
     }
     window.initBottomNavScroll();
+
+    // Check if onboarding needs to be shown (only when user is not logged in)
+    try {
+      const viewMain = document.getElementById("view-main");
+      if (viewMain && viewMain.classList.contains("hidden")) {
+        const hasSeen = localStorage.getItem("has_seen_onboarding") === "true";
+        if (!hasSeen) {
+          setTimeout(() => {
+            if (window.showOnboarding) window.showOnboarding(true);
+          }, 600);
+        }
+      }
+    } catch (onboardingInitErr) {
+      console.warn("Failed checking onboarding state:", onboardingInitErr);
+    }
   }
 };
 
@@ -11642,4 +11657,178 @@ window.recheckGpsFromModal = function () {
 
   window.showToast("🔄 Mencoba mendeteksi lokasi kembali...", "info");
   window.updateLocationStatus();
+};
+
+// ============================================================
+// ONBOARDING SYSTEM LOGIC
+// ============================================================
+let onboardingCurrentSlide = 0;
+const onboardingTotalSlides = 4;
+let onboardingAutoplayTimer = null;
+let onboardingTouchStartX = 0;
+let onboardingTouchEndX = 0;
+let onboardingIsAutoOpen = false;
+
+window.showOnboarding = function (isAuto = false) {
+  onboardingIsAutoOpen = isAuto;
+  const viewOnboarding = document.getElementById("view-onboarding");
+  const onboardingCard = document.getElementById("onboarding-card");
+  const viewLogin = document.getElementById("view-login");
+
+  if (!viewOnboarding || !onboardingCard) return;
+
+  // Stop any existing timer
+  window.stopOnboardingAutoplay();
+
+  // Hide login screen
+  if (viewLogin) viewLogin.classList.add("hidden");
+
+  // Show onboarding container
+  viewOnboarding.classList.remove("hidden");
+
+  // Trigger animations after minor delay
+  setTimeout(() => {
+    onboardingCard.classList.remove("scale-95", "opacity-0");
+    onboardingCard.classList.add("scale-100", "opacity-100");
+  }, 50);
+
+  // Set to first slide
+  window.setOnboardingSlide(0);
+
+  // Bind Touch/Swipe Events if not bound yet
+  const sliderEl = document.getElementById("onboarding-slider");
+  if (sliderEl && !sliderEl.dataset.swipeBound) {
+    sliderEl.dataset.swipeBound = "true";
+    sliderEl.addEventListener("touchstart", (e) => {
+      onboardingTouchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    sliderEl.addEventListener("touchend", (e) => {
+      onboardingTouchEndX = e.changedTouches[0].screenX;
+      window.handleOnboardingSwipe();
+    }, { passive: true });
+  }
+
+  // Render Lucide Icons
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+};
+
+window.closeOnboarding = function () {
+  window.stopOnboardingAutoplay();
+  
+  const viewOnboarding = document.getElementById("view-onboarding");
+  const onboardingCard = document.getElementById("onboarding-card");
+  const viewLogin = document.getElementById("view-login");
+
+  if (!viewOnboarding || !onboardingCard) return;
+
+  // Save state
+  localStorage.setItem("has_seen_onboarding", "true");
+
+  // Animate out
+  onboardingCard.classList.remove("scale-100", "opacity-100");
+  onboardingCard.classList.add("scale-95", "opacity-0");
+
+  setTimeout(() => {
+    viewOnboarding.classList.add("hidden");
+    if (viewLogin) viewLogin.classList.remove("hidden");
+  }, 300);
+};
+
+window.setOnboardingSlide = function (index) {
+  if (index < 0 || index >= onboardingTotalSlides) return;
+  onboardingCurrentSlide = index;
+
+  const slider = document.getElementById("onboarding-slider");
+  const dots = document.querySelectorAll("#onboarding-dots .onboarding-dot");
+  const btnPrev = document.getElementById("onboarding-btn-prev");
+  const btnNext = document.getElementById("onboarding-btn-next");
+  const btnText = document.getElementById("onboarding-btn-text");
+  const btnIcon = document.getElementById("onboarding-btn-icon");
+
+  if (!slider) return;
+
+  // Translate slider track
+  slider.style.transform = `translateX(-${index * 100}%)`;
+
+  // Update dots
+  dots.forEach((dot, idx) => {
+    if (idx === index) {
+      dot.classList.add("active");
+    } else {
+      dot.classList.remove("active");
+    }
+  });
+
+  // Update Prev Button
+  if (index === 0) {
+    if (btnPrev) btnPrev.classList.add("opacity-40", "pointer-events-none");
+  } else {
+    if (btnPrev) btnPrev.classList.remove("opacity-40", "pointer-events-none");
+  }
+
+  // Update Next Button Text and Icon
+  if (index === onboardingTotalSlides - 1) {
+    if (btnText) btnText.textContent = "Mulai";
+    if (btnIcon) {
+      btnIcon.setAttribute("data-lucide", "check");
+    }
+  } else {
+    if (btnText) btnText.textContent = "Lanjut";
+    if (btnIcon) {
+      btnIcon.setAttribute("data-lucide", "arrow-right");
+    }
+  }
+
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+
+  // Start autoplay again
+  window.startOnboardingAutoplay();
+};
+
+window.nextOnboardingSlide = function () {
+  if (onboardingCurrentSlide < onboardingTotalSlides - 1) {
+    window.setOnboardingSlide(onboardingCurrentSlide + 1);
+  } else {
+    window.closeOnboarding();
+  }
+};
+
+window.prevOnboardingSlide = function () {
+  if (onboardingCurrentSlide > 0) {
+    window.setOnboardingSlide(onboardingCurrentSlide - 1);
+  }
+};
+
+window.startOnboardingAutoplay = function () {
+  window.stopOnboardingAutoplay();
+  onboardingAutoplayTimer = setInterval(() => {
+    if (onboardingCurrentSlide < onboardingTotalSlides - 1) {
+      window.setOnboardingSlide(onboardingCurrentSlide + 1);
+    } else {
+      window.setOnboardingSlide(0);
+    }
+  }, 5000);
+};
+
+window.stopOnboardingAutoplay = function () {
+  if (onboardingAutoplayTimer) {
+    clearInterval(onboardingAutoplayTimer);
+    onboardingAutoplayTimer = null;
+  }
+};
+
+window.handleOnboardingSwipe = function () {
+  const swipeThreshold = 50;
+  const diffX = onboardingTouchEndX - onboardingTouchStartX;
+  if (diffX < -swipeThreshold) {
+    // Swipe left (next)
+    window.nextOnboardingSlide();
+  } else if (diffX > swipeThreshold) {
+    // Swipe right (prev)
+    window.prevOnboardingSlide();
+  }
 };
