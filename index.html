@@ -1928,21 +1928,19 @@
             Testing Mode
           </p>
         </div>
-
-        <!-- Middle Content Area (centered) -->
         <div class="flex-grow flex flex-col justify-center w-full relative z-10 py-4">
           
           <!-- Supergraphic Syamsa & Tagline Image (Visible only when in selection view) -->
-          <div id="login-doodles-container" class="relative w-full py-4 flex flex-col items-center justify-center overflow-hidden min-h-[140px] transition-all duration-300">
+          <div id="login-doodles-container" class="relative w-full py-4 flex flex-col items-center justify-center overflow-hidden min-h-[100px] transition-all duration-300">
             <!-- Supergraphic Syamsa Layer -->
-            <div class="absolute inset-0 w-full h-full opacity-[0.35] dark:opacity-[0.18] pointer-events-none select-none overflow-hidden">
+            <div class="absolute inset-0 w-full h-full opacity-[0.8] dark:opacity-[0.4] pointer-events-none select-none overflow-hidden">
               <div class="supergraphic-layer"></div>
               <div class="supergraphic-mark !w-32 !h-32 !right-[-5%] !top-[-5%]"></div>
               <div class="supergraphic-band !w-28 !h-12 !left-[-5%] !bottom-[-5%]"></div>
             </div>
             
             <div class="relative z-10 flex justify-center w-full mt-2">
-              <img src="tagline.webp" class="h-11 w-auto object-contain dark:brightness-0 dark:invert opacity-90" alt="Syamsa Tagline" />
+              <img src="tagline.webp" class="h-6 sm:h-7 w-auto object-contain brightness-0 opacity-70 dark:brightness-0 dark:invert dark:opacity-60 transition-all duration-300" alt="Syamsa Tagline" />
             </div>
           </div>
           
@@ -1951,7 +1949,7 @@
             <!-- Continue with Google (Musyrif) -->
             <button
               onclick="handleMusyrifLogin()"
-              class="w-full py-3.5 px-6 rounded-full bg-palette-blue hover:bg-palette-deep text-white font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+              class="w-full py-3.5 px-6 rounded-full bg-syamsa-foreground hover:bg-[#061020] text-white font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
             >
               <!-- Google Icon SVG (Clean & Simple) -->
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -1966,7 +1964,7 @@
             <!-- Sign in as Wali / Student -->
             <button
               onclick="handleWaliLogin()"
-              class="w-full py-3.5 px-6 rounded-full bg-palette-deep hover:bg-[#0a4277] text-white font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+              class="w-full py-3.5 px-6 rounded-full bg-syamsa-foreground hover:bg-[#061020] text-white font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
             >
               <i data-lucide="user" class="w-4 h-4 text-white"></i>
               <span>Sign in as Wali / Student</span>
@@ -1975,9 +1973,9 @@
             <!-- App Guide (Continue with guide) -->
             <button
               onclick="window.showOnboarding(false)"
-              class="w-full py-3.5 px-6 rounded-full bg-brand-50 hover:bg-brand-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-palette-blue dark:text-slate-200 font-semibold text-sm flex items-center justify-center gap-3 shadow-sm hover:scale-[1.01] active:scale-95 transition-all"
+              class="w-full py-3.5 px-6 rounded-full bg-syamsa-muted hover:bg-[#e2e8f0] dark:bg-slate-800 dark:hover:bg-slate-700 text-syamsa-foreground dark:text-slate-200 font-semibold text-sm flex items-center justify-center gap-3 shadow-sm hover:scale-[1.01] active:scale-95 transition-all"
             >
-              <i data-lucide="book-open" class="w-4 h-4 text-palette-blue dark:text-slate-400"></i>
+              <i data-lucide="book-open" class="w-4 h-4 text-syamsa-foreground dark:text-slate-400"></i>
               <span>Continue with guide</span>
             </button>
           </div>
@@ -2020,7 +2018,7 @@
             <div class="space-y-2 pt-2">
               <button
                 onclick="handleMusyrifSubmit()"
-                class="w-full py-3 rounded-full bg-palette-blue hover:bg-palette-deep text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+                class="w-full py-3 rounded-full bg-syamsa-foreground hover:bg-[#061020] text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
               >
                 <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 <span>Lanjutkan</span>
@@ -2072,7 +2070,7 @@
 
                 <button
                   onclick="handleWaliSubmit()"
-                  class="w-full py-3 rounded-full bg-palette-blue hover:bg-palette-deep text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+                  class="w-full py-3 rounded-full bg-syamsa-foreground hover:bg-[#061020] text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
                 >
                   <i data-lucide="log-in" class="w-4 h-4"></i>
                   <span>Masuk</span>
