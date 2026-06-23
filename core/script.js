@@ -107,6 +107,17 @@ window.initApp = async function () {
               () => window.showToast(`Ahlan, Wali ${foundSantri.nama || "Santri"}`, "success"),
               500,
             );
+
+            // Initialize Storage and Hybrid Sync Manager for Wali restore
+            const musyrifId = `class_${foundKelas}`;
+            window.initStorage?.(musyrifId);
+            if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
+              const kelasInfo = MASTER_KELAS?.[foundKelas];
+              const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || foundKelas;
+              window.hybridStorageManager.init(kelasId).catch(err => {
+                console.warn('[Wali] Hybrid storage init failed on restore:', err);
+              });
+            }
           } else if (authData.kelas && MASTER_KELAS[authData.kelas]) {
             appState.selectedClass = authData.kelas;
             appState.userProfile = authData.profile;
@@ -816,9 +827,16 @@ window.handleWaliSubmit = function () {
   window.updateProfileInfo();
   window.showToast(`Selamat datang, Wali dari ${foundSantri.nama}!`, "success");
 
-  // Initialize Storage Manager on parent login
+  // Initialize Storage Manager and Hybrid Sync Manager on parent login
   const musyrifId = `class_${foundKelas}`;
   window.initStorage?.(musyrifId);
+  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
+    const kelasInfo = MASTER_KELAS?.[foundKelas];
+    const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || foundKelas;
+    window.hybridStorageManager.init(kelasId).catch(err => {
+      console.warn('[Wali] Hybrid storage init failed on login:', err);
+    });
+  }
 };
 
 window.getWaliStudentId = function (student = appState.waliSantri) {

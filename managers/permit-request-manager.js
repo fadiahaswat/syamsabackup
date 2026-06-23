@@ -143,6 +143,7 @@
     const requestData = {
       id: requestId,
       nis: String(siswa.nis || siswa.id || ""),
+      studentId: String(siswa.id || siswa.nis || ""),
       nama: siswa.nama,
       kelas: String(appState.waliKelas || siswa.kelas || "").trim(),
       nama_wali: namaWali,
@@ -154,15 +155,18 @@
       start_time_limit: startTime,
       end_time_limit: endTime,
       destination: destination,
+      location: destination,
       status: 'pending',
       timestamp: new Date().toISOString(),
       status_label: category === 'sakit' ? 'S' : 'P'
     };
 
-    // Save to localStorage
-    const allRequests = getAllRequests();
-    allRequests[requestId] = requestData;
-    saveAllRequests(allRequests);
+    // Save via storage manager (unifying with hybrid storage/Supabase Client)
+    if (window.hybridStorageManager) {
+      window.hybridStorageManager.savePermit(requestData);
+    } else if (window.storageManager) {
+      window.storageManager.savePermit(requestData);
+    }
 
     window.showToast("Permohonan izin berhasil disimpan!", "success");
     window.closeModal("modal-wali-permit");
@@ -190,10 +194,14 @@
       </div>
     `;
 
-    // Load from localStorage
-    const requests = getRequestsByNis(nis);
-    requests.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    renderWaliPermitHistoryList(requests);
+    // Load from appState.permits which is unified and synced by hybridStorageManager
+    const permits = appState.permits || [];
+    const studentPermits = permits.filter(p => p && String(p.nis) === nis);
+    
+    // Sort descending by timestamp / start_date
+    studentPermits.sort((a, b) => new Date(b.timestamp || b.created_at || Date.now()) - new Date(a.timestamp || a.created_at || Date.now()));
+    
+    renderWaliPermitHistoryList(studentPermits);
   };
 
   /**
@@ -258,7 +266,7 @@
           </div>
           <div>
             <span class="block text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Tempat Tujuan</span>
-            <span class="font-bold text-slate-700 dark:text-slate-300 block truncate">${window.sanitizeHTML(req.destination)}</span>
+            <span class="font-bold text-slate-700 dark:text-slate-300 block truncate">${window.sanitizeHTML(req.destination || req.location || '')}</span>
           </div>
         </div>
 
@@ -274,13 +282,18 @@
   window.showExitTicket = function(escapedData) {
     const req = JSON.parse(decodeURIComponent(escapedData));
 
-    document.getElementById("ticket-student-name").textContent = req.nama;
+    // Get student details if not fully present in req (which is true for db-transformed permits)
+    const studentInfo = window.findWaliSantriByNis ? window.findWaliSantriByNis(req.nis) : null;
+    const studentName = studentInfo?.nama || req.nama || "Santri";
+    const studentClass = studentInfo?.kelas || studentInfo?.rombel || req.kelas || appState.waliKelas || "Kelas";
+
+    document.getElementById("ticket-student-name").textContent = studentName;
     document.getElementById("ticket-student-nis").textContent = `NIS: ${req.nis}`;
-    document.getElementById("ticket-student-class").textContent = `Kelas: ${req.kelas}`;
+    document.getElementById("ticket-student-class").textContent = `Kelas: ${studentClass}`;
 
     document.getElementById("ticket-wali-name").textContent = req.nama_wali || "-";
     document.getElementById("ticket-wali-address").textContent = req.alamat_wali || "-";
-    document.getElementById("ticket-destination").textContent = req.reason;
+    document.getElementById("ticket-destination").textContent = req.destination || req.location || req.reason;
     document.getElementById("ticket-reason").textContent = req.reason;
 
     const validDateStr = `${formatIndonesianDate(req.start_date)} Pukul ${req.start_time_limit} - ${req.end_time_limit} WIB`;
@@ -356,13 +369,20 @@
     const kelas = appState.selectedClass;
     if (!kelas) return;
 
-    const allRequests = getAllRequests();
-    const requests = Object.values(allRequests).filter(r =>
-      r && String(r.kelas).trim() === String(kelas).trim()
+    const permits = appState.permits || [];
+    
+    // Filter permits for pending status
+    currentPendingRequests = permits.filter(r =>
+      r && r.status === "pending"
     );
 
-    // Filter pending requests for widget
-    currentPendingRequests = requests.filter(r => r.status === "pending");
+    // Make sure each pending request has the student name (look up in MASTER_SANTRI)
+    currentPendingRequests.forEach(req => {
+      if (!req.nama && window.findWaliSantriByNis) {
+        const studentInfo = window.findWaliSantriByNis(req.nis);
+        req.nama = studentInfo?.nama || "Santri";
+      }
+    });
 
     renderMusyrifApprovalWidget(currentPendingRequests.length);
   }
@@ -443,7 +463,7 @@
           <p><strong>Wali:</strong> ${window.sanitizeHTML(req.nama_wali)} (${window.sanitizeHTML(req.alamat_wali || '-')})</p>
           <p><strong>Keperluan:</strong> <span class="text-slate-800 dark:text-slate-200 font-medium">${window.sanitizeHTML(req.reason)}</span></p>
           <p><strong>Waktu:</strong> ${formattedDate} (${req.start_time_limit} - ${req.end_time_limit} WIB)</p>
-          <p><strong>Tujuan:</strong> ${window.sanitizeHTML(req.destination)}</p>
+          <p><strong>Tujuan:</strong> ${window.sanitizeHTML(req.destination || req.location || '')}</p>
         </div>
 
         <div class="grid grid-cols-2 gap-2 mt-1">
@@ -463,65 +483,53 @@
    * Menangani persetujuan atau penolakan pengajuan izin oleh Musyrif
    */
   window.processPermitRequest = function(requestId, action) {
-    const allRequests = getAllRequests();
-    const requestData = allRequests[requestId];
-    if (!requestData) return window.showToast("Data pengajuan tidak ditemukan.", "error");
+    if (!appState.permits) appState.permits = [];
+    const permitIndex = appState.permits.findIndex(p => p && String(p.id) === String(requestId));
+    if (permitIndex === -1) {
+      return window.showToast("Data pengajuan tidak ditemukan.", "error");
+    }
 
+    const permit = appState.permits[permitIndex];
     const musyrifName = appState.userProfile?.name || "Musyrif";
 
     if (action === "approve") {
-      const permitId = 'p_' + Date.now() + Math.random().toString(36).substr(2, 4);
+      permit.status = 'approved';
+      permit.approvedBy = musyrifName;
+      permit.approvedAt = new Date().toISOString();
+      permit.is_active = true;
 
-      // Create permit object
-      const newPermit = {
-        id: permitId,
-        nis: requestData.nis,
-        category: requestData.category,
-        reason: requestData.reason,
-        start_date: requestData.start_date,
-        end_date: requestData.end_date,
-        start_time_limit: requestData.start_time_limit,
-        end_time_limit: requestData.end_time_limit,
-        status_label: requestData.status_label,
-        is_active: true,
-        timestamp: new Date().toISOString()
-      };
-
-      // Save permit to localStorage
-      if (window.storageManager) {
-        window.storageManager.savePermit(newPermit);
+      // Save permit
+      if (window.hybridStorageManager) {
+        window.hybridStorageManager.savePermit(permit);
+      } else if (window.storageManager) {
+        window.storageManager.savePermit(permit);
       }
 
-      // Update local appState
-      if (!appState.permits) appState.permits = [];
-      appState.permits.push(newPermit);
-      localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits));
-
-      // Update request status
-      allRequests[requestId].status = 'approved';
-      allRequests[requestId].approvedBy = musyrifName;
-      allRequests[requestId].approvedAt = new Date().toISOString();
-      saveAllRequests(allRequests);
-
-      window.showToast("Izin berhasil disetujui dan dicatat!", "success");
-      window.refreshPermitSurfaces?.();
-
-      // Reload list
-      currentPendingRequests = currentPendingRequests.filter(r => r.id !== requestId);
-      window.updateMusyrifApprovalModalList();
-
+      window.showToast("Izin berhasil disetujui!", "success");
     } else if (action === "reject") {
-      // Update request status
-      allRequests[requestId].status = 'rejected';
-      allRequests[requestId].rejectedBy = musyrifName;
-      allRequests[requestId].rejectedAt = new Date().toISOString();
-      saveAllRequests(allRequests);
+      permit.status = 'rejected';
+      permit.rejectedBy = musyrifName;
+      permit.rejectedAt = new Date().toISOString();
+      permit.is_active = false;
+
+      // Save permit
+      if (window.hybridStorageManager) {
+        window.hybridStorageManager.savePermit(permit);
+      } else if (window.storageManager) {
+        window.storageManager.savePermit(permit);
+      }
 
       window.showToast("Pengajuan izin ditolak.", "info");
-
-      currentPendingRequests = currentPendingRequests.filter(r => r.id !== requestId);
-      window.updateMusyrifApprovalModalList();
     }
+
+    // Refresh permit UI elements
+    if (window.refreshPermitSurfaces) {
+      window.refreshPermitSurfaces();
+    }
+
+    // Reload list and update modal
+    currentPendingRequests = currentPendingRequests.filter(r => String(r.id) !== String(requestId));
+    window.updateMusyrifApprovalModalList();
   };
 
 })();

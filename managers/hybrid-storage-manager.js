@@ -79,7 +79,7 @@ class HybridStorageManager {
       await this._initRemote();
 
       // DOWNLOAD data dari cloud saat init (jika online)
-      if (this.isOnline && this.remote.isAuthenticated()) {
+      if (this.isOnline && (this.remote.isAuthenticated() || (typeof appState !== 'undefined' && appState.waliMode))) {
         console.log('[HybridStorageManager] Downloading cloud data...');
         await this._downloadCloudData();
       }
@@ -186,6 +186,14 @@ class HybridStorageManager {
   async _mergeAttendanceData(cloudRecords) {
     if (!cloudRecords || cloudRecords.length === 0) return;
 
+    // Get all pending attendance changes from the sync queue to protect unsynced local edits
+    const pendingChanges = this.queue ? await this.queue.getPending() : [];
+    const pendingKeys = new Set(
+      pendingChanges
+        .filter(c => c && c.entityType === 'attendance')
+        .map(c => `${c.payload.dateKey}_${c.payload.slotId}`)
+    );
+
     // Transform cloud records ke format local
     const mergedData = {};
 
@@ -210,7 +218,7 @@ class HybridStorageManager {
       };
     }
 
-    // Merge dengan appState.attendanceData (cloud wins untuk data yang lebih baru)
+    // Merge dengan appState.attendanceData (cloud wins untuk data yang lebih baru/tidak pending)
     if (typeof appState !== 'undefined' && appState.attendanceData) {
       for (const [dateKey, slots] of Object.entries(mergedData)) {
         if (!appState.attendanceData[dateKey]) {
@@ -221,14 +229,14 @@ class HybridStorageManager {
             appState.attendanceData[dateKey][slotId] = {};
           }
           for (const [studentId, data] of Object.entries(students)) {
-            // Check jika local data lebih lama dari cloud
             const localRecord = appState.attendanceData[dateKey][slotId][studentId];
-            if (!localRecord) {
-              // Tidak ada local, pakai cloud
+            const isPending = pendingKeys.has(`${dateKey}_${slotId}`);
+
+            if (!localRecord || !isPending) {
+              // Jika tidak ada data lokal, atau jika data lokal TIDAK sedang tertahan di antrean sinkronisasi (pending),
+              // gunakan data dari cloud (server wins) agar sinkronisasi multi-device berjalan.
               appState.attendanceData[dateKey][slotId][studentId] = data;
             }
-            // Jika ada local dan cloud, tetap pakai local (last-write-wins dari user)
-            // Karena sync queue sudah handle upload
           }
 
           // Sync slot metadata (review status) dari cloud
@@ -680,6 +688,7 @@ class HybridStorageManager {
       start_time_limit: remote.start_time_limit,
       end_time_limit: remote.end_time_limit,
       location: remote.location,
+      destination: remote.location || remote.destination,
       pickup: remote.pickup,
       vehicle: remote.vehicle,
       status: remote.status,
@@ -689,6 +698,8 @@ class HybridStorageManager {
       surat_dokter: remote.document_url,
       audit_trail: remote.audit_trail || [],
       timestamp: remote.created_at,
+      nama_wali: remote.nama_wali,
+      alamat_wali: remote.alamat_wali,
     };
   }
 
@@ -735,9 +746,10 @@ class HybridStorageManager {
       return;
     }
 
-    // Check authentication
-    if (this.supabaseConfigured && !this.remote.isAuthenticated()) {
-      console.log('[HybridStorageManager] Not authenticated, skipping sync');
+    // Check authentication (bypass if in Wali mode, since unauthenticated inserts are allowed by anon RLS policy)
+    const isWali = typeof appState !== 'undefined' && appState.waliMode;
+    if (this.supabaseConfigured && !this.remote.isAuthenticated() && !isWali) {
+      console.log('[HybridStorageManager] Not authenticated and not in Wali mode, skipping sync');
       return;
     }
 
@@ -884,7 +896,7 @@ class HybridStorageManager {
     // Transform to remote format
     const remotePermit = {
       id: permitId,
-      kelas_id: this.kelasId,
+      kelas_id: this.kelasId || permit.kelas_id || permit.kelas || (typeof appState !== 'undefined' ? appState.waliKelas : null),
       student_id: permit.studentId || permit.nis,
       nis: permit.nis,
       category: permit.category,
@@ -895,7 +907,7 @@ class HybridStorageManager {
       end_session: permit.end_session,
       start_time_limit: permit.start_time_limit,
       end_time_limit: permit.end_time_limit,
-      location: permit.location,
+      location: permit.location || permit.destination,
       pickup: permit.pickup,
       vehicle: permit.vehicle,
       status: permit.status || 'approved',
@@ -904,6 +916,8 @@ class HybridStorageManager {
       requires_surat_dokter: permit.requires_surat_dokter || false,
       document_url: permit.surat_dokter || permit.document,
       audit_trail: permit.audit_trail || [],
+      nama_wali: permit.nama_wali,
+      alamat_wali: permit.alamat_wali,
     };
 
     return this.remote.savePermit(remotePermit);
