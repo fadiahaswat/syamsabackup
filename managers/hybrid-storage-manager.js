@@ -420,6 +420,27 @@ class HybridStorageManager {
       } else {
         // Add new permit at the beginning
         appState.permits.unshift(permit);
+
+        // Show local system and in-app alerts if this is a new pending permit request and user is Musyrif
+        const currentRecipient = window.getNotificationRecipientInfo?.() || {};
+        if (eventType === 'INSERT' && currentRecipient.type === 'musyrif' && permit.status === 'pending') {
+          const studentName = permit.nama || 'Santri';
+          const categoryLabel = permit.category === 'sakit' ? 'Sakit' : permit.category === 'izin' ? 'Izin' : 'Pulang';
+          
+          console.log(`[HybridStorageManager] New permit request detected, sending local notification for: ${studentName}`);
+          
+          if (typeof window.sendLocalNotification === 'function') {
+            window.sendLocalNotification(
+              "Pengajuan Izin Baru 📝",
+              `Santri ${studentName} mengajukan ${categoryLabel}: ${permit.reason || ''}`,
+              "permit"
+            );
+          }
+
+          if (window.showToast) {
+            window.showToast(`Izin Baru: ${studentName} mengajukan ${categoryLabel}`, 'info');
+          }
+        }
       }
 
       // Save to localStorage

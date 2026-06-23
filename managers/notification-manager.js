@@ -768,12 +768,12 @@ window.getNotificationRecipientInfo = function () {
   if (appState.waliMode === true) {
     return {
       type: "wali",
-      id: String(appState.waliSantri?.nis || appState.waliSantri?.id || "").trim()
+      id: String(appState.waliSantri?.nis || appState.waliSantri?.id || "").trim().toLowerCase()
     };
   } else {
     return {
       type: "musyrif",
-      id: String(appState.userProfile?.email || "").trim()
+      id: String(appState.userProfile?.email || "").trim().toLowerCase()
     };
   }
 };
@@ -847,12 +847,29 @@ window.addNotification = async function (recipientType, recipientId, title, body
     return;
   }
 
+  // Handle multiple Musyrif recipients separated by commas or semicolons
+  if (recipientType === "musyrif" && (recipientId.includes(",") || recipientId.includes(";"))) {
+    const emails = String(recipientId)
+      .split(/[;,]/)
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+    
+    if (emails.length > 1) {
+      console.log("[NotificationManager] Splitting notification for multiple Musyrifs:", emails);
+      const promises = emails.map(email => 
+        window.addNotification(recipientType, email, title, body, type, deepLink)
+      );
+      await Promise.all(promises);
+      return;
+    }
+  }
+
   console.log("[NotificationManager] addNotification called:", { recipientType, recipientId, title, body });
 
   const newNotif = {
     id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
     recipient_type: recipientType,
-    recipient_id: String(recipientId).trim(),
+    recipient_id: String(recipientId).trim().toLowerCase(),
     title,
     body,
     type,
@@ -864,10 +881,10 @@ window.addNotification = async function (recipientType, recipientId, title, body
   // 1. Update cache of recipient (if recipient is currently logged in)
   const currentRecipient = window.getNotificationRecipientInfo();
   console.log("[NotificationManager] Current recipient:", currentRecipient);
-  console.log("[NotificationManager] Match?:", currentRecipient.type === recipientType && currentRecipient.id === recipientId);
+  console.log("[NotificationManager] Match?:", currentRecipient.type === recipientType && currentRecipient.id === newNotif.recipient_id);
 
   // Selalu simpan ke cache, baik match maupun tidak (untuk mode Wali/Musyrif berbeda)
-  const cacheKey = `local_notifs_${recipientType}_${recipientId}`;
+  const cacheKey = `local_notifs_${recipientType}_${newNotif.recipient_id}`;
   try {
     const cached = localStorage.getItem(cacheKey);
     let list = cached ? JSON.parse(cached) : [];
@@ -876,7 +893,7 @@ window.addNotification = async function (recipientType, recipientId, title, body
     console.log("[NotificationManager] Cached notification for:", cacheKey);
 
     // Update UI hanya jika recipient yang login match
-    if (currentRecipient.type === recipientType && currentRecipient.id === recipientId) {
+    if (currentRecipient.type === recipientType && currentRecipient.id === newNotif.recipient_id) {
       window.renderNotificationsUI(list);
     }
   } catch (e) {
@@ -1215,9 +1232,20 @@ if (window.supabaseClient) {
     console.log('[NotificationManager] Realtime notification change:', payload);
     window.fetchNotifications();
     
-    // Tampilkan Toast untuk notifikasi baru yang masuk
+    // Tampilkan Toast & system notification untuk notifikasi baru yang masuk
     if (payload.eventType === 'INSERT' && !payload.new.is_read) {
+      const currentRecipient = window.getNotificationRecipientInfo?.() || {};
+      
+      // Jangan duplikasi notifikasi permit di Musyrif (karena ditangani langsung di _handleRealtimePermitChange)
+      if (payload.new.type === 'permit' && currentRecipient.type === 'musyrif') {
+        return;
+      }
+      
       window.showToast?.(`Notifikasi Baru: ${payload.new.title}`, 'info');
+      
+      if (typeof window.sendLocalNotification === 'function') {
+        window.sendLocalNotification(payload.new.title, payload.new.body, payload.new.type || 'info');
+      }
     }
   };
 }

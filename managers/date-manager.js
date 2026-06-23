@@ -21,11 +21,36 @@ window.changeDateView = function (direction) {
   window.showToast(`📅 ${window.formatDate(appState.date)}`, "info");
 };
 
+window.changeWeekView = function (direction) {
+  const current = new Date(appState.date);
+  current.setDate(current.getDate() + (direction * 7));
+
+  const nextDateStr = window.getLocalDateStr(current);
+  const todayStr = window.getLocalDateStr();
+
+  if (nextDateStr > todayStr) {
+    if (window.getLocalDateStr(new Date(appState.date)) === todayStr) {
+      return window.showToast("Masa depan belum terjadi 🚫", "warning");
+    }
+    appState.date = todayStr;
+  } else {
+    appState.date = nextDateStr;
+  }
+
+  window.updateDateDisplay();
+  window.updateDashboard();
+  window.showToast(`📅 Pekan: ${window.formatDate(appState.date)}`, "info");
+};
+
 window.updateDateDisplay = function () {
   const el = document.getElementById("current-date-display");
   const input = document.getElementById("date-picker-input");
 
-  if (el) el.textContent = window.formatDate(appState.date);
+  if (el) {
+    const d = new Date(appState.date);
+    const mLabel = window.MONTHS_FULL_ID ? window.MONTHS_FULL_ID[d.getMonth()] : d.toLocaleString("id-ID", { month: "long" });
+    el.textContent = `${mLabel} ${d.getFullYear()}`;
+  }
   if (input) input.value = appState.date;
 };
 

@@ -507,6 +507,18 @@ window.syncRoleModeUI = function () {
   } else {
     if (window.initPermitRequestListener) window.initPermitRequestListener();
   }
+
+  // Fetch notifications for the active role
+  if (typeof window.fetchNotifications === "function") {
+    window.fetchNotifications();
+  }
+
+  // Re-subscribe to realtime channels with the correct recipient info
+  if (window.hybridStorageManager && window.hybridStorageManager.kelasId) {
+    window.hybridStorageManager._subscribeToRealtime?.().catch(err => {
+      console.warn('[Realtime] Failed to re-subscribe on role sync:', err);
+    });
+  }
 };
 
 window.applyLoginModeUI = function () {
@@ -2260,6 +2272,7 @@ window.updateDashboard = function () {
   }
   window.renderSchoolStatsWidget();
   window.renderSlotList();
+  window.renderWeeklyCalendar();
   window.renderKBMBanner();
   window.renderActivePermitsWidget();
 
@@ -2653,6 +2666,130 @@ window.updateLocationStatus = function () {
       maximumAge: GPS_CACHE_DURATION,
     },
   );
+};
+
+window.renderWeeklyCalendar = function () {
+  const container = document.getElementById("weekly-calendar-bar");
+  if (!container) return;
+
+  const todayStr = window.getLocalDateStr();
+  const selectedDate = new Date(appState.date);
+  
+  // Calculate Monday of the current active week
+  const day = selectedDate.getDay();
+  const diff = selectedDate.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(selectedDate);
+  monday.setDate(diff);
+
+  let html = `
+    <div class="flex items-center justify-between gap-1 w-full">
+      <!-- Prev Week -->
+      <button onclick="window.changeWeekView(-1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Sebelumnya">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"></path></svg>
+      </button>
+
+      <!-- Day Cards Grid -->
+      <div class="flex-1 grid grid-cols-7 gap-1 sm:gap-2">
+  `;
+
+  const DAYS_SHORT = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Ahd"];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = window.getLocalDateStr(d);
+    const dayNum = d.getDate();
+    const dayLabel = DAYS_SHORT[i];
+    
+    const isSelected = dateStr === appState.date;
+    const isToday = dateStr === todayStr;
+
+    // Calculate slots progress
+    const activeSlots = ["shubuh", "sekolah", "ashar", "maghrib", "isya"].filter(slotId => !window.isSlotHoliday(slotId, dateStr));
+    let completedCount = 0;
+    let lockedCount = 0;
+    
+    activeSlots.forEach(slotId => {
+      const access = window.isSlotAccessible(slotId, dateStr);
+      const stats = window.calculateSlotStats(slotId, dateStr);
+      if (stats.isFilled) {
+        completedCount++;
+      } else if (access.locked) {
+        lockedCount++;
+      }
+    });
+
+    const totalActive = activeSlots.length;
+    let progressPercent = totalActive > 0 ? (completedCount / totalActive) : 0;
+    const isAllLocked = totalActive > 0 && lockedCount === totalActive;
+    const isCompleted = totalActive > 0 && completedCount === totalActive;
+
+    // Progress Arc calculation (r=11, circumference ~69.1, 3/4 arc ~51.8)
+    const maxArcLength = 51.8;
+    const filledArcLength = progressPercent * maxArcLength;
+
+    // Select color class
+    let arcColorClass = "text-slate-200 dark:text-slate-800";
+    if (isCompleted) {
+      arcColorClass = "text-emerald-500 dark:text-emerald-400";
+    } else if (isAllLocked) {
+      arcColorClass = "text-slate-200 dark:text-slate-800";
+    } else if (progressPercent > 0) {
+      if (dateStr < todayStr) {
+        arcColorClass = "text-red-500 dark:text-red-400"; // Past incomplete
+      } else {
+        arcColorClass = "text-palette-blue dark:text-palette-cyan"; // Today in-progress
+      }
+    } else {
+      // 0% progress and active (past or today)
+      if (dateStr <= todayStr) {
+        arcColorClass = "text-red-500/40 dark:text-red-500/20"; // Red faint warning
+      }
+    }
+
+    const cardBgClass = isSelected
+      ? "bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 shadow-sm font-bold scale-[1.03]"
+      : "bg-transparent border border-transparent hover:bg-slate-50/50 dark:hover:bg-slate-800/10";
+
+    const textPrimaryClass = isSelected
+      ? "text-slate-800 dark:text-white"
+      : "text-slate-700 dark:text-slate-300";
+
+    html += `
+      <div onclick="window.handleDateChange('${dateStr}')" class="flex flex-col items-center justify-center p-1 sm:p-2 rounded-2xl transition-all duration-300 cursor-pointer min-w-0 ${cardBgClass}" title="${window.formatDate(dateStr)}">
+        <!-- Today Indicator Dot -->
+        <span class="w-1.5 h-1.5 rounded-full mb-0.5 ${isToday ? 'bg-palette-blue dark:bg-palette-cyan animate-pulse' : 'bg-transparent'}"></span>
+        
+        <!-- Day Label -->
+        <span class="text-[8px] sm:text-[10px] uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500 text-center truncate w-full">${dayLabel}</span>
+        
+        <!-- Date Number -->
+        <span class="text-xs sm:text-sm font-black text-center mt-0.5 ${textPrimaryClass}">${dayNum}</span>
+        
+        <!-- 3/4 Circular Progress Arc -->
+        <div class="flex justify-center mt-1 w-full">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 32 32">
+            <!-- Faint background arc -->
+            <circle class="text-slate-100 dark:text-slate-800/40" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" cx="16" cy="16" r="11" stroke-dasharray="51.8 69.1" transform="rotate(135 16 16)" />
+            <!-- Progress arc -->
+            <circle class="${arcColorClass}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" cx="16" cy="16" r="11" stroke-dasharray="${filledArcLength} 69.1" transform="rotate(135 16 16)" />
+          </svg>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `
+      </div>
+
+      <!-- Next Week -->
+      <button onclick="window.changeWeekView(1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Berikutnya">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+      </button>
+    </div>
+  `;
+
+  container.innerHTML = html;
 };
 
 window.renderSlotList = function () {
@@ -4353,11 +4490,36 @@ window.changeDateView = function (direction) {
   window.showToast(`📅 ${window.formatDate(appState.date)}`, "info");
 };
 
+window.changeWeekView = function (direction) {
+  const current = new Date(appState.date);
+  current.setDate(current.getDate() + (direction * 7));
+
+  const nextDateStr = window.getLocalDateStr(current);
+  const todayStr = window.getLocalDateStr();
+
+  if (nextDateStr > todayStr) {
+    if (window.getLocalDateStr(new Date(appState.date)) === todayStr) {
+      return window.showToast("Masa depan belum terjadi 🚫", "warning");
+    }
+    appState.date = todayStr;
+  } else {
+    appState.date = nextDateStr;
+  }
+
+  window.updateDateDisplay();
+  window.updateDashboard();
+  window.showToast(`📅 Pekan: ${window.formatDate(appState.date)}`, "info");
+};
+
 window.updateDateDisplay = function () {
   const el = document.getElementById("current-date-display");
   const input = document.getElementById("date-picker-input");
 
-  if (el) el.textContent = window.formatDate(appState.date);
+  if (el) {
+    const d = new Date(appState.date);
+    const mLabel = window.MONTHS_FULL_ID ? window.MONTHS_FULL_ID[d.getMonth()] : d.toLocaleString("id-ID", { month: "long" });
+    el.textContent = `${mLabel} ${d.getFullYear()}`;
+  }
   if (input) input.value = appState.date;
 };
 
