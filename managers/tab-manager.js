@@ -154,6 +154,10 @@ window.switchTab = function (tabName) {
     if (typeof window.initFastingTab === "function") window.initFastingTab();
   } else if (tabName === "performance") {
     if (typeof window.initPerformanceTab === "function") window.initPerformanceTab();
+  } else if (tabName === "notifications") {
+    if (typeof window.fetchNotifications === "function") {
+      window.fetchNotifications();
+    }
   }
   // 6. Refresh Icon Lucide
   if (window.lucide) window.lucide.createIcons();

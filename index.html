@@ -2240,31 +2240,10 @@
 
     <div class="hidden sm:block w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
-    <div class="relative">
-      <button onclick="window.toggleNotificationDropdown(event)" class="relative p-2 rounded-full text-slate-400 hover:text-palette-blue hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-95 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
-        <span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-[8px] font-black text-white border-2 border-white dark:border-slate-800 leading-none">0</span>
-      </button>
-
-      <!-- Dropdown Notifikasi -->
-      <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-[120] overflow-hidden animate-slide-up">
-        <div class="p-3.5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20">
-          <h3 class="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Notifikasi</h3>
-          <button onclick="window.markAllNotificationsAsRead(event)" class="text-[9px] font-black text-palette-blue hover:text-palette-deep transition-all uppercase tracking-wider">Tandai semua dibaca</button>
-        </div>
-        <div id="notification-list" class="max-h-[300px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/40 custom-scrollbar">
-          <div class="p-6 text-center text-slate-400 dark:text-slate-500">
-            <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
-            <p class="text-xs font-semibold">Tidak ada notifikasi baru</p>
-          </div>
-        </div>
-        <div class="p-3 bg-slate-50/50 dark:bg-slate-950/20 text-center border-t border-slate-100 dark:border-slate-800">
-          <button onclick="window.openNotificationSettingsModal?.(); window.closeNotificationDropdown?.();" class="text-[9px] font-black text-slate-500 hover:text-slate-800 dark:hover:text-white uppercase tracking-widest flex items-center justify-center gap-1.5 mx-auto transition-colors">
-            <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> Pengaturan Notifikasi
-          </button>
-        </div>
-      </div>
-    </div>
+    <button onclick="window.switchTab('notifications')" class="relative p-2 rounded-full text-slate-400 hover:text-palette-blue hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-95 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+      <span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-[8px] font-black text-white border-2 border-white dark:border-slate-800 leading-none">0</span>
+    </button>
 
     <button onclick="window.showToast && window.showToast('Fitur pesan sedang dikembangkan', 'info')" class="relative p-2 rounded-full text-slate-400 hover:text-palette-blue hover:bg-slate-100 dark:hover:bg-slate-700 transition-all active:scale-95 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"></path></svg>
@@ -2933,6 +2912,42 @@
     </div> <!-- Close Dashboard Grid Wrapper -->
         </div> <!-- Close max-w-7xl wrapper -->
   </div>
+
+      <!-- Tab: Notifications -->
+      <div
+        id="tab-notifications"
+        class="tab-content hidden min-h-screen pb-40 p-6 pt-safe animate-fade-in overflow-y-auto hide-scrollbar"
+      >
+        <div class="max-w-7xl mx-auto w-full space-y-5">
+          <header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 mt-3 sm:mt-4 w-full delay-100ms">
+            <div class="flex items-center gap-3 min-w-0">
+              <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 active:scale-95 transition-all duration-300">
+                <div class="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-25 group-hover:opacity-50 transition-opacity duration-300"></div>
+                <div class="relative w-11 h-11 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
+                  <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </div>
+              </button>
+
+              <div class="flex flex-col justify-center min-w-0">
+                <h1 class="text-sm sm:text-base font-black text-slate-800 dark:text-white leading-tight truncate">Notifikasi</h1>
+                <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">Riwayat pemberitahuan terbaru</p>
+              </div>
+            </div>
+            <button onclick="window.markAllNotificationsAsRead(event)" class="px-3.5 py-2 rounded-full text-[10px] font-black text-white bg-palette-blue hover:bg-palette-deep transition-all shadow-md active:scale-95">
+              Tandai semua dibaca
+            </button>
+          </header>
+
+          <div class="mt-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-sm p-4 sm:p-6">
+            <div id="tab-notification-list" class="divide-y divide-slate-150/40 dark:divide-slate-800/40">
+              <div class="p-8 text-center text-slate-400 dark:text-slate-500">
+                <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                <p class="text-xs font-semibold">Memuat notifikasi...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Tab: Report -->
       <div

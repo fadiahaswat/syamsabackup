@@ -775,37 +775,6 @@ window.getNotificationRecipientInfo = function () {
 };
 
 // Toggle visibility dropdown
-window.toggleNotificationDropdown = function (event) {
-  if (event) event.stopPropagation();
-  const dropdown = document.getElementById("notification-dropdown");
-  if (!dropdown) return;
-
-  const isHidden = dropdown.classList.contains("hidden");
-  if (isHidden) {
-    dropdown.classList.remove("hidden");
-    // Fetch and render
-    window.fetchNotifications();
-    // Close dropdown on click outside
-    document.addEventListener("click", window.closeNotificationDropdownOutside);
-  } else {
-    window.closeNotificationDropdown();
-  }
-};
-
-window.closeNotificationDropdown = function () {
-  const dropdown = document.getElementById("notification-dropdown");
-  if (dropdown) dropdown.classList.add("hidden");
-  document.removeEventListener("click", window.closeNotificationDropdownOutside);
-};
-
-window.closeNotificationDropdownOutside = function (event) {
-  const dropdown = document.getElementById("notification-dropdown");
-  const bellBtn = event.target.closest("button");
-  if (dropdown && !dropdown.contains(event.target) && (!bellBtn || !bellBtn.onclick?.toString().includes("toggleNotificationDropdown"))) {
-    window.closeNotificationDropdown();
-  }
-};
-
 // Fetch notifications from Supabase with LocalStorage cache fallback
 window.fetchNotifications = async function () {
   const recipient = window.getNotificationRecipientInfo();
@@ -838,7 +807,7 @@ window.fetchNotifications = async function () {
         .eq("recipient_type", recipient.type)
         .eq("recipient_id", recipient.id)
         .order("created_at", { ascending: false })
-        .limit(30);
+        .limit(50); // Increased limit for full-page tab
 
       if (error) throw error;
 
@@ -981,8 +950,6 @@ window.markAllNotificationsAsRead = async function (event) {
 window.handleNotificationClick = function (id, deepLink) {
   // Mark as read
   window.markNotificationAsRead(id);
-  // Close dropdown
-  window.closeNotificationDropdown();
   // Deep link navigate
   window.executeDeepLink(deepLink);
 };
@@ -1014,9 +981,9 @@ window.executeDeepLink = function (deepLink) {
   }
 };
 
-// Render UI Dropdown
+// Render UI Tab
 window.renderNotificationsUI = function (notificationsList = []) {
-  const listContainer = document.getElementById("notification-list");
+  const listContainer = document.getElementById("tab-notification-list");
   const badge = document.getElementById("notif-badge");
   if (!listContainer) return;
 
@@ -1036,9 +1003,9 @@ window.renderNotificationsUI = function (notificationsList = []) {
   // Render items
   if (notificationsList.length === 0) {
     listContainer.innerHTML = `
-      <div class="p-8 text-center text-slate-400 dark:text-slate-500">
-        <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
-        <p class="text-xs font-semibold">Tidak ada notifikasi baru</p>
+      <div class="p-12 text-center text-slate-400 dark:text-slate-500">
+        <i data-lucide="bell-off" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
+        <p class="text-sm font-semibold">Tidak ada notifikasi baru</p>
       </div>
     `;
     if (window.lucide) window.lucide.createIcons();
@@ -1071,19 +1038,19 @@ window.renderNotificationsUI = function (notificationsList = []) {
     const dateStr = item.created_at ? window.formatNotificationTime(item.created_at) : "";
 
     html += `
-      <div onclick="window.handleNotificationClick('${item.id}', '${item.deep_link || ""}')" class="p-3.5 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-850/50 cursor-pointer transition-all active:scale-[0.99] relative ${isUnread ? "bg-blue-50/20 dark:bg-palette-blue/5" : ""}">
-        <div class="p-2 rounded-xl shrink-0 ${colorClass}">
-          <i data-lucide="${icon}" class="w-4 h-4"></i>
+      <div onclick="window.handleNotificationClick('${item.id}', '${item.deep_link || ""}')" class="p-4 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-all active:scale-[0.99] relative ${isUnread ? "bg-blue-50/10 dark:bg-palette-blue/5 border-l-4 border-palette-blue" : "border-l-4 border-transparent"}">
+        <div class="p-2.5 rounded-2xl shrink-0 ${colorClass}">
+          <i data-lucide="${icon}" class="w-5 h-5"></i>
         </div>
         <div class="flex-1 min-w-0">
-          <div class="flex justify-between items-baseline gap-1">
-            <h4 class="text-xs font-black text-slate-850 dark:text-white truncate ${isUnread ? "font-extrabold text-palette-blue dark:text-sky-400" : ""}">${item.title}</h4>
-            <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 shrink-0">${dateStr}</span>
+          <div class="flex justify-between items-baseline gap-2">
+            <h4 class="text-sm font-black text-slate-850 dark:text-white truncate ${isUnread ? "font-extrabold text-palette-blue dark:text-sky-400" : ""}">${item.title}</h4>
+            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 shrink-0">${dateStr}</span>
           </div>
-          <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">${item.body}</p>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">${item.body}</p>
         </div>
         ${isUnread ? `
-          <span class="absolute top-1/2 right-3 -translate-y-1/2 w-2 h-2 rounded-full bg-palette-blue dark:bg-sky-400"></span>
+          <span class="absolute top-1/2 right-4 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-palette-blue dark:bg-sky-400"></span>
         ` : ""}
       </div>
     `;
