@@ -2668,6 +2668,63 @@ window.updateLocationStatus = function () {
   );
 };
 
+window.calculateDateStreak = function (dateStr) {
+  const todayStr = window.getLocalDateStr();
+  if (dateStr > todayStr) return { streak: 0, status: "future" };
+
+  const checkCompleted = (dStr) => {
+    const activeSlots = ["shubuh", "sekolah", "ashar", "maghrib", "isya"].filter(slotId => !window.isSlotHoliday(slotId, dStr));
+    if (activeSlots.length === 0) return "holiday";
+    
+    let completedCount = 0;
+    activeSlots.forEach(slotId => {
+      const stats = window.calculateSlotStats(slotId, dStr);
+      if (stats.isFilled) completedCount++;
+    });
+    return completedCount === activeSlots.length ? "completed" : "incomplete";
+  };
+
+  // If in the past and not completed, streak is 0
+  const targetStatus = checkCompleted(dateStr);
+  if (dateStr < todayStr && targetStatus === "incomplete") {
+    return { streak: 0, status: "broken" };
+  }
+
+  // Calculate backward from dateStr (or yesterday if dateStr is today and incomplete)
+  let streak = 0;
+  let current = new Date(dateStr);
+  
+  // If target is today and incomplete, we start counting streak from yesterday
+  if (dateStr === todayStr && targetStatus !== "completed") {
+    current.setDate(current.getDate() - 1);
+  }
+
+  let limit = 90;
+  while (limit > 0) {
+    limit--;
+    const curStr = window.getLocalDateStr(current);
+    const status = checkCompleted(curStr);
+    
+    if (status === "completed") {
+      streak++;
+    } else if (status === "incomplete") {
+      break; // Streak broken
+    } // If holiday, we just skip it
+    
+    current.setDate(current.getDate() - 1);
+  }
+
+  // If target is today and completed, we include today in the streak
+  if (dateStr === todayStr && targetStatus === "completed") {
+    streak += 1;
+  }
+
+  return {
+    streak: streak,
+    status: targetStatus === "completed" ? "completed" : (dateStr === todayStr ? "in_progress" : "broken")
+  };
+};
+
 window.renderWeeklyCalendar = function () {
   const container = document.getElementById("weekly-calendar-bar");
   if (!container) return;
@@ -2681,10 +2738,62 @@ window.renderWeeklyCalendar = function () {
   const monday = new Date(selectedDate);
   monday.setDate(diff);
 
+  // Get active slot colors for the selected pill
+  const activeSlotId = appState.activeAttendanceSlotId || appState.currentSlotId;
+  const activeSlot = SLOT_WAKTU[activeSlotId];
+  const slotTheme = activeSlot?.theme || "blue";
+
+  const isDark = document.documentElement.classList.contains("dark");
+  const themeColors = {
+    emerald: {
+      bg: "linear-gradient(135deg, #0f766e, #10b981)",
+      textSub: "#a7f3d0",
+    },
+    cyan: {
+      bg: "linear-gradient(135deg, #0c4e8c, #0c81e4)",
+      textSub: "#cffafe",
+    },
+    orange: {
+      bg: "linear-gradient(135deg, #b45309, #f59e0b)",
+      textSub: "#ffedd5",
+    },
+    indigo: {
+      bg: "linear-gradient(135deg, #4338ca, #7e22ce)",
+      textSub: "#e0e7ff",
+    },
+    slate: {
+      bg: isDark
+        ? "linear-gradient(135deg, #0f172a, #1e3a8a)"
+        : "linear-gradient(135deg, #475569, #64748b)",
+      textSub: "#e2e8f0",
+    },
+    blue: {
+      bg: "linear-gradient(135deg, #0c4e8c, #0c81e4)",
+      textSub: "#dbeafe",
+    }
+  };
+
+  const activeTheme = themeColors[slotTheme] || themeColors.blue;
+
   let html = `
+    <!-- SVG Gradients for Flame Streaks -->
+    <svg style="width:0;height:0;position:absolute;" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="flame-grad-active" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#f97316" />
+          <stop offset="50%" stop-color="#ef4444" />
+          <stop offset="100%" stop-color="#ec4899" />
+        </linearGradient>
+        <linearGradient id="flame-grad-progress" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#eab308" />
+          <stop offset="100%" stop-color="#f97316" />
+        </linearGradient>
+      </defs>
+    </svg>
+
     <div class="flex items-center justify-between gap-1 w-full">
       <!-- Prev Week -->
-      <button onclick="window.changeWeekView(-1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Sebelumnya">
+      <button onclick="window.changeWeekView(-1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100/50 dark:hover:bg-white/10 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Sebelumnya">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"></path></svg>
       </button>
 
@@ -2707,94 +2816,101 @@ window.renderWeeklyCalendar = function () {
     // Calculate slots progress
     const activeSlots = ["shubuh", "sekolah", "ashar", "maghrib", "isya"].filter(slotId => !window.isSlotHoliday(slotId, dateStr));
     let completedCount = 0;
-    let lockedCount = 0;
-    
     activeSlots.forEach(slotId => {
-      const access = window.isSlotAccessible(slotId, dateStr);
       const stats = window.calculateSlotStats(slotId, dateStr);
-      if (stats.isFilled) {
-        completedCount++;
-      } else if (access.locked) {
-        lockedCount++;
-      }
+      if (stats.isFilled) completedCount++;
     });
+    const hasProgress = completedCount > 0;
 
-    const totalActive = activeSlots.length;
-    let progressPercent = totalActive > 0 ? (completedCount / totalActive) : 0;
-    const isAllLocked = totalActive > 0 && lockedCount === totalActive;
-    const isCompleted = totalActive > 0 && completedCount === totalActive;
+    // Calculate Streak info
+    const streakInfo = window.calculateDateStreak(dateStr);
 
-    // Progress Arc calculation (r=11, circumference ~69.1, 3/4 arc ~51.8)
-    const maxArcLength = 51.8;
-    const filledArcLength = progressPercent * maxArcLength;
+    // Build flame SVG indicator HTML
+    let indicatorHtml = "";
+    if (activeSlots.length === 0) {
+      // Holiday
+      indicatorHtml = `
+        <div class="flex items-center justify-center mt-1 w-full h-5">
+          <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550">-</span>
+        </div>
+      `;
+    } else {
+      let flameFill = "currentColor";
+      let flameClass = "";
+      let labelHtml = "";
 
-    // Select color class with enhanced contrast (muted if not selected)
-    let arcColorClass = "";
-    if (isSelected) {
-      if (isCompleted) {
-        arcColorClass = "text-emerald-600 dark:text-emerald-400";
-      } else if (isAllLocked) {
-        arcColorClass = "text-slate-300 dark:text-white/20";
-      } else if (progressPercent > 0) {
-        if (dateStr < todayStr) {
-          arcColorClass = "text-red-650 dark:text-red-400"; // Past incomplete
-        } else {
-          arcColorClass = "text-blue-600 dark:text-cyan-400"; // Today in-progress
+      if (streakInfo.streak > 0) {
+        if (streakInfo.status === "completed") {
+          flameFill = "url(#flame-grad-active)";
+          flameClass = "scale-110 drop-shadow-[0_1px_2px_rgba(239,68,68,0.15)]";
+          const labelColor = isSelected ? "text-white" : "text-orange-600 dark:text-orange-400";
+          labelHtml = `<span class="text-[9px] font-black leading-none ${labelColor}">${streakInfo.streak}</span>`;
+        } else if (streakInfo.status === "in_progress") {
+          flameFill = "url(#flame-grad-progress)";
+          flameClass = "animate-pulse scale-105";
+          const labelColor = isSelected ? "text-white" : "text-amber-600 dark:text-amber-500";
+          labelHtml = `<span class="text-[9px] font-black leading-none ${labelColor}">${streakInfo.streak}</span>`;
         }
       } else {
-        // 0% progress and active (past or today)
-        if (dateStr <= todayStr) {
-          arcColorClass = "text-red-550 dark:text-red-450/40"; // Red faint warning
+        if (dateStr === todayStr && hasProgress) {
+          flameFill = "url(#flame-grad-progress)";
+          flameClass = "animate-pulse";
         } else {
-          arcColorClass = "text-slate-300 dark:text-white/20";
+          if (isSelected) {
+            flameFill = "rgba(255, 255, 255, 0.25)";
+          } else {
+            flameClass = "text-slate-200 dark:text-slate-700/80";
+          }
         }
       }
-    } else {
-      // Muted arc color for unselected days (matching the text styling)
-      arcColorClass = "text-slate-400 dark:text-slate-500";
+
+      const hasStreakOrProgress = streakInfo.streak > 0 || (dateStr === todayStr && hasProgress);
+      const subPillClass = hasStreakOrProgress
+        ? (isSelected ? "bg-white/20" : "bg-orange-50/60 dark:bg-orange-500/10")
+        : "";
+
+      indicatorHtml = `
+        <div class="flex items-center justify-center gap-0.5 mt-1 h-5 px-1.5 rounded-full transition-all ${subPillClass}">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-all duration-300 ${flameClass}" viewBox="0 0 24 24" fill="${flameFill}">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+          </svg>
+          ${labelHtml}
+        </div>
+      `;
     }
 
-    // High contrast border and background colors
+    // High contrast border and background colors (Dynamic Pill when selected)
+    const cardBgStyle = isSelected
+      ? `background: ${activeTheme.bg};`
+      : "";
     const cardBgClass = isSelected
-      ? "bg-slate-100/90 dark:bg-white/10 border border-slate-300 dark:border-white/20 shadow-md font-bold scale-[1.03]"
+      ? "border-0 border-transparent shadow-md font-bold scale-[1.03]"
       : "bg-transparent border border-transparent hover:bg-slate-100/50 dark:hover:bg-white/5";
 
+    const textPrimaryStyle = isSelected
+      ? "color: #ffffff;"
+      : "";
     const textPrimaryClass = isSelected
-      ? "text-slate-900 dark:text-white font-black"
+      ? "font-black"
       : "text-slate-400 dark:text-slate-500 font-bold";
 
+    const textSecondaryStyle = isSelected
+      ? `color: ${activeTheme.textSub};`
+      : "";
     const textSecondaryClass = isSelected
-      ? "text-slate-700 dark:text-slate-200 font-bold"
+      ? "font-bold"
       : "text-slate-400 dark:text-slate-550 font-medium";
 
-    const todayDotClass = isSelected
-      ? "bg-blue-600 dark:bg-palette-cyan"
-      : "bg-blue-600/40 dark:bg-palette-cyan/30";
-
-    const progressSvgClass = isSelected
-      ? "w-5 h-5 sm:w-6 sm:h-6 opacity-100 scale-105 transition-all duration-300"
-      : "w-5 h-5 sm:w-6 sm:h-6 opacity-55 dark:opacity-35 transition-all duration-300";
-
     html += `
-      <div onclick="window.handleDateChange('${dateStr}')" class="flex flex-col items-center justify-center p-1 sm:p-2 rounded-2xl transition-all duration-300 cursor-pointer min-w-0 ${cardBgClass}" title="${window.formatDate(dateStr)}">
-        <!-- Today Indicator Dot -->
-        <span class="w-1.5 h-1.5 rounded-full mb-0.5 ${isToday ? `${todayDotClass} animate-pulse` : 'bg-transparent'}"></span>
-        
+      <div onclick="window.handleDateChange('${dateStr}')" class="flex flex-col items-center justify-center p-1 sm:p-2 rounded-2xl transition-all duration-300 cursor-pointer min-w-0 ${cardBgClass}" style="${cardBgStyle}" title="${window.formatDate(dateStr)}">
         <!-- Day Label -->
-        <span class="text-[8px] sm:text-[10px] uppercase tracking-wider text-center truncate w-full ${textSecondaryClass}">${dayLabel}</span>
+        <span class="text-[8px] sm:text-[10px] uppercase tracking-wider text-center truncate w-full ${textSecondaryClass}" style="${textSecondaryStyle}">${dayLabel}</span>
         
         <!-- Date Number -->
-        <span class="text-xs sm:text-sm text-center mt-0.5 ${textPrimaryClass}">${dayNum}</span>
+        <span class="text-xs sm:text-sm text-center mt-0.5 ${textPrimaryClass}" style="${textPrimaryStyle}">${dayNum}</span>
         
-        <!-- 3/4 Circular Progress Arc -->
-        <div class="flex justify-center mt-1 w-full">
-          <svg class="${progressSvgClass}" viewBox="0 0 32 32">
-            <!-- Faint background arc (enhanced contrast) -->
-            <circle class="text-slate-200/50 dark:text-white/5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" cx="16" cy="16" r="11" stroke-dasharray="51.8 69.1" transform="rotate(135 16 16)" />
-            <!-- Progress arc -->
-            <circle class="${arcColorClass}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" cx="16" cy="16" r="11" stroke-dasharray="${filledArcLength} 69.1" transform="rotate(135 16 16)" />
-          </svg>
-        </div>
+        <!-- Flame Streak Indicator -->
+        ${indicatorHtml}
       </div>
     `;
   }
