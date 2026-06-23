@@ -2380,6 +2380,18 @@ window.saveQuickSetoranEntry = function () {
     list.unshift(newSetoran);
     localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
 
+    // Trigger notification to Wali
+    if (typeof window.addNotification === "function") {
+      window.addNotification(
+        "wali",
+        studentId,
+        "Setoran Hafalan Baru 📖",
+        `${student.nama} berhasil menyetor hafalan ${type} Juz ${juz} Surah ${surah} Hal ${page} (${status}).`,
+        "tahfizh",
+        "tab=tahfizh"
+      );
+    }
+
     // Log to Audit Trail
     window.logActivityAudit("Setoran Tahfizh", student.nama, `Mencatat setoran ${type} Juz ${juz} (${status}).`);
 

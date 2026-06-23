@@ -754,3 +754,400 @@ window.checkScheduledNotifications = function () {
     });
   }
 };
+
+// ==========================================
+// IN-APP NOTIFICATION CENTER (POPOVER)
+// ==========================================
+
+// Helper: Ambil informasi penerima berdasarkan mode login
+window.getNotificationRecipientInfo = function () {
+  if (appState.waliMode === true) {
+    return {
+      type: "wali",
+      id: String(appState.waliSantri?.nis || appState.waliSantri?.id || "").trim()
+    };
+  } else {
+    return {
+      type: "musyrif",
+      id: String(appState.userProfile?.email || "").trim()
+    };
+  }
+};
+
+// Toggle visibility dropdown
+window.toggleNotificationDropdown = function (event) {
+  if (event) event.stopPropagation();
+  const dropdown = document.getElementById("notification-dropdown");
+  if (!dropdown) return;
+
+  const isHidden = dropdown.classList.contains("hidden");
+  if (isHidden) {
+    dropdown.classList.remove("hidden");
+    // Fetch and render
+    window.fetchNotifications();
+    // Close dropdown on click outside
+    document.addEventListener("click", window.closeNotificationDropdownOutside);
+  } else {
+    window.closeNotificationDropdown();
+  }
+};
+
+window.closeNotificationDropdown = function () {
+  const dropdown = document.getElementById("notification-dropdown");
+  if (dropdown) dropdown.classList.add("hidden");
+  document.removeEventListener("click", window.closeNotificationDropdownOutside);
+};
+
+window.closeNotificationDropdownOutside = function (event) {
+  const dropdown = document.getElementById("notification-dropdown");
+  const bellBtn = event.target.closest("button");
+  if (dropdown && !dropdown.contains(event.target) && (!bellBtn || !bellBtn.onclick?.toString().includes("toggleNotificationDropdown"))) {
+    window.closeNotificationDropdown();
+  }
+};
+
+// Fetch notifications from Supabase with LocalStorage cache fallback
+window.fetchNotifications = async function () {
+  const recipient = window.getNotificationRecipientInfo();
+  if (!recipient.id) {
+    console.log("[NotificationManager] Skip fetch: No recipient ID logged in");
+    window.renderNotificationsUI([]);
+    return;
+  }
+
+  const cacheKey = `local_notifs_${recipient.type}_${recipient.id}`;
+  let notificationsList = [];
+
+  // Try to load cached first
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      notificationsList = JSON.parse(cached);
+      window.renderNotificationsUI(notificationsList);
+    }
+  } catch (e) {
+    console.warn("Failed to load cached notifications", e);
+  }
+
+  // Fetch from Supabase if online
+  if (window.supabaseClient && window.supabaseClient.isOnline && window.supabaseClient.client) {
+    try {
+      const { data, error } = await window.supabaseClient.client
+        .from("notifications")
+        .select("*")
+        .eq("recipient_type", recipient.type)
+        .eq("recipient_id", recipient.id)
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+      if (error) throw error;
+
+      if (data) {
+        notificationsList = data;
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+        window.renderNotificationsUI(notificationsList);
+      }
+    } catch (err) {
+      console.error("Error fetching notifications from Supabase:", err);
+    }
+  } else {
+    // If local-only or offline, render cached (already done above, but refresh badge)
+    window.renderNotificationsUI(notificationsList);
+  }
+};
+
+// Add new notification (inserts to Supabase if online, and local storage cache)
+window.addNotification = async function (recipientType, recipientId, title, body, type = "default", deepLink = "") {
+  if (!recipientId) return;
+
+  const newNotif = {
+    id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
+    recipient_type: recipientType,
+    recipient_id: String(recipientId).trim(),
+    title,
+    body,
+    type,
+    is_read: false,
+    deep_link: deepLink,
+    created_at: new Date().toISOString()
+  };
+
+  // 1. Update cache of recipient (if recipient is currently logged in)
+  const currentRecipient = window.getNotificationRecipientInfo();
+  if (currentRecipient.type === recipientType && currentRecipient.id === recipientId) {
+    const cacheKey = `local_notifs_${recipientType}_${recipientId}`;
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      let list = cached ? JSON.parse(cached) : [];
+      list.unshift(newNotif);
+      localStorage.setItem(cacheKey, JSON.stringify(list.slice(0, 50)));
+      window.renderNotificationsUI(list);
+    } catch (e) {
+      console.warn("Error updating local cache for new notification", e);
+    }
+  }
+
+  // 2. Insert to Supabase
+  if (window.supabaseClient && window.supabaseClient.client && window.supabaseClient.isOnline) {
+    try {
+      const dbNotif = { ...newNotif };
+      // Delete temporary ID if not a valid UUID format
+      if (dbNotif.id.length < 30) delete dbNotif.id;
+
+      const { error } = await window.supabaseClient.client
+        .from("notifications")
+        .insert(dbNotif);
+      if (error) throw error;
+      console.log("[NotificationManager] Notification saved to Supabase");
+    } catch (err) {
+      console.error("Error saving notification to Supabase:", err);
+    }
+  }
+};
+
+// Mark single notification as read
+window.markNotificationAsRead = async function (id) {
+  const recipient = window.getNotificationRecipientInfo();
+  if (!recipient.id) return;
+
+  const cacheKey = `local_notifs_${recipient.type}_${recipient.id}`;
+
+  // 1. Update local cache
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      let list = JSON.parse(cached);
+      list = list.map(item => item.id === id ? { ...item, is_read: true } : item);
+      localStorage.setItem(cacheKey, JSON.stringify(list));
+      window.renderNotificationsUI(list);
+    }
+  } catch (e) {
+    console.warn("Error updating cache for mark as read", e);
+  }
+
+  // 2. Update Supabase
+  if (window.supabaseClient && window.supabaseClient.client && window.supabaseClient.isOnline) {
+    try {
+      const { error } = await window.supabaseClient.client
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("id", id);
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error marking notification as read in Supabase:", err);
+    }
+  }
+};
+
+// Mark all as read
+window.markAllNotificationsAsRead = async function (event) {
+  if (event) event.stopPropagation();
+  const recipient = window.getNotificationRecipientInfo();
+  if (!recipient.id) return;
+
+  const cacheKey = `local_notifs_${recipient.type}_${recipient.id}`;
+
+  // 1. Update cache
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      let list = JSON.parse(cached);
+      list = list.map(item => ({ ...item, is_read: true }));
+      localStorage.setItem(cacheKey, JSON.stringify(list));
+      window.renderNotificationsUI(list);
+    }
+  } catch (e) {
+    console.warn("Error updating cache for mark all as read", e);
+  }
+
+  // 2. Update Supabase
+  if (window.supabaseClient && window.supabaseClient.client && window.supabaseClient.isOnline) {
+    try {
+      const { error } = await window.supabaseClient.client
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("recipient_type", recipient.type)
+        .eq("recipient_id", recipient.id)
+        .eq("is_read", false);
+      if (error) throw error;
+      window.showToast("Semua notifikasi ditandai dibaca", "success");
+    } catch (err) {
+      console.error("Error marking all notifications as read in Supabase:", err);
+    }
+  }
+};
+
+// Handle Click on Notification Item
+window.handleNotificationClick = function (id, deepLink) {
+  // Mark as read
+  window.markNotificationAsRead(id);
+  // Close dropdown
+  window.closeNotificationDropdown();
+  // Deep link navigate
+  window.executeDeepLink(deepLink);
+};
+
+// Execute Deep Link
+window.executeDeepLink = function (deepLink) {
+  if (!deepLink) return;
+  const params = new URLSearchParams(deepLink);
+  const tab = params.get("tab");
+
+  if (tab) {
+    if (typeof window.switchTab === "function") {
+      window.switchTab(tab);
+    } else if (typeof switchTab === "function") {
+      switchTab(tab);
+    }
+  }
+
+  const action = params.get("action");
+  if (action === "verify") {
+    setTimeout(() => {
+      const permitWidget = document.querySelector(".permit-requests-card") || document.getElementById("permit-section");
+      if (permitWidget) {
+        permitWidget.scrollIntoView({ behavior: "smooth", block: "center" });
+        permitWidget.classList.add("ring-4", "ring-palette-blue/30");
+        setTimeout(() => permitWidget.classList.remove("ring-4", "ring-palette-blue/30"), 2000);
+      }
+    }, 500);
+  }
+};
+
+// Render UI Dropdown
+window.renderNotificationsUI = function (notificationsList = []) {
+  const listContainer = document.getElementById("notification-list");
+  const badge = document.getElementById("notif-badge");
+  if (!listContainer) return;
+
+  // Count unread
+  const unreadCount = notificationsList.filter(item => !item.is_read).length;
+
+  // Update badge in header
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+  }
+
+  // Render items
+  if (notificationsList.length === 0) {
+    listContainer.innerHTML = `
+      <div class="p-8 text-center text-slate-400 dark:text-slate-500">
+        <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+        <p class="text-xs font-semibold">Tidak ada notifikasi baru</p>
+      </div>
+    `;
+    if (window.lucide) window.lucide.createIcons();
+    return;
+  }
+
+  const categoryIcons = {
+    permit: "file-text",
+    attendance: "calendar",
+    tahfizh: "book-open",
+    system: "alert-triangle",
+    announcement: "megaphone",
+    default: "bell"
+  };
+
+  const categoryColors = {
+    permit: "text-amber-500 bg-amber-50 dark:bg-amber-950/20",
+    attendance: "text-blue-500 bg-blue-50 dark:bg-blue-950/20",
+    tahfizh: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20",
+    system: "text-rose-500 bg-rose-50 dark:bg-rose-950/20",
+    announcement: "text-purple-500 bg-purple-50 dark:bg-purple-950/20",
+    default: "text-slate-500 bg-slate-50 dark:bg-slate-950/20"
+  };
+
+  let html = "";
+  notificationsList.forEach(item => {
+    const icon = categoryIcons[item.type] || categoryIcons.default;
+    const colorClass = categoryColors[item.type] || categoryColors.default;
+    const isUnread = !item.is_read;
+    const dateStr = item.created_at ? window.formatNotificationTime(item.created_at) : "";
+
+    html += `
+      <div onclick="window.handleNotificationClick('${item.id}', '${item.deep_link || ""}')" class="p-3.5 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-850/50 cursor-pointer transition-all active:scale-[0.99] relative ${isUnread ? "bg-blue-50/20 dark:bg-palette-blue/5" : ""}">
+        <div class="p-2 rounded-xl shrink-0 ${colorClass}">
+          <i data-lucide="${icon}" class="w-4 h-4"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex justify-between items-baseline gap-1">
+            <h4 class="text-xs font-black text-slate-850 dark:text-white truncate ${isUnread ? "font-extrabold text-palette-blue dark:text-sky-400" : ""}">${item.title}</h4>
+            <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 shrink-0">${dateStr}</span>
+          </div>
+          <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">${item.body}</p>
+        </div>
+        ${isUnread ? `
+          <span class="absolute top-1/2 right-3 -translate-y-1/2 w-2 h-2 rounded-full bg-palette-blue dark:bg-sky-400"></span>
+        ` : ""}
+      </div>
+    `;
+  });
+
+  listContainer.innerHTML = html;
+  if (window.lucide) window.lucide.createIcons();
+};
+
+// Helper: format notification timestamp nicely (e.g. "Just now", "5m ago", "12:30", "Yesterday")
+window.formatNotificationTime = function (isoString) {
+  try {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+
+    if (diffMins < 1) return "Baru saja";
+    if (diffMins < 60) return `${diffMins}m lalu`;
+    if (diffHours < 24) {
+      if (date.getDate() === now.getDate()) {
+        return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      }
+    }
+    
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.getDate() === yesterday.getDate()) {
+      return "Kemarin";
+    }
+
+    return date.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  } catch (e) {
+    return "";
+  }
+};
+
+// Trigger fetch ketika login / perubahan data akun selesai dilakukan
+if (typeof window.syncRoleModeUI === "function") {
+  const originalSyncRoleModeUI = window.syncRoleModeUI;
+  window.syncRoleModeUI = function (...args) {
+    originalSyncRoleModeUI(...args);
+    setTimeout(() => {
+      window.fetchNotifications();
+    }, 1000);
+  };
+} else {
+  window.syncRoleModeUI = function () {
+    setTimeout(() => {
+      window.fetchNotifications();
+    }, 1000);
+  };
+}
+
+// Bind realtime notification changes callback
+if (window.supabaseClient) {
+  window.supabaseClient.onNotificationChange = (payload) => {
+    console.log('[NotificationManager] Realtime notification change:', payload);
+    window.fetchNotifications();
+    
+    // Tampilkan Toast untuk notifikasi baru yang masuk
+    if (payload.eventType === 'INSERT' && !payload.new.is_read) {
+      window.showToast?.(`Notifikasi Baru: ${payload.new.title}`, 'info');
+    }
+  };
+}

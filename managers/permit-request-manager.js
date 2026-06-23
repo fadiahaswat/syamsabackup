@@ -168,6 +168,19 @@
       window.storageManager.savePermit(requestData);
     }
 
+    // Trigger notification to Musyrif of the class
+    const musyrifEmail = (window.MASTER_KELAS?.[requestData.kelas]?.email || `${requestData.kelas.toLowerCase()}@musyrif.local`).trim();
+    if (typeof window.addNotification === "function") {
+      window.addNotification(
+        "musyrif",
+        musyrifEmail,
+        "Pengajuan Izin Baru 📝",
+        `Wali dari ${siswa.nama} mengajukan izin ${category} (${reason}) pada tanggal ${date}.`,
+        "permit",
+        `tab=home&action=verify&id=${requestId}`
+      );
+    }
+
     window.showToast("Permohonan izin berhasil disimpan!", "success");
     window.closeModal("modal-wali-permit");
     window.loadWaliPermitHistory();
@@ -505,6 +518,18 @@
         window.storageManager.savePermit(permit);
       }
 
+      // Trigger notification to Wali
+      if (typeof window.addNotification === "function") {
+        window.addNotification(
+          "wali",
+          permit.nis,
+          "Status Izin Disetujui 📝",
+          `Pengajuan izin untuk ${permit.nama} (${permit.category}) telah disetujui oleh Musyrif.`,
+          "permit",
+          "tab=home"
+        );
+      }
+
       window.showToast("Izin berhasil disetujui!", "success");
     } else if (action === "reject") {
       permit.status = 'rejected';
@@ -517,6 +542,18 @@
         window.hybridStorageManager.savePermit(permit);
       } else if (window.storageManager) {
         window.storageManager.savePermit(permit);
+      }
+
+      // Trigger notification to Wali
+      if (typeof window.addNotification === "function") {
+        window.addNotification(
+          "wali",
+          permit.nis,
+          "Status Izin Ditolak 📝",
+          `Pengajuan izin untuk ${permit.nama} (${permit.category}) ditolak oleh Musyrif.`,
+          "permit",
+          "tab=home"
+        );
       }
 
       window.showToast("Pengajuan izin ditolak.", "info");

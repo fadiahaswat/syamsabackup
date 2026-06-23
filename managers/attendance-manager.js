@@ -767,6 +767,68 @@ window.toggleStatus = function (id, actId, type) {
     });
   }
 
+  // Trigger notifications based on attendance status
+  if (type === "mandator") {
+    const student = (Array.isArray(FILTERED_SANTRI) ? FILTERED_SANTRI : []).find(s => String(s.nis || s.id) === String(id));
+    const studentName = student ? (student.nama || student.name) : "Santri";
+    
+    // 1. Notify Wali if not present (Alpa/Sakit/Izin/Telat)
+    if (["Alpa", "Sakit", "Izin", "Telat"].includes(next)) {
+      if (typeof window.addNotification === "function") {
+        const slotLabel = SLOT_WAKTU[slotId]?.label || slotId;
+        window.addNotification(
+          "wali",
+          id,
+          "Laporan Kehadiran 📋",
+          `${studentName} dicatat "${next}" pada sesi presensi ${slotLabel} tanggal ${dateKey}.`,
+          "attendance",
+          "tab=report"
+        );
+      }
+
+      // 2. Notify Musyrif if student accumulates >= 3 Alpas in 30 days
+      if (next === "Alpa") {
+        try {
+          let alpaCount = 0;
+          const daysToCheck = 30;
+          for (let i = 0; i < daysToCheck; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split("T")[0];
+            const dayData = appState.attendanceData?.[dateStr];
+            if (dayData) {
+              Object.keys(dayData).forEach((sId) => {
+                const slotData = dayData[sId];
+                const statusObj = slotData[id];
+                if (statusObj && statusObj.status) {
+                  const mainStatus = statusObj.status.shalat || statusObj.status.kehadiran || statusObj.status.subuh || "";
+                  if (mainStatus === "Alpa" || mainStatus === "A") {
+                    alpaCount++;
+                  }
+                }
+              });
+            }
+          }
+          if (alpaCount >= 3) {
+            const musyrifEmail = appState.userProfile?.email || "musyrif@syamsa.local";
+            if (typeof window.addNotification === "function") {
+              window.addNotification(
+                "musyrif",
+                musyrifEmail,
+                "Perhatian Khusus ⚠️",
+                `${studentName} tercatat telah ${alpaCount}x Alpa dalam 30 hari terakhir. Perlu pembinaan khusus.`,
+                "system",
+                "tab=home"
+              );
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to check alpa count trigger:", err);
+        }
+      }
+    }
+  }
+
   // Simpan & Refresh UI
   window.saveData();
   window.renderAttendanceList(); // Render ulang agar perubahan otomatis terlihat

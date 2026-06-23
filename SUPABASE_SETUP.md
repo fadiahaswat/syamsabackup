@@ -164,13 +164,16 @@ migrateData();
 supabase/
 ├── migrations/
 │   ├── 001_initial_schema.sql   # Database tables
-│   └── 002_storage_buckets.sql  # Storage bucket config
+│   ├── 002_storage_buckets.sql  # Storage bucket config
+│   ├── 003_permit_rls_wali.sql   # Alter permit table & anonymous RLS policies
+│   └── 004_add_notifications_table.sql # Notifications table & RLS policies
 
 managers/
 ├── supabase-client.js           # Supabase client wrapper
 ├── sync-queue.js                # IndexedDB sync queue
 ├── hybrid-storage-manager.js     # Main storage orchestrator
-└── file-upload.js               # Document upload handler
+├── file-upload.js               # Document upload handler
+└── notification-manager.js      # Notification manager (in-app + push)
 ```
 
 ---

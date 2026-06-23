@@ -1586,14 +1586,28 @@ window.filterPermitsTabList = function() {
 window.approvePermit = function(id) {
   const idx = appState.permits.findIndex(p => p.id === id);
   if (idx !== -1) {
-    appState.permits[idx].status = "approved";
-    if (!appState.permits[idx].audit_trail) appState.permits[idx].audit_trail = [];
-    appState.permits[idx].audit_trail.push({
+    const permit = appState.permits[idx];
+    permit.status = "approved";
+    if (!permit.audit_trail) permit.audit_trail = [];
+    permit.audit_trail.push({
       action: "Disetujui",
       by: "Musyrif " + (window.getCurrentActorName ? window.getCurrentActorName() : "Admin"),
       time: new Date().toISOString()
     });
     window.persistPermits();
+
+    // Trigger notification to Wali
+    if (typeof window.addNotification === "function") {
+      window.addNotification(
+        "wali",
+        permit.nis,
+        "Status Izin Disetujui 📝",
+        `Pengajuan izin untuk ${permit.nama} (${permit.category}) telah disetujui oleh Musyrif.`,
+        "permit",
+        "tab=home"
+      );
+    }
+
     window.showToast("Pengajuan izin disetujui", "success");
     window.refreshPermitSurfaces();
   }
@@ -1602,14 +1616,28 @@ window.approvePermit = function(id) {
 window.rejectPermit = function(id) {
   const idx = appState.permits.findIndex(p => p.id === id);
   if (idx !== -1) {
-    appState.permits[idx].status = "rejected";
-    if (!appState.permits[idx].audit_trail) appState.permits[idx].audit_trail = [];
-    appState.permits[idx].audit_trail.push({
+    const permit = appState.permits[idx];
+    permit.status = "rejected";
+    if (!permit.audit_trail) permit.audit_trail = [];
+    permit.audit_trail.push({
       action: "Ditolak",
       by: "Musyrif " + (window.getCurrentActorName ? window.getCurrentActorName() : "Admin"),
       time: new Date().toISOString()
     });
     window.persistPermits();
+
+    // Trigger notification to Wali
+    if (typeof window.addNotification === "function") {
+      window.addNotification(
+        "wali",
+        permit.nis,
+        "Status Izin Ditolak 📝",
+        `Pengajuan izin untuk ${permit.nama} (${permit.category}) ditolak oleh Musyrif.`,
+        "permit",
+        "tab=home"
+      );
+    }
+
     window.showToast("Pengajuan izin ditolak", "warning");
     window.refreshPermitSurfaces();
   }

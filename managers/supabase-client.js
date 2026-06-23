@@ -192,7 +192,36 @@ class SupabaseClient {
       )
       .subscribe();
 
+    // Subscribe to notification changes for the logged-in recipient
+    let notificationChannel = null;
+    const recipient = window.getNotificationRecipientInfo?.() || {};
+    const recipientId = recipient.id || '';
+    if (recipientId) {
+      console.log('[SupabaseClient] Subscribing to notifications for recipient_id:', recipientId);
+      notificationChannel = this.client
+        .channel('notification-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `recipient_id=eq.${recipientId}`
+          },
+          (payload) => {
+            console.log('[SupabaseClient] Notification changed:', payload);
+            if (this.onNotificationChange) {
+              this.onNotificationChange(payload);
+            }
+          }
+        )
+        .subscribe();
+    }
+
     this.realtimeChannels = [attendanceChannel, permitChannel];
+    if (notificationChannel) {
+      this.realtimeChannels.push(notificationChannel);
+    }
     console.log('[SupabaseClient] Realtime subscribed');
   }
 
