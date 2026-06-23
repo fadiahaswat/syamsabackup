@@ -169,7 +169,21 @@
     }
 
     // Trigger notification to Musyrif of the class
-    const musyrifEmail = (window.MASTER_KELAS?.[requestData.kelas]?.email || `${requestData.kelas.toLowerCase()}@musyrif.local`).trim();
+    let musyrifEmail = "";
+    const targetKelasNormalized = String(requestData.kelas || "").replace(/\s+/g, "").toLowerCase();
+    if (window.MASTER_KELAS) {
+      const matchedKey = Object.keys(window.MASTER_KELAS).find(k => 
+        String(k).replace(/\s+/g, "").toLowerCase() === targetKelasNormalized
+      );
+      if (matchedKey) {
+        musyrifEmail = window.MASTER_KELAS[matchedKey]?.email || "";
+      }
+    }
+    if (!musyrifEmail) {
+      musyrifEmail = `${targetKelasNormalized}@musyrif.local`;
+    }
+    musyrifEmail = musyrifEmail.trim();
+
     if (typeof window.addNotification === "function") {
       window.addNotification(
         "musyrif",
