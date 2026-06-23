@@ -838,7 +838,12 @@ window.fetchNotifications = async function () {
 
 // Add new notification (inserts to Supabase if online, and local storage cache)
 window.addNotification = async function (recipientType, recipientId, title, body, type = "default", deepLink = "") {
-  if (!recipientId) return;
+  if (!recipientId) {
+    console.log("[NotificationManager] addNotification skipped: no recipientId");
+    return;
+  }
+
+  console.log("[NotificationManager] addNotification called:", { recipientType, recipientId, title, body });
 
   const newNotif = {
     id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
@@ -854,6 +859,9 @@ window.addNotification = async function (recipientType, recipientId, title, body
 
   // 1. Update cache of recipient (if recipient is currently logged in)
   const currentRecipient = window.getNotificationRecipientInfo();
+  console.log("[NotificationManager] Current recipient:", currentRecipient);
+  console.log("[NotificationManager] Match?:", currentRecipient.type === recipientType && currentRecipient.id === recipientId);
+
   if (currentRecipient.type === recipientType && currentRecipient.id === recipientId) {
     const cacheKey = `local_notifs_${recipientType}_${recipientId}`;
     try {

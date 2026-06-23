@@ -5101,6 +5101,118 @@
       </div>
     </div>
 
+    <!-- MODAL: Edit Pengajuan Izin Wali -->
+    <div id="modal-edit-wali-permit" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[1.75rem] p-6 animate-slide-up border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="text-xl font-black text-slate-800 dark:text-white">
+              Edit Permohonan Izin
+            </h3>
+            <p id="edit-wali-permit-info" class="text-xs text-slate-500 mt-1">Mengedit pengajuan izin...</p>
+          </div>
+          <button onclick="window.closeEditWaliPermitModal()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <form id="edit-wali-permit-form" onsubmit="window.submitEditWaliPermit(event)" class="flex-1 overflow-y-auto pr-1 pb-4 hide-scrollbar space-y-4">
+          <!-- Nama Wali -->
+          <div>
+            <label for="edit-wali-permit-nama-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Nama Wali Santri</label>
+            <input type="text" id="edit-wali-permit-nama-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Budi Santoso">
+          </div>
+
+          <!-- Alamat Wali -->
+          <div>
+            <label for="edit-wali-permit-alamat-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Alamat Wali</label>
+            <input type="text" id="edit-wali-permit-alamat-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Yogyakarta">
+          </div>
+
+          <!-- Kategori Izin (Dropdown) -->
+          <div>
+            <label for="edit-wali-permit-category" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Kategori Izin</label>
+            <select id="edit-wali-permit-category" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none">
+              <option value="pulang">Izin Lainnya (Keluarga, dll.) - Status: Pulang</option>
+              <option value="sakit">Sakit / Periksa Kesehatan - Status: Sakit</option>
+            </select>
+          </div>
+
+          <!-- Keperluan -->
+          <div>
+            <label for="edit-wali-permit-reason" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Keperluan / Alasan</label>
+            <textarea id="edit-wali-permit-reason" rows="3" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Tuliskan keperluan dengan jelas..."></textarea>
+          </div>
+
+          <!-- Tanggal Izin -->
+          <div>
+            <label for="edit-wali-permit-date" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Tanggal Izin/Keluar</label>
+            <input type="date" id="edit-wali-permit-date" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none">
+          </div>
+
+          <!-- Waktu Izin -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="edit-wali-permit-start-time" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Jam Keluar</label>
+              <select id="edit-wali-permit-start-time" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none"></select>
+            </div>
+            <div>
+              <label for="edit-wali-permit-end-time" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Jam Kembali</label>
+              <select id="edit-wali-permit-end-time" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none"></select>
+            </div>
+          </div>
+
+          <!-- Tempat Tujuan -->
+          <div>
+            <label for="edit-wali-permit-destination" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Tempat Tujuan</label>
+            <input type="text" id="edit-wali-permit-destination" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Lokasi yang dituju">
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="w-full py-4 mt-2 rounded-2xl bg-palette-blue hover:bg-palette-deep text-white text-xs font-black shadow-lg hover:shadow-xl active:scale-95 transition-all duration-300">
+            Simpan Perubahan
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Konfirmasi Hapus/Batal Pengajuan Izin Wali -->
+    <div id="modal-delete-wali-permit" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[1.75rem] p-6 animate-slide-up border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex flex-col items-center text-center">
+          <div class="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-600 dark:text-rose-400"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+          </div>
+          <h3 class="text-lg font-black text-slate-800 dark:text-white mb-2">Batalkan Pengajuan Izin?</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Pengajuan izin berikut akan dihapus secara permanen:</p>
+
+          <div class="w-full p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-left mb-6">
+            <p class="text-xs font-bold text-slate-800 dark:text-white mb-1">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider">Santri:</span>
+              <span id="delete-permit-nama">-</span>
+            </p>
+            <p class="text-xs text-slate-600 dark:text-slate-300 mb-1">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider">Alasan:</span>
+              <span id="delete-permit-reason">-</span>
+            </p>
+            <p class="text-xs text-slate-600 dark:text-slate-300">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider">Tanggal:</span>
+              <span id="delete-permit-date">-</span>
+            </p>
+          </div>
+
+          <div class="flex w-full gap-3">
+            <button onclick="window.closeDeleteWaliPermitModal()" class="flex-1 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all active:scale-95">
+              Kembali
+            </button>
+            <button onclick="window.executeDeleteWaliPermit()" class="flex-1 py-3 px-4 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
+              Ya, Batalkan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div
       id="modal-permit"
       class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all"

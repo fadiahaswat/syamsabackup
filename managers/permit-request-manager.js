@@ -262,6 +262,23 @@
       const formattedDate = formatIndonesianDate(req.start_date);
       const categoryText = req.category === 'sakit' ? 'Sakit / Medis' : 'Izin Keperluan';
 
+      // Action buttons: only for pending status
+      let actionButtons = '';
+      if (req.status === 'pending') {
+        actionButtons = `
+          <div class="flex gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button onclick="window.openEditWaliPermitModal('${req.id}')" class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold transition-all active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              <span>Edit</span>
+            </button>
+            <button onclick="window.confirmDeleteWaliPermit('${req.id}')" class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[10px] font-bold transition-all active:scale-95">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              <span>Batalkan</span>
+            </button>
+          </div>
+        `;
+      }
+
       card.innerHTML = `
         <div class="flex justify-between items-start">
           <div>
@@ -284,6 +301,7 @@
         </div>
 
         ${ticketBtn}
+        ${actionButtons}
       `;
       container.appendChild(card);
     });
@@ -352,6 +370,221 @@
     }
 
     window.openModal("modal-exit-ticket");
+  };
+
+  // =========================================================================
+  // 1b. CRUD UNTUK WALI (EDIT & DELETE)
+  // =========================================================================
+
+  /**
+   * Membuka modal edit pengajuan izin untuk Wali
+   */
+  window.openEditWaliPermitModal = function(requestId) {
+    const permits = appState.permits || [];
+    const permit = permits.find(p => p && String(p.id) === String(requestId));
+
+    if (!permit) {
+      return window.showToast("Data pengajuan tidak ditemukan.", "error");
+    }
+
+    // Only allow editing pending permits
+    if (permit.status !== 'pending') {
+      return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat diedit.", "warning");
+    }
+
+    // Store the editing ID for later use
+    window.editingPermitId = requestId;
+
+    // Fill the form with existing data
+    const elNamaWali = document.getElementById("edit-wali-permit-nama-wali");
+    const elAlamatWali = document.getElementById("edit-wali-permit-alamat-wali");
+    const elCategory = document.getElementById("edit-wali-permit-category");
+    const elReason = document.getElementById("edit-wali-permit-reason");
+    const elDate = document.getElementById("edit-wali-permit-date");
+    const elStartTime = document.getElementById("edit-wali-permit-start-time");
+    const elEndTime = document.getElementById("edit-wali-permit-end-time");
+    const elDestination = document.getElementById("edit-wali-permit-destination");
+
+    if (elNamaWali) elNamaWali.value = permit.nama_wali || "";
+    if (elAlamatWali) elAlamatWali.value = permit.alamat_wali || "";
+    if (elCategory) elCategory.value = permit.category || "pulang";
+    if (elReason) elReason.value = permit.reason || "";
+    if (elDate) elDate.value = permit.start_date || "";
+    if (elDestination) elDestination.value = permit.destination || permit.location || "";
+
+    // Populate time dropdowns
+    if (elStartTime) {
+      populateTimeDropdown(elStartTime, 6, 21, permit.start_time_limit || "08:00");
+    }
+    if (elEndTime) {
+      populateTimeDropdown(elEndTime, 6, 21, permit.end_time_limit || "17:00");
+    }
+
+    // Show info about the permit being edited
+    const elInfo = document.getElementById("edit-wali-permit-info");
+    if (elInfo) {
+      elInfo.textContent = `Mengedit pengajuan izin untuk ${permit.nama} (${formatIndonesianDate(permit.start_date)})`;
+    }
+
+    window.openModal("modal-edit-wali-permit");
+  };
+
+  /**
+   * Menyimpan perubahan pengajuan izin setelah diedit
+   */
+  window.submitEditWaliPermit = function(event) {
+    if (event) event.preventDefault();
+
+    const requestId = window.editingPermitId;
+    if (!requestId) return window.showToast("Sesi edit berakhir. Silakan coba lagi.", "error");
+
+    const permits = appState.permits || [];
+    const permitIndex = permits.findIndex(p => p && String(p.id) === String(requestId));
+
+    if (permitIndex === -1) {
+      return window.showToast("Data pengajuan tidak ditemukan.", "error");
+    }
+
+    const permit = permits[permitIndex];
+
+    // Only allow editing pending permits
+    if (permit.status !== 'pending') {
+      return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat diedit.", "warning");
+    }
+
+    const form = document.getElementById("edit-wali-permit-form");
+    if (form && !form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    const namaWali = document.getElementById("edit-wali-permit-nama-wali").value.trim();
+    const alamatWali = document.getElementById("edit-wali-permit-alamat-wali").value.trim();
+    const category = document.getElementById("edit-wali-permit-category").value;
+    const reason = document.getElementById("edit-wali-permit-reason").value.trim();
+    const date = document.getElementById("edit-wali-permit-date").value;
+    const startTime = document.getElementById("edit-wali-permit-start-time").value;
+    const endTime = document.getElementById("edit-wali-permit-end-time").value;
+    const destination = document.getElementById("edit-wali-permit-destination").value.trim();
+
+    // Validate time
+    if (startTime >= endTime) {
+      return window.showToast("Jam kembali harus setelah jam keluar.", "warning");
+    }
+
+    // Update permit data
+    permit.nama_wali = namaWali;
+    permit.alamat_wali = alamatWali;
+    permit.category = category;
+    permit.reason = reason;
+    permit.start_date = date;
+    permit.end_date = date;
+    permit.start_time_limit = startTime;
+    permit.end_time_limit = endTime;
+    permit.destination = destination;
+    permit.location = destination;
+    permit.updated_at = new Date().toISOString();
+    permit.status_label = category === 'sakit' ? 'S' : 'P';
+
+    // Save changes
+    if (window.hybridStorageManager) {
+      window.hybridStorageManager.savePermit(permit);
+    } else if (window.storageManager) {
+      window.storageManager.savePermit(permit);
+    }
+
+    // Clear editing ID
+    window.editingPermitId = null;
+
+    window.showToast("Pengajuan izin berhasil diperbarui!", "success");
+    window.closeModal("modal-edit-wali-permit");
+    window.loadWaliPermitHistory();
+  };
+
+  /**
+   * Konfirmasi pembatalan pengajuan izin
+   */
+  window.confirmDeleteWaliPermit = function(requestId) {
+    const permits = appState.permits || [];
+    const permit = permits.find(p => p && String(p.id) === String(requestId));
+
+    if (!permit) {
+      return window.showToast("Data pengajuan tidak ditemukan.", "error");
+    }
+
+    if (permit.status !== 'pending') {
+      return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat dibatalkan.", "warning");
+    }
+
+    // Store the deleting ID for later use
+    window.deletingPermitId = requestId;
+
+    // Show confirmation
+    document.getElementById("delete-permit-nama").textContent = permit.nama;
+    document.getElementById("delete-permit-reason").textContent = permit.reason;
+    document.getElementById("delete-permit-date").textContent = formatIndonesianDate(permit.start_date);
+
+    window.openModal("modal-delete-wali-permit");
+  };
+
+  /**
+   * Menghapus/batalkan pengajuan izin
+   */
+  window.executeDeleteWaliPermit = function() {
+    const requestId = window.deletingPermitId;
+    if (!requestId) return window.showToast("Sesi penghapusan berakhir. Silakan coba lagi.", "error");
+
+    const permits = appState.permits || [];
+    const permitIndex = permits.findIndex(p => p && String(p.id) === String(requestId));
+
+    if (permitIndex === -1) {
+      return window.showToast("Data pengajuan tidak ditemukan.", "error");
+    }
+
+    const permit = permits[permitIndex];
+
+    // Only allow deleting pending permits
+    if (permit.status !== 'pending') {
+      window.closeModal("modal-delete-wali-permit");
+      return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat dibatalkan.", "warning");
+    }
+
+    // Remove from array
+    permits.splice(permitIndex, 1);
+    appState.permits = permits;
+
+    // Also remove from localStorage directly
+    const STORAGE_KEY_PERMITS = 'musyrif_permits_db';
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY_PERMITS) || '{}');
+      delete stored[requestId];
+      localStorage.setItem(STORAGE_KEY_PERMITS, JSON.stringify(stored));
+    } catch (e) {
+      console.warn("Could not update localStorage:", e);
+    }
+
+    // Clear deleting ID
+    window.deletingPermitId = null;
+
+    window.showToast("Pengajuan izin berhasil dibatalkan.", "success");
+    window.closeModal("modal-delete-wali-permit");
+    window.loadWaliPermitHistory();
+  };
+
+  /**
+   * Tutup modal edit tanpa menyimpan
+   */
+  window.closeEditWaliPermitModal = function() {
+    window.editingPermitId = null;
+    window.closeModal("modal-edit-wali-permit");
+  };
+
+  /**
+   * Tutup modal hapus tanpa menghapus
+   */
+  window.closeDeleteWaliPermitModal = function() {
+    window.deletingPermitId = null;
+    window.closeModal("modal-delete-wali-permit");
   };
 
 

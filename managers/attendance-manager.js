@@ -771,9 +771,12 @@ window.toggleStatus = function (id, actId, type) {
   if (type === "mandator") {
     const student = (Array.isArray(FILTERED_SANTRI) ? FILTERED_SANTRI : []).find(s => String(s.nis || s.id) === String(id));
     const studentName = student ? (student.nama || student.name) : "Santri";
-    
+
+    console.log("[AttendanceManager] Notification check - type:", type, "id:", id, "next:", next, "FILTERED_SANTRI:", FILTERED_SANTRI?.length);
+
     // 1. Notify Wali if not present (Alpa/Sakit/Izin/Telat)
     if (["Alpa", "Sakit", "Izin", "Telat"].includes(next)) {
+      console.log("[AttendanceManager] Sending notification to Wali for:", studentName, next);
       if (typeof window.addNotification === "function") {
         const slotLabel = SLOT_WAKTU[slotId]?.label || slotId;
         window.addNotification(
@@ -784,6 +787,8 @@ window.toggleStatus = function (id, actId, type) {
           "attendance",
           "tab=report"
         );
+      } else {
+        console.warn("[AttendanceManager] addNotification function not found!");
       }
 
       // 2. Notify Musyrif if student accumulates >= 3 Alpas in 30 days
