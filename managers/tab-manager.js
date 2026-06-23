@@ -4,7 +4,17 @@ window.closeModal = function (modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
 
-  modal.classList.add("hidden");
+  // Fade out backdrop using motion standard duration (200ms) and standard ease exit
+  modal.style.opacity = "0";
+  modal.style.transition = "opacity var(--motion-standard) var(--ease-exit)";
+
+  const children = Array.from(modal.children);
+  const panel = children.length > 1 ? children[1] : children[0];
+  if (panel) {
+    panel.style.opacity = "0";
+    panel.style.transform = "scale(0.95) translateY(12px)";
+    panel.style.transition = "opacity var(--motion-standard) var(--ease-exit), transform var(--motion-standard) var(--ease-exit)";
+  }
 
   const index = modalStack.indexOf(modalId);
   if (index > -1) modalStack.splice(index, 1);
@@ -16,6 +26,21 @@ window.closeModal = function (modalId) {
 
   modal.removeAttribute("aria-modal");
   modal.removeAttribute("role");
+
+  // Wait for transition animation to finish before adding hidden class
+  setTimeout(() => {
+    if (modal.style.opacity === "0") {
+      modal.classList.add("hidden");
+      // Reset inline styles
+      modal.style.opacity = "";
+      modal.style.transition = "";
+      if (panel) {
+        panel.style.opacity = "";
+        panel.style.transform = "";
+        panel.style.transition = "";
+      }
+    }
+  }, 200); // 200ms matches --motion-standard
 };
 
 

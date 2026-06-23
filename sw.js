@@ -4,7 +4,7 @@
  * No Firebase dependencies.
  */
 
-const CACHE_VERSION = "v240-local-only";
+const CACHE_VERSION = "v241-local-only";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Assets to cache (static assets only)

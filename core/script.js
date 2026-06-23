@@ -203,9 +203,12 @@ window.initApp = async function () {
       if (viewMain && viewMain.classList.contains("hidden")) {
         const hasSeen = localStorage.getItem("has_seen_onboarding") === "true";
         if (!hasSeen) {
-          setTimeout(() => {
-            if (window.showOnboarding) window.showOnboarding(true);
-          }, 600);
+          // Show onboarding immediately (no delay) to prevent login page glitch
+          if (window.showOnboarding) window.showOnboarding(true);
+        } else {
+          // If onboarding has been seen, ensure login screen is visible
+          const viewLogin = document.getElementById("view-login");
+          if (viewLogin) viewLogin.classList.remove("hidden");
         }
       }
     } catch (onboardingInitErr) {
@@ -4490,7 +4493,17 @@ window.closeModal = function (modalId) {
   const modal = document.getElementById(modalId);
   if (!modal) return;
 
-  modal.classList.add("hidden");
+  // Fade out backdrop using motion standard duration (200ms) and standard ease exit
+  modal.style.opacity = "0";
+  modal.style.transition = "opacity var(--motion-standard) var(--ease-exit)";
+
+  const children = Array.from(modal.children);
+  const panel = children.length > 1 ? children[1] : children[0];
+  if (panel) {
+    panel.style.opacity = "0";
+    panel.style.transform = "scale(0.95) translateY(12px)";
+    panel.style.transition = "opacity var(--motion-standard) var(--ease-exit), transform var(--motion-standard) var(--ease-exit)";
+  }
 
   const index = modalStack.indexOf(modalId);
   if (index > -1) modalStack.splice(index, 1);
@@ -4506,6 +4519,21 @@ window.closeModal = function (modalId) {
   if (modalStack.length === 0) {
     document.body.classList.remove("modal-open");
   }
+
+  // Wait for transition animation to finish before adding hidden class
+  setTimeout(() => {
+    if (modal.style.opacity === "0") {
+      modal.classList.add("hidden");
+      // Reset inline styles
+      modal.style.opacity = "";
+      modal.style.transition = "";
+      if (panel) {
+        panel.style.opacity = "";
+        panel.style.transform = "";
+        panel.style.transition = "";
+      }
+    }
+  }, 200); // 200ms matches --motion-standard
 };
 
 window.generateRekapBulanan = function () {
@@ -11036,7 +11064,34 @@ window.openModal = function (modalId) {
   const zIndex = baseZIndex + modalStack.length * 10;
 
   modal.style.zIndex = zIndex;
+
+  // Set initial state for transitions
+  modal.style.opacity = "0";
+  modal.style.transition = "opacity var(--motion-comfortable) var(--ease-standard)";
+
+  const children = Array.from(modal.children);
+  const panel = children.length > 1 ? children[1] : children[0];
+  if (panel) {
+    panel.style.opacity = "0";
+    panel.style.transform = "scale(0.95) translateY(12px)";
+    panel.style.transition = "opacity var(--motion-large) var(--ease-enter), transform var(--motion-large) var(--ease-enter)";
+  }
+
   modal.classList.remove("hidden");
+  if (!modal.classList.contains("flex")) {
+    modal.classList.add("flex");
+  }
+
+  // Force reflow
+  modal.offsetHeight;
+
+  // Trigger entering transitions
+  modal.style.opacity = "1";
+  if (panel) {
+    panel.style.opacity = "1";
+    panel.style.transform = "scale(1) translateY(0)";
+  }
+
   if (!modalStack.includes(modalId)) modalStack.push(modalId);
   document.body.classList.add("modal-open");
 
