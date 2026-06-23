@@ -583,10 +583,12 @@ window.handleMusyrifLogin = function () {
   const selectionView = document.getElementById("login-selection-view");
   const musyrifView = document.getElementById("login-musyrif-view");
   const waliView = document.getElementById("login-wali-view");
+  const doodles = document.getElementById("login-doodles-container");
 
   if (musyrifView) {
     if (selectionView) selectionView.classList.add("hidden");
     if (waliView) waliView.classList.add("hidden");
+    if (doodles) doodles.classList.add("hidden");
     musyrifView.classList.remove("hidden");
 
     // Show/hide testing fields based on mode
@@ -601,8 +603,10 @@ window.handleMusyrifLogin = function () {
 window.cancelMusyrifLogin = function () {
   const selectionView = document.getElementById("login-selection-view");
   const musyrifView = document.getElementById("login-musyrif-view");
+  const doodles = document.getElementById("login-doodles-container");
   if (musyrifView) musyrifView.classList.add("hidden");
   if (selectionView) selectionView.classList.remove("hidden");
+  if (doodles) doodles.classList.remove("hidden");
 };
 
 window.handleMusyrifSubmit = async function () {
@@ -742,6 +746,7 @@ window.handleWaliLogin = function () {
   const selectionView = document.getElementById("login-selection-view");
   const musyrifView = document.getElementById("login-musyrif-view");
   const waliView = document.getElementById("login-wali-view");
+  const doodles = document.getElementById("login-doodles-container");
 
   if (waliView) {
     // Reset state & fields when view opens
@@ -758,6 +763,7 @@ window.handleWaliLogin = function () {
 
     if (selectionView) selectionView.classList.add("hidden");
     if (musyrifView) musyrifView.classList.add("hidden");
+    if (doodles) doodles.classList.add("hidden");
     waliView.classList.remove("hidden");
 
     setTimeout(() => {
@@ -771,8 +777,10 @@ window.handleWaliLogin = function () {
 window.cancelWaliLogin = function () {
   const selectionView = document.getElementById("login-selection-view");
   const waliView = document.getElementById("login-wali-view");
+  const doodles = document.getElementById("login-doodles-container");
   if (waliView) waliView.classList.add("hidden");
   if (selectionView) selectionView.classList.remove("hidden");
+  if (doodles) doodles.classList.remove("hidden");
 };
 
 window.onWaliNisInput = function (val) {
