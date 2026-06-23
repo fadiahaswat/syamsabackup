@@ -59,6 +59,7 @@ window.initApp = async function () {
         window.APP_CONSTANTS.dataLoadTimeoutMs,
       ),
     );
+    let fetchSuccess = false;
     try {
       const [kelasData, santriData] = await Promise.race([
         dataLoadingPromise,
@@ -66,111 +67,123 @@ window.initApp = async function () {
       ]);
       MASTER_KELAS = kelasData || {};
       MASTER_SANTRI = santriData || [];
-      window.populateClassDropdown();
-      const savedAuth = localStorage.getItem(APP_CONFIG.googleAuthKey);
-      if (savedAuth) {
-        try {
-          const authData = JSON.parse(savedAuth);
-          const LOGIN_MAX_AGE = 14 * 24 * 60 * 60 * 1000;
-          const loginTime = new Date(authData.timestamp).getTime();
-          if (!loginTime || Date.now() - loginTime > LOGIN_MAX_AGE) {
-            throw new Error("Sesi login kadaluarsa");
+      fetchSuccess = true;
+    } catch (fetchError) {
+      console.error("Data Fetch Error (using cache fallback):", fetchError);
+      window.showToast("Gagal memuat data santri terbaru (Menggunakan Cache)", "warning");
+      
+      // Fallback: Gunakan data cache yang sudah di-load oleh data-kelas.js & data-santri.js
+      MASTER_KELAS = window.classData || {};
+      MASTER_SANTRI = window.santriData || [];
+    }
+
+    // Selalu populate dropdown kelas agar tidak kosong
+    window.populateClassDropdown();
+
+    // Selalu coba auto-login menggunakan data yang tersedia (network atau cache)
+    const savedAuth = localStorage.getItem(APP_CONFIG.googleAuthKey);
+    if (savedAuth) {
+      try {
+        const authData = JSON.parse(savedAuth);
+        const LOGIN_MAX_AGE = 14 * 24 * 60 * 60 * 1000;
+        const loginTime = new Date(authData.timestamp).getTime();
+        if (!loginTime || Date.now() - loginTime > LOGIN_MAX_AGE) {
+          throw new Error("Sesi login kadaluarsa");
+        }
+        if (
+          authData?.profile?.authProvider === "testing" &&
+          window.getAuthMode &&
+          window.getAuthMode() !== "testing"
+        ) {
+          throw new Error(
+            "Sesi testing dinonaktifkan karena aplikasi berjalan di mode production.",
+          );
+        }
+        if (authData?.profile?.authProvider === "wali") {
+          const foundSantri = window.findWaliSantriByNis(authData.waliNis);
+          if (!foundSantri) throw new Error("Data santri wali tidak ditemukan");
+
+          const foundKelas = String(foundSantri.kelas || foundSantri.rombel || authData.kelas || "").trim();
+          appState.waliMode = true;
+          appState.waliSantri = foundSantri;
+          appState.waliKelas = foundKelas;
+          appState.selectedClass = foundKelas;
+          appState.userProfile = authData.profile;
+          FILTERED_SANTRI = [foundSantri];
+
+          document.getElementById("view-login").classList.add("hidden");
+          document.getElementById("view-main").classList.remove("hidden");
+          document.getElementById("view-wali")?.classList.add("hidden");
+          window.syncRoleModeUI();
+          window.updateDashboard();
+          window.updateProfileInfo();
+          setTimeout(
+            () => window.showToast(`Ahlan, Wali ${foundSantri.nama || "Santri"}`, "success"),
+            500,
+          );
+
+          // Initialize Storage and Hybrid Sync Manager for Wali restore
+          const musyrifId = `class_${foundKelas}`;
+          window.initStorage?.(musyrifId);
+          if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
+            const kelasInfo = MASTER_KELAS?.[foundKelas];
+            const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || foundKelas;
+            window.hybridStorageManager.init(kelasId).catch(err => {
+              console.warn('[Wali] Hybrid storage init failed on restore:', err);
+            });
           }
-          if (
-            authData?.profile?.authProvider === "testing" &&
-            window.getAuthMode &&
-            window.getAuthMode() !== "testing"
-          ) {
-            throw new Error(
-              "Sesi testing dinonaktifkan karena aplikasi berjalan di mode production.",
-            );
+        } else if (authData.kelas) {
+          // Tetap ijinkan login walaupun offline / MASTER_KELAS tidak ter-load sempurna
+          appState.selectedClass = authData.kelas;
+          appState.userProfile = authData.profile;
+          appState.waliMode = false;
+          appState.waliSantri = null;
+          appState.waliKelas = null;
+          FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
+            const sKelas = String(s.kelas || s.rombel || "").trim();
+            return sKelas === appState.selectedClass;
+          }).sort((a, b) => a.nama.localeCompare(b.nama));
+          
+          document.getElementById("view-login").classList.add("hidden");
+          document.getElementById("view-main").classList.remove("hidden");
+          window.syncRoleModeUI();
+          window.updateDashboard();
+          window.updateProfileInfo();
+          const greetName = window.getProfileDisplayName(authData.profile);
+          setTimeout(
+            () => window.showToast(`Ahlan, ${greetName}`, "success"),
+            500,
+          );
+
+          // Initialize Storage Manager
+          const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
+          window.initStorage?.(musyrifId);
+
+          // Initialize Hybrid Storage (cloud sync)
+          if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
+            const kelasId = MASTER_KELAS?.[authData.kelas]?.supabaseId || authData.kelas;
+            window.hybridStorageManager.init(kelasId).then(() => {
+              console.log('[Auth] Hybrid storage initialized for:', authData.kelas);
+            }).catch(err => {
+              console.warn('[Auth] Hybrid storage init failed:', err);
+            });
           }
-          if (authData?.profile?.authProvider === "wali") {
-            const foundSantri = window.findWaliSantriByNis(authData.waliNis);
-            if (!foundSantri) throw new Error("Data santri wali tidak ditemukan");
 
-            const foundKelas = String(foundSantri.kelas || foundSantri.rombel || authData.kelas || "").trim();
-            appState.waliMode = true;
-            appState.waliSantri = foundSantri;
-            appState.waliKelas = foundKelas;
-            appState.selectedClass = foundKelas;
-            appState.userProfile = authData.profile;
-            FILTERED_SANTRI = [foundSantri];
-
-            document.getElementById("view-login").classList.add("hidden");
-            document.getElementById("view-main").classList.remove("hidden");
-            document.getElementById("view-wali")?.classList.add("hidden");
-            window.syncRoleModeUI();
-            window.updateDashboard();
-            window.updateProfileInfo();
-            setTimeout(
-              () => window.showToast(`Ahlan, Wali ${foundSantri.nama || "Santri"}`, "success"),
-              500,
-            );
-
-            // Initialize Storage and Hybrid Sync Manager for Wali restore
-            const musyrifId = `class_${foundKelas}`;
-            window.initStorage?.(musyrifId);
-            if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-              const kelasInfo = MASTER_KELAS?.[foundKelas];
-              const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || foundKelas;
-              window.hybridStorageManager.init(kelasId).catch(err => {
-                console.warn('[Wali] Hybrid storage init failed on restore:', err);
-              });
-            }
-          } else if (authData.kelas && MASTER_KELAS[authData.kelas]) {
-            appState.selectedClass = authData.kelas;
-            appState.userProfile = authData.profile;
-            appState.waliMode = false;
-            appState.waliSantri = null;
-            appState.waliKelas = null;
-            FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
-              const sKelas = String(s.kelas || s.rombel || "").trim();
-              return sKelas === appState.selectedClass;
-            }).sort((a, b) => a.nama.localeCompare(b.nama));
-            if (FILTERED_SANTRI.length > 0) {
-              document.getElementById("view-login").classList.add("hidden");
-              document.getElementById("view-main").classList.remove("hidden");
-              window.syncRoleModeUI();
-              window.updateDashboard();
-              window.updateProfileInfo();
-              const greetName = window.getProfileDisplayName(authData.profile);
-              setTimeout(
-                () => window.showToast(`Ahlan, ${greetName}`, "success"),
-                500,
-              );
-
-              // Initialize Storage Manager
-              const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
-              window.initStorage?.(musyrifId);
-
-              // Initialize Hybrid Storage (cloud sync)
-              if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-                const kelasId = MASTER_KELAS?.[authData.kelas]?.supabaseId || authData.kelas;
-                window.hybridStorageManager.init(kelasId).then(() => {
-                  console.log('[Auth] Hybrid storage initialized for:', authData.kelas);
-                }).catch(err => {
-                  console.warn('[Auth] Hybrid storage init failed:', err);
-                });
-              }
-
-              // Request GPS Permission SEKALI saat login berhasil
-              // Ini akan meminta izin GPS di awal, bukan saat buka presensi
-              if (GEO_CONFIG.useGeofencing) {
-                window.requestGPSPermissionOnStartup();
-              }
-            }
-          } else {
-            throw new Error("Data kelas tidak valid");
+          // Request GPS Permission SEKALI saat login berhasil
+          if (GEO_CONFIG.useGeofencing) {
+            window.requestGPSPermissionOnStartup();
           }
-        } catch (authError) {
-          console.error("Auto-login error:", authError);
+        } else {
+          throw new Error("Data kelas tidak valid");
+        }
+      } catch (authError) {
+        console.error("Auto-login error:", authError);
+        // Hanya hapus sesi jika memang error autentikasi kadaluarsa / testing dinonaktifkan.
+        // Jangan hapus sesi hanya karena data tidak lengkap (misal offline/timeout).
+        if (authError.message === "Sesi login kadaluarsa" || authError.message.includes("dinonaktifkan")) {
           localStorage.removeItem(APP_CONFIG.googleAuthKey);
         }
       }
-    } catch (fetchError) {
-      console.error("Data Fetch Error:", fetchError);
-      window.showToast("Gagal memuat data santri (Offline/Lambat)", "warning");
     }
   } catch (criticalError) {
     console.error("Critical Init Error:", criticalError);

@@ -1776,7 +1776,7 @@
     <!-- Onboarding View -->
     <section
       id="view-onboarding"
-      class="fixed inset-0 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden hidden bg-slate-50/60 dark:bg-slate-950/80 backdrop-blur-[24px]"
+      class="fixed inset-0 z-[60] flex flex-col items-center justify-center overflow-hidden hidden bg-slate-50/60 dark:bg-slate-950/80 backdrop-blur-[24px]"
     >
       <!-- Onboarding Full Screen Container -->
       <div
@@ -1857,7 +1857,7 @@
         </div>
 
         <!-- Lower Row: Navigation & Indicators -->
-        <div class="flex items-center justify-between mt-auto pt-6 border-t border-slate-100 dark:border-slate-800/40 relative z-10 shrink-0">
+        <div class="flex items-center justify-between mt-auto pt-6 relative z-10 shrink-0">
           <!-- Dot Indicators -->
           <div class="flex items-center gap-2" id="onboarding-dots">
             <div class="onboarding-dot active" onclick="window.setOnboardingSlide(0)" aria-label="Slide 1"></div>
@@ -1893,7 +1893,7 @@
     <!-- Login View -->
     <section
       id="view-login"
-      class="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden bg-slate-50/65 dark:bg-slate-950/80 backdrop-blur-[24px]"
+      class="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-slate-50/65 dark:bg-slate-950/80 backdrop-blur-[24px]"
     >
       <!-- Login Full Screen Container -->
       <div
@@ -2072,10 +2072,36 @@
               </button>
             </div>
           </div>
+
+          <!-- Form Login Google Inline -->
+          <div id="login-google-view" class="hidden space-y-4 animate-fade-in w-full">
+            <div class="text-center mb-2">
+              <div class="inline-block p-3 rounded-2xl bg-emerald-50/50 dark:bg-emerald-900/20 text-emerald-500 mb-2 border border-emerald-100/30 dark:border-emerald-500/10 shadow-sm">
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+              </div>
+              <h4 class="text-md font-bold text-slate-800 dark:text-white">Verifikasi Akun</h4>
+              <p class="text-xs text-slate-400">
+                Silakan login dengan Google untuk memverifikasi bahwa Anda adalah Musyrif kelas
+                <span id="lbl-google-class" class="font-black text-palette-blue dark:text-blue-400">...</span>
+              </p>
+            </div>
+
+            <div id="google-btn-container" class="flex justify-center h-12 py-1"></div>
+
+            <div class="pt-2">
+              <button
+                onclick="window.cancelGoogleAuth()"
+                class="w-full py-3 rounded-xl bg-transparent border border-slate-200/40 dark:border-slate-700/40 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-slate-100/50 dark:hover:bg-slate-800/40 transition-all active:scale-[0.98]"
+                type="button"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Lower Row: Institutional Logos & Testing Info -->
-        <div class="mt-auto pt-6 border-t border-slate-100/50 dark:border-slate-800/30 relative z-10 shrink-0 w-full">
+        <div class="mt-auto pt-6 relative z-10 shrink-0 w-full">
           <div class="grid w-full grid-cols-3 items-center gap-4 opacity-50 dark:opacity-40" aria-label="Logo lembaga">
             <img src="assets/branding/Logo%20PP%20Muhammadiyah.webp" class="mx-auto block h-7 w-auto object-contain" alt="PP Muhammadiyah" />
             <img src="assets/branding/Logo%20Mu%27allimin.webp" class="mx-auto block h-7 w-auto object-contain" alt="Mu'allimin" />

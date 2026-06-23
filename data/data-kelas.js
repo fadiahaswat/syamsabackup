@@ -11,6 +11,17 @@ async function loadClassData() {
     if (cache) {
       window.classData = JSON.parse(cache);
       console.log("✅ Data Kelas dimuat dari cache lokal.");
+      
+      // Auto-update global state & UI dropdown dari cache segera
+      if (typeof MASTER_KELAS !== "undefined") {
+        MASTER_KELAS = window.classData;
+      } else {
+        window.MASTER_KELAS = window.classData;
+      }
+      if (window.populateClassDropdown) {
+        window.populateClassDropdown();
+      }
+
       // Fetch background untuk update cache (silent update)
       fetchClassBackground();
       return window.classData;
@@ -44,6 +55,16 @@ async function loadClassData() {
       "kelas.",
     );
 
+    // Auto-update global state & UI dropdown jika sudah terunduh
+    if (typeof MASTER_KELAS !== "undefined") {
+      MASTER_KELAS = window.classData;
+    } else {
+      window.MASTER_KELAS = window.classData;
+    }
+    if (window.populateClassDropdown) {
+      window.populateClassDropdown();
+    }
+
     return window.classData;
   } catch (error) {
     console.error("❌ Error loadClassData:", error);
@@ -69,6 +90,16 @@ async function fetchClassBackground() {
       }
     });
     localStorage.setItem("cache_data_kelas", JSON.stringify(newData));
+
+    // Auto-update global state & UI dropdown saat background update selesai
+    if (typeof MASTER_KELAS !== "undefined") {
+      MASTER_KELAS = newData;
+    } else {
+      window.MASTER_KELAS = newData;
+    }
+    if (window.populateClassDropdown) {
+      window.populateClassDropdown();
+    }
   } catch (e) {
     console.warn("Background update kelas gagal:", e);
   }

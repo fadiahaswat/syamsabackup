@@ -13,10 +13,19 @@ async function loadSantriData() {
     const cachedStr = localStorage.getItem(CACHE_KEY);
     const cachedTime = Number(localStorage.getItem(CACHE_TIME) || 0);
 
+    // Load cache immediately as a fallback/placeholder
+    if (cachedStr) {
+      window.santriData = JSON.parse(cachedStr);
+      if (typeof MASTER_SANTRI !== "undefined") {
+        MASTER_SANTRI = window.santriData;
+      } else {
+        window.MASTER_SANTRI = window.santriData;
+      }
+    }
+
     // 1. Gunakan Cache jika Valid
     if (cachedStr && cachedTime > 0 && now - cachedTime < EXPIRY_MS) {
       console.log("✅ Data Santri dimuat dari cache (Cepat).");
-      window.santriData = JSON.parse(cachedStr);
       return window.santriData;
     }
 
@@ -35,6 +44,12 @@ async function loadSantriData() {
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
     localStorage.setItem(CACHE_TIME, now);
 
+    if (typeof MASTER_SANTRI !== "undefined") {
+      MASTER_SANTRI = data;
+    } else {
+      window.MASTER_SANTRI = data;
+    }
+
     console.log("✅ Data Santri berhasil diunduh:", data.length, "santri.");
     return window.santriData;
   } catch (error) {
@@ -45,6 +60,11 @@ async function loadSantriData() {
     if (oldCache) {
       console.warn("⚠️ Menggunakan data cache lawas (Offline Mode).");
       window.santriData = JSON.parse(oldCache);
+      if (typeof MASTER_SANTRI !== "undefined") {
+        MASTER_SANTRI = window.santriData;
+      } else {
+        window.MASTER_SANTRI = window.santriData;
+      }
       return window.santriData;
     }
 
