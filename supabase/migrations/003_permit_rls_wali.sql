@@ -26,3 +26,9 @@ CREATE POLICY "Allow anonymous insert permit" ON permit
 
 CREATE POLICY "Allow anonymous update permit" ON permit
     FOR UPDATE TO anon USING (true);
+
+-- 4. Enable Supabase Realtime publication for permit and attendance_record tables
+-- Catatan: Pastikan publikasi 'supabase_realtime' sudah ada di project Supabase Anda.
+ALTER PUBLICATION supabase_realtime ADD TABLE permit;
+ALTER PUBLICATION supabase_realtime ADD TABLE attendance_record;
+

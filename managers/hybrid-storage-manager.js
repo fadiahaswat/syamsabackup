@@ -262,15 +262,35 @@ class HybridStorageManager {
   async _mergePermitsData(cloudPermits) {
     if (!cloudPermits || cloudPermits.length === 0) return;
 
-    if (typeof appState !== 'undefined' && appState.permits) {
-      const localPermitIds = new Set(appState.permits.map(p => p.id));
+    if (typeof appState !== 'undefined') {
+      if (!appState.permits) appState.permits = [];
 
-      // Add permits yang tidak ada di local
-      for (const permit of cloudPermits) {
-        if (!localPermitIds.has(permit.id)) {
-          appState.permits.push(permit);
+      // Ambil semua perubahan perizinan yang sedang tertahan di antrean sinkronisasi
+      const pendingChanges = this.queue ? await this.queue.getPending() : [];
+      const pendingIds = new Set(
+        pendingChanges
+          .filter(c => c && c.entityType === 'permit')
+          .map(c => String(c.entityId))
+      );
+
+      const transformedCloudPermits = cloudPermits.map(p => this._transformRemotePermit(p));
+
+      // Gunakan map agar dapat menimpa data ID yang sudah ada secara efisien
+      const localPermitMap = new Map(appState.permits.map(p => [String(p.id), p]));
+
+      // Gabungkan data dari cloud ke local map
+      for (const cloudPermit of transformedCloudPermits) {
+        const permitId = String(cloudPermit.id);
+        const isPending = pendingIds.has(permitId);
+
+        if (!localPermitMap.has(permitId) || !isPending) {
+          // Jika tidak ada data lokal, atau jika data lokal TIDAK sedang pending di sync queue,
+          // maka gunakan data dari cloud (server wins).
+          localPermitMap.set(permitId, cloudPermit);
         }
       }
+
+      appState.permits = Array.from(localPermitMap.values());
 
       // Simpan ke localStorage
       localStorage.setItem('musyrif_permits_db', JSON.stringify(appState.permits));
