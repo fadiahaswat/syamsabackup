@@ -2728,23 +2728,30 @@ window.renderWeeklyCalendar = function () {
     const maxArcLength = 51.8;
     const filledArcLength = progressPercent * maxArcLength;
 
-    // Select color class with enhanced contrast
-    let arcColorClass = "text-slate-300 dark:text-white/20";
-    if (isCompleted) {
-      arcColorClass = "text-emerald-600 dark:text-emerald-400";
-    } else if (isAllLocked) {
-      arcColorClass = "text-slate-300 dark:text-white/20";
-    } else if (progressPercent > 0) {
-      if (dateStr < todayStr) {
-        arcColorClass = "text-red-600 dark:text-red-400"; // Past incomplete
+    // Select color class with enhanced contrast (muted if not selected)
+    let arcColorClass = "";
+    if (isSelected) {
+      if (isCompleted) {
+        arcColorClass = "text-emerald-600 dark:text-emerald-400";
+      } else if (isAllLocked) {
+        arcColorClass = "text-slate-300 dark:text-white/20";
+      } else if (progressPercent > 0) {
+        if (dateStr < todayStr) {
+          arcColorClass = "text-red-650 dark:text-red-400"; // Past incomplete
+        } else {
+          arcColorClass = "text-blue-600 dark:text-cyan-400"; // Today in-progress
+        }
       } else {
-        arcColorClass = "text-blue-600 dark:text-cyan-400"; // Today in-progress
+        // 0% progress and active (past or today)
+        if (dateStr <= todayStr) {
+          arcColorClass = "text-red-550 dark:text-red-450/40"; // Red faint warning
+        } else {
+          arcColorClass = "text-slate-300 dark:text-white/20";
+        }
       }
     } else {
-      // 0% progress and active (past or today)
-      if (dateStr <= todayStr) {
-        arcColorClass = "text-red-500/40 dark:text-red-450/30"; // Red faint warning
-      }
+      // Muted arc color for unselected days (matching the text styling)
+      arcColorClass = "text-slate-400 dark:text-slate-500";
     }
 
     // High contrast border and background colors
@@ -2754,16 +2761,24 @@ window.renderWeeklyCalendar = function () {
 
     const textPrimaryClass = isSelected
       ? "text-slate-900 dark:text-white font-black"
-      : "text-slate-700 dark:text-slate-200 font-bold";
+      : "text-slate-400 dark:text-slate-500 font-bold";
 
     const textSecondaryClass = isSelected
-      ? "text-slate-500 dark:text-slate-300 font-bold"
-      : "text-slate-400 dark:text-slate-450";
+      ? "text-slate-700 dark:text-slate-200 font-bold"
+      : "text-slate-400 dark:text-slate-550 font-medium";
+
+    const todayDotClass = isSelected
+      ? "bg-blue-600 dark:bg-palette-cyan"
+      : "bg-blue-600/40 dark:bg-palette-cyan/30";
+
+    const progressSvgClass = isSelected
+      ? "w-5 h-5 sm:w-6 sm:h-6 opacity-100 scale-105 transition-all duration-300"
+      : "w-5 h-5 sm:w-6 sm:h-6 opacity-55 dark:opacity-35 transition-all duration-300";
 
     html += `
       <div onclick="window.handleDateChange('${dateStr}')" class="flex flex-col items-center justify-center p-1 sm:p-2 rounded-2xl transition-all duration-300 cursor-pointer min-w-0 ${cardBgClass}" title="${window.formatDate(dateStr)}">
         <!-- Today Indicator Dot -->
-        <span class="w-1.5 h-1.5 rounded-full mb-0.5 ${isToday ? 'bg-blue-600 dark:bg-palette-cyan animate-pulse' : 'bg-transparent'}"></span>
+        <span class="w-1.5 h-1.5 rounded-full mb-0.5 ${isToday ? `${todayDotClass} animate-pulse` : 'bg-transparent'}"></span>
         
         <!-- Day Label -->
         <span class="text-[8px] sm:text-[10px] uppercase tracking-wider text-center truncate w-full ${textSecondaryClass}">${dayLabel}</span>
@@ -2773,7 +2788,7 @@ window.renderWeeklyCalendar = function () {
         
         <!-- 3/4 Circular Progress Arc -->
         <div class="flex justify-center mt-1 w-full">
-          <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 32 32">
+          <svg class="${progressSvgClass}" viewBox="0 0 32 32">
             <!-- Faint background arc (enhanced contrast) -->
             <circle class="text-slate-200/50 dark:text-white/5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" cx="16" cy="16" r="11" stroke-dasharray="51.8 69.1" transform="rotate(135 16 16)" />
             <!-- Progress arc -->
