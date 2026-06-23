@@ -1776,14 +1776,11 @@
     <!-- Onboarding View -->
     <section
       id="view-onboarding"
-      class="fixed inset-0 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden hidden"
+      class="fixed inset-0 z-[60] flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden hidden bg-slate-50/70 dark:bg-slate-950/75 backdrop-blur-md"
     >
-      <!-- Blur overlay background -->
-      <div class="absolute inset-0 bg-slate-950/40 dark:bg-slate-950/60 backdrop-blur-[8px] z-0"></div>
-
-      <!-- Onboarding Glass Card -->
+      <!-- Onboarding Full Screen Container -->
       <div
-        class="glass-card w-full max-w-md p-6 sm:p-8 rounded-[1.75rem] shadow-2xl relative overflow-hidden flex flex-col h-[520px] max-h-[85vh] z-10 transition-all duration-300 scale-95 opacity-0"
+        class="w-full h-full max-w-md p-6 sm:p-8 relative overflow-hidden flex flex-col justify-between z-10 transition-all duration-300 scale-95 opacity-0"
         id="onboarding-card"
       >
         <!-- Background light blur inside card -->
@@ -1896,10 +1893,10 @@
     <!-- Login View -->
     <section
       id="view-login"
-      class="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 overflow-hidden"
+      class="absolute inset-0 z-50 flex flex-col items-center justify-center p-6 overflow-hidden bg-slate-50/70 dark:bg-slate-950/75 backdrop-blur-md"
     >
       <div
-        class="glass-card w-full max-w-sm p-8 rounded-[1.75rem] shadow-2xl animate-slide-up border-t-4 border-t-palette-blue relative overflow-hidden"
+        class="w-full max-w-sm p-4 sm:p-6 flex flex-col justify-center relative overflow-hidden animate-slide-up z-10"
       >
         <div
           class="absolute -top-10 -right-10 w-40 h-40 bg-palette-blue/20 rounded-full blur-3xl pointer-events-none"
