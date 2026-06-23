@@ -4,7 +4,7 @@
  * No Firebase dependencies.
  */
 
-const CACHE_VERSION = "v242-local-only";
+const CACHE_VERSION = "v243-local-only";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Assets to cache (static assets only)
@@ -27,6 +27,7 @@ const STATIC_ASSETS = [
   "./assets/illustrations/arrow-up.webp",
   "./assets/illustrations/kaaba.webp",
   "./manifest.json",
+  "./tagline.webp",
 ];
 
 // JS files that should ALWAYS be fetched from network (for latest code)

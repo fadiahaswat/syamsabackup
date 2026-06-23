@@ -1893,11 +1893,11 @@
     <!-- Login View -->
     <section
       id="view-login"
-      class="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-slate-900/10 dark:bg-slate-950/80 backdrop-blur-[24px] hidden"
+      class="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-[#fcfcfe] dark:bg-[#0c0f19] hidden"
     >
       <!-- Login Full Screen Container -->
       <div
-        class="w-full h-full max-w-sm p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between z-10 transition-all duration-300 animate-fade-in bg-[#fcfcfe] dark:bg-[#0c0f19] shadow-2xl rounded-none sm:rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50"
+        class="w-full h-full max-w-sm mx-auto p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between z-10 transition-all duration-300 bg-transparent rounded-none border-none shadow-none"
         id="login-card"
       >
         <!-- Upper Row: Logo & Welcome -->
@@ -1932,21 +1932,17 @@
         <!-- Middle Content Area (centered) -->
         <div class="flex-grow flex flex-col justify-center w-full relative z-10 py-4">
           
-          <!-- Subtle SVG Doodle Layer & Taglines (Visible only when in selection view) -->
+          <!-- Supergraphic Syamsa & Tagline Image (Visible only when in selection view) -->
           <div id="login-doodles-container" class="relative w-full py-4 flex flex-col items-center justify-center overflow-hidden min-h-[140px] transition-all duration-300">
-            <!-- Subtle SVG Doodle Layer -->
-            <svg class="absolute inset-0 w-full h-full opacity-[0.12] dark:opacity-[0.06] pointer-events-none select-none text-slate-800 dark:text-white" viewBox="0 0 320 140" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M35 50 A 20 20 0 1 1 35 90 A 20 20 0 1 1 35 50" />
-              <path d="M100 70 L 112 85 L 88 85 Z" />
-              <path d="M75 30 L 91 46 M91 30 L 75 46" />
-              <path d="M220 50 L 223 60 L 235 60 L 225 67 L 228 77 L 220 70 L 212 77 L 215 67 L 205 60 L 217 60 Z" />
-              <path d="M150 60 Q 158 48 166 68 T 182 56" />
-              <path d="M260 70 L 276 86 M276 70 L 260 86" />
-            </svg>
+            <!-- Supergraphic Syamsa Layer -->
+            <div class="absolute inset-0 w-full h-full opacity-[0.35] dark:opacity-[0.18] pointer-events-none select-none overflow-hidden">
+              <div class="supergraphic-layer"></div>
+              <div class="supergraphic-mark !w-32 !h-32 !right-[-5%] !top-[-5%]"></div>
+              <div class="supergraphic-band !w-28 !h-12 !left-[-5%] !bottom-[-5%]"></div>
+            </div>
             
-            <div class="relative z-10 text-center space-y-1">
-              <p class="text-[13px] font-medium text-slate-500 dark:text-slate-400">Made for boarding.</p>
-              <p class="text-[13px] font-medium text-slate-400 dark:text-slate-500">Designed for families.</p>
+            <div class="relative z-10 flex justify-center w-full mt-2">
+              <img src="tagline.webp" class="h-11 w-auto object-contain dark:brightness-0 dark:invert opacity-90" alt="Syamsa Tagline" />
             </div>
           </div>
           
@@ -1955,7 +1951,7 @@
             <!-- Continue with Google (Musyrif) -->
             <button
               onclick="handleMusyrifLogin()"
-              class="w-full py-3.5 px-6 rounded-full bg-[#1c1c28] hover:bg-slate-900 text-white font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+              class="w-full py-3.5 px-6 rounded-full bg-palette-blue hover:bg-palette-deep text-white font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
             >
               <!-- Google Icon SVG (Clean & Simple) -->
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -1970,7 +1966,7 @@
             <!-- Sign in as Wali / Student -->
             <button
               onclick="handleWaliLogin()"
-              class="w-full py-3.5 px-6 rounded-full bg-[#1c1c28] hover:bg-slate-900 text-white font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+              class="w-full py-3.5 px-6 rounded-full bg-palette-deep hover:bg-[#0a4277] text-white font-semibold text-sm flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
             >
               <i data-lucide="user" class="w-4 h-4 text-white"></i>
               <span>Sign in as Wali / Student</span>
@@ -1979,9 +1975,9 @@
             <!-- App Guide (Continue with guide) -->
             <button
               onclick="window.showOnboarding(false)"
-              class="w-full py-3.5 px-6 rounded-full bg-[#dadae5] hover:bg-[#c9c9d6] dark:bg-slate-800 dark:hover:bg-slate-700 text-[#1c1c28] dark:text-slate-200 font-semibold text-sm flex items-center justify-center gap-3 shadow-sm hover:scale-[1.01] active:scale-95 transition-all"
+              class="w-full py-3.5 px-6 rounded-full bg-brand-50 hover:bg-brand-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-palette-blue dark:text-slate-200 font-semibold text-sm flex items-center justify-center gap-3 shadow-sm hover:scale-[1.01] active:scale-95 transition-all"
             >
-              <i data-lucide="book-open" class="w-4 h-4 text-[#1c1c28] dark:text-slate-400"></i>
+              <i data-lucide="book-open" class="w-4 h-4 text-palette-blue dark:text-slate-400"></i>
               <span>Continue with guide</span>
             </button>
           </div>
@@ -2016,7 +2012,7 @@
                   type="password"
                   id="musyrif-password"
                   placeholder="Password Testing"
-                  class="w-full py-3 px-4 rounded-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-slate-700 dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
+                  class="w-full py-3 px-4 rounded-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-slate-750 dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
                 />
               </div>
             </div>
@@ -2024,7 +2020,7 @@
             <div class="space-y-2 pt-2">
               <button
                 onclick="handleMusyrifSubmit()"
-                class="w-full py-3 rounded-full bg-[#181825] hover:bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+                class="w-full py-3 rounded-full bg-palette-blue hover:bg-palette-deep text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
               >
                 <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 <span>Lanjutkan</span>
@@ -2053,7 +2049,7 @@
                 id="wali-nis"
                 placeholder="NIS Santri"
                 oninput="window.onWaliNisInput(this.value)"
-                class="w-full py-3 px-5 rounded-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-slate-700 dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
+                class="w-full py-3 px-5 rounded-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-slate-750 dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
               />
 
               <!-- Suggestion info, hidden initially -->
@@ -2071,12 +2067,12 @@
                   type="password"
                   id="wali-password"
                   placeholder="Password NIS"
-                  class="w-full py-3 px-5 rounded-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-slate-700 dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
+                  class="w-full py-3 px-5 rounded-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-slate-750 dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
                 />
 
                 <button
                   onclick="handleWaliSubmit()"
-                  class="w-full py-3 rounded-full bg-[#181825] hover:bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+                  class="w-full py-3 rounded-full bg-palette-blue hover:bg-palette-deep text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
                 >
                   <i data-lucide="log-in" class="w-4 h-4"></i>
                   <span>Masuk</span>
