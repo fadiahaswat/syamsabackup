@@ -1032,7 +1032,6 @@ window.renderNotificationsUI = function (notificationsList = []) {
   const badge = document.getElementById("notif-badge");
   if (badge) {
     if (unreadCount > 0) {
-      badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
       badge.classList.remove("hidden");
     } else {
       badge.classList.add("hidden");
