@@ -13,6 +13,7 @@ class SupabaseClient {
     this.currentSession = null;
     this.currentUser = null;
     this.realtimeChannels = [];
+    this.initPromise = null;
 
     // Callbacks
     this.onAuthStateChange = null;
@@ -34,61 +35,71 @@ class SupabaseClient {
       return;
     }
 
-    const url = config?.url || APP_STORAGE?.supabase?.url;
-    const anonKey = config?.anonKey || APP_STORAGE?.supabase?.anonKey;
-
-    if (!url || !anonKey) {
-      console.warn('[SupabaseClient] Supabase config not found - cloud storage disabled');
-      return;
+    if (this.initPromise) {
+      return this.initPromise;
     }
 
-    try {
-      // Dynamic import Supabase client
-      const { createClient } = await import(
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
-      );
+    this.initPromise = (async () => {
+      const url = config?.url || APP_STORAGE?.supabase?.url;
+      const anonKey = config?.anonKey || APP_STORAGE?.supabase?.anonKey;
 
-      this.client = createClient(url, anonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: false,
-        },
-        global: {
-          headers: {
-            'x-app-version': window.APP_VERSION || '2.2.8',
-          },
-        },
-      });
-
-      // Check initial session
-      const { data: sessionData } = await this.client.auth.getSession();
-      if (sessionData?.session) {
-        this._handleSession(sessionData.session);
+      if (!url || !anonKey) {
+        console.warn('[SupabaseClient] Supabase config not found - cloud storage disabled');
+        return;
       }
 
-      // Listen for auth changes
-      this.client.auth.onAuthStateChange((event, session) => {
-        console.log('[SupabaseClient] Auth event:', event);
-        if (session) {
-          this._handleSession(session);
-        } else {
-          this.currentSession = null;
-          this.currentUser = null;
+      try {
+        // Dynamic import Supabase client
+        const { createClient } = await import(
+          'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+        );
+
+        this.client = createClient(url, anonKey, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: false,
+          },
+          global: {
+            headers: {
+              'x-app-version': window.APP_VERSION || '2.2.8',
+            },
+          },
+        });
+
+        // Check initial session
+        const { data: sessionData } = await this.client.auth.getSession();
+        if (sessionData?.session) {
+          this._handleSession(sessionData.session);
         }
 
-        if (this.onAuthStateChange) {
-          this.onAuthStateChange(event, session);
-        }
-      });
+        // Listen for auth changes
+        this.client.auth.onAuthStateChange((event, session) => {
+          console.log('[SupabaseClient] Auth event:', event);
+          if (session) {
+            this._handleSession(session);
+          } else {
+            this.currentSession = null;
+            this.currentUser = null;
+          }
 
-      this.isInitialized = true;
-      console.log('[SupabaseClient] Initialized successfully');
+          if (this.onAuthStateChange) {
+            this.onAuthStateChange(event, session);
+          }
+        });
 
-    } catch (error) {
-      console.error('[SupabaseClient] Initialization failed:', error);
-      this.isInitialized = false;
-    }
+        this.isInitialized = true;
+        console.log('[SupabaseClient] Initialized successfully');
+
+      } catch (error) {
+        console.error('[SupabaseClient] Initialization failed:', error);
+        this.isInitialized = false;
+      } finally {
+        this.initPromise = null;
+      }
+    })();
+
+    return this.initPromise;
   }
 
   /**
