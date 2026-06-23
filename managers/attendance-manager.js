@@ -673,6 +673,8 @@ window.renderAttendanceList = function () {
 // ==========================================
 
 window.toggleStatus = function (id, actId, type) {
+  console.log("[AttendanceManager] toggleStatus called:", { id, actId, type, slotId: appState.currentSlotId, date: appState.date });
+
   const slotId = appState.currentSlotId;
   const dateKey = appState.date;
 
@@ -965,6 +967,8 @@ window.generateBulkButtons = function () {
 
 // Logika Eksekusi Bulk Action
 window.applyBulkAction = function (targetCategory, value, specificId = null) {
+  console.log("[AttendanceManager] applyBulkAction called:", { targetCategory, value, specificId });
+
   const slotId = appState.currentSlotId;
   const dateKey = appState.date;
   const slot = SLOT_WAKTU[slotId];

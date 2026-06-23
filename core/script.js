@@ -4064,6 +4064,24 @@ window.toggleStatus = function (id, actId, type) {
   if (appState.date === window.getLocalDateStr()) {
     window.updateDashboard();
   }
+
+  // Trigger notifications for Wali (Alpa/Sakit/Izin/Telat)
+  if (type === "mandator" && ["Alpa", "Sakit", "Izin", "Telat"].includes(next)) {
+    console.log("[Script] Sending notification to Wali for:", id, next);
+    if (typeof window.addNotification === "function") {
+      const student = FILTERED_SANTRI.find(s => String(s.nis || s.id) === String(id));
+      const studentName = student?.nama || student?.name || "Santri";
+      const slotLabel = SLOT_WAKTU[slotId]?.label || slotId;
+      window.addNotification(
+        "wali",
+        id,
+        "Laporan Kehadiran 📋",
+        `${studentName} dicatat "${next}" pada sesi presensi ${slotLabel} tanggal ${dateKey}.`,
+        "attendance",
+        "tab=report"
+      );
+    }
+  }
 };
 
 // Fungsi untuk membuka Modal Menu Bulk (Akan dipanggil dari HTML)
@@ -4238,6 +4256,26 @@ window.applyBulkAction = function (targetCategory, value, specificId = null) {
       dbSlot[id].updatedAt = new Date().toISOString();
     }
   });
+
+  // Trigger notifications for Wali (Alpa/Sakit/Izin/Telat)
+  if (["fardu", "kbm", "school"].includes(targetCategory) && ["Alpa", "Sakit", "Izin", "Telat"].includes(value)) {
+    console.log("[Script] Sending bulk notifications to Wali for:", targetCategory, value);
+    if (typeof window.addNotification === "function") {
+      FILTERED_SANTRI.forEach((s) => {
+        const id = String(s.nis || s.id);
+        const studentName = s.nama || s.name || "Santri";
+        const slotLabel = SLOT_WAKTU[slotId]?.label || slotId;
+        window.addNotification(
+          "wali",
+          id,
+          "Laporan Kehadiran 📋",
+          `${studentName} dicatat "${value}" pada sesi presensi ${slotLabel} tanggal ${dateKey}.`,
+          "attendance",
+          "tab=report"
+        );
+      });
+    }
+  }
 
   window.saveData();
   window.renderAttendanceList();
