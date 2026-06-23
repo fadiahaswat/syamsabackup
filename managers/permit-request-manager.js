@@ -532,4 +532,7 @@
     window.updateMusyrifApprovalModalList();
   };
 
+  // Expose function globally for realtime sync updates
+  window.loadMusyrifRequests = loadMusyrifRequests;
+
 })();

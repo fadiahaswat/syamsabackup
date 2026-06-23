@@ -149,10 +149,6 @@ class HybridStorageManager {
     }
   }
 
-  /**
-   * Refresh UI after sync
-   * @param {string} source - The source of the refresh ('cloud_sync' or 'realtime')
-   */
   _refreshUI(source = 'cloud_sync') {
     // Trigger global refresh callbacks
     if (this.onDataUpdate) {
@@ -167,6 +163,20 @@ class HybridStorageManager {
     // Refresh dashboard
     if (typeof window.updateDashboard === 'function') {
       window.updateDashboard();
+    }
+
+    // Refresh permit requests and approval list (Musyrif)
+    if (typeof window.loadMusyrifRequests === 'function') {
+      window.loadMusyrifRequests();
+    }
+    const modalEl = document.getElementById("modal-musyrif-approval");
+    if (modalEl && !modalEl.classList.contains("hidden") && typeof window.updateMusyrifApprovalModalList === 'function') {
+      window.updateMusyrifApprovalModalList();
+    }
+
+    // Refresh Wali permit history list
+    if (typeof window.loadWaliPermitHistory === 'function') {
+      window.loadWaliPermitHistory();
     }
 
     // Refresh permit surfaces
