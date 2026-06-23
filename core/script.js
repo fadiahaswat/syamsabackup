@@ -682,12 +682,17 @@ window.handleMusyrifSubmit = async function () {
   // Production mode - Google OAuth
   appState.tempClass = kelas;
 
-  const modal = document.getElementById("modal-google-auth");
-  document.getElementById("lbl-google-class").textContent = kelas;
+  const googleView = document.getElementById("login-google-view");
+  const musyrifView = document.getElementById("login-musyrif-view");
+  const lblGoogleClass = document.getElementById("lbl-google-class");
 
-  if (modal) {
-    if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
-    window.openModal("modal-google-auth");
+  if (lblGoogleClass) {
+    lblGoogleClass.textContent = kelas;
+  }
+
+  if (googleView) {
+    if (musyrifView) musyrifView.classList.add("hidden");
+    googleView.classList.remove("hidden");
 
     // Cek apakah Google Sign-In tersedia
     if (window.location.protocol === "file:") {
@@ -715,6 +720,13 @@ window.handleMusyrifSubmit = async function () {
       window.showToast("Gagal memuat Google. Cek koneksi internet.", "error");
     }
   }
+};
+
+window.cancelGoogleAuth = function () {
+  const googleView = document.getElementById("login-google-view");
+  const musyrifView = document.getElementById("login-musyrif-view");
+  if (googleView) googleView.classList.add("hidden");
+  if (musyrifView) musyrifView.classList.remove("hidden");
 };
 
 // ==========================================
