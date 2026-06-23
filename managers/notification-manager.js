@@ -862,17 +862,21 @@ window.addNotification = async function (recipientType, recipientId, title, body
   console.log("[NotificationManager] Current recipient:", currentRecipient);
   console.log("[NotificationManager] Match?:", currentRecipient.type === recipientType && currentRecipient.id === recipientId);
 
-  if (currentRecipient.type === recipientType && currentRecipient.id === recipientId) {
-    const cacheKey = `local_notifs_${recipientType}_${recipientId}`;
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      let list = cached ? JSON.parse(cached) : [];
-      list.unshift(newNotif);
-      localStorage.setItem(cacheKey, JSON.stringify(list.slice(0, 50)));
+  // Selalu simpan ke cache, baik match maupun tidak (untuk mode Wali/Musyrif berbeda)
+  const cacheKey = `local_notifs_${recipientType}_${recipientId}`;
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    let list = cached ? JSON.parse(cached) : [];
+    list.unshift(newNotif);
+    localStorage.setItem(cacheKey, JSON.stringify(list.slice(0, 50)));
+    console.log("[NotificationManager] Cached notification for:", cacheKey);
+
+    // Update UI hanya jika recipient yang login match
+    if (currentRecipient.type === recipientType && currentRecipient.id === recipientId) {
       window.renderNotificationsUI(list);
-    } catch (e) {
-      console.warn("Error updating local cache for new notification", e);
     }
+  } catch (e) {
+    console.warn("Error updating local cache for new notification", e);
   }
 
   // 2. Insert to Supabase
