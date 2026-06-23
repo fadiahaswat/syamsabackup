@@ -3971,9 +3971,36 @@ window.renderAttendanceList = function () {
   if (window.refreshIcons) window.refreshIcons();
 };
 
-// ==========================================
-// PERBAIKAN FUNGSI TOGGLE STATUS
-// ==========================================
+// Debounce cache untuk notifikasi presensi wali
+window.attendanceNotificationTimeouts = window.attendanceNotificationTimeouts || {};
+
+window.queueAttendanceNotification = function (id, actId, slotId, dateKey, studentName, slotLabel) {
+  const cacheKey = `${id}_${slotId}_${actId}_${dateKey}`;
+  
+  if (window.attendanceNotificationTimeouts[cacheKey]) {
+    clearTimeout(window.attendanceNotificationTimeouts[cacheKey]);
+  }
+  
+  window.attendanceNotificationTimeouts[cacheKey] = setTimeout(() => {
+    const currentData = appState.attendanceData?.[dateKey]?.[slotId]?.[id];
+    const finalStatus = currentData?.status?.[actId];
+    
+    if (finalStatus && ["Alpa", "Sakit", "Izin", "Telat"].includes(finalStatus)) {
+      console.log("[Script] Debounced: Sending final notification to Wali:", id, finalStatus);
+      if (typeof window.addNotification === "function") {
+        window.addNotification(
+          "wali",
+          id,
+          "Laporan Kehadiran 📋",
+          `${studentName} dicatat "${finalStatus}" pada sesi presensi ${slotLabel} tanggal ${dateKey}.`,
+          "attendance",
+          "tab=report"
+        );
+      }
+    }
+    delete window.attendanceNotificationTimeouts[cacheKey];
+  }, 2000); // Tunggu 2 detik setelah klik terakhir
+};
 
 window.toggleStatus = function (id, actId, type) {
   const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
@@ -4065,22 +4092,12 @@ window.toggleStatus = function (id, actId, type) {
     window.updateDashboard();
   }
 
-  // Trigger notifications for Wali (Alpa/Sakit/Izin/Telat)
-  if (type === "mandator" && ["Alpa", "Sakit", "Izin", "Telat"].includes(next)) {
-    console.log("[Script] Sending notification to Wali for:", id, next);
-    if (typeof window.addNotification === "function") {
-      const student = FILTERED_SANTRI.find(s => String(s.nis || s.id) === String(id));
-      const studentName = student?.nama || student?.name || "Santri";
-      const slotLabel = SLOT_WAKTU[slotId]?.label || slotId;
-      window.addNotification(
-        "wali",
-        id,
-        "Laporan Kehadiran 📋",
-        `${studentName} dicatat "${next}" pada sesi presensi ${slotLabel} tanggal ${dateKey}.`,
-        "attendance",
-        "tab=report"
-      );
-    }
+  // Debounce notification untuk Wali (Alpa/Sakit/Izin/Telat)
+  if (type === "mandator") {
+    const student = FILTERED_SANTRI.find(s => String(s.nis || s.id) === String(id));
+    const studentName = student?.nama || student?.name || "Santri";
+    const slotLabel = SLOT_WAKTU[slotId]?.label || slotId;
+    window.queueAttendanceNotification(id, actId, slotId, dateKey, studentName, slotLabel);
   }
 };
 
