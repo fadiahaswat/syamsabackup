@@ -197,7 +197,7 @@ class SupabaseClient {
     const recipient = window.getNotificationRecipientInfo?.() || {};
     const recipientId = recipient.id || '';
     if (recipientId) {
-      console.log('[SupabaseClient] Subscribing to notifications for recipient_id:', recipientId);
+      console.log('[SupabaseClient] Subscribing to notifications for recipient_type:', recipient.type, 'recipient_id:', recipientId);
       notificationChannel = this.client
         .channel('notification-changes')
         .on(
@@ -205,13 +205,20 @@ class SupabaseClient {
           {
             event: '*',
             schema: 'public',
-            table: 'notifications',
-            filter: `recipient_id=eq.${recipientId}`
+            table: 'notifications'
           },
           (payload) => {
-            console.log('[SupabaseClient] Notification changed:', payload);
-            if (this.onNotificationChange) {
-              this.onNotificationChange(payload);
+            console.log('[SupabaseClient] Realtime notification received:', payload);
+            const record = payload.new || payload.old || {};
+            const currentRecipient = window.getNotificationRecipientInfo?.() || {};
+            // Filter client-side
+            const match = String(record.recipient_type).trim() === String(currentRecipient.type).trim() &&
+                          String(record.recipient_id).trim() === String(currentRecipient.id).trim();
+            if (match) {
+              console.log('[SupabaseClient] Notification matched current user, triggering callback');
+              if (this.onNotificationChange) {
+                this.onNotificationChange(payload);
+              }
             }
           }
         )

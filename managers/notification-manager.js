@@ -1116,21 +1116,28 @@ window.formatNotificationTime = function (isoString) {
 };
 
 // Trigger fetch ketika login / perubahan data akun selesai dilakukan
-if (typeof window.syncRoleModeUI === "function") {
-  const originalSyncRoleModeUI = window.syncRoleModeUI;
-  window.syncRoleModeUI = function (...args) {
-    originalSyncRoleModeUI(...args);
-    setTimeout(() => {
-      window.fetchNotifications();
-    }, 1000);
-  };
-} else {
-  window.syncRoleModeUI = function () {
-    setTimeout(() => {
-      window.fetchNotifications();
-    }, 1000);
-  };
-}
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof window.syncRoleModeUI === "function") {
+    const originalSyncRoleModeUI = window.syncRoleModeUI;
+    window.syncRoleModeUI = function (...args) {
+      originalSyncRoleModeUI(...args);
+      setTimeout(() => {
+        window.fetchNotifications();
+      }, 1000);
+    };
+  } else {
+    window.syncRoleModeUI = function () {
+      setTimeout(() => {
+        window.fetchNotifications();
+      }, 1000);
+    };
+  }
+
+  // Jaminan melakukan fetch awal setelah DOM termuat
+  setTimeout(() => {
+    window.fetchNotifications();
+  }, 1000);
+});
 
 // Bind realtime notification changes callback
 if (window.supabaseClient) {

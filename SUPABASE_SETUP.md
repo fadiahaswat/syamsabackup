@@ -166,7 +166,8 @@ supabase/
 │   ├── 001_initial_schema.sql   # Database tables
 │   ├── 002_storage_buckets.sql  # Storage bucket config
 │   ├── 003_permit_rls_wali.sql   # Alter permit table & anonymous RLS policies
-│   └── 004_add_notifications_table.sql # Notifications table & RLS policies
+│   ├── 004_add_notifications_table.sql # Notifications table & RLS policies
+│   └── 005_fix_notification_rls.sql    # Fix notifications RLS for authenticated users
 
 managers/
 ├── supabase-client.js           # Supabase client wrapper
