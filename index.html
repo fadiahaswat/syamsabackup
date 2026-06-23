@@ -2938,10 +2938,76 @@
             </button>
           </header>
 
-          <div class="mt-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-sm p-4 sm:p-6">
-            <div id="tab-notification-list" class="divide-y divide-slate-150/40 dark:divide-slate-800/40">
+          <!-- Tab: Notifications Stats & Filter Row -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-slide-up delay-150ms mt-6">
+            <!-- Stat Card: Total -->
+            <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-4 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div id="notif-stat-total" class="text-lg font-black text-slate-800 dark:text-white leading-none">0</div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 truncate">Total Notifikasi</div>
+              </div>
+            </div>
+            
+            <!-- Stat Card: Unread -->
+            <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-4 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                <i data-lucide="mail" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div id="notif-stat-unread" class="text-lg font-black text-slate-800 dark:text-white leading-none">0</div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 truncate">Belum Dibaca</div>
+              </div>
+            </div>
+            
+            <!-- Stat Card: Attendance -->
+            <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-4 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div id="notif-stat-attendance" class="text-lg font-black text-slate-800 dark:text-white leading-none">0</div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 truncate">Presensi</div>
+              </div>
+            </div>
+
+            <!-- Stat Card: Permit -->
+            <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-4 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div id="notif-stat-permit" class="text-lg font-black text-slate-800 dark:text-white leading-none">0</div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 truncate">Perizinan</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Chips Bar -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar scroll-smooth animate-slide-up delay-200ms mt-4">
+            <button onclick="window.filterNotifications('all')" id="notif-filter-all" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-palette-blue text-white shadow-sm hover:scale-[1.02] active:scale-95 shrink-0">
+              Semua
+            </button>
+            <button onclick="window.filterNotifications('attendance')" id="notif-filter-attendance" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
+              Kehadiran
+            </button>
+            <button onclick="window.filterNotifications('permit')" id="notif-filter-permit" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
+              Perizinan
+            </button>
+            <button onclick="window.filterNotifications('tahfizh')" id="notif-filter-tahfizh" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
+              Tahfizh
+            </button>
+            <button onclick="window.filterNotifications('system')" id="notif-filter-system" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
+              Sistem
+            </button>
+          </div>
+
+          <div class="mt-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-sm p-2 sm:p-4 overflow-hidden">
+            <div id="tab-notification-list" class="divide-y divide-slate-100 dark:divide-slate-800/50 animate-slide-up delay-250ms">
               <div class="p-8 text-center text-slate-400 dark:text-slate-500">
-                <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                <i data-lucide="bell" class="w-8 h-8 mx-auto mb-2 opacity-50 animate-pulse"></i>
                 <p class="text-xs font-semibold">Memuat notifikasi...</p>
               </div>
             </div>

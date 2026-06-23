@@ -759,6 +759,10 @@ window.checkScheduledNotifications = function () {
 // IN-APP NOTIFICATION CENTER (POPOVER)
 // ==========================================
 
+// State global untuk data notifikasi
+window.currentNotificationsList = [];
+window.currentNotificationFilter = "all";
+
 // Helper: Ambil informasi penerima berdasarkan mode login
 window.getNotificationRecipientInfo = function () {
   if (appState.waliMode === true) {
@@ -1006,17 +1010,26 @@ window.executeDeepLink = function (deepLink) {
 
 // Render UI Tab
 window.renderNotificationsUI = function (notificationsList = []) {
-  const listContainer = document.getElementById("tab-notification-list");
-  const badge = document.getElementById("notif-badge");
-  if (!listContainer) return;
+  window.currentNotificationsList = notificationsList;
 
-  // Selalu bersihkan container sebelum merender (termasuk placeholder "Memuat notifikasi...")
-  listContainer.innerHTML = '';
+  // Update Stats UI
+  const totalEl = document.getElementById("notif-stat-total");
+  const unreadEl = document.getElementById("notif-stat-unread");
+  const attEl = document.getElementById("notif-stat-attendance");
+  const permitEl = document.getElementById("notif-stat-permit");
 
-  // Count unread
+  const totalCount = notificationsList.length;
   const unreadCount = notificationsList.filter(item => !item.is_read).length;
+  const attCount = notificationsList.filter(item => item.type === "attendance").length;
+  const permitCount = notificationsList.filter(item => item.type === "permit").length;
+
+  if (totalEl) totalEl.textContent = totalCount;
+  if (unreadEl) unreadEl.textContent = unreadCount;
+  if (attEl) attEl.textContent = attCount;
+  if (permitEl) permitEl.textContent = permitCount;
 
   // Update badge in header
+  const badge = document.getElementById("notif-badge");
   if (badge) {
     if (unreadCount > 0) {
       badge.textContent = unreadCount > 9 ? "9+" : unreadCount;
@@ -1026,12 +1039,59 @@ window.renderNotificationsUI = function (notificationsList = []) {
     }
   }
 
-  // Render items
-  if (notificationsList.length === 0) {
+  // Render list berdasarkan filter yang aktif saat ini
+  window.renderFilteredNotifications();
+};
+
+// Filter Notifikasi
+window.filterNotifications = function (category) {
+  window.currentNotificationFilter = category;
+  
+  // Update state active tombol filter chip
+  document.querySelectorAll(".notif-filter-btn").forEach(btn => {
+    const isTarget = btn.id === `notif-filter-${category}`;
+    if (isTarget) {
+      btn.className = "notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-palette-blue text-white shadow-sm hover:scale-[1.02] active:scale-95 shrink-0";
+    } else {
+      btn.className = "notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0";
+    }
+  });
+  
+  window.renderFilteredNotifications();
+};
+
+// Render Filtered Notifications
+window.renderFilteredNotifications = function () {
+  const listContainer = document.getElementById("tab-notification-list");
+  if (!listContainer) return;
+
+  const filter = window.currentNotificationFilter || "all";
+  const rawList = window.currentNotificationsList || [];
+  
+  // Saring berdasarkan kategori
+  const filteredList = rawList.filter(item => {
+    if (filter === "all") return true;
+    return item.type === filter;
+  });
+
+  listContainer.innerHTML = '';
+
+  if (filteredList.length === 0) {
+    let emptyMsg = "Tidak ada notifikasi baru";
+    let emptyIcon = "bell-off";
+    if (filter !== "all") {
+      const catLabels = {
+        attendance: "Kehadiran",
+        permit: "Perizinan",
+        tahfizh: "Tahfizh",
+        system: "Sistem"
+      };
+      emptyMsg = `Tidak ada notifikasi kategori ${catLabels[filter] || filter}`;
+    }
     listContainer.innerHTML = `
-      <div class="p-12 text-center text-slate-400 dark:text-slate-500">
-        <i data-lucide="bell-off" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
-        <p class="text-sm font-semibold">Tidak ada notifikasi baru</p>
+      <div class="p-12 text-center text-slate-400 dark:text-slate-550">
+        <i data-lucide="${emptyIcon}" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
+        <p class="text-sm font-semibold">${emptyMsg}</p>
       </div>
     `;
     if (window.lucide) window.lucide.createIcons();
@@ -1056,15 +1116,26 @@ window.renderNotificationsUI = function (notificationsList = []) {
     default: "text-slate-500 bg-slate-50 dark:bg-slate-950/20"
   };
 
+  const categoryBorders = {
+    permit: "border-amber-500",
+    attendance: "border-blue-500",
+    tahfizh: "border-emerald-500",
+    system: "border-rose-500",
+    announcement: "border-purple-500",
+    default: "border-slate-300 dark:border-slate-700"
+  };
+
   let html = "";
-  notificationsList.forEach(item => {
+  filteredList.forEach(item => {
     const icon = categoryIcons[item.type] || categoryIcons.default;
     const colorClass = categoryColors[item.type] || categoryColors.default;
+    const borderClass = categoryBorders[item.type] || categoryBorders.default;
     const isUnread = !item.is_read;
     const dateStr = item.created_at ? window.formatNotificationTime(item.created_at) : "";
 
     html += `
-      <div onclick="window.handleNotificationClick('${item.id}', '${item.deep_link || ""}')" class="p-4 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-all active:scale-[0.99] relative ${isUnread ? "bg-blue-50/10 dark:bg-palette-blue/5 border-l-4 border-palette-blue" : "border-l-4 border-transparent"}">
+      <div onclick="window.handleNotificationClick('${item.id}', '${item.deep_link || ""}')" 
+           class="p-5 flex items-start gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer transition-all active:scale-[0.99] relative border-l-4 ${isUnread ? borderClass : "border-transparent"} ${isUnread ? "bg-slate-50/10 dark:bg-slate-850/5" : ""}">
         <div class="p-2.5 rounded-2xl shrink-0 ${colorClass}">
           <i data-lucide="${icon}" class="w-5 h-5"></i>
         </div>
@@ -1076,7 +1147,7 @@ window.renderNotificationsUI = function (notificationsList = []) {
           <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">${item.body}</p>
         </div>
         ${isUnread ? `
-          <span class="absolute top-1/2 right-4 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-palette-blue dark:bg-sky-400"></span>
+          <span class="absolute top-1/2 right-4 -translate-y-1/2 w-2 h-2 rounded-full bg-palette-blue dark:bg-sky-400 animate-pulse"></span>
         ` : ""}
       </div>
     `;
