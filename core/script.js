@@ -340,8 +340,8 @@ window.handleSuperadminLogin = function () {
   const password = prompt("Masukkan password Superadmin:");
 
   if (password === "admin123") {
-    window.closeModal("modal-musyrif-login");
-    window.closeModal("modal-wali-login");
+    if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
+    if (window.cancelWaliLogin) window.cancelWaliLogin();
 
     appState.superadminMode = true;
     appState.userProfile = {
@@ -564,16 +564,29 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
 // ==========================================
 
 window.handleMusyrifLogin = function () {
-  const modal = document.getElementById("modal-musyrif-login");
-  if (modal) {
-    window.openModal("modal-musyrif-login");
+  const selectionView = document.getElementById("login-selection-view");
+  const musyrifView = document.getElementById("login-musyrif-view");
+  const waliView = document.getElementById("login-wali-view");
+
+  if (musyrifView) {
+    if (selectionView) selectionView.classList.add("hidden");
+    if (waliView) waliView.classList.add("hidden");
+    musyrifView.classList.remove("hidden");
+
     // Show/hide testing fields based on mode
     const isTestingMode = window.getAuthMode() === "testing";
     const testingCreds = document.getElementById("musyrif-testing-creds");
     if (testingCreds) testingCreds.classList.toggle("hidden", !isTestingMode);
   } else {
-    window.showToast("Modal login musyrif tidak ditemukan.", "error");
+    window.showToast("Tampilan login musyrif tidak ditemukan.", "error");
   }
+};
+
+window.cancelMusyrifLogin = function () {
+  const selectionView = document.getElementById("login-selection-view");
+  const musyrifView = document.getElementById("login-musyrif-view");
+  if (musyrifView) musyrifView.classList.add("hidden");
+  if (selectionView) selectionView.classList.remove("hidden");
 };
 
 window.handleMusyrifSubmit = async function () {
@@ -605,7 +618,7 @@ window.handleMusyrifSubmit = async function () {
           authProvider: "bypass",
         };
 
-        window.closeModal("modal-musyrif-login");
+        if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
         window.startAuthenticatedSession(kelas, profile);
         window.showToast("Login bypass berhasil!", "success");
         return;
@@ -643,7 +656,7 @@ window.handleMusyrifSubmit = async function () {
         authProvider: "testing",
       };
 
-      window.closeModal("modal-musyrif-login");
+      if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
       window.startAuthenticatedSession(kelas, profile);
       window.showToast("Login Testing Berhasil!", "success");
       return;
@@ -660,7 +673,7 @@ window.handleMusyrifSubmit = async function () {
   document.getElementById("lbl-google-class").textContent = kelas;
 
   if (modal) {
-    window.closeModal("modal-musyrif-login");
+    if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
     window.openModal("modal-google-auth");
 
     // Cek apakah Google Sign-In tersedia
@@ -698,9 +711,12 @@ window.handleMusyrifSubmit = async function () {
 let waliConfirmedStudent = null;
 
 window.handleWaliLogin = function () {
-  const modal = document.getElementById("modal-wali-login");
-  if (modal) {
-    // Reset state & fields when modal opens
+  const selectionView = document.getElementById("login-selection-view");
+  const musyrifView = document.getElementById("login-musyrif-view");
+  const waliView = document.getElementById("login-wali-view");
+
+  if (waliView) {
+    // Reset state & fields when view opens
     waliConfirmedStudent = null;
     const nisInput = document.getElementById("wali-nis");
     const passInput = document.getElementById("wali-password");
@@ -712,14 +728,23 @@ window.handleWaliLogin = function () {
     if (suggInfo) suggInfo.classList.add("hidden");
     if (passSec) passSec.classList.add("hidden");
 
-    window.openModal("modal-wali-login");
+    if (selectionView) selectionView.classList.add("hidden");
+    if (musyrifView) musyrifView.classList.add("hidden");
+    waliView.classList.remove("hidden");
 
     setTimeout(() => {
       if (nisInput) nisInput.focus();
     }, 100);
   } else {
-    window.showToast("Fitur login wali belum tersedia.", "info");
+    window.showToast("Tampilan login wali tidak ditemukan.", "error");
   }
+};
+
+window.cancelWaliLogin = function () {
+  const selectionView = document.getElementById("login-selection-view");
+  const waliView = document.getElementById("login-wali-view");
+  if (waliView) waliView.classList.add("hidden");
+  if (selectionView) selectionView.classList.remove("hidden");
 };
 
 window.onWaliNisInput = function (val) {
@@ -814,7 +839,7 @@ window.handleWaliSubmit = function () {
     return window.showToast("Password NIS salah.", "error");
   }
 
-  window.closeModal("modal-wali-login");
+  if (window.cancelWaliLogin) window.cancelWaliLogin();
 
   appState.waliMode = true;
   appState.waliSantri = foundSantri;
