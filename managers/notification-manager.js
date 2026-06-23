@@ -987,6 +987,9 @@ window.renderNotificationsUI = function (notificationsList = []) {
   const badge = document.getElementById("notif-badge");
   if (!listContainer) return;
 
+  // Selalu bersihkan container sebelum merender (termasuk placeholder "Memuat notifikasi...")
+  listContainer.innerHTML = '';
+
   // Count unread
   const unreadCount = notificationsList.filter(item => !item.is_read).length;
 
