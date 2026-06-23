@@ -778,6 +778,8 @@ window.getNotificationRecipientInfo = function () {
 // Fetch notifications from Supabase with LocalStorage cache fallback
 window.fetchNotifications = async function () {
   const recipient = window.getNotificationRecipientInfo();
+  console.log("[NotificationManager] fetchNotifications called:", recipient);
+
   if (!recipient.id) {
     console.log("[NotificationManager] Skip fetch: No recipient ID logged in");
     window.renderNotificationsUI([]);
@@ -785,13 +787,16 @@ window.fetchNotifications = async function () {
   }
 
   const cacheKey = `local_notifs_${recipient.type}_${recipient.id}`;
+  console.log("[NotificationManager] Cache key:", cacheKey);
   let notificationsList = [];
 
   // Try to load cached first
   try {
     const cached = localStorage.getItem(cacheKey);
+    console.log("[NotificationManager] Cached data:", cached ? "exists" : "empty");
     if (cached) {
       notificationsList = JSON.parse(cached);
+      console.log("[NotificationManager] Loaded from cache, count:", notificationsList.length);
       window.renderNotificationsUI(notificationsList);
     }
   } catch (e) {
@@ -801,6 +806,7 @@ window.fetchNotifications = async function () {
   // Fetch from Supabase if online
   if (window.supabaseClient && window.supabaseClient.isOnline && window.supabaseClient.client) {
     try {
+      console.log("[NotificationManager] Fetching from Supabase...");
       const { data, error } = await window.supabaseClient.client
         .from("notifications")
         .select("*")
@@ -809,9 +815,13 @@ window.fetchNotifications = async function () {
         .order("created_at", { ascending: false })
         .limit(50); // Increased limit for full-page tab
 
-      if (error) throw error;
+      if (error) {
+        console.error("[NotificationManager] Supabase error:", error);
+        throw error;
+      }
 
-      if (data) {
+      console.log("[NotificationManager] Supabase response, count:", data?.length || 0);
+      if (data && data.length > 0) {
         notificationsList = data;
         localStorage.setItem(cacheKey, JSON.stringify(data));
         window.renderNotificationsUI(notificationsList);
@@ -820,6 +830,7 @@ window.fetchNotifications = async function () {
       console.error("Error fetching notifications from Supabase:", err);
     }
   } else {
+    console.log("[NotificationManager] Supabase not available, showing cached data");
     // If local-only or offline, render cached (already done above, but refresh badge)
     window.renderNotificationsUI(notificationsList);
   }
