@@ -1050,15 +1050,56 @@ window.renderDashboardPembinaan = function () {
   const container = document.getElementById("dashboard-pembinaan-list");
   const badge = document.getElementById("pembinaan-count-badge");
   const cardTitle = document.querySelector("#dashboard-pembinaan-card h3");
+  const card = document.getElementById("dashboard-pembinaan-card");
+  const actionBtn = card?.querySelector("button[onclick*='pembinaan']");
 
-  // Ubah Judul Widget agar mencakup semua (yang sudah & belum dibina)
-  if (cardTitle)
-    cardTitle.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500 mr-2 inline"></i>Pelanggaran Hari Ini`;
+  // Cek apakah dalam mode Wali
+  const isWali = window.isWaliMode?.() || appState.waliMode;
+  const waliSantri = appState.waliSantri;
+  const waliNis = waliSantri ? String(waliSantri.nis || waliSantri.id || '') : '';
+
+  // Tentukan judul berdasarkan mode
+  if (cardTitle) {
+    if (isWali && waliSantri) {
+      cardTitle.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500 mr-2 inline"></i>Pelanggaran & Pembinaan ${waliSantri.nama || 'Ananda'}`;
+    } else {
+      cardTitle.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500 mr-2 inline"></i>Pelanggaran Hari Ini`;
+    }
+  }
+
+  // Jika mode Wali, tampilkan hanya card, sonst sembunyikan entire card
+  if (isWali) {
+    if (card) {
+      // Ubah judul deskripsi
+      const descEl = card.querySelector("p.text-\\[10px\\]");
+      if (descEl) {
+        descEl.textContent = "Riwayat pelanggaran & pembinaan";
+      }
+    }
+    // Sembunyikan tombol aksi untuk wali
+    if (actionBtn) {
+      actionBtn.classList.add("hidden");
+    }
+  } else {
+    // Mode Musyrif: tampilkan tombol aksi
+    if (actionBtn) {
+      actionBtn.classList.remove("hidden");
+    }
+  }
 
   if (!container) return;
 
   const dateKey = appState.date;
-  const violationList = window.collectPembinaanViolations({ date: dateKey });
+  let violationList = window.collectPembinaanViolations({ date: dateKey });
+
+  // Filter untuk mode Wali - hanya tampilkan pelanggaran anak tersebut
+  if (isWali && waliNis) {
+    violationList = violationList.filter(p => {
+      const pNis = String(p.nis || p.id || '').trim();
+      return pNis === waliNis;
+    });
+  }
+
   const pendingCount = violationList.filter((item) => !item.isCoached).length;
 
   // Update Badge (Merah jika ada pending, Hijau jika semua beres)
@@ -1688,6 +1729,21 @@ window.savePembinaan = function () {
       };
 
       window.saveData();
+
+      // Kirim notifikasi ke Wali jika tersedia
+      const studentNis = String(target.id || target.nis || '').trim();
+      const studentName = target.nama || 'Santri';
+      if (studentNis && typeof window.addNotification === 'function') {
+        window.addNotification(
+          'wali',
+          studentNis,
+          'Pembinaan Santri Dicatat 📋',
+          `Ananda ${studentName} telah dibina oleh Musyrif. Catatan: "${window.sanitizeHTML(actionBina)}"`,
+          'pembinaan',
+          'tab=home'
+        );
+        console.log(`[DashboardManager] Pembinaan notification sent to wali for NIS: ${studentNis}`);
+      }
 
       window.showToast(
         "Pembinaan berhasil dicatat. Poin ditambahkan.",

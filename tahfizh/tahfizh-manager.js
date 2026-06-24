@@ -807,12 +807,14 @@ async function handleValidationAction(rowNumber, status) {
     try {
         let localSetoran = localStorage.getItem('tahfizh_local_setoran');
         if (!localSetoran) throw new Error("Database setoran tidak ditemukan");
-        
+
         let list = JSON.parse(localSetoran);
         const index = list.findIndex(s => (s.rowNumber || s.RowNumber) == rowNumber);
-        
+
         if (index === -1) throw new Error("Data setoran tidak ditemukan");
-        
+
+        const setoranItem = list[index];
+
         if (status === 'Verified') {
             list[index].Status = 'Verified';
             list[index].status = 'Verified';
@@ -820,9 +822,39 @@ async function handleValidationAction(rowNumber, status) {
             list[index].Status = 'Rejected';
             list[index].status = 'Rejected';
         }
-        
+
         localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
-        
+
+        // Kirim notifikasi ke Wali jika setoran diverifikasi
+        if (status === 'Verified') {
+            const studentNis = String(setoranItem.santriId || setoranItem.nis || '').trim();
+            const studentName = setoranItem.namaSantri || setoranItem.NamaSantri || 'Santri';
+            const jenisSetoran = setoranItem.jenis || 'Ziyadah';
+            const juzLabel = setoranItem.juz ? `Juz ${setoranItem.juz}` : (setoranItem.surat ? `Surat ${setoranItem.surat}` : '');
+            const detail = [jenisSetoran, juzLabel].filter(Boolean).join(' - ');
+
+            if (studentNis && typeof window.addNotification === 'function') {
+                window.addNotification(
+                    'wali',
+                    studentNis,
+                    'Setoran Hafalan Disetujui 📖',
+                    `Alhamdulillah! Setoran hafalan ${detail} untuk ${studentName} telah disetujui oleh Musyrif.`,
+                    'tahfizh',
+                    'tab=tahfizh'
+                );
+                console.log(`[TahfizhManager] Notification sent to wali for NIS: ${studentNis}`);
+            }
+
+            // Kirim local notification juga
+            if (window.sendLocalNotification) {
+                window.sendLocalNotification(
+                    'Setoran Hafalan Disetujui 📖',
+                    `Setoran ${detail} untuk ${studentName} telah disetujui!`,
+                    'tahfizh'
+                );
+            }
+        }
+
         if (window.showToast) window.showToast(status === 'Verified' ? 'Setoran berhasil disetujui!' : 'Setoran ditolak.', 'success');
         await reloadTahfizhData();
     } catch (e) {

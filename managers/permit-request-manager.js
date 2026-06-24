@@ -698,6 +698,42 @@
     if (elBadge) elBadge.textContent = count;
   }
 
+  // Expose ke window agar bisa dipanggil dari HybridStorageManager
+  window.renderMusyrifApprovalWidget = renderMusyrifApprovalWidget;
+
+  // Polling interval untuk refresh widget approval secara periodik
+  let approvalPollInterval = null;
+
+  /**
+   * Start polling untuk cek pending permits
+   */
+  window.startApprovalPolling = function() {
+    if (approvalPollInterval) return; // Already running
+
+    // Initial load
+    loadMusyrifRequests();
+
+    // Poll every 10 seconds
+    approvalPollInterval = setInterval(() => {
+      if (!window.isWaliMode?.()) { // Only poll for musyrif
+        loadMusyrifRequests();
+      }
+    }, 10000);
+
+    console.log("[PermitRequestManager] Approval polling started");
+  };
+
+  /**
+   * Stop polling
+   */
+  window.stopApprovalPolling = function() {
+    if (approvalPollInterval) {
+      clearInterval(approvalPollInterval);
+      approvalPollInterval = null;
+      console.log("[PermitRequestManager] Approval polling stopped");
+    }
+  };
+
   /**
    * Membuka modal daftar persetujuan Musyrif
    */

@@ -1017,13 +1017,11 @@ window.executeDeepLink = function (deepLink) {
   const action = params.get("action");
   if (action === "verify") {
     setTimeout(() => {
-      const permitWidget = document.querySelector(".permit-requests-card") || document.getElementById("permit-section");
-      if (permitWidget) {
-        permitWidget.scrollIntoView({ behavior: "smooth", block: "center" });
-        permitWidget.classList.add("ring-4", "ring-palette-blue/30");
-        setTimeout(() => permitWidget.classList.remove("ring-4", "ring-palette-blue/30"), 2000);
+      // Buka modal approval izin langsung
+      if (typeof window.openMusyrifApprovalModal === "function") {
+        window.openMusyrifApprovalModal();
       }
-    }, 500);
+    }, 300);
   }
 };
 

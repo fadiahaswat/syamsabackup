@@ -141,7 +141,7 @@ class SupabaseClient {
   /**
    * Subscribe to realtime changes (attendance & permits)
    */
-  async subscribeToRealtime(kelasId) {
+  async subscribeToRealtime(kelasId, kelasUuid = null) {
     if (!this.client) {
       console.warn('[SupabaseClient] Cannot subscribe - client not initialized');
       return;
@@ -150,9 +150,40 @@ class SupabaseClient {
     // Unsubscribe from previous channels
     this.unsubscribeRealtime();
 
-    console.log('[SupabaseClient] Subscribing to realtime for kelas:', kelasId);
+    let resolvedKelasId = kelasId;
+    let resolvedKelasUuid = kelasUuid;
 
-    // Subscribe to attendance changes
+    const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+    if (resolvedKelasId && isUuid(resolvedKelasId)) {
+      resolvedKelasUuid = resolvedKelasId;
+      // Resolve the text name from classData/MASTER_KELAS
+      const classSource = window.classData || window.MASTER_KELAS;
+      if (classSource) {
+        const foundKey = Object.keys(classSource).find(k => {
+          const val = classSource[k];
+          return val.supabaseId === resolvedKelasUuid || val.id === resolvedKelasUuid;
+        });
+        if (foundKey) {
+          resolvedKelasId = foundKey;
+        }
+      }
+    } else if (resolvedKelasId) {
+      if (!resolvedKelasUuid) {
+        // Resolve the UUID for permit table
+        const classSource = window.classData || window.MASTER_KELAS;
+        if (classSource) {
+          const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, "").toLowerCase() === String(resolvedKelasId).replace(/\s+/g, "").toLowerCase());
+          if (matched && classSource[matched]) {
+            resolvedKelasUuid = classSource[matched].supabaseId || classSource[matched].id;
+          }
+        }
+      }
+    }
+
+    console.log('[SupabaseClient] Subscribing to realtime for kelas:', resolvedKelasId, 'UUID:', resolvedKelasUuid);
+
+    // 1. Subscribe to attendance changes (uses text kelasId)
     const attendanceChannel = this.client
       .channel('attendance-changes')
       .on(
@@ -161,7 +192,7 @@ class SupabaseClient {
           event: '*',
           schema: 'public',
           table: 'attendance_record',
-          filter: `kelas_id=eq.${kelasId}`
+          filter: `kelas_id=eq.${resolvedKelasId}`
         },
         (payload) => {
           console.log('[SupabaseClient] Attendance changed:', payload);
@@ -172,27 +203,50 @@ class SupabaseClient {
       )
       .subscribe();
 
-    // Subscribe to permit changes
-    const permitChannel = this.client
-      .channel('permit-changes')
+    // 2. Subscribe to permit changes (uses UUID resolvedKelasUuid)
+    let permitChannel = null;
+    if (resolvedKelasUuid) {
+      permitChannel = this.client
+        .channel('permit-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'permit',
+            filter: `kelas_id=eq.${resolvedKelasUuid}`
+          },
+          (payload) => {
+            console.log('[SupabaseClient] Permit changed:', payload);
+            if (this.onPermitChange) {
+              this.onPermitChange(payload);
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    // 3. Subscribe to tahfizh changes (uses text resolvedKelasId)
+    const tahfizhChannel = this.client
+      .channel('tahfizh-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'permit',
-          filter: `kelas_id=eq.${kelasId}`
+          table: 'tahfizh_record',
+          filter: `kelas=eq.${resolvedKelasId}`
         },
         (payload) => {
-          console.log('[SupabaseClient] Permit changed:', payload);
-          if (this.onPermitChange) {
-            this.onPermitChange(payload);
+          console.log('[SupabaseClient] Tahfizh record changed:', payload);
+          if (this.onTahfizhChange) {
+            this.onTahfizhChange(payload);
           }
         }
       )
       .subscribe();
 
-    // Subscribe to notification changes for the logged-in recipient
+    // 4. Subscribe to notification changes for the logged-in recipient
     let notificationChannel = null;
     const recipient = window.getNotificationRecipientInfo?.() || {};
     const recipientId = recipient.id || '';
@@ -225,11 +279,11 @@ class SupabaseClient {
         .subscribe();
     }
 
-    this.realtimeChannels = [attendanceChannel, permitChannel];
-    if (notificationChannel) {
-      this.realtimeChannels.push(notificationChannel);
-    }
-    console.log('[SupabaseClient] Realtime subscribed');
+    this.realtimeChannels = [attendanceChannel];
+    if (permitChannel) this.realtimeChannels.push(permitChannel);
+    if (tahfizhChannel) this.realtimeChannels.push(tahfizhChannel);
+    if (notificationChannel) this.realtimeChannels.push(notificationChannel);
+    console.log('[SupabaseClient] Realtime subscribed successfully');
   }
 
   /**
@@ -438,17 +492,88 @@ class SupabaseClient {
       return { data: null, error: 'Offline or not initialized' };
     }
 
+    let resolvedKelasId = kelasId;
+    const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+    if (resolvedKelasId && !isUuid(resolvedKelasId)) {
+      const classSource = window.classData || window.MASTER_KELAS;
+      if (classSource) {
+        const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, "").toLowerCase() === String(resolvedKelasId).replace(/\s+/g, "").toLowerCase());
+        if (matched && classSource[matched]) {
+          resolvedKelasId = classSource[matched].supabaseId || classSource[matched].id;
+        }
+      }
+      
+      // Fallback: query remote if still not a UUID
+      if (resolvedKelasId && !isUuid(resolvedKelasId)) {
+        try {
+          const { data } = await this.client
+            .from('kelas')
+            .select('id')
+            .eq('nama', resolvedKelasId)
+            .maybeSingle();
+          if (data && data.id) {
+            resolvedKelasId = data.id;
+          }
+        } catch (e) {
+          console.warn('[SupabaseClient] Failed to resolve class UUID for loadPermits:', e);
+        }
+      }
+    }
+
     try {
       const { data, error } = await this.client
         .from('permit')
         .select('*')
-        .eq('kelas_id', kelasId)
+        .eq('kelas_id', resolvedKelasId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
       console.error('[SupabaseClient] Load permits error:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
+   * Load tahfizh records for a class or student
+   */
+  async loadTahfizh(kelasId, studentId = null) {
+    if (!this.client || !this.isOnline) {
+      return { data: null, error: 'Offline or not initialized' };
+    }
+
+    try {
+      let resolvedKelasId = kelasId;
+      const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+      if (resolvedKelasId && isUuid(resolvedKelasId)) {
+        const classSource = window.classData || window.MASTER_KELAS;
+        if (classSource) {
+          const foundKey = Object.keys(classSource).find(k => {
+            const val = classSource[k];
+            return val.supabaseId === resolvedKelasId || val.id === resolvedKelasId;
+          });
+          if (foundKey) {
+            resolvedKelasId = foundKey;
+          }
+        }
+      }
+
+      let query = this.client.from('tahfizh_record').select('*');
+      if (studentId) {
+        query = query.eq('santri_id', studentId);
+      } else {
+        query = query.eq('kelas', resolvedKelasId);
+      }
+      
+      const { data, error } = await query.order('tanggal', { ascending: false });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('[SupabaseClient] Load tahfizh error:', error);
       return { data: null, error };
     }
   }

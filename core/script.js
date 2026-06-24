@@ -555,8 +555,10 @@ window.syncRoleModeUI = function () {
   if (isWali) {
     if (window.loadWaliPermitHistory) window.loadWaliPermitHistory();
     if (window.cleanupPermitRequestListener) window.cleanupPermitRequestListener();
+    if (window.stopApprovalPolling) window.stopApprovalPolling();
   } else {
     if (window.initPermitRequestListener) window.initPermitRequestListener();
+    if (window.startApprovalPolling) window.startApprovalPolling();
   }
 
   // Fetch notifications for the active role

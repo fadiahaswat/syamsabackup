@@ -149,6 +149,26 @@ class HybridStorageManager {
     }
   }
 
+  /**
+   * Refresh approval widget and show notification banner
+   */
+  _refreshApprovalWidget() {
+    // Reload musyrif requests
+    if (typeof window.loadMusyrifRequests === 'function') {
+      window.loadMusyrifRequests();
+    }
+
+    // Show approval banner at top of screen if not already visible
+    const banner = document.getElementById("musyrif-approval-banner");
+    if (banner) {
+      banner.classList.remove("hidden");
+      // Auto-hide after 10 seconds
+      setTimeout(() => {
+        banner.classList.add("hidden");
+      }, 10000);
+    }
+  }
+
   _refreshUI(source = 'cloud_sync') {
     // Trigger global refresh callbacks
     if (this.onDataUpdate) {
@@ -325,6 +345,12 @@ class HybridStorageManager {
       console.log('[HybridStorageManager] Realtime permit change:', payload);
       this._handleRealtimePermitChange(payload);
     };
+
+    // Handle realtime tahfizh changes
+    this.remote.onTahfizhChange = (payload) => {
+      console.log('[HybridStorageManager] Realtime tahfizh change:', payload);
+      this._handleRealtimeTahfizhChange(payload);
+    };
   }
 
   /**
@@ -337,8 +363,18 @@ class HybridStorageManager {
     }
 
     try {
-      await this.remote.subscribeToRealtime(this.kelasId);
-      console.log('[HybridStorageManager] Subscribed to realtime for kelas:', this.kelasId);
+      // Resolve class UUID if it's a class name
+      let resolvedKelasUuid = null;
+      const classSource = window.classData || window.MASTER_KELAS;
+      if (classSource) {
+        const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, "").toLowerCase() === String(this.kelasId).replace(/\s+/g, "").toLowerCase());
+        if (matched && classSource[matched]) {
+          resolvedKelasUuid = classSource[matched].supabaseId || classSource[matched].id;
+        }
+      }
+
+      await this.remote.subscribeToRealtime(this.kelasId, resolvedKelasUuid);
+      console.log('[HybridStorageManager] Subscribed to realtime for kelas:', this.kelasId, 'UUID:', resolvedKelasUuid);
     } catch (error) {
       console.error('[HybridStorageManager] Failed to subscribe to realtime:', error);
     }
@@ -426,9 +462,9 @@ class HybridStorageManager {
         if (eventType === 'INSERT' && currentRecipient.type === 'musyrif' && permit.status === 'pending') {
           const studentName = permit.nama || 'Santri';
           const categoryLabel = permit.category === 'sakit' ? 'Sakit' : permit.category === 'izin' ? 'Izin' : 'Pulang';
-          
+
           console.log(`[HybridStorageManager] New permit request detected, sending local notification for: ${studentName}`);
-          
+
           if (typeof window.sendLocalNotification === 'function') {
             window.sendLocalNotification(
               "Pengajuan Izin Baru 📝",
@@ -440,6 +476,9 @@ class HybridStorageManager {
           if (window.showToast) {
             window.showToast(`Izin Baru: ${studentName} mengajukan ${categoryLabel}`, 'info');
           }
+
+          // Refresh approval widget and show banner
+          this._refreshApprovalWidget();
         }
       }
 
@@ -455,6 +494,114 @@ class HybridStorageManager {
 
     // Trigger UI refresh
     this._refreshUI('realtime');
+  }
+
+  _handleRealtimeTahfizhChange(payload) {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+
+    if (eventType === 'INSERT' || eventType === 'UPDATE') {
+      this._mergeTahfizhData([newRecord]);
+      
+      // Notify Wali of new setoran verified or input by Musyrif
+      const currentRecipient = window.getNotificationRecipientInfo?.() || {};
+      if (eventType === 'INSERT' && currentRecipient.type === 'wali' && newRecord.status === 'Verified') {
+        const studentNis = String(newRecord.santri_id || '');
+        if (studentNis === currentRecipient.id) {
+          const juzLabel = newRecord.juz ? `Juz ${newRecord.juz}` : '';
+          const suratLabel = newRecord.surat ? `Surat ${newRecord.surat}` : '';
+          const detail = [juzLabel, suratLabel].filter(Boolean).join(', ');
+          
+          if (typeof window.sendLocalNotification === 'function') {
+            window.sendLocalNotification(
+              "Setoran Tahfizh Masuk 📖",
+              `Ananda ${newRecord.nama_santri} menyetorkan hafalan baru (${newRecord.jenis || 'Ziyadah'}): ${detail}`,
+              "tahfizh"
+            );
+          }
+          
+          if (window.showToast) {
+            window.showToast(`Setoran Baru: ${newRecord.nama_santri} - ${newRecord.jenis || 'Ziyadah'} ${detail}`, 'success');
+          }
+        }
+      }
+    }
+
+    if (eventType === 'DELETE') {
+      const recordId = oldRecord.id;
+      try {
+        const parts = recordId.split('_');
+        if (parts.length >= 3) {
+          const rowNumber = Number(parts[parts.length - 1]);
+          const localSetoranStr = localStorage.getItem('tahfizh_local_setoran');
+          if (localSetoranStr) {
+            let list = JSON.parse(localSetoranStr);
+            list = list.filter(r => r.rowNumber !== rowNumber);
+            localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+            if (typeof reloadTahfizhData === 'function') {
+              reloadTahfizhData();
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[HybridStorageManager] Failed to delete local tahfizh record:', e);
+      }
+    }
+  }
+
+  _mergeTahfizhData(cloudRecords) {
+    if (!cloudRecords || cloudRecords.length === 0) return;
+
+    try {
+      const localSetoranStr = localStorage.getItem('tahfizh_local_setoran');
+      let localRecords = localSetoranStr ? JSON.parse(localSetoranStr) : [];
+
+      const getUniqueKey = (r) => {
+        const sId = r.santriId || r.santri_id || r.nis || '';
+        const rNum = r.rowNumber || r.row_number || 0;
+        const kl = r.kelas || '';
+        return `${kl}_${sId}_${rNum}`;
+      };
+
+      const localMap = new Map(localRecords.map(r => [getUniqueKey(r), r]));
+
+      cloudRecords.forEach(cr => {
+        const key = getUniqueKey(cr);
+        const mappedRecord = {
+          musyrif: cr.musyrif || '',
+          namaSantri: cr.nama_santri || cr.namaSantri || '',
+          santriId: cr.santri_id || cr.santriId || '',
+          kelas: cr.kelas || '',
+          program: cr.program || '',
+          jenis: cr.jenis || '',
+          juz: cr.juz || '',
+          tanggal: cr.tanggal || '',
+          kualitas: cr.kualitas || 'Lancar',
+          status: cr.status || 'Verified',
+          surat: cr.surat || '',
+          halaman: cr.halaman || '',
+          rowNumber: cr.row_number || cr.rowNumber || 0,
+          synced: true
+        };
+
+        localMap.set(key, mappedRecord);
+      });
+
+      const merged = Array.from(localMap.values());
+      merged.sort((a, b) => {
+        const dateDiff = new Date(b.tanggal || 0) - new Date(a.tanggal || 0);
+        if (dateDiff !== 0) return dateDiff;
+        return (b.rowNumber || 0) - (a.rowNumber || 0);
+      });
+
+      localStorage.setItem('tahfizh_local_setoran', JSON.stringify(merged));
+      console.log('[HybridStorageManager] Merged tahfizh data with local storage, count:', merged.length);
+
+      if (typeof reloadTahfizhData === 'function') {
+        reloadTahfizhData();
+      }
+    } catch (e) {
+      console.warn('[HybridStorageManager] Failed to merge tahfizh data:', e);
+    }
   }
 
   /**
