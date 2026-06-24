@@ -435,51 +435,28 @@ class HybridStorageManager {
     }
 
     try {
-      // Resolve class UUID if it's a class name
-      let resolvedKelasUuid = null;
-      const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      const isUuid = (str) => typeof str === 'string' && str.length > 30 && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
-      // Step 1: Check if kelasId itself is a UUID
+      // Resolve class UUID — only from cache, no Supabase kelas table query
+      // (kelas table query returns 400 — column name mismatch or table missing)
+      let resolvedKelasUuid = null;
+
       if (isUuid(this.kelasId)) {
         resolvedKelasUuid = this.kelasId;
       } else {
-        // Step 2: Look up in MASTER_KELAS cache
         const classSource = window.classData || window.MASTER_KELAS;
         if (classSource) {
           const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, '').toLowerCase() === String(this.kelasId).replace(/\s+/g, '').toLowerCase());
           if (matched && classSource[matched]) {
-            resolvedKelasUuid = classSource[matched].supabaseId || classSource[matched].id;
+            const uuid = classSource[matched].supabaseId || classSource[matched].id;
+            if (isUuid(uuid)) resolvedKelasUuid = uuid;
           }
         }
+      }
 
-        // Step 3: Fallback — query Supabase kelas table directly (same as loadPermits does)
-        if (!resolvedKelasUuid && this.remote && this.remote.client) {
-          console.log('[HybridStorageManager] UUID not in cache, querying Supabase kelas table for:', this.kelasId);
-          try {
-            const { data } = await this.remote.client
-              .from('kelas')
-              .select('id')
-              .eq('nama', this.kelasId)
-              .maybeSingle();
-            if (data && data.id) {
-              resolvedKelasUuid = data.id;
-              console.log('[HybridStorageManager] Resolved kelas UUID from DB:', resolvedKelasUuid);
-              // Cache it in MASTER_KELAS for future use
-              const classSource = window.classData || window.MASTER_KELAS;
-              if (classSource) {
-                const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, '').toLowerCase() === String(this.kelasId).replace(/\s+/g, '').toLowerCase());
-                if (matched && classSource[matched]) {
-                  classSource[matched].supabaseId = resolvedKelasUuid;
-                  classSource[matched].id = resolvedKelasUuid;
-                  // Update localStorage cache
-                  try { localStorage.setItem('cache_data_kelas', JSON.stringify(classSource)); } catch(e) {}
-                }
-              }
-            }
-          } catch (e) {
-            console.warn('[HybridStorageManager] Failed to resolve UUID from Supabase:', e);
-          }
-        }
+      if (!resolvedKelasUuid) {
+        console.warn('[HybridStorageManager] Permit UUID not resolvable for class:', this.kelasId,
+          '— permit realtime subscription unavailable. Updates will arrive via notification channel.');
       }
 
       await this.remote.subscribeToRealtime(this.kelasId, resolvedKelasUuid);
@@ -488,6 +465,7 @@ class HybridStorageManager {
       console.error('[HybridStorageManager] Failed to subscribe to realtime:', error);
     }
   }
+
 
   /**
    * Unsubscribe from realtime changes
@@ -1246,41 +1224,22 @@ class HybridStorageManager {
         }
       }
 
-      // Step 2: Fallback — query Supabase kelas table
-      if (!isUuid(kelasId) && this.remote && this.remote.client) {
-        console.log('[HybridStorageManager] _syncPermit: Resolving kelas UUID for:', kelasId);
-        try {
-          const { data } = await this.remote.client
-            .from('kelas')
-            .select('id')
-            .eq('nama', kelasId)
-            .maybeSingle();
-          if (data && data.id) {
-            kelasId = data.id;
-            console.log('[HybridStorageManager] _syncPermit: Resolved kelas UUID:', kelasId);
-            // Cache for future use
-            const classSource = window.classData || window.MASTER_KELAS;
-            if (classSource) {
-              const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, '').toLowerCase() === String(this.kelasId || '').replace(/\s+/g, '').toLowerCase());
-              if (matched && classSource[matched]) {
-                classSource[matched].supabaseId = kelasId;
-                classSource[matched].id = kelasId;
-                try { localStorage.setItem('cache_data_kelas', JSON.stringify(classSource)); } catch(e) {}
-              }
-            }
-          } else {
-            console.warn('[HybridStorageManager] _syncPermit: Could not resolve UUID for kelas:', kelasId, '— sync may fail');
-          }
-        } catch (e) {
-          console.warn('[HybridStorageManager] _syncPermit: UUID lookup failed:', e);
-        }
+      // Step 2: If UUID still not resolved, use null for kelas_id
+      // The permit will still be saved and can be queried by NIS (loadPermits fallback)
+      if (!isUuid(kelasId)) {
+        console.warn('[HybridStorageManager] _syncPermit: Cannot resolve UUID for kelas:', kelasId, '— will save with kelas_id=null');
+        kelasId = null;
       }
     }
+
+    // Store text kelas name for reference even when UUID is unavailable
+    const kelasNama = this.kelasId || permit.kelas || permit.kelas_id || (typeof appState !== 'undefined' ? appState.waliKelas : null);
 
     // Transform to remote format
     const remotePermit = {
       id: permitId,
-      kelas_id: kelasId,
+      kelas_id: isUuid(kelasId) ? kelasId : null,  // null if UUID not resolved (avoids FK violation)
+      kelas_nama: typeof kelasNama === 'string' && !isUuid(kelasNama) ? kelasNama : null,
       student_id: permit.studentId || permit.nis,
       nis: permit.nis,
       category: permit.category,

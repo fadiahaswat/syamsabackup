@@ -496,56 +496,74 @@ class SupabaseClient {
       return { data: null, error: 'Offline or not initialized' };
     }
 
+    const isUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+    // === Strategy 1: Try to resolve UUID and query by kelas_id ===
     let resolvedKelasId = kelasId;
-    const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
     if (resolvedKelasId && !isUuid(resolvedKelasId)) {
+      // Look up in MASTER_KELAS cache (only use if it's a real UUID, not empty string)
       const classSource = window.classData || window.MASTER_KELAS;
       if (classSource) {
-        const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, "").toLowerCase() === String(resolvedKelasId).replace(/\s+/g, "").toLowerCase());
+        const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, '').toLowerCase() === String(resolvedKelasId).replace(/\s+/g, '').toLowerCase());
         if (matched && classSource[matched]) {
-          resolvedKelasId = classSource[matched].supabaseId || classSource[matched].id;
-        }
-      }
-      
-      // Fallback: query remote if still not a UUID
-      if (resolvedKelasId && !isUuid(resolvedKelasId)) {
-        console.log('[SupabaseClient] loadPermits: UUID not in cache, querying kelas table for:', resolvedKelasId);
-        try {
-          const { data } = await this.client
-            .from('kelas')
-            .select('id')
-            .eq('nama', resolvedKelasId)
-            .maybeSingle();
-          if (data && data.id) {
-            resolvedKelasId = data.id;
-            console.log('[SupabaseClient] loadPermits: Resolved UUID from DB:', resolvedKelasId);
-          } else {
-            console.warn('[SupabaseClient] loadPermits: No kelas record found for nama:', resolvedKelasId);
-          }
-        } catch (e) {
-          console.warn('[SupabaseClient] Failed to resolve class UUID for loadPermits:', e);
+          const uuid = classSource[matched].supabaseId || classSource[matched].id;
+          if (isUuid(uuid)) resolvedKelasId = uuid; // Only assign if it's actually a UUID
         }
       }
     }
 
-    console.log('[SupabaseClient] loadPermits: Querying permit table with kelas_id:', resolvedKelasId);
-    try {
-      const { data, error } = await this.client
-        .from('permit')
-        .select('*')
-        .eq('kelas_id', resolvedKelasId)
-        .order('created_at', { ascending: false });
+    if (isUuid(resolvedKelasId)) {
+      console.log('[SupabaseClient] loadPermits: Querying permit table with kelas_id UUID:', resolvedKelasId);
+      try {
+        const { data, error } = await this.client
+          .from('permit')
+          .select('*')
+          .eq('kelas_id', resolvedKelasId)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      console.log('[SupabaseClient] loadPermits: Found', data ? data.length : 0, 'permits');
-      return { data, error: null };
-    } catch (error) {
-      console.error('[SupabaseClient] Load permits error:', error);
-      return { data: null, error };
+        if (!error && data) {
+          console.log('[SupabaseClient] loadPermits: Found', data.length, 'permits by kelas UUID');
+          return { data, error: null };
+        }
+      } catch (e) {
+        console.warn('[SupabaseClient] loadPermits: UUID query failed, trying NIS fallback:', e);
+      }
     }
 
+    // === Strategy 2: Fallback — Query by student NIS list ===
+    // This bypasses the kelas UUID requirement entirely.
+    // Works for both musyrif (FILTERED_SANTRI) and wali (waliSantri) modes.
+    const santriList = (() => {
+      const filtered = typeof window.FILTERED_SANTRI !== 'undefined' ? window.FILTERED_SANTRI : [];
+      const waliSantri = typeof appState !== 'undefined' && appState.waliSantri ? [appState.waliSantri] : [];
+      const source = filtered.length > 0 ? filtered : waliSantri;
+      return source.map(s => String(s.nis || s.id || '')).filter(Boolean);
+    })();
+
+    if (santriList.length > 0) {
+      console.log('[SupabaseClient] loadPermits: Querying by NIS list (', santriList.length, 'students) for class:', kelasId);
+      try {
+        const { data, error } = await this.client
+          .from('permit')
+          .select('*')
+          .in('nis', santriList)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        console.log('[SupabaseClient] loadPermits: Found', data ? data.length : 0, 'permits by NIS');
+        return { data, error: null };
+      } catch (e) {
+        console.error('[SupabaseClient] loadPermits: NIS fallback also failed:', e);
+        return { data: null, error: e };
+      }
+    }
+
+    console.warn('[SupabaseClient] loadPermits: No UUID and no santri list available, returning empty');
+    return { data: [], error: null };
   }
+
+
 
   /**
    * Load tahfizh records for a class or student
