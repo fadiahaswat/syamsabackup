@@ -681,21 +681,68 @@ window.renderAdminPermits = async function () {
     return;
   }
   
+  const searchQuery = (document.getElementById("admin-permit-search")?.value || "").toLowerCase().trim();
+  const statusFilter = document.getElementById("admin-permit-status-filter")?.value || "all";
+  
   tbody.innerHTML = "";
   
-  if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada riwayat perizinan.</td></tr>`;
+  // Filter search and status
+  let filtered = data;
+  
+  if (searchQuery) {
+    filtered = filtered.filter(p => 
+      (p.studentName && p.studentName.toLowerCase().includes(searchQuery)) ||
+      (p.nis && String(p.nis).includes(searchQuery)) ||
+      (p.className && p.className.toLowerCase().includes(searchQuery)) ||
+      (p.tipe_izin && p.tipe_izin.toLowerCase().includes(searchQuery)) ||
+      (p.category && p.category.toLowerCase().includes(searchQuery)) ||
+      (p.keperluan && p.keperluan.toLowerCase().includes(searchQuery)) ||
+      (p.reason && p.reason.toLowerCase().includes(searchQuery))
+    );
+  }
+  
+  if (statusFilter !== "all") {
+    filtered = filtered.filter(p => {
+      const statusLower = String(p.status || "approved").toLowerCase();
+      const isActive = p.is_active !== false;
+      
+      if (statusFilter === "pending") {
+        return statusLower === "pending";
+      } else if (statusFilter === "approved_active") {
+        return statusLower === "approved" && isActive;
+      } else if (statusFilter === "kembali") {
+        return statusLower === "approved" && !isActive;
+      } else if (statusFilter === "rejected") {
+        return statusLower === "rejected";
+      }
+      return true;
+    });
+  }
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada riwayat perizinan ditemukan.</td></tr>`;
     return;
   }
   
-  data.forEach(p => {
-    let statusClass = "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400";
-    if (p.status === "Disetujui" || p.status === "Approved") statusClass = "bg-emerald-50 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400";
-    if (p.status === "Ditolak" || p.status === "Rejected") statusClass = "bg-red-50 text-red-500 dark:bg-red-950/40 dark:text-red-400";
-    if (p.status === "Diajukan" || p.status === "Pending") statusClass = "bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400";
-    if (p.status === "Kembali") statusClass = "bg-blue-50 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400";
+  filtered.slice(0, 100).forEach(p => {
+    const statusLower = String(p.status || "approved").toLowerCase();
+    const isActive = p.is_active !== false;
     
-    const actions = (p.status === "Diajukan" || p.status === "Pending")
+    let displayStatus = "Disetujui";
+    let statusClass = "bg-emerald-50 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400";
+    
+    if (statusLower === "pending") {
+      displayStatus = "Diajukan";
+      statusClass = "bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400";
+    } else if (statusLower === "rejected") {
+      displayStatus = "Ditolak";
+      statusClass = "bg-red-50 text-red-500 dark:bg-red-950/40 dark:text-red-400";
+    } else if (!isActive) {
+      displayStatus = "Kembali";
+      statusClass = "bg-blue-50 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400";
+    }
+    
+    const actions = (statusLower === "pending")
       ? `<div class="flex items-center justify-center gap-1">
           <button onclick="window.approveOrRejectPermit('${p.id}', true)" class="px-2 py-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
           <button onclick="window.approveOrRejectPermit('${p.id}', false)" class="px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600 text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
@@ -709,19 +756,23 @@ window.renderAdminPermits = async function () {
           <div class="text-[9px] text-slate-400 font-mono">${p.nis || '-'}</div>
         </td>
         <td class="p-3 text-slate-600 dark:text-slate-300">${p.className || "-"}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${p.tipe_izin || p.type || "Izin"}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${p.tipe_izin || p.category || "Izin"}</td>
         <td class="p-3 text-slate-500 text-[10px]">
           <div>Mulai: ${p.tanggal_mulai || p.start_date || "-"}</div>
           <div>Selesai: ${p.tanggal_selesai || p.end_date || "-"}</div>
         </td>
         <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${p.keperluan || p.reason || '-'}">${p.keperluan || p.reason || "-"}</td>
         <td class="p-3 text-center">
-          <span class="px-2 py-0.5 rounded text-[10px] font-black ${statusClass}">${p.status || "Diajukan"}</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-black ${statusClass}">${displayStatus}</span>
         </td>
         <td class="p-3 text-center">${actions}</td>
       </tr>
     `;
   });
+  
+  if (filtered.length > 100) {
+    tbody.innerHTML += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">Menampilkan 100 dari ${filtered.length} perizinan. Silakan gunakan pencarian atau filter status untuk lebih spesifik.</td></tr>`;
+  }
   
   if (window.lucide) window.lucide.createIcons();
 };
@@ -732,8 +783,9 @@ window.approveOrRejectPermit = async function (permitId, approved) {
     return;
   }
   
-  const statusStr = approved ? "Disetujui" : "Ditolak";
+  const statusStr = approved ? "approved" : "rejected";
   const actionText = approved ? "menyetujui" : "menolak";
+  const displayStatusStr = approved ? "Disetujui" : "Ditolak";
   
   if (confirm(`Apakah Anda yakin ingin ${actionText} permohonan izin ini?`)) {
     try {
@@ -748,11 +800,11 @@ window.approveOrRejectPermit = async function (permitId, approved) {
         
       if (error) throw error;
       
-      window.showToast(`Izin berhasil di-${statusStr.toLowerCase()}.`, "success");
+      window.showToast(`Izin berhasil di-${displayStatusStr.toLowerCase()}.`, "success");
       
       // Catat ke audit log
       if (window.logActivityAudit) {
-        window.logActivityAudit('Otorisasi Izin', `ID ${permitId}`, `${statusStr} izin santri`);
+        window.logActivityAudit('Otorisasi Izin', `ID ${permitId}`, `${displayStatusStr} izin santri`);
       }
       
       window.renderAdminPermits();
@@ -777,8 +829,15 @@ window.renderAdminDormMonitor = async function () {
   
   tbody.innerHTML = "";
   
-  // Filter yang statusnya disetujui tapi belum kembali (status = "Disetujui" atau status = "Keluar")
-  const activeOut = data.filter(p => p.status === "Disetujui" || p.status === "Keluar");
+  const currentDate = appState.date || new Date().toISOString().split('T')[0];
+  
+  // Filter yang statusnya disetujui (approved) dan belum kembali (is_active !== false) dan sudah mulai masuk rentang izin (currentDate >= start_date)
+  const activeOut = data.filter(p => {
+    const statusLower = String(p.status || "approved").toLowerCase();
+    const isActive = p.is_active !== false;
+    const hasStarted = p.start_date && currentDate >= p.start_date;
+    return statusLower === "approved" && isActive && hasStarted;
+  });
   
   if (activeOut.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tidak ada santri di luar asrama.</td></tr>`;
@@ -786,6 +845,15 @@ window.renderAdminDormMonitor = async function () {
   }
   
   activeOut.forEach(p => {
+    const start = new Date(p.start_date);
+    const end = p.end_date ? new Date(p.end_date) : null;
+    let durationText = "-";
+    if (end) {
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      durationText = `${diffDays} Hari`;
+    }
+    
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
         <td class="p-3">
@@ -797,7 +865,10 @@ window.renderAdminDormMonitor = async function () {
         <td class="p-3 text-slate-600 dark:text-slate-300 font-mono text-[11px]">${p.tanggal_selesai || p.end_date || "-"}</td>
         <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${p.keperluan || p.reason || '-'}">${p.keperluan || p.reason || "-"}</td>
         <td class="p-3 text-center">
-          <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400">Keluar</span>
+          <div class="flex items-center justify-center gap-1.5">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">${durationText}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400">Keluar</span>
+          </div>
         </td>
       </tr>
     `;

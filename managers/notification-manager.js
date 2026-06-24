@@ -861,6 +861,8 @@ window.addNotification = async function (recipientType, recipientId, title, body
       );
       await Promise.all(promises);
       return;
+    } else if (emails.length === 1) {
+      recipientId = emails[0];
     }
   }
 

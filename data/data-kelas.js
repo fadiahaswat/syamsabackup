@@ -13,10 +13,9 @@ async function loadClassData() {
       console.log("✅ Data Kelas dimuat dari cache lokal.");
       
       // Auto-update global state & UI dropdown dari cache segera
+      window.MASTER_KELAS = window.classData;
       if (typeof MASTER_KELAS !== "undefined") {
         MASTER_KELAS = window.classData;
-      } else {
-        window.MASTER_KELAS = window.classData;
       }
       if (window.populateClassDropdown) {
         window.populateClassDropdown();
@@ -58,10 +57,9 @@ async function loadClassData() {
     );
 
     // Auto-update global state & UI dropdown jika sudah terunduh
+    window.MASTER_KELAS = window.classData;
     if (typeof MASTER_KELAS !== "undefined") {
       MASTER_KELAS = window.classData;
-    } else {
-      window.MASTER_KELAS = window.classData;
     }
     if (window.populateClassDropdown) {
       window.populateClassDropdown();
@@ -97,10 +95,9 @@ async function fetchClassBackground() {
 
     window.classData = newData;
     // Auto-update global state & UI dropdown saat background update selesai
+    window.MASTER_KELAS = newData;
     if (typeof MASTER_KELAS !== "undefined") {
       MASTER_KELAS = newData;
-    } else {
-      window.MASTER_KELAS = newData;
     }
     if (window.populateClassDropdown) {
       window.populateClassDropdown();
