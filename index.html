@@ -6627,59 +6627,63 @@
         // Format dengan leading zero
         const pad = (n) => n.toString().padStart(2, '0');
 
-        // Update Wali countdown (id utama)
-        const daysEl = document.getElementById('countdown-days');
-        const hoursEl = document.getElementById('countdown-hours');
-        const minutesEl = document.getElementById('countdown-minutes');
-        const secondsEl = document.getElementById('countdown-seconds');
+        // Update countdown elements (both widgets share the same values)
+        const updateEl = (id, value) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = pad(value);
+        };
 
-        if (daysEl) daysEl.textContent = pad(days);
-        if (hoursEl) hoursEl.textContent = pad(hours);
-        if (minutesEl) minutesEl.textContent = pad(minutes);
-        if (secondsEl) secondsEl.textContent = pad(seconds);
+        updateEl('countdown-days', days);
+        updateEl('countdown-hours', hours);
+        updateEl('countdown-minutes', minutes);
+        updateEl('countdown-seconds', seconds);
 
-        // Update Musyrif countdown
-        const daysElM = document.getElementById('countdown-days-musyrif');
-        const hoursElM = document.getElementById('countdown-hours-musyrif');
-        const minutesElM = document.getElementById('countdown-minutes-musyrif');
-        const secondsElM = document.getElementById('countdown-seconds-musyrif');
-
-        if (daysElM) daysElM.textContent = pad(days);
-        if (hoursElM) hoursElM.textContent = pad(hours);
-        if (minutesElM) minutesElM.textContent = pad(minutes);
-        if (secondsElM) secondsElM.textContent = pad(seconds);
+        updateEl('countdown-days-musyrif', days);
+        updateEl('countdown-hours-musyrif', hours);
+        updateEl('countdown-minutes-musyrif', minutes);
+        updateEl('countdown-seconds-musyrif', seconds);
       }
 
       // Run immediately then every second
       updateCountdown();
       setInterval(updateCountdown, 1000);
 
-      // Show/hide countdown based on role (handle role switching)
+      // Show/hide countdown based on body class (matching app's role system)
       function updateCountdownVisibility() {
         const widget = document.getElementById('countdown-libur-widget');
         const musyrifWidget = document.getElementById('countdown-libur-musyrif');
-        const isWali = localStorage.getItem('userRole') === 'wali';
-        const isMusyrif = localStorage.getItem('userRole') === 'musyrif' || localStorage.getItem('userRole') === 'musyrif_full';
+        const body = document.body;
+        const isWali = body.classList.contains('wali-mode');
+        const isAdmin = body.classList.contains('admin-mode');
 
+        // Widget utama: tampil untuk Wali & Musyrif (tidak untuk Admin)
         if (widget) {
-          widget.classList.toggle('hidden', !isWali && !isMusyrif);
+          if (isAdmin) {
+            widget.classList.add('hidden');
+          } else {
+            widget.classList.remove('hidden');
+          }
         }
+
+        // Widget Musyrif: tampil hanya untuk Musyrif
         if (musyrifWidget) {
-          musyrifWidget.classList.toggle('hidden', !isMusyrif);
+          if (isWali || isAdmin) {
+            musyrifWidget.classList.add('hidden');
+          } else {
+            musyrifWidget.classList.remove('hidden');
+          }
         }
       }
 
       // Run on load
       updateCountdownVisibility();
 
-      // Listen for role changes (if there's an event)
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'userRole') {
-          updateCountdownVisibility();
-        }
+      // Listen for class changes on body (role switching)
+      const observer = new MutationObserver(() => {
+        updateCountdownVisibility();
       });
 
-      // Also expose for manual calls
+      // Expose for manual calls
       window.refreshCountdownVisibility = updateCountdownVisibility;
     </script>
 
