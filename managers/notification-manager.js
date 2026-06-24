@@ -1246,16 +1246,32 @@ if (window.supabaseClient) {
       // Untuk notifikasi permit di Musyrif - refresh widget approval
       if (payload.new.type === 'permit' && currentRecipient.type === 'musyrif') {
         console.log('[NotificationManager] Permit notification for musyrif, refreshing widget...');
-        // Refresh approval widget to show new pending request
-        if (typeof window.loadMusyrifRequests === 'function') {
-          window.loadMusyrifRequests();
-        } else {
-          console.log('[NotificationManager] window.loadMusyrifRequests not available!');
-        }
-        // Show toast
+        // Show toast immediately
         window.showToast?.(`Pengajuan Izin Baru: ${payload.new.title}`, 'info');
         if (typeof window.sendLocalNotification === 'function') {
           window.sendLocalNotification(payload.new.title, payload.new.body, payload.new.type || 'info');
+        }
+        // Fetch permit data from cloud first, then refresh widget
+        if (window.hybridStorageManager && typeof window.hybridStorageManager.loadPermits === 'function') {
+          window.hybridStorageManager.loadPermits().then(permits => {
+            if (permits && permits.length > 0) {
+              appState.permits = permits;
+              localStorage.setItem('musyrif_permits_db', JSON.stringify(permits));
+              console.log('[NotificationManager] Permits refreshed from cloud:', permits.length);
+            }
+            if (typeof window.loadMusyrifRequests === 'function') {
+              window.loadMusyrifRequests();
+            }
+          }).catch(() => {
+            // Fallback: just call loadMusyrifRequests
+            if (typeof window.loadMusyrifRequests === 'function') {
+              window.loadMusyrifRequests();
+            }
+          });
+        } else {
+          if (typeof window.loadMusyrifRequests === 'function') {
+            window.loadMusyrifRequests();
+          }
         }
         return;
       }

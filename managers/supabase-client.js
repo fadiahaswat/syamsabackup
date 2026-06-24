@@ -510,6 +510,7 @@ class SupabaseClient {
       
       // Fallback: query remote if still not a UUID
       if (resolvedKelasId && !isUuid(resolvedKelasId)) {
+        console.log('[SupabaseClient] loadPermits: UUID not in cache, querying kelas table for:', resolvedKelasId);
         try {
           const { data } = await this.client
             .from('kelas')
@@ -518,6 +519,9 @@ class SupabaseClient {
             .maybeSingle();
           if (data && data.id) {
             resolvedKelasId = data.id;
+            console.log('[SupabaseClient] loadPermits: Resolved UUID from DB:', resolvedKelasId);
+          } else {
+            console.warn('[SupabaseClient] loadPermits: No kelas record found for nama:', resolvedKelasId);
           }
         } catch (e) {
           console.warn('[SupabaseClient] Failed to resolve class UUID for loadPermits:', e);
@@ -525,6 +529,7 @@ class SupabaseClient {
       }
     }
 
+    console.log('[SupabaseClient] loadPermits: Querying permit table with kelas_id:', resolvedKelasId);
     try {
       const { data, error } = await this.client
         .from('permit')
@@ -533,11 +538,13 @@ class SupabaseClient {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('[SupabaseClient] loadPermits: Found', data ? data.length : 0, 'permits');
       return { data, error: null };
     } catch (error) {
       console.error('[SupabaseClient] Load permits error:', error);
       return { data: null, error };
     }
+
   }
 
   /**

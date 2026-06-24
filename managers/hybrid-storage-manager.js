@@ -112,6 +112,12 @@ class HybridStorageManager {
       supabaseConfigured: this.supabaseConfigured,
       isOnline: this.isOnline,
     });
+
+    // Re-sync any pending permits that are in localStorage but not in the sync queue
+    // This fixes permits that failed silently due to UUID mismatch or were submitted offline
+    if (this.isOnline && this.supabaseConfigured && this.mode !== 'local-only') {
+      setTimeout(() => this._resyncPendingPermits(), 3000);
+    }
   }
 
   /**
@@ -132,12 +138,18 @@ class HybridStorageManager {
       }
 
       // Download permits
+      console.log('[HybridStorageManager] Downloading permits for kelasId:', this.kelasId);
       const { data: permitsData, error: permitError } = await this.remote.loadPermits(this.kelasId);
       if (permitError) {
         console.warn('[HybridStorageManager] Download permits error:', permitError);
-      } else if (permitsData && permitsData.length > 0) {
-        console.log('[HybridStorageManager] Downloaded', permitsData.length, 'permits from cloud');
-        await this._mergePermitsData(permitsData);
+      } else {
+        console.log('[HybridStorageManager] Permits download result: count =', permitsData ? permitsData.length : 0);
+        if (permitsData && permitsData.length > 0) {
+          console.log('[HybridStorageManager] Downloaded', permitsData.length, 'permits from cloud');
+          await this._mergePermitsData(permitsData);
+        } else {
+          console.log('[HybridStorageManager] No permits found in cloud for this class');
+        }
       }
 
       // Trigger UI refresh
@@ -146,6 +158,50 @@ class HybridStorageManager {
       console.log('[HybridStorageManager] Cloud data download complete');
     } catch (error) {
       console.error('[HybridStorageManager] Cloud download failed:', error);
+    }
+  }
+
+  /**
+   * Re-sync permits from localStorage that are not yet in Supabase.
+   * This handles permits submitted when offline, or when sync failed due to UUID mismatch.
+   */
+  async _resyncPendingPermits() {
+    if (!this.queue || !this.remote || !this.remote.client) return;
+
+    const isWali = typeof appState !== 'undefined' && appState.waliMode;
+
+    // Only run for wali mode OR when queue is empty but local permits exist
+    const localPermits = (typeof appState !== 'undefined' ? appState.permits : null) || [];
+    const pendingLocal = localPermits.filter(p => p && p.status === 'pending');
+
+    if (pendingLocal.length === 0) return;
+
+    console.log('[HybridStorageManager] _resyncPendingPermits: Found', pendingLocal.length, 'pending permits in localStorage');
+
+    // Check which ones are already in the sync queue (avoid re-adding)
+    let queuedIds = new Set();
+    try {
+      const pending = await this.queue.getPending(200);
+      pending.forEach(c => { if (c.entityType === 'permit') queuedIds.add(String(c.entityId)); });
+    } catch(e) {}
+
+    // Re-queue permits that are not in the sync queue
+    let requeued = 0;
+    for (const permit of pendingLocal) {
+      if (!queuedIds.has(String(permit.id))) {
+        console.log('[HybridStorageManager] _resyncPendingPermits: Re-queuing permit:', permit.id);
+        try {
+          await this.queue.addPermitChange(permit);
+          requeued++;
+        } catch(e) {
+          console.warn('[HybridStorageManager] _resyncPendingPermits: Failed to re-queue:', permit.id, e);
+        }
+      }
+    }
+
+    if (requeued > 0) {
+      console.log('[HybridStorageManager] _resyncPendingPermits: Re-queued', requeued, 'permits, processing queue...');
+      this._processQueue();
     }
   }
 
@@ -381,11 +437,48 @@ class HybridStorageManager {
     try {
       // Resolve class UUID if it's a class name
       let resolvedKelasUuid = null;
-      const classSource = window.classData || window.MASTER_KELAS;
-      if (classSource) {
-        const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, "").toLowerCase() === String(this.kelasId).replace(/\s+/g, "").toLowerCase());
-        if (matched && classSource[matched]) {
-          resolvedKelasUuid = classSource[matched].supabaseId || classSource[matched].id;
+      const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+      // Step 1: Check if kelasId itself is a UUID
+      if (isUuid(this.kelasId)) {
+        resolvedKelasUuid = this.kelasId;
+      } else {
+        // Step 2: Look up in MASTER_KELAS cache
+        const classSource = window.classData || window.MASTER_KELAS;
+        if (classSource) {
+          const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, '').toLowerCase() === String(this.kelasId).replace(/\s+/g, '').toLowerCase());
+          if (matched && classSource[matched]) {
+            resolvedKelasUuid = classSource[matched].supabaseId || classSource[matched].id;
+          }
+        }
+
+        // Step 3: Fallback — query Supabase kelas table directly (same as loadPermits does)
+        if (!resolvedKelasUuid && this.remote && this.remote.client) {
+          console.log('[HybridStorageManager] UUID not in cache, querying Supabase kelas table for:', this.kelasId);
+          try {
+            const { data } = await this.remote.client
+              .from('kelas')
+              .select('id')
+              .eq('nama', this.kelasId)
+              .maybeSingle();
+            if (data && data.id) {
+              resolvedKelasUuid = data.id;
+              console.log('[HybridStorageManager] Resolved kelas UUID from DB:', resolvedKelasUuid);
+              // Cache it in MASTER_KELAS for future use
+              const classSource = window.classData || window.MASTER_KELAS;
+              if (classSource) {
+                const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, '').toLowerCase() === String(this.kelasId).replace(/\s+/g, '').toLowerCase());
+                if (matched && classSource[matched]) {
+                  classSource[matched].supabaseId = resolvedKelasUuid;
+                  classSource[matched].id = resolvedKelasUuid;
+                  // Update localStorage cache
+                  try { localStorage.setItem('cache_data_kelas', JSON.stringify(classSource)); } catch(e) {}
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[HybridStorageManager] Failed to resolve UUID from Supabase:', e);
+          }
         }
       }
 
@@ -1138,10 +1231,56 @@ class HybridStorageManager {
     // Generate ID if missing
     const permitId = permit.id || `permit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Resolve kelas UUID (CRITICAL: permit table kelas_id column is UUID type, not text)
+    const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    let kelasId = this.kelasId || permit.kelas_id || permit.kelas || (typeof appState !== 'undefined' ? appState.waliKelas : null);
+
+    if (kelasId && !isUuid(kelasId)) {
+      // Step 1: Look up in MASTER_KELAS cache
+      const classSource = window.classData || window.MASTER_KELAS;
+      if (classSource) {
+        const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, '').toLowerCase() === String(kelasId).replace(/\s+/g, '').toLowerCase());
+        if (matched && classSource[matched]) {
+          const uuid = classSource[matched].supabaseId || classSource[matched].id;
+          if (isUuid(uuid)) kelasId = uuid;
+        }
+      }
+
+      // Step 2: Fallback — query Supabase kelas table
+      if (!isUuid(kelasId) && this.remote && this.remote.client) {
+        console.log('[HybridStorageManager] _syncPermit: Resolving kelas UUID for:', kelasId);
+        try {
+          const { data } = await this.remote.client
+            .from('kelas')
+            .select('id')
+            .eq('nama', kelasId)
+            .maybeSingle();
+          if (data && data.id) {
+            kelasId = data.id;
+            console.log('[HybridStorageManager] _syncPermit: Resolved kelas UUID:', kelasId);
+            // Cache for future use
+            const classSource = window.classData || window.MASTER_KELAS;
+            if (classSource) {
+              const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, '').toLowerCase() === String(this.kelasId || '').replace(/\s+/g, '').toLowerCase());
+              if (matched && classSource[matched]) {
+                classSource[matched].supabaseId = kelasId;
+                classSource[matched].id = kelasId;
+                try { localStorage.setItem('cache_data_kelas', JSON.stringify(classSource)); } catch(e) {}
+              }
+            }
+          } else {
+            console.warn('[HybridStorageManager] _syncPermit: Could not resolve UUID for kelas:', kelasId, '— sync may fail');
+          }
+        } catch (e) {
+          console.warn('[HybridStorageManager] _syncPermit: UUID lookup failed:', e);
+        }
+      }
+    }
+
     // Transform to remote format
     const remotePermit = {
       id: permitId,
-      kelas_id: this.kelasId || permit.kelas_id || permit.kelas || (typeof appState !== 'undefined' ? appState.waliKelas : null),
+      kelas_id: kelasId,
       student_id: permit.studentId || permit.nis,
       nis: permit.nis,
       category: permit.category,
@@ -1155,7 +1294,7 @@ class HybridStorageManager {
       location: permit.location || permit.destination,
       pickup: permit.pickup,
       vehicle: permit.vehicle,
-      status: permit.status || 'approved',
+      status: permit.status || 'pending',
       status_label: permit.status_label,
       is_active: permit.is_active !== false,
       requires_surat_dokter: permit.requires_surat_dokter || false,
@@ -1165,8 +1304,10 @@ class HybridStorageManager {
       alamat_wali: permit.alamat_wali,
     };
 
+    console.log('[HybridStorageManager] _syncPermit: Upserting permit to Supabase:', permitId, 'kelas_id:', kelasId);
     return this.remote.savePermit(remotePermit);
   }
+
 
   /**
    * Sync settings change
