@@ -25,5 +25,4 @@ Thumbs.db
 # Secrets & Credentials
 .env
 .env.*
-*firebase-adminsdk*.json
 

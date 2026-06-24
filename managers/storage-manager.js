@@ -1,7 +1,7 @@
 /**
- * StorageManager - Pure LocalStorage-based Storage Manager
+ * StorageManager - LocalStorage-based Storage Manager
  *
- * Tidak menggunakan Firebase. Semua data disimpan di localStorage.
+ * Semua data disimpan di localStorage.
  * Data otomatis tersimpan saat berubah (debounced auto-save).
  *
  * Architecture:

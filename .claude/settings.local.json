@@ -45,7 +45,9 @@
       "Bash(curl -sL \"https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec?action=getKelas\" --connect-timeout 15)",
       "Bash(findstr /r \"\\\\\"kelas\\\\\":\\\\\"[0-9]\")",
       "Bash(findstr /v \"kelas_id\")",
-      "Bash(powershell -Command \"\\(curl -sL 'https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec?action=getKelas' | ConvertFrom-Json | Group-Object kelas | Select-Object -ExpandProperty Name\\)\")"
+      "Bash(powershell -Command \"\\(curl -sL 'https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec?action=getKelas' | ConvertFrom-Json | Group-Object kelas | Select-Object -ExpandProperty Name\\)\")",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Remove Firebase references *)"
     ]
   },
   "enabledMcpjsonServers": [

@@ -1,7 +1,6 @@
 /**
  * Service Worker for Syriansa PWA
  * Handles offline caching and Web Push Notifications.
- * No Firebase dependencies.
  */
 
 const CACHE_VERSION = "v249-local-only";
