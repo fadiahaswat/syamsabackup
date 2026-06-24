@@ -687,12 +687,16 @@
       const storedPermits = localStorage.getItem('musyrif_permits_db');
       if (storedPermits) {
         const parsed = JSON.parse(storedPermits);
-        // Merge with existing permits, avoiding duplicates
-        if (Array.isArray(parsed)) {
-          console.log("[PermitRequestManager] Permits from localStorage:", parsed.length);
+        // Support both array format (new) and object format (legacy: {id: permit})
+        const parsedArray = Array.isArray(parsed)
+          ? parsed
+          : (parsed && typeof parsed === 'object' ? Object.values(parsed) : []);
+
+        if (parsedArray.length > 0) {
+          console.log("[PermitRequestManager] Permits from localStorage:", parsedArray.length);
           const existingIds = new Set(permits.map(p => p.id));
-          parsed.forEach(p => {
-            if (!existingIds.has(p.id)) {
+          parsedArray.forEach(p => {
+            if (p && !existingIds.has(p.id)) {
               permits.push(p);
             }
           });

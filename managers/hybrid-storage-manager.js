@@ -851,7 +851,9 @@ class HybridStorageManager {
     }
 
     // 3. Try immediate sync
-    if (this.isOnline && this.supabaseConfigured && this.remote.isAuthenticated()) {
+    // Note: also trigger sync for wali mode since _processQueue() has its own wali bypass check
+    const isWaliSubmit = typeof appState !== 'undefined' && appState.waliMode;
+    if (this.isOnline && this.supabaseConfigured && (this.remote.isAuthenticated() || isWaliSubmit)) {
       this._processQueue();
     }
 
