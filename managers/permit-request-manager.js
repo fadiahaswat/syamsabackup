@@ -163,7 +163,26 @@
 
     // Save via storage manager (unifying with hybrid storage/Supabase Client)
     if (window.hybridStorageManager) {
-      window.hybridStorageManager.savePermit(requestData);
+      // CLOUD-ONLY MODE: Handle errors properly
+      if (window.APP_STORAGE?.mode === 'cloud-only') {
+        try {
+          await window.hybridStorageManager.savePermit(requestData);
+          // Success - no localStorage save needed
+        } catch (cloudError) {
+          console.error('[PermitRequest] Cloud-only save failed:', cloudError);
+          if (cloudError.name === 'CloudOnlyOfflineError') {
+            window.showToast("⚠️ Tidak dapat mengirim saat offline.\nPermohonan tidak akan tersimpan.", "error", true, 5000);
+          } else if (cloudError.name === 'CloudOnlyAuthError') {
+            window.showToast("🔒 Sesi habis. Silakan login kembali.", "error");
+          } else {
+            window.showToast("Gagal mengirim permohonan: " + cloudError.message, "error");
+          }
+          return; // Don't add to local state or localStorage
+        }
+      } else {
+        // Legacy modes
+        window.hybridStorageManager.savePermit(requestData);
+      }
     } else if (window.storageManager) {
       window.storageManager.savePermit(requestData);
     }
@@ -172,14 +191,17 @@
     if (!appState.permits) appState.permits = [];
     appState.permits.push(requestData);
 
-    // Save directly to localStorage with the same key used by polling
-    try {
-      const existingPermits = JSON.parse(localStorage.getItem('musyrif_permits_db') || '[]');
-      existingPermits.push(requestData);
-      localStorage.setItem('musyrif_permits_db', JSON.stringify(existingPermits));
-      console.log("[PermitRequest] Saved directly to localStorage, total permits:", existingPermits.length);
-    } catch (e) {
-      console.warn("[PermitRequest] Error saving to localStorage:", e);
+    // Save directly to localStorage (legacy) - skipped in cloud-only mode
+    // In cloud-only, permit data comes from cloud via realtime/polling
+    if (window.APP_STORAGE?.mode !== 'cloud-only') {
+      try {
+        const existingPermits = JSON.parse(localStorage.getItem('musyrif_permits_db') || '[]');
+        existingPermits.push(requestData);
+        localStorage.setItem('musyrif_permits_db', JSON.stringify(existingPermits));
+        console.log("[PermitRequest] Saved directly to localStorage, total permits:", existingPermits.length);
+      } catch (e) {
+        console.warn("[PermitRequest] Error saving to localStorage:", e);
+      }
     }
 
     // Trigger notification to Musyrif of the class
@@ -546,7 +568,24 @@
 
     // Save changes
     if (window.hybridStorageManager) {
-      window.hybridStorageManager.savePermit(permit);
+      // CLOUD-ONLY MODE: Handle errors properly
+      if (window.APP_STORAGE?.mode === 'cloud-only') {
+        try {
+          await window.hybridStorageManager.savePermit(permit);
+        } catch (cloudError) {
+          console.error('[PermitRequest] Cloud-only save failed:', cloudError);
+          if (cloudError.name === 'CloudOnlyOfflineError') {
+            window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
+          } else if (cloudError.name === 'CloudOnlyAuthError') {
+            window.showToast("🔒 Sesi habis. Silakan login kembali.", "error");
+          } else {
+            window.showToast("Gagal menyimpan: " + cloudError.message, "error");
+          }
+          return;
+        }
+      } else {
+        window.hybridStorageManager.savePermit(permit);
+      }
     } else if (window.storageManager) {
       window.storageManager.savePermit(permit);
     }
@@ -947,7 +986,21 @@
 
       // Save permit
       if (window.hybridStorageManager) {
-        window.hybridStorageManager.savePermit(permit);
+        // CLOUD-ONLY MODE: Handle errors properly
+        if (window.APP_STORAGE?.mode === 'cloud-only') {
+          try {
+            window.hybridStorageManager.savePermit(permit).catch(cloudError => {
+              console.error('[PermitRequest] Cloud-only save failed:', cloudError);
+              if (cloudError.name === 'CloudOnlyOfflineError') {
+                window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
+              }
+            });
+          } catch (cloudError) {
+            // Sync error handled in catch
+          }
+        } else {
+          window.hybridStorageManager.savePermit(permit);
+        }
       } else if (window.storageManager) {
         window.storageManager.savePermit(permit);
       }
@@ -973,7 +1026,21 @@
 
       // Save permit
       if (window.hybridStorageManager) {
-        window.hybridStorageManager.savePermit(permit);
+        // CLOUD-ONLY MODE: Handle errors properly
+        if (window.APP_STORAGE?.mode === 'cloud-only') {
+          try {
+            window.hybridStorageManager.savePermit(permit).catch(cloudError => {
+              console.error('[PermitRequest] Cloud-only save failed:', cloudError);
+              if (cloudError.name === 'CloudOnlyOfflineError') {
+                window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
+              }
+            });
+          } catch (cloudError) {
+            // Sync error handled in catch
+          }
+        } else {
+          window.hybridStorageManager.savePermit(permit);
+        }
       } else if (window.storageManager) {
         window.storageManager.savePermit(permit);
       }

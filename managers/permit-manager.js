@@ -127,18 +127,36 @@ window.updatePermitCount = function () {
 };
 
 window.persistPermits = window.persistPermits || function () {
-  // Always save to localStorage as primary storage
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
+  // CLOUD-ONLY MODE: Skip localStorage, data comes from cloud
+  const isCloudOnly = window.APP_STORAGE?.mode === 'cloud-only';
+
+  if (!isCloudOnly) {
+    // Always save to localStorage as primary storage (legacy modes)
+    localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
+  }
 
   // Use HybridStorageManager if cloud mode is enabled
   if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
-    // Save each permit individually to enable proper sync
-    const permits = appState.permits || [];
-    permits.forEach(permit => {
-      window.hybridStorageManager.savePermit(permit).catch(err => {
-        console.error('[PermitManager] Hybrid save error:', err);
+    if (isCloudOnly) {
+      // CLOUD-ONLY: Direct save, handle errors
+      const permits = appState.permits || [];
+      permits.forEach(permit => {
+        window.hybridStorageManager.savePermit(permit).catch(err => {
+          console.error('[PermitManager] Cloud-only save error:', err);
+          if (err.name === 'CloudOnlyOfflineError') {
+            window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
+          }
+        });
       });
-    });
+    } else {
+      // Legacy modes: save with queue
+      const permits = appState.permits || [];
+      permits.forEach(permit => {
+        window.hybridStorageManager.savePermit(permit).catch(err => {
+          console.error('[PermitManager] Hybrid save error:', err);
+        });
+      });
+    }
   } else if (window.storageManager) {
     // Local-only mode: use traditional storage manager
     window.storageManager.savePermits(appState.permits || []).catch(err => {

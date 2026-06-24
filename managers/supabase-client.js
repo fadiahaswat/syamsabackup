@@ -719,6 +719,29 @@ class SupabaseClient {
   }
 
   /**
+   * Save tahfizh record (upsert)
+   */
+  async saveTahfizh(record) {
+    if (!this.client || !this.isOnline) {
+      return { error: 'Offline or not initialized' };
+    }
+
+    try {
+      const { data, error } = await this.client
+        .from('tahfizh_record')
+        .upsert(record, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('[SupabaseClient] Save tahfizh error:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
    * Save permit (upsert)
    */
   async savePermit(permit) {

@@ -129,13 +129,16 @@ window.APP_CONSTANTS = {
 // ==========================================
 window.APP_STORAGE = {
   // Storage version for future migrations
-  version: 2,
+  version: 3,
 
-  // Storage mode: 'local-only' | 'hybrid' | 'cloud-primary'
+  // Storage mode: 'local-only' | 'hybrid' | 'cloud-primary' | 'cloud-only'
   // 'local-only': Default, no cloud sync (existing behavior)
-  // 'hybrid': Cloud backup + offline-first (recommended)
+  // 'hybrid': Cloud backup + offline-first (recommended for unstable connections)
   // 'cloud-primary': Cloud-first with local cache
-  mode: 'hybrid', // Aktifkan hybrid mode untuk cloud sync
+  // 'cloud-only': CLOUD ONLY - All writes go directly to Supabase, NO localStorage writes
+  //               Offline save attempts are BLOCKED with error message
+  //               localStorage is used as READ-ONLY cache for offline viewing
+  mode: 'cloud-only', // Cloud-only: semua data di Supabase, offline writes diblokir
 
   // Data storage keys
   keys: {
@@ -152,12 +155,22 @@ window.APP_STORAGE = {
     enabled: true
   },
 
+  // Cache configuration (for cloud-only and cloud-primary modes)
+  cache: {
+    // How long cached data is considered fresh (ms), default: 5 minutes
+    staleThresholdMs: 5 * 60 * 1000,
+    // Prefix for cache keys to distinguish from writable storage
+    prefix: 'cache_',
+    // Enable offline read cache
+    enableOfflineRead: true,
+  },
+
   // ==========================================
   // SUPABASE CLOUD STORAGE CONFIG
   // ==========================================
   supabase: {
-    url: 'https://ioyqnmvrnpzdztpkgaxt.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlveXFubXZybnB6ZHp0cGtnYXh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNDk2MjksImV4cCI6MjA5NzcyNTYyOX0.A06ba5XCyR7wU2c67YQjgJ8oG2j2fNnEpdf3zvdkT0Y',
+    url: 'https://ilrpgbrqlfpzvxxbhuhk.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlscnBnYnJxbGZwenZ4eGJodWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDc4MTQsImV4cCI6MjA5Nzg4MzgxNH0.75g3TvrYcRx9CEPB0C8HNadc-zwQPVKuUVOFS-tCLrg',
   },
 
   // Sync configuration

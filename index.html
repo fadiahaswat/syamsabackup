@@ -2277,8 +2277,25 @@
     <span id="profile-role" class="hidden">2 A</span>
 
   </div>
-  
+
 </header>
+
+          <!-- Cloud-Only Offline Banner -->
+          <div id="cloud-only-offline-banner" class="hidden fixed top-16 left-4 right-4 z-50 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-xl shadow-lg animate-slide-up">
+            <div class="flex items-center justify-between max-w-3xl mx-auto">
+              <div class="flex items-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"/>
+                </svg>
+                <span class="text-sm font-medium">⚠️ Mode Offline — Data hanya dapat dilihat, tidak dapat disimpan</span>
+              </div>
+              <button onclick="document.getElementById('cloud-only-offline-banner').classList.add('hidden')" class="text-white/80 hover:text-white transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
 
           <!-- Announcement Banner (Musyrif Only) -->
           <div id="announcement-banner-container" class="musyrif-only hidden animate-slide-up mb-5">

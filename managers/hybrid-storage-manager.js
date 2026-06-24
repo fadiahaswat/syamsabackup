@@ -69,6 +69,40 @@ class HybridStorageManager {
     console.log('[HybridStorageManager] Initializing...');
     this.kelasId = kelasId;
 
+    // CLOUD-ONLY MODE: Use CloudOnlyStorageManager
+    if (this.mode === 'cloud-only') {
+      console.log('[HybridStorageManager] Cloud-only mode detected, using CloudOnlyStorageManager');
+
+      // Create cloud-only storage instance
+      this.cloudOnlyStorage = new CloudOnlyStorageManager(this.remote, this.local, kelasId);
+
+      // Initialize Supabase (required for cloud-only)
+      await this._initRemote();
+
+      // Subscribe to realtime (important for multi-device sync)
+      this._setupRealtimeCallbacks();
+      if (this.supabaseConfigured && this.remote.isInitialized) {
+        await this._subscribeToRealtime();
+      }
+
+      // Download initial data to cache
+      if (this.isOnline && (this.remote.isAuthenticated() || (typeof appState !== 'undefined' && appState.waliMode))) {
+        console.log('[HybridStorageManager] Downloading cloud data to cache...');
+        await this._downloadCloudData();
+      }
+
+      // CLOUD-ONLY: Show offline banner if currently offline
+      this._updateOfflineBannerUI(!this.isOnline);
+
+      this.isInitialized = true;
+      console.log('[HybridStorageManager] Cloud-only mode initialized', {
+        isOnline: this.isOnline,
+        isAuthenticated: this.remote.isAuthenticated(),
+      });
+      return;
+    }
+
+    // LEGACY MODES (local-only, hybrid, cloud-primary)
     // Initialize local storage
     if (this.local) {
       this.local.init(kelasId);
@@ -871,11 +905,27 @@ class HybridStorageManager {
   _setupListeners() {
     window.addEventListener('online', () => {
       this.isOnline = true;
-      console.log('[HybridStorageManager] Online');
+      console.log('[HybridStorageManager] Online, mode:', this.mode);
+
       if (this.onConnectionChange) {
         this.onConnectionChange(true);
       }
-      // Trigger sync when coming online
+
+      if (this.mode === 'cloud-only') {
+        // CLOUD-ONLY: Refresh cache from cloud
+        if (this.isInitialized && this.cloudOnlyStorage) {
+          this._downloadCloudData();
+        }
+        // Re-subscribe to realtime
+        if (this.supabaseConfigured && this.kelasId && this.remote.isInitialized) {
+          this._subscribeToRealtime();
+        }
+        // Trigger UI update for offline banner
+        this._updateOfflineBannerUI(false);
+        return;
+      }
+
+      // LEGACY MODES: Trigger sync when coming online
       if (this.mode !== 'local-only') {
         this._processQueue();
         // Re-subscribe to realtime after coming online
@@ -891,11 +941,23 @@ class HybridStorageManager {
 
     window.addEventListener('offline', () => {
       this.isOnline = false;
-      console.log('[HybridStorageManager] Offline');
+      console.log('[HybridStorageManager] Offline, mode:', this.mode);
+
       if (this.onConnectionChange) {
         this.onConnectionChange(false);
       }
-      // FIX BUG #4: Stop polling when offline
+
+      if (this.mode === 'cloud-only') {
+        // CLOUD-ONLY: Stop polling, realtime will auto-reconnect when online
+        if (typeof window.GlobalPollingManager !== 'undefined') {
+          window.GlobalPollingManager.stop();
+        }
+        // Show offline banner
+        this._updateOfflineBannerUI(true);
+        return;
+      }
+
+      // LEGACY MODES: Stop polling
       if (typeof window.GlobalPollingManager !== 'undefined') {
         window.GlobalPollingManager.stop();
       }
@@ -903,10 +965,34 @@ class HybridStorageManager {
   }
 
   /**
+   * Update offline banner UI for cloud-only mode
+   */
+  _updateOfflineBannerUI(isOffline) {
+    const banner = document.getElementById('cloud-only-offline-banner');
+    if (!banner) return;
+
+    if (isOffline) {
+      banner.classList.remove('hidden');
+    } else {
+      banner.classList.add('hidden');
+    }
+  }
+
+  /**
    * Start auto-sync interval
    * FIX BUG #4: Use GlobalPollingManager if available to avoid duplicate polling
    */
   _startAutoSync() {
+    // CLOUD-ONLY MODE: No sync queue needed, realtime handles real-time sync
+    if (this.mode === 'cloud-only') {
+      console.log('[HybridStorageManager] Cloud-only mode: No sync queue needed, using realtime');
+      // Still start polling as fallback for tahfizh
+      if (typeof window.GlobalPollingManager !== 'undefined') {
+        window.GlobalPollingManager.start();
+      }
+      return;
+    }
+
     // FIX BUG #4: Delegate to GlobalPollingManager if available
     // This prevents duplicate polling between HybridStorageManager and PermitRequestManager
     if (typeof window.GlobalPollingManager !== 'undefined') {
@@ -952,11 +1038,25 @@ class HybridStorageManager {
   // ============================================================
 
   /**
-   * Save attendance data (optimistic update)
+   * Save attendance data
    */
   async saveAttendance(dateKey, slotId, data) {
-    console.log('[HybridStorageManager] Saving attendance:', dateKey, slotId);
+    console.log('[HybridStorageManager] Saving attendance:', dateKey, slotId, 'mode:', this.mode);
 
+    // CLOUD-ONLY MODE: Direct write to Supabase, NO localStorage
+    if (this.mode === 'cloud-only') {
+      if (this.cloudOnlyStorage) {
+        const result = await this.cloudOnlyStorage.saveAttendance(dateKey, slotId, data);
+        if (this.onDataUpdate) {
+          this.onDataUpdate('attendance', dateKey, slotId);
+        }
+        return result;
+      }
+      // Fallback if cloudOnlyStorage not initialized
+      throw new Error('CloudOnlyStorageManager not initialized');
+    }
+
+    // LEGACY MODES (local-only, hybrid, cloud-primary): Optimistic update with queue
     // 1. Always save locally first (instant)
     if (this.local) {
       this.local.saveAttendance(dateKey, slotId, data);
@@ -982,6 +1082,14 @@ class HybridStorageManager {
    * Load attendance data
    */
   async loadAttendance(dateKey) {
+    // CLOUD-ONLY MODE: Use CloudOnlyStorageManager
+    if (this.mode === 'cloud-only') {
+      if (this.cloudOnlyStorage) {
+        return await this.cloudOnlyStorage.loadAttendance(this.kelasId, dateKey);
+      }
+      return {};
+    }
+
     // In hybrid mode, try remote first, fallback to local
     if (this.mode === 'cloud-primary' && this.isOnline && this.supabaseConfigured) {
       try {
@@ -1046,6 +1154,19 @@ class HybridStorageManager {
   async savePermit(permit) {
     console.log('[HybridStorageManager] Saving permit:', permit.id);
 
+    // CLOUD-ONLY MODE: Direct write to Supabase, NO localStorage
+    if (this.mode === 'cloud-only') {
+      if (this.cloudOnlyStorage) {
+        const result = await this.cloudOnlyStorage.savePermit(permit);
+        if (this.onDataUpdate) {
+          this.onDataUpdate('permits');
+        }
+        return result;
+      }
+      throw new Error('CloudOnlyStorageManager not initialized');
+    }
+
+    // LEGACY MODES: Save locally + queue for sync
     // 1. Save locally first
     if (this.local) {
       this.local.savePermit(permit);
@@ -1075,6 +1196,19 @@ class HybridStorageManager {
   async deletePermit(permitId) {
     console.log('[HybridStorageManager] Deleting permit:', permitId);
 
+    // CLOUD-ONLY MODE: Direct delete from Supabase
+    if (this.mode === 'cloud-only') {
+      if (this.cloudOnlyStorage) {
+        const result = await this.cloudOnlyStorage.deletePermit(permitId);
+        if (this.onDataUpdate) {
+          this.onDataUpdate('permits');
+        }
+        return result;
+      }
+      throw new Error('CloudOnlyStorageManager not initialized');
+    }
+
+    // LEGACY MODES
     // 1. Delete locally
     if (this.local) {
       this.local.deletePermit(permitId);
@@ -1100,6 +1234,15 @@ class HybridStorageManager {
    * Load permits
    */
   async loadPermits() {
+    // CLOUD-ONLY MODE: Use CloudOnlyStorageManager
+    if (this.mode === 'cloud-only') {
+      if (this.cloudOnlyStorage) {
+        return await this.cloudOnlyStorage.loadPermits(this.kelasId);
+      }
+      return [];
+    }
+
+    // LEGACY MODES
     if (this.mode === 'cloud-primary' && this.isOnline && this.supabaseConfigured) {
       try {
         const result = await this.remote.loadPermits(this.kelasId);
@@ -1574,6 +1717,576 @@ class HybridStorageManager {
 }
 
 // ============================================================
+// CLOUD-ONLY STORAGE MODE (No Local Writes)
+// ============================================================
+
+/**
+ * Custom error classes for cloud-only mode
+ */
+class CloudOnlyOfflineError extends Error {
+  constructor(message = 'Tidak dapat menyimpan saat offline. Data tidak akan tersimpan.') {
+    super(message);
+    this.name = 'CloudOnlyOfflineError';
+    this.code = 'OFFLINE_WRITE_BLOCKED';
+  }
+}
+
+class CloudOnlyAuthError extends Error {
+  constructor(message = 'Sesi Anda telah berakhir. Silakan logout dan login kembali.') {
+    super(message);
+    this.name = 'CloudOnlyAuthError';
+    this.code = 'AUTH_REQUIRED';
+  }
+}
+
+class CloudOnlyWriteError extends Error {
+  constructor(message = 'Gagal menyimpan data ke cloud.') {
+    super(message);
+    this.name = 'CloudOnlyWriteError';
+    this.code = 'CLOUD_WRITE_FAILED';
+  }
+}
+
+/**
+ * CloudOnlyStorageManager - Cloud-First Storage (Direct Writes, No Local Persistence)
+ *
+ * In this mode:
+ * - All writes go DIRECTLY to Supabase (no queue, no localStorage)
+ * - localStorage is used ONLY as READ-ONLY cache for offline viewing
+ * - Offline save attempts throw CloudOnlyOfflineError
+ * - Cache is updated AFTER successful cloud write
+ */
+class CloudOnlyStorageManager {
+  constructor(remote, local, kelasId) {
+    this.remote = remote;
+    this.local = local;
+    this.kelasId = kelasId;
+
+    this.cachePrefix = APP_STORAGE?.cache?.prefix || 'cache_';
+    this.staleThreshold = APP_STORAGE?.cache?.staleThresholdMs || 5 * 60 * 1000;
+  }
+
+  /**
+   * Check if online and authenticated
+   */
+  _validateOnline() {
+    if (!this.remote.isOnline) {
+      throw new CloudOnlyOfflineError(
+        'Tidak dapat menyimpan saat offline.\n' +
+        'Data tidak akan tersimpan.\n' +
+        'Silakan coba lagi saat online.'
+      );
+    }
+
+    const isWali = typeof appState !== 'undefined' && appState.waliMode;
+    if (!this.remote.isAuthenticated() && !isWali) {
+      throw new CloudOnlyAuthError();
+    }
+  }
+
+  /**
+   * Get cache key
+   */
+  _getCacheKey(type, id = '') {
+    return `${this.cachePrefix}${type}_${this.kelasId}_${id}`.replace(/[^a-zA-Z0-9_]/g, '_');
+  }
+
+  /**
+   * Read from localStorage cache
+   */
+  _getCachedData(key) {
+    try {
+      const staleMarker = localStorage.getItem(`${key}_stale`);
+      if (staleMarker) {
+        const staleTime = parseInt(staleMarker, 10);
+        if (Date.now() - staleTime > this.staleThreshold) {
+          return null; // Cache too old
+        }
+      }
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Update localStorage cache (read-only, no write-back)
+   */
+  _setCache(key, data) {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+      localStorage.removeItem(`${key}_stale`); // Clear stale marker
+    } catch (e) {
+      console.warn('[CloudOnly] Cache write failed:', e);
+    }
+  }
+
+  /**
+   * Mark cache as stale
+   */
+  _markCacheStale(key) {
+    try {
+      localStorage.setItem(`${key}_stale`, Date.now().toString());
+    } catch (e) {
+      // Ignore cache errors
+    }
+  }
+
+  // ============================================================
+  // ATTENDANCE OPERATIONS
+  // ============================================================
+
+  /**
+   * Save attendance - DIRECT WRITE to Supabase, NO localStorage write
+   */
+  async saveAttendance(dateKey, slotId, data) {
+    console.log('[CloudOnlyStorage] Saving attendance:', dateKey, slotId);
+
+    // BLOCK OFFLINE WRITES
+    this._validateOnline();
+
+    // Transform to remote format
+    const records = this._transformAttendanceToRemote(dateKey, slotId, data);
+
+    if (records.length === 0) {
+      console.log('[CloudOnlyStorage] No records to save');
+      return { success: true, count: 0 };
+    }
+
+    // DIRECT WRITE to Supabase
+    try {
+      const result = await this.remote.bulkSaveAttendance(records);
+      if (result.error) {
+        throw new CloudOnlyWriteError(result.error.message);
+      }
+
+      console.log('[CloudOnlyStorage] Attendance saved to cloud, count:', records.length);
+
+      // Update local cache (read-only) with the written data
+      this._updateLocalAttendanceCache(dateKey, slotId, data);
+
+      return { success: true, syncedAt: Date.now(), count: records.length };
+    } catch (error) {
+      if (error instanceof CloudOnlyOfflineError || error instanceof CloudOnlyAuthError) {
+        throw error;
+      }
+      throw new CloudOnlyWriteError(error.message);
+    }
+  }
+
+  /**
+   * Load attendance - reads from cloud if online, cache if offline
+   */
+  async loadAttendance(kelasId, dateKey) {
+    const cacheKey = this._getCacheKey('attendance', dateKey);
+
+    // If online, always fetch fresh from cloud
+    if (this.remote.isOnline) {
+      try {
+        const result = await this.remote.loadAttendance(kelasId, dateKey);
+        if (result.data && result.data.length > 0) {
+          const localFormat = this._transformRemoteAttendance(result.data);
+          this._setCache(cacheKey, localFormat);
+          console.log('[CloudOnlyStorage] Loaded attendance from cloud:', dateKey);
+          return localFormat;
+        }
+      } catch (error) {
+        console.warn('[CloudOnlyStorage] Cloud fetch failed, using cache:', error.message);
+      }
+    }
+
+    // Fallback to cache if offline or cloud fetch failed
+    const cached = this._getCachedData(cacheKey);
+    if (cached) {
+      console.log('[CloudOnlyStorage] Using cached attendance:', dateKey);
+      return cached;
+    }
+
+    console.warn('[CloudOnlyStorage] No attendance data available for:', dateKey);
+    return {};
+  }
+
+  /**
+   * Transform local attendance data to remote format
+   */
+  _transformAttendanceToRemote(dateKey, slotId, data) {
+    const records = [];
+
+    for (const [studentId, studentData] of Object.entries(data)) {
+      if (studentId.startsWith('_')) continue;
+      if (!studentData || typeof studentData !== 'object') continue;
+
+      const recordId = `${this.kelasId}_${studentId}_${dateKey}_${slotId}`.replace(/\s+/g, '_');
+      records.push({
+        id: recordId,
+        kelas_id: this.kelasId,
+        student_id: studentId,
+        date_key: dateKey,
+        slot_id: slotId,
+        status: studentData.status || {},
+        timestamps: studentData.timestamps || {},
+        audit_trail: studentData.auditTrail || [],
+        note: studentData.note || '',
+        permit_manual_override: studentData.permitManualOverride || false,
+      });
+    }
+
+    return records;
+  }
+
+  /**
+   * Transform remote attendance data to local format
+   */
+  _transformRemoteAttendance(remoteData) {
+    const result = {};
+
+    for (const record of remoteData) {
+      const { date_key, slot_id, student_id, status, timestamps, audit_trail, note } = record;
+      result[date_key] = result[date_key] || {};
+      result[date_key][slot_id] = result[date_key][slot_id] || {};
+      result[date_key][slot_id][student_id] = {
+        status,
+        timestamps,
+        auditTrail: audit_trail || [],
+        note,
+      };
+    }
+
+    return result;
+  }
+
+  /**
+   * Update local attendance cache
+   */
+  _updateLocalAttendanceCache(dateKey, slotId, data) {
+    const cacheKey = this._getCacheKey('attendance', dateKey);
+    const existing = this._getCachedData(cacheKey) || {};
+
+    existing[dateKey] = existing[dateKey] || {};
+    existing[dateKey][slotId] = data;
+
+    this._setCache(cacheKey, existing);
+  }
+
+  // ============================================================
+  // PERMIT OPERATIONS
+  // ============================================================
+
+  /**
+   * Save permit - DIRECT WRITE to Supabase
+   */
+  async savePermit(permit) {
+    console.log('[CloudOnlyStorage] Saving permit:', permit.id);
+
+    // BLOCK OFFLINE WRITES
+    this._validateOnline();
+
+    // Transform to remote format
+    const remotePermit = this._transformPermitToRemote(permit);
+
+    try {
+      const result = await this.remote.savePermit(remotePermit);
+      if (result.error) {
+        throw new CloudOnlyWriteError(result.error.message);
+      }
+
+      console.log('[CloudOnlyStorage] Permit saved to cloud:', permit.id);
+
+      // Update local cache
+      this._updateLocalPermitCache(permit);
+
+      return { success: true, syncedAt: Date.now() };
+    } catch (error) {
+      if (error instanceof CloudOnlyOfflineError || error instanceof CloudOnlyAuthError) {
+        throw error;
+      }
+      throw new CloudOnlyWriteError(error.message);
+    }
+  }
+
+  /**
+   * Delete permit - DIRECT DELETE from Supabase
+   */
+  async deletePermit(permitId) {
+    console.log('[CloudOnlyStorage] Deleting permit:', permitId);
+
+    this._validateOnline();
+
+    try {
+      const result = await this.remote.deletePermit(permitId);
+      if (result.error) {
+        throw new CloudOnlyWriteError(result.error.message);
+      }
+
+      // Update local cache
+      this._removeLocalPermitCache(permitId);
+
+      return { success: true };
+    } catch (error) {
+      if (error instanceof CloudOnlyOfflineError || error instanceof CloudOnlyAuthError) {
+        throw error;
+      }
+      throw new CloudOnlyWriteError(error.message);
+    }
+  }
+
+  /**
+   * Load permits - reads from cloud if online, cache if offline
+   */
+  async loadPermits(kelasId) {
+    const cacheKey = this._getCacheKey('permits', kelasId);
+
+    if (this.remote.isOnline) {
+      try {
+        const result = await this.remote.loadPermits(kelasId);
+        if (result.data) {
+          const localFormat = result.data.map(p => this._transformRemotePermit(p));
+          this._setCache(cacheKey, localFormat);
+          console.log('[CloudOnlyStorage] Loaded permits from cloud:', localFormat.length);
+          return localFormat;
+        }
+      } catch (error) {
+        console.warn('[CloudOnlyStorage] Cloud fetch failed, using cache:', error.message);
+      }
+    }
+
+    const cached = this._getCachedData(cacheKey);
+    if (cached) {
+      console.log('[CloudOnlyStorage] Using cached permits');
+      return cached;
+    }
+
+    return [];
+  }
+
+  /**
+   * Transform local permit to remote format
+   */
+  _transformPermitToRemote(permit) {
+    const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
+    let kelasId = this.kelasId || permit.kelas_id || permit.kelas;
+
+    if (kelasId && !isUuid(kelasId)) {
+      const classSource = window.classData || window.MASTER_KELAS;
+      if (classSource) {
+        const matched = Object.keys(classSource).find(k =>
+          k.replace(/\s+/g, '').toLowerCase() === String(kelasId).replace(/\s+/g, '').toLowerCase()
+        );
+        if (matched && classSource[matched]) {
+          const uuid = classSource[matched].supabaseId || classSource[matched].id;
+          if (isUuid(uuid)) kelasId = uuid;
+        }
+      }
+      if (!isUuid(kelasId)) {
+        kelasId = null;
+      }
+    }
+
+    const kelasNama = this.kelasId || permit.kelas || permit.kelas_id;
+
+    return {
+      id: permit.id,
+      kelas_id: isUuid(kelasId) ? kelasId : null,
+      kelas_nama: typeof kelasNama === 'string' && !isUuid(kelasNama) ? kelasNama : null,
+      student_id: permit.studentId || permit.nis,
+      nis: permit.nis,
+      category: permit.category,
+      reason: permit.reason,
+      start_date: permit.start_date,
+      end_date: permit.end_date,
+      start_session: permit.start_session,
+      end_session: permit.end_session,
+      start_time_limit: permit.start_time_limit,
+      end_time_limit: permit.end_time_limit,
+      location: permit.location || permit.destination,
+      pickup: permit.pickup,
+      vehicle: permit.vehicle,
+      status: permit.status || 'pending',
+      status_label: permit.status_label,
+      is_active: permit.is_active !== false,
+      requires_surat_dokter: permit.requires_surat_dokter || false,
+      document_url: permit.surat_dokter || permit.document,
+      audit_trail: permit.audit_trail || [],
+      nama_wali: permit.nama_wali,
+      alamat_wali: permit.alamat_wali,
+    };
+  }
+
+  /**
+   * Transform remote permit to local format
+   */
+  _transformRemotePermit(remote) {
+    return {
+      id: remote.id,
+      nis: remote.nis,
+      category: remote.category,
+      reason: remote.reason,
+      start_date: remote.start_date,
+      end_date: remote.end_date,
+      start_session: remote.start_session,
+      end_session: remote.end_session,
+      start_time_limit: remote.start_time_limit,
+      end_time_limit: remote.end_time_limit,
+      location: remote.location,
+      destination: remote.location || remote.destination,
+      pickup: remote.pickup,
+      vehicle: remote.vehicle,
+      status: remote.status,
+      status_label: remote.status_label,
+      is_active: remote.is_active,
+      requires_surat_dokter: remote.requires_surat_dokter,
+      surat_dokter: remote.document_url,
+      audit_trail: remote.audit_trail || [],
+      timestamp: remote.created_at,
+      nama_wali: remote.nama_wali,
+      alamat_wali: remote.alamat_wali,
+    };
+  }
+
+  /**
+   * Update local permit cache
+   */
+  _updateLocalPermitCache(permit) {
+    const cacheKey = this._getCacheKey('permits', this.kelasId);
+    const existing = this._getCachedData(cacheKey) || [];
+
+    const index = existing.findIndex(p => String(p.id) === String(permit.id));
+    if (index >= 0) {
+      existing[index] = permit;
+    } else {
+      existing.unshift(permit);
+    }
+
+    this._setCache(cacheKey, existing);
+  }
+
+  /**
+   * Remove permit from local cache
+   */
+  _removeLocalPermitCache(permitId) {
+    const cacheKey = this._getCacheKey('permits', this.kelasId);
+    const existing = this._getCachedData(cacheKey) || [];
+    const filtered = existing.filter(p => String(p.id) !== String(permitId));
+    this._setCache(cacheKey, filtered);
+  }
+
+  // ============================================================
+  // TAHFIZH OPERATIONS
+  // ============================================================
+
+  /**
+   * Save tahfizh - DIRECT WRITE to Supabase
+   */
+  async saveTahfizh(record) {
+    console.log('[CloudOnlyStorage] Saving tahfizh:', record.id);
+
+    this._validateOnline();
+
+    try {
+      const result = await this.remote.saveTahfizh(record);
+      if (result.error) {
+        throw new CloudOnlyWriteError(result.error.message);
+      }
+
+      return { success: true, syncedAt: Date.now() };
+    } catch (error) {
+      if (error instanceof CloudOnlyOfflineError || error instanceof CloudOnlyAuthError) {
+        throw error;
+      }
+      throw new CloudOnlyWriteError(error.message);
+    }
+  }
+
+  /**
+   * Load tahfizh from cloud
+   */
+  async loadTahfizh(kelasId, studentId = null) {
+    if (this.remote.isOnline) {
+      try {
+        const result = await this.remote.loadTahfizh(kelasId, studentId);
+        if (result.data) {
+          return result.data;
+        }
+      } catch (error) {
+        console.warn('[CloudOnlyStorage] Load tahfizh failed:', error.message);
+      }
+    }
+    return [];
+  }
+
+  // ============================================================
+  // SETTINGS OPERATIONS
+  // ============================================================
+
+  /**
+   * Save settings - DIRECT WRITE to Supabase
+   */
+  async saveSettings(settings) {
+    console.log('[CloudOnlyStorage] Saving settings');
+
+    this._validateOnline();
+
+    const userId = this.remote.getUser()?.id;
+    if (!userId) {
+      throw new CloudOnlyAuthError();
+    }
+
+    try {
+      const result = await this.remote.saveSettings(userId, settings);
+      if (result.error) {
+        throw new CloudOnlyWriteError(result.error.message);
+      }
+      return { success: true };
+    } catch (error) {
+      if (error instanceof CloudOnlyAuthError) {
+        throw error;
+      }
+      throw new CloudOnlyWriteError(error.message);
+    }
+  }
+
+  // ============================================================
+  // UTILITY METHODS
+  // ============================================================
+
+  /**
+   * Get storage status
+   */
+  getStatus() {
+    return {
+      mode: 'cloud-only',
+      isOnline: this.remote.isOnline,
+      isAuthenticated: this.remote.isAuthenticated(),
+      kelasId: this.kelasId,
+      cacheEnabled: APP_STORAGE?.cache?.enableOfflineRead !== false,
+    };
+  }
+
+  /**
+   * Clear all caches
+   */
+  clearCache() {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(this.cachePrefix)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    console.log('[CloudOnlyStorage] Cache cleared:', keysToRemove.length, 'items');
+  }
+}
+
+// Export CloudOnlyStorageManager
+window.CloudOnlyStorageManager = CloudOnlyStorageManager;
+window.CloudOnlyOfflineError = CloudOnlyOfflineError;
+window.CloudOnlyAuthError = CloudOnlyAuthError;
+window.CloudOnlyWriteError = CloudOnlyWriteError;
+
+// ============================================================
 // SINGLETON INSTANCE
 // ============================================================
 
@@ -1587,4 +2300,4 @@ if (typeof module !== 'undefined' && module.exports) {
 window.HybridStorageManager = HybridStorageManager;
 window.hybridStorageManager = hybridStorageManager;
 
-console.log('[HybridStorageManager] Module loaded');
+console.log('[HybridStorageManager] Module loaded (CloudOnlyStorageManager included)');

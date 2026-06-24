@@ -5324,8 +5324,15 @@ window.saveData = async function () {
     try {
       const dataStr = JSON.stringify(appState.attendanceData);
 
-      // Check localStorage quota (iOS Safari limit ~5MB)
-      if (dataStr.length > window.APP_CONSTANTS.maxStorageBytes) {
+      // Determine which storage manager to use
+      const dateKey = appState.date;
+      const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
+      const slotData = appState.attendanceData[dateKey]?.[slotId] || {};
+
+      const isCloudOnly = window.APP_STORAGE?.mode === 'cloud-only';
+
+      // Check localStorage quota (iOS Safari limit ~5MB) - only for non-cloud-only
+      if (!isCloudOnly && dataStr.length > window.APP_CONSTANTS.maxStorageBytes) {
         console.warn("Data mendekati batas storage!");
         window.showToast("Data hampir penuh. Pertimbangkan export.", "warning");
       }
@@ -5343,13 +5350,51 @@ window.saveData = async function () {
 
         setTimeout(async () => {
           try {
-            // Always save to localStorage as backup
-            localStorage.setItem(APP_CONFIG.storageKey, dataStr);
+            // CLOUD-ONLY MODE: Direct write to Supabase, NO localStorage backup
+            if (isCloudOnly) {
+              if (!window.hybridStorageManager?.isInitialized) {
+                console.warn('[saveData] Cloud-only mode requires initialized HybridStorageManager');
+                return;
+              }
 
-            // Determine which storage manager to use
-            const dateKey = appState.date;
-            const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
-            const slotData = appState.attendanceData[dateKey]?.[slotId] || {};
+              try {
+                await window.hybridStorageManager.saveAttendance(dateKey, slotId, slotData);
+
+                // Success indicator
+                if (indicator) {
+                  if (indicator.dataset.attendanceReviewStatus) {
+                    window.setAttendanceSaveIndicator?.(indicator.dataset.attendanceReviewStatus);
+                  } else {
+                    indicator.innerHTML = '<i data-lucide="cloud" class="w-3.5 h-3.5 text-emerald-400"></i>';
+                    if (window.lucide) window.lucide.createIcons();
+                    setTimeout(() => {
+                      if (indicator && !indicator.dataset.attendanceReviewStatus) {
+                        indicator.innerHTML = '<i data-lucide="cloud" class="w-3.5 h-3.5 text-slate-400"></i>';
+                        if (window.lucide) window.lucide.createIcons();
+                      }
+                    }, 2000);
+                  }
+                }
+              } catch (cloudError) {
+                console.error('[saveData] Cloud-only save failed:', cloudError);
+                if (cloudError.name === 'CloudOnlyOfflineError') {
+                  window.showToast("⚠️ Tidak dapat menyimpan saat offline.\nData tidak akan tersimpan.", "error", true, 5000);
+                } else if (cloudError.name === 'CloudOnlyAuthError') {
+                  window.showToast("🔒 Sesi habis. Silakan logout dan login kembali.", "error", true);
+                } else {
+                  window.showToast("Gagal menyimpan: " + cloudError.message, "error");
+                }
+                // Error indicator
+                if (indicator) {
+                  indicator.innerHTML = '<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-red-400"></i>';
+                  if (window.lucide) window.lucide.createIcons();
+                }
+              }
+              return;
+            }
+
+            // LEGACY MODES: Save to localStorage as backup
+            localStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
             // Use HybridStorageManager if cloud mode is enabled, otherwise use local StorageManager
             if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
@@ -5380,13 +5425,23 @@ window.saveData = async function () {
           }
         }, 500);
       } else {
-        // Always save to localStorage as backup
-        localStorage.setItem(APP_CONFIG.storageKey, dataStr);
+        // CLOUD-ONLY MODE: Handle no-autoSave case
+        if (isCloudOnly) {
+          if (!window.hybridStorageManager?.isInitialized) return;
+          try {
+            await window.hybridStorageManager.saveAttendance(dateKey, slotId, slotData);
+          } catch (cloudError) {
+            if (cloudError.name === 'CloudOnlyOfflineError') {
+              window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
+            } else if (cloudError.name === 'CloudOnlyAuthError') {
+              window.showToast("🔒 Sesi habis. Silakan login kembali.", "error", true);
+            }
+          }
+          return;
+        }
 
-        // Determine which storage manager to use
-        const dateKey = appState.date;
-        const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
-        const slotData = appState.attendanceData[dateKey]?.[slotId] || {};
+        // LEGACY MODES
+        localStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
         if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
           await window.hybridStorageManager.saveAttendance(dateKey, slotId, slotData);
