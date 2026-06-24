@@ -73,20 +73,20 @@ window.getProfileDisplayName = function (profile) {
 window.applyLoginModeUI = function () {
   const mode = window.getAuthMode();
   const isTestingMode = mode === "testing";
-  
+
   const testingFields = document.getElementById("testing-credentials");
   const modeBadge = document.getElementById("login-mode-badge");
   const submitText = document.getElementById("login-submit-text");
 
   // Selalu sembunyikan testing fields karena user tidak butuh username & password testing lagi
   if (testingFields) testingFields.classList.add("hidden");
-  
+
   if (modeBadge) {
     modeBadge.classList.toggle("hidden", !isTestingMode);
     modeBadge.classList.toggle("inline-flex", isTestingMode);
     modeBadge.innerHTML = '🧪 Mode Testing (Direct) — Klik untuk Production';
     modeBadge.style.cursor = "pointer";
-    
+
     if (!modeBadge.dataset.hasListener) {
       modeBadge.dataset.hasListener = "true";
       modeBadge.addEventListener("click", () => {
@@ -120,29 +120,28 @@ let devTapTimeout;
 window.handleDevTap = function () {
   devTapCount++;
   clearTimeout(devTapTimeout);
-  
+
   if (devTapCount >= 5) {
     devTapCount = 0;
     window.toggleLoginMode();
     return;
   }
-  
+
   devTapTimeout = setTimeout(() => {
     devTapCount = 0;
   }, 2000); // Reset count jika tidak ada klik dalam 2 detik
 };
 
-window.startAuthenticatedSession = async function (targetClass, profile, supabaseSession = null) {
+window.startAuthenticatedSession = async function (targetClass, profile) {
   const authData = {
     kelas: targetClass,
     profile: profile,
-    supabaseSession: supabaseSession,
     timestamp: new Date().toISOString(),
   };
 
   const isAdmin = targetClass?.toLowerCase() === "admin musyrif";
   appState.adminMode = isAdmin;
-  
+
   if (isAdmin) {
     appState.waliMode = false;
     appState.waliSantri = null;
@@ -164,35 +163,6 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
   localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
   appState.selectedClass = targetClass;
   appState.userProfile = profile;
-
-  // ========== SUPABASE INTEGRATION ==========
-  // Initialize hybrid storage if cloud mode is enabled
-  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-    try {
-      // Get kelas ID for the selected class
-      const kelasInfo = MASTER_KELAS?.[targetClass];
-      const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || targetClass;
-
-      await window.hybridStorageManager.init(kelasId);
-      console.log('[AuthManager] Hybrid storage initialized for:', targetClass);
-
-      // Sync Admin emails to Supabase if logged in as Admin
-      if (isAdmin && window.supabaseClient?.client) {
-        const adminClassInfo = window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
-        if (adminClassInfo && adminClassInfo.email) {
-          const emails = adminClassInfo.email.split(/[;,]/).map(e => e.trim().toLowerCase()).filter(Boolean);
-          for (const email of emails) {
-            await window.supabaseClient.client.from('admin_emails').upsert({ email }).catch(err => {
-              console.warn('[AuthManager] Failed to sync admin email:', email, err);
-            });
-          }
-          console.log('[AuthManager] Admin emails synced to Supabase:', emails);
-        }
-      }
-    } catch (error) {
-      console.warn('[AuthManager] Hybrid storage init/sync failed:', error);
-    }
-  }
 
   // ========== PWA UPDATE CHECK ==========
   // Cek update PWA setiap login untuk memastikan dapat data terbaru
@@ -277,32 +247,10 @@ window.handleGoogleCallback = async function (response) {
       window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
 
     if (!classInfo) {
-      if (targetClass?.toLowerCase() === "admin musyrif" && window.supabaseClient?.client) {
-        try {
-          const { data, error } = await window.supabaseClient.client
-            .from('admin_emails')
-            .select('email')
-            .eq('email', normalizedUserEmail);
-            
-          if (data && data.length > 0) {
-            classInfo = {
-              wali: "-",
-              musyrif: "Admin",
-              email: normalizedUserEmail
-            };
-            console.log('[GoogleCallback] Admin email verified via Supabase:', normalizedUserEmail);
-          }
-        } catch (e) {
-          console.warn('[GoogleCallback] Supabase admin email check failed:', e);
-        }
-      }
-
-      if (!classInfo) {
-        return window.showToast(
-          "Data kelas belum siap. Silakan coba lagi.",
-          "warning",
-        );
-      }
+      return window.showToast(
+        "Data kelas belum siap. Silakan coba lagi.",
+        "warning",
+      );
     }
 
     // 2. VALIDASI EMAIL (KEAMANAN UTAMA)
@@ -319,10 +267,6 @@ window.handleGoogleCallback = async function (response) {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
-    const normalizedUserEmail = String(userEmail || "")
-      .trim()
-      .toLowerCase();
-
     if (!allowedEmails.includes(normalizedUserEmail)) {
       return window.showToast(
         "AKSES DITOLAK! Email Anda tidak terdaftar untuk kelas ini.",
@@ -330,25 +274,8 @@ window.handleGoogleCallback = async function (response) {
       );
     }
 
-    // 3. SUPABASE AUTH (jika cloud mode enabled)
-    let supabaseSession = null;
-    if (window.APP_STORAGE?.mode !== 'local-only' && window.supabaseClient) {
-      try {
-        const { data: sbData } = await window.supabaseClient.signInWithGoogle(
-          response.credential
-        );
-        if (sbData?.session) {
-          supabaseSession = sbData.session;
-          console.log('[AuthManager] Supabase auth successful');
-        }
-      } catch (sbError) {
-        console.warn('[AuthManager] Supabase sign-in failed:', sbError);
-        // Continue without Supabase - local storage still works
-      }
-    }
-
-    // 4. JIKA LOLOS -> SIMPAN SESI
-    await window.startAuthenticatedSession(targetClass, profile, supabaseSession);
+    // 3. JIKA LOLOS -> SIMPAN SESI
+    await window.startAuthenticatedSession(targetClass, profile);
     window.closeModal("modal-google-auth");
     window.showToast("Login Berhasil!", "success");
   } catch (e) {
@@ -367,20 +294,6 @@ window.handleLogout = async function () {
   if (clockInterval) {
     clearInterval(clockInterval);
     clockInterval = null;
-  }
-
-  // Supabase sign out
-  if (window.supabaseClient) {
-    try {
-      await window.supabaseClient.signOut();
-    } catch (e) {
-      console.warn('[AuthManager] Supabase sign-out error:', e);
-    }
-  }
-
-  // Cleanup hybrid storage
-  if (window.hybridStorageManager) {
-    window.hybridStorageManager.destroy();
   }
 
   localStorage.removeItem(APP_CONFIG.googleAuthKey);

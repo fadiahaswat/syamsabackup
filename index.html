@@ -6542,11 +6542,7 @@
     <script src="data/data-santri.js"></script>
     <script src="managers/santri-manager.js"></script>
     <script src="managers/storage-manager.js"></script>
-    <script src="managers/supabase-client.js"></script>
-    <script src="managers/sync-queue.js"></script>
-    <script src="managers/hybrid-storage-manager.js"></script>
     <script src="managers/file-upload.js"></script>
-    <script src="managers/sync-debug.js"></script>
     <script src="core/app-core.js"></script>
     <script src="managers/notification-manager.js"></script>
     <script src="features/qibla.js"></script>
@@ -6591,7 +6587,10 @@
       function updateCountdownVisibility() {
         const widget = document.getElementById('countdown-libur-widget');
         const isAdmin = document.body.classList.contains('admin-mode');
-        if (widget) widget.classList.toggle('hidden', isAdmin);
+        const isWali = document.body.classList.contains('wali-mode');
+        const isMusyrif = !isAdmin && !isWali;
+        // Widget hanya tampil untuk wali; sembunyikan untuk admin & musyrif
+        if (widget) widget.classList.toggle('hidden', isAdmin || isMusyrif);
       }
 
       updateCountdownVisibility();

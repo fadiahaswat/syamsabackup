@@ -6,24 +6,6 @@ let lucideTimeout = null;
 let modalStack = [];
 
 // ==========================================
-// SUPABASE EARLY INITIALIZATION
-// Initialize Supabase client as early as possible
-// ==========================================
-if (window.APP_STORAGE?.mode !== 'local-only' && window.APP_STORAGE?.supabase?.url) {
-  // Initialize Supabase client immediately if in hybrid/cloud mode
-  (async () => {
-    if (window.supabaseClient && !window.supabaseClient.isInitialized) {
-      try {
-        await window.supabaseClient.init();
-        console.log('[AppCore] Supabase pre-initialized');
-      } catch (e) {
-        console.warn('[AppCore] Supabase pre-init failed:', e);
-      }
-    }
-  })();
-}
-
-// ==========================================
 // STORAGE MANAGER INSTANCE (LocalStorage-based)
 // ==========================================
 

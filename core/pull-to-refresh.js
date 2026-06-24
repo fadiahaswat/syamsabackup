@@ -1,7 +1,7 @@
 /**
  * File: pull-to-refresh.js
  * Deskripsi: Menambahkan perilaku tarik-ke-bawah untuk menyegarkan (Pull to Refresh) pada kontainer tab aplikasi.
- * Updated: Support cloud sync dengan Supabase
+ * Updated: localStorage-only mode
  */
 
 (function () {
@@ -245,52 +245,23 @@
   // 4. Integrasikan fungsi update data global
   window.performPullToRefresh = async function () {
     try {
-      console.log("🔄 Pull-To-Refresh: Sinkronisasi dengan Cloud...");
+      console.log("🔄 Pull-To-Refresh: Menyegarkan data...");
 
-      // SYNC DENGAN SUPABASE (Attendance & Permits)
-      const isHybridMode = window.APP_STORAGE?.mode !== 'local-only';
-      const shouldSync = window.hybridStorageManager && isHybridMode;
-
-      if (shouldSync) {
-        // 1. Upload data lokal ke cloud
-        try {
-          console.log("[PullToRefresh] Upload to cloud...");
-          await window.hybridStorageManager.syncNow();
-        } catch (err) {
-          console.warn("[PullToRefresh] Upload warning:", err);
-        }
-
-        // 2. Download data dari cloud
-        try {
-          console.log("[PullToRefresh] Download from cloud...");
-          await window.hybridStorageManager._downloadCloudData();
-        } catch (err) {
-          console.warn("[PullToRefresh] Download warning:", err);
-        }
-
-        // Tampilkan peringatan kecil hanya jika browser benar-benar melaporkan offline
-        if (!navigator.onLine && window.showToast) {
-          window.showToast("Koneksi tidak stabil, sinkronisasi mungkin tertunda", "warning", false, 2500);
-        }
-      } else {
-        // Mode local-only - simpan saja
-        if (window.storageManager) {
-          window.storageManager.saveNow();
-        }
-        window.showToast("Mode offline - data tersimpan lokal", "info");
-        return;
+      // Simpan data ke localStorage via storageManager
+      if (window.storageManager) {
+        window.storageManager.saveNow();
       }
 
-      // Refresh UI setelah sync
+      // Refresh UI setelah refresh
       if (window.updateDashboard) window.updateDashboard();
       if (window.renderAttendanceList) window.renderAttendanceList();
       if (window.renderPermitList) window.renderPermitList();
       if (window.refreshPermitSurfaces) window.refreshPermitSurfaces();
 
-      window.showToast("Sinkronisasi selesai!", "success");
+      window.showToast("Data berhasil disegarkan!", "success");
     } catch (error) {
       console.error("[PullToRefresh] Error:", error);
-      window.showToast("Gagal sinkronisasi: " + error.message, "error");
+      window.showToast("Gagal menyegarkan: " + error.message, "error");
     }
   };
 

@@ -47,7 +47,13 @@
       "Bash(findstr /v \"kelas_id\")",
       "Bash(powershell -Command \"\\(curl -sL 'https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec?action=getKelas' | ConvertFrom-Json | Group-Object kelas | Select-Object -ExpandProperty Name\\)\")",
       "Bash(git add *)",
-      "Bash(git commit -m 'Remove Firebase references *)"
+      "Bash(git commit -m 'Remove Firebase references *)",
+      "Bash(Remove-Item -Recurse -Force \"supabase\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Force \"SUPABASE_SETUP.md\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Force \"managers/supabase-client.js\" -ErrorAction SilentlyContinue)",
+      "Bash(Remove-Item -Force \"scratch/test-supabase.js\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Host \"Files deleted\")",
+      "Bash(git commit -m 'Remove Supabase - localStorage only mode *)"
     ]
   },
   "enabledMcpjsonServers": [

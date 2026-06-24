@@ -127,41 +127,12 @@ window.updatePermitCount = function () {
 };
 
 window.persistPermits = window.persistPermits || function () {
-  // CLOUD-ONLY MODE: Skip localStorage, data comes from cloud
-  const isCloudOnly = window.APP_STORAGE?.mode === 'cloud-only';
+  // Save to localStorage as primary storage
+  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
 
-  if (!isCloudOnly) {
-    // Always save to localStorage as primary storage (legacy modes)
-    localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
-  }
-
-  // Use HybridStorageManager if cloud mode is enabled
-  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
-    if (isCloudOnly) {
-      // CLOUD-ONLY: Direct save, handle errors
-      const permits = appState.permits || [];
-      permits.forEach(permit => {
-        window.hybridStorageManager.savePermit(permit).catch(err => {
-          console.error('[PermitManager] Cloud-only save error:', err);
-          if (err.name === 'CloudOnlyOfflineError') {
-            window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
-          }
-        });
-      });
-    } else {
-      // Legacy modes: save with queue
-      const permits = appState.permits || [];
-      permits.forEach(permit => {
-        window.hybridStorageManager.savePermit(permit).catch(err => {
-          console.error('[PermitManager] Hybrid save error:', err);
-        });
-      });
-    }
-  } else if (window.storageManager) {
-    // Local-only mode: use traditional storage manager
-    window.storageManager.savePermits(appState.permits || []).catch(err => {
-      console.error('[PermitManager] Save error:', err);
-    });
+  // Use storage manager if available
+  if (window.storageManager) {
+    window.storageManager.savePermits(appState.permits || []);
   }
 };
 
@@ -222,11 +193,8 @@ window.deletePermit = function (id) {
     async () => {
   appState.permits = appState.permits.filter((p) => p.id !== id);
 
-  // Use HybridStorageManager if cloud mode is enabled
-  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
-    await window.hybridStorageManager.deletePermit(id).catch(err => {
-      console.error('[PermitManager] Delete permit error:', err);
-    });
+  if (window.storageManager) {
+    window.storageManager.deletePermit(id);
   }
 
   window.persistPermits();
@@ -676,12 +644,12 @@ window.savePermitLogic = async function () {
       if (!suratDokterFile) {
         return window.showToast("Sakit lebih dari 2 hari wajib upload surat dokter!", "warning");
       }
-      // Upload using FileUploadManager (supports Supabase Storage + local fallback)
+      // Upload using FileUploadManager (local storage fallback)
       try {
         if (window.fileUploadManager) {
           // Generate temporary permit ID for upload
           const tempPermitId = `temp_${Date.now()}`;
-          const userId = window.supabaseClient?.getUser()?.id || 'anonymous';
+          const userId = appState?.userProfile?.email || 'anonymous';
           const uploadResult = await window.fileUploadManager.uploadDocument(
             userId,
             tempPermitId,

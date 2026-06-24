@@ -122,16 +122,9 @@ window.initApp = async function () {
             500,
           );
 
-          // Initialize Storage and Hybrid Sync Manager for Wali restore
+          // Initialize Storage Manager for Wali restore
           const musyrifId = `class_${foundKelas}`;
           window.initStorage?.(musyrifId);
-          if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-            const kelasInfo = MASTER_KELAS?.[foundKelas];
-            const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || foundKelas;
-            window.hybridStorageManager.init(kelasId).catch(err => {
-              console.warn('[Wali] Hybrid storage init failed on restore:', err);
-            });
-          }
         } else if (authData.kelas?.toLowerCase() === "admin musyrif" || authData.isAdmin) {
           appState.selectedClass = authData.kelas;
           appState.userProfile = authData.profile;
@@ -155,13 +148,6 @@ window.initApp = async function () {
           // Initialize Storage Manager
           const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
           window.initStorage?.(musyrifId);
-
-          // Initialize Hybrid Storage (cloud sync)
-          if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-            window.hybridStorageManager.init(authData.kelas).catch(err => {
-              console.warn('[Auth] Hybrid storage init failed for Admin:', err);
-            });
-          }
         } else if (authData.kelas) {
           // Tetap ijinkan login walaupun offline / MASTER_KELAS tidak ter-load sempurna
           appState.selectedClass = authData.kelas;
@@ -188,16 +174,6 @@ window.initApp = async function () {
           // Initialize Storage Manager
           const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
           window.initStorage?.(musyrifId);
-
-          // Initialize Hybrid Storage (cloud sync)
-          if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-            const kelasId = MASTER_KELAS?.[authData.kelas]?.supabaseId || authData.kelas;
-            window.hybridStorageManager.init(kelasId).then(() => {
-              console.log('[Auth] Hybrid storage initialized for:', authData.kelas);
-            }).catch(err => {
-              console.warn('[Auth] Hybrid storage init failed:', err);
-            });
-          }
 
           // Request GPS Permission SEKALI saat login berhasil
           if (GEO_CONFIG.useGeofencing) {
@@ -565,13 +541,6 @@ window.syncRoleModeUI = function () {
   if (typeof window.fetchNotifications === "function") {
     window.fetchNotifications();
   }
-
-  // Re-subscribe to realtime channels with the correct recipient info
-  if (window.hybridStorageManager && window.hybridStorageManager.kelasId) {
-    window.hybridStorageManager._subscribeToRealtime?.().catch(err => {
-      console.warn('[Realtime] Failed to re-subscribe on role sync:', err);
-    });
-  }
 };
 
 window.applyLoginModeUI = function () {
@@ -592,13 +561,12 @@ window.sha256Hex = async function (input) {
     .join("");
 };
 
-window.startAuthenticatedSession = async function (targetClass, profile, supabaseSession = null) {
+window.startAuthenticatedSession = async function (targetClass, profile) {
   const isAdmin = targetClass?.toLowerCase() === "admin musyrif" || profile?.isAdmin === true;
-  
+
   const authData = {
     kelas: targetClass,
     profile: profile,
-    supabaseSession: supabaseSession,
     timestamp: new Date().toISOString(),
     isAdmin: isAdmin
   };
@@ -630,35 +598,6 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
         const sKelas = String(s.kelas || s.rombel || "").trim();
         return sKelas === targetClass;
       }).sort((a, b) => a.nama.localeCompare(b.nama));
-    }
-  }
-
-  // ========== SUPABASE HYBRID STORAGE INITIALIZATION ==========
-  // Initialize hybrid storage if cloud mode is enabled
-  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-    try {
-      // Get kelas ID for the selected class
-      const kelasInfo = MASTER_KELAS?.[targetClass];
-      const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || targetClass;
-
-      await window.hybridStorageManager.init(kelasId);
-      console.log('[AuthManager] Hybrid storage initialized for class:', targetClass);
-
-      // Sync Admin emails to Supabase if logged in as Admin
-      if (isAdmin && window.supabaseClient?.client) {
-        const adminClassInfo = window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
-        if (adminClassInfo && adminClassInfo.email) {
-          const emails = adminClassInfo.email.split(/[;,]/).map(e => e.trim().toLowerCase()).filter(Boolean);
-          for (const email of emails) {
-            await window.supabaseClient.client.from('admin_emails').upsert({ email }).catch(err => {
-              console.warn('[AuthManager] Failed to sync admin email:', email, err);
-            });
-          }
-          console.log('[AuthManager] Admin emails synced to Supabase:', emails);
-        }
-      }
-    } catch (error) {
-      console.warn('[AuthManager] Hybrid storage init failed:', error);
     }
   }
 
@@ -971,32 +910,27 @@ window.handleWaliSubmit = async function () {
 
   const foundKelas = String(foundSantri.kelas || foundSantri.rombel || "").trim();
 
-  // 1. Cek password kustom di Supabase (jika online & hybrid mode)
+  // Cek password kustom di localStorage
   let passwordVerified = false;
-  let checkedSupabase = false;
 
-  if (window.supabaseClient?.client && window.APP_STORAGE?.mode !== 'local-only' && navigator.onLine) {
-    try {
-      const { data, error } = await window.supabaseClient.client
-        .from('wali_password')
-        .select('password_hash')
-        .eq('nis', nis)
-        .maybeSingle();
-
-      if (!error && data && data.password_hash) {
-        checkedSupabase = true;
+  // Cek custom password dari localStorage
+  try {
+    const savedPasswords = localStorage.getItem('wali_passwords_db');
+    if (savedPasswords) {
+      const passwords = JSON.parse(savedPasswords);
+      if (passwords[nis]) {
         const inputHash = await window.sha256Hex(password);
-        if (inputHash === data.password_hash) {
+        if (inputHash === passwords[nis].password_hash) {
           passwordVerified = true;
         }
       }
-    } catch (err) {
-      console.warn('[WaliAuth] Supabase password check failed, falling back to local:', err);
     }
+  } catch (e) {
+    console.warn('[WaliAuth] Custom password check failed:', e);
   }
 
-  // 2. Fallback ke password default jika tidak ada record di Supabase atau offline
-  if (!checkedSupabase) {
+  // Fallback ke password default jika tidak ada record kustom
+  if (!passwordVerified) {
     const storedPassword = String(
       foundSantri.password_nis ||
         foundSantri.nis_password ||
@@ -1042,16 +976,9 @@ window.handleWaliSubmit = async function () {
   window.updateProfileInfo();
   window.showToast(`Selamat datang, Wali dari ${foundSantri.nama}!`, "success");
 
-  // Initialize Storage Manager and Hybrid Sync Manager on parent login
+  // Initialize Storage Manager on parent login
   const musyrifId = `class_${foundKelas}`;
   window.initStorage?.(musyrifId);
-  if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-    const kelasInfo = MASTER_KELAS?.[foundKelas];
-    const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || foundKelas;
-    window.hybridStorageManager.init(kelasId).catch(err => {
-      console.warn('[Wali] Hybrid storage init failed on login:', err);
-    });
-  }
 };
 
 window.getWaliStudentId = function (student = appState.waliSantri) {
@@ -1911,23 +1838,16 @@ window.handleGoogleCallback = async function (response) {
       window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
 
     if (!classInfo) {
-      if (targetClass?.toLowerCase() === "admin musyrif" && window.supabaseClient?.client) {
-        try {
-          const { data, error } = await window.supabaseClient.client
-            .from('admin_emails')
-            .select('email')
-            .eq('email', normalizedUserEmail);
-            
-          if (data && data.length > 0) {
-            classInfo = {
-              wali: "-",
-              musyrif: "Admin",
-              email: normalizedUserEmail
-            };
-            console.log('[GoogleCallback] Admin email verified via Supabase:', normalizedUserEmail);
-          }
-        } catch (e) {
-          console.warn('[GoogleCallback] Supabase admin email check failed:', e);
+      // For Admin Musyrif, check if email is in the admin list from config
+      if (targetClass?.toLowerCase() === "admin musyrif") {
+        const adminEmails = window.APP_CREDENTIALS?.adminEmails || [];
+        if (adminEmails.includes(normalizedUserEmail)) {
+          classInfo = {
+            wali: "-",
+            musyrif: "Admin",
+            email: normalizedUserEmail
+          };
+          console.log('[GoogleCallback] Admin email verified:', normalizedUserEmail);
         }
       }
 
@@ -1953,7 +1873,6 @@ window.handleGoogleCallback = async function (response) {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
-    // normalizedUserEmail sudah dideklarasikan di atas (baris 1907)
     if (!allowedEmails.includes(normalizedUserEmail)) {
       return window.showToast(
         "AKSES DITOLAK! Email Anda tidak terdaftar untuk kelas ini.",
@@ -1961,30 +1880,8 @@ window.handleGoogleCallback = async function (response) {
       );
     }
 
-    // 3. SUPABASE AUTH (jika cloud mode enabled)
-    let supabaseSession = null;
-    if (window.APP_STORAGE?.mode !== 'local-only' && window.supabaseClient) {
-      try {
-        // Ensure Supabase client is initialized
-        if (!window.supabaseClient.isInitialized) {
-          console.log('[Auth] Initializing Supabase client...');
-          await window.supabaseClient.init();
-        }
-        const { data: sbData } = await window.supabaseClient.signInWithGoogle(
-          response.credential
-        );
-        if (sbData?.session) {
-          supabaseSession = sbData.session;
-          console.log('[Auth] Supabase auth successful');
-        }
-      } catch (sbError) {
-        console.warn('[Auth] Supabase sign-in failed:', sbError);
-        // Continue without Supabase - local storage still works
-      }
-    }
-
-    // 4. JIKA LOLOS -> SIMPAN SESI
-    await window.startAuthenticatedSession(targetClass, profile, supabaseSession);
+    // 3. JIKA LOLOS -> SIMPAN SESI
+    await window.startAuthenticatedSession(targetClass, profile);
     window.closeModal("modal-google-auth");
     window.showToast("Login Berhasil!", "success");
   } catch (e) {
@@ -3803,12 +3700,6 @@ window.closeAttendance = function () {
     appState.selectedClass = "Admin Musyrif";
     const musyrifId = appState.userProfile?.id || "class_Admin Musyrif";
     window.initStorage?.(musyrifId);
-    
-    if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-      window.hybridStorageManager.init("Admin Musyrif").catch(err => {
-        console.warn('[AdminRestore] Hybrid storage init failed:', err);
-      });
-    }
   }
   
   viewMain.classList.remove("hidden");
@@ -5329,10 +5220,8 @@ window.saveData = async function () {
       const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
       const slotData = appState.attendanceData[dateKey]?.[slotId] || {};
 
-      const isCloudOnly = window.APP_STORAGE?.mode === 'cloud-only';
-
-      // Check localStorage quota (iOS Safari limit ~5MB) - only for non-cloud-only
-      if (!isCloudOnly && dataStr.length > window.APP_CONSTANTS.maxStorageBytes) {
+      // Check localStorage quota (iOS Safari limit ~5MB)
+      if (dataStr.length > window.APP_CONSTANTS.maxStorageBytes) {
         console.warn("Data mendekati batas storage!");
         window.showToast("Data hampir penuh. Pertimbangkan export.", "warning");
       }
@@ -5350,58 +5239,11 @@ window.saveData = async function () {
 
         setTimeout(async () => {
           try {
-            // CLOUD-ONLY MODE: Direct write to Supabase, NO localStorage backup
-            if (isCloudOnly) {
-              if (!window.hybridStorageManager?.isInitialized) {
-                console.warn('[saveData] Cloud-only mode requires initialized HybridStorageManager');
-                return;
-              }
-
-              try {
-                await window.hybridStorageManager.saveAttendance(dateKey, slotId, slotData);
-
-                // Success indicator
-                if (indicator) {
-                  if (indicator.dataset.attendanceReviewStatus) {
-                    window.setAttendanceSaveIndicator?.(indicator.dataset.attendanceReviewStatus);
-                  } else {
-                    indicator.innerHTML = '<i data-lucide="cloud" class="w-3.5 h-3.5 text-emerald-400"></i>';
-                    if (window.lucide) window.lucide.createIcons();
-                    setTimeout(() => {
-                      if (indicator && !indicator.dataset.attendanceReviewStatus) {
-                        indicator.innerHTML = '<i data-lucide="cloud" class="w-3.5 h-3.5 text-slate-400"></i>';
-                        if (window.lucide) window.lucide.createIcons();
-                      }
-                    }, 2000);
-                  }
-                }
-              } catch (cloudError) {
-                console.error('[saveData] Cloud-only save failed:', cloudError);
-                if (cloudError.name === 'CloudOnlyOfflineError') {
-                  window.showToast("⚠️ Tidak dapat menyimpan saat offline.\nData tidak akan tersimpan.", "error", true, 5000);
-                } else if (cloudError.name === 'CloudOnlyAuthError') {
-                  window.showToast("🔒 Sesi habis. Silakan logout dan login kembali.", "error", true);
-                } else {
-                  window.showToast("Gagal menyimpan: " + cloudError.message, "error");
-                }
-                // Error indicator
-                if (indicator) {
-                  indicator.innerHTML = '<i data-lucide="alert-circle" class="w-3.5 h-3.5 text-red-400"></i>';
-                  if (window.lucide) window.lucide.createIcons();
-                }
-              }
-              return;
-            }
-
-            // LEGACY MODES: Save to localStorage as backup
+            // Save to localStorage
             localStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
-            // Use HybridStorageManager if cloud mode is enabled, otherwise use local StorageManager
-            if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
-              // Cloud mode: Use hybrid storage (adds to sync queue + tries immediate sync)
-              await window.hybridStorageManager.saveAttendance(dateKey, slotId, slotData);
-            } else if (window.storageManager) {
-              // Local-only mode: Use traditional storage manager
+            // Use StorageManager
+            if (window.storageManager) {
               await window.storageManager.saveAttendance(dateKey, slotId, slotData);
             }
 
@@ -5425,27 +5267,9 @@ window.saveData = async function () {
           }
         }, 500);
       } else {
-        // CLOUD-ONLY MODE: Handle no-autoSave case
-        if (isCloudOnly) {
-          if (!window.hybridStorageManager?.isInitialized) return;
-          try {
-            await window.hybridStorageManager.saveAttendance(dateKey, slotId, slotData);
-          } catch (cloudError) {
-            if (cloudError.name === 'CloudOnlyOfflineError') {
-              window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
-            } else if (cloudError.name === 'CloudOnlyAuthError') {
-              window.showToast("🔒 Sesi habis. Silakan login kembali.", "error", true);
-            }
-          }
-          return;
-        }
-
-        // LEGACY MODES
+        // No autoSave mode - just save to localStorage
         localStorage.setItem(APP_CONFIG.storageKey, dataStr);
-
-        if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager?.isInitialized) {
-          await window.hybridStorageManager.saveAttendance(dateKey, slotId, slotData);
-        } else if (window.storageManager) {
+        if (window.storageManager) {
           await window.storageManager.saveAttendance(dateKey, slotId, slotData);
         }
       }

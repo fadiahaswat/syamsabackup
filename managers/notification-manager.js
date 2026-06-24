@@ -766,10 +766,6 @@ window.currentNotificationFilter = "all";
 // Helper: Ambil informasi penerima berdasarkan mode login
 // FIX BUG #10: Improved role detection with fallback and auth state checking
 window.getNotificationRecipientInfo = function () {
-  // Check from multiple sources for robust role detection
-  const user = window.supabaseClient?.currentUser;
-  const session = window.supabaseClient?.currentSession;
-
   // Determine if user is in Wali mode (check appState.waliSantri as primary indicator)
   const isWali = appState?.waliMode === true || appState?.waliSantri != null;
 
@@ -781,28 +777,17 @@ window.getNotificationRecipientInfo = function () {
     };
   }
 
-  // Musyrif mode - use email from auth
-  const musyrifId = String(user?.email || appState?.userProfile?.email || "").trim().toLowerCase();
+  // Musyrif mode - use email from appState.userProfile
+  const musyrifId = String(appState?.userProfile?.email || "").trim().toLowerCase();
   return {
     type: "musyrif",
     id: musyrifId
   };
 };
 
-// Helper: Restart realtime subscription when role changes
+// Helper: Restart notification cache when role changes
 window.onRoleChange = function(newRole) {
   console.log("[NotificationManager] Role changed to:", newRole);
-
-  // Restart realtime subscription if supabase client exists
-  if (window.supabaseClient) {
-    // Unsubscribe first
-    window.supabaseClient.unsubscribeRealtime();
-
-    // Resubscribe with new context (will pick up new role from appState)
-    if (window.hybridStorageManager && window.hybridStorageManager.kelasId) {
-      window.hybridStorageManager._subscribeToRealtime();
-    }
-  }
 
   // Clear notification cache for old recipient
   window.currentNotificationsList = [];
@@ -810,8 +795,8 @@ window.onRoleChange = function(newRole) {
 };
 
 // Toggle visibility dropdown
-// Fetch notifications from Supabase with LocalStorage cache fallback
-window.fetchNotifications = async function () {
+// Fetch notifications from localStorage only
+window.fetchNotifications = function () {
   const recipient = window.getNotificationRecipientInfo();
   console.log("[NotificationManager] fetchNotifications called:", recipient);
 
@@ -825,54 +810,23 @@ window.fetchNotifications = async function () {
   console.log("[NotificationManager] Cache key:", cacheKey);
   let notificationsList = [];
 
-  // Try to load cached first
+  // Load from localStorage cache
   try {
     const cached = localStorage.getItem(cacheKey);
     console.log("[NotificationManager] Cached data:", cached ? "exists" : "empty");
     if (cached) {
       notificationsList = JSON.parse(cached);
       console.log("[NotificationManager] Loaded from cache, count:", notificationsList.length);
-      window.renderNotificationsUI(notificationsList);
     }
   } catch (e) {
     console.warn("Failed to load cached notifications", e);
   }
 
-  // Fetch from Supabase if online
-  if (window.supabaseClient && window.supabaseClient.isOnline && window.supabaseClient.client) {
-    try {
-      console.log("[NotificationManager] Fetching from Supabase...");
-      const { data, error } = await window.supabaseClient.client
-        .from("notifications")
-        .select("*")
-        .eq("recipient_type", recipient.type)
-        .eq("recipient_id", recipient.id)
-        .order("created_at", { ascending: false })
-        .limit(50); // Increased limit for full-page tab
-
-      if (error) {
-        console.error("[NotificationManager] Supabase error:", error);
-        throw error;
-      }
-
-      console.log("[NotificationManager] Supabase response, count:", data?.length || 0);
-      if (data && data.length > 0) {
-        notificationsList = data;
-        localStorage.setItem(cacheKey, JSON.stringify(data));
-        window.renderNotificationsUI(notificationsList);
-      }
-    } catch (err) {
-      console.error("Error fetching notifications from Supabase:", err);
-    }
-  } else {
-    console.log("[NotificationManager] Supabase not available, showing cached data");
-    // If local-only or offline, render cached (already done above, but refresh badge)
-    window.renderNotificationsUI(notificationsList);
-  }
+  window.renderNotificationsUI(notificationsList);
 };
 
-// Add new notification (inserts to Supabase if online, and local storage cache)
-window.addNotification = async function (recipientType, recipientId, title, body, type = "default", deepLink = "") {
+// Add new notification (localStorage only)
+window.addNotification = function (recipientType, recipientId, title, body, type = "default", deepLink = "") {
   if (!recipientId) {
     console.log("[NotificationManager] addNotification skipped: no recipientId");
     return;
@@ -884,13 +838,12 @@ window.addNotification = async function (recipientType, recipientId, title, body
       .split(/[;,]/)
       .map(e => e.trim().toLowerCase())
       .filter(Boolean);
-    
+
     if (emails.length > 1) {
       console.log("[NotificationManager] Splitting notification for multiple Musyrifs:", emails);
-      const promises = emails.map(email => 
-        window.addNotification(recipientType, email, title, body, type, deepLink)
-      );
-      await Promise.all(promises);
+      emails.forEach(email => {
+        window.addNotification(recipientType, email, title, body, type, deepLink);
+      });
       return;
     } else if (emails.length === 1) {
       recipientId = emails[0];
@@ -911,7 +864,7 @@ window.addNotification = async function (recipientType, recipientId, title, body
     created_at: new Date().toISOString()
   };
 
-  // 1. Update cache of recipient (if recipient is currently logged in)
+  // Update cache of recipient
   const currentRecipient = window.getNotificationRecipientInfo();
   console.log("[NotificationManager] Current recipient:", currentRecipient);
   console.log("[NotificationManager] Match?:", currentRecipient.type === recipientType && currentRecipient.id === newNotif.recipient_id);
@@ -932,33 +885,16 @@ window.addNotification = async function (recipientType, recipientId, title, body
   } catch (e) {
     console.warn("Error updating local cache for new notification", e);
   }
-
-  // 2. Insert to Supabase
-  if (window.supabaseClient && window.supabaseClient.client && window.supabaseClient.isOnline) {
-    try {
-      const dbNotif = { ...newNotif };
-      // Delete temporary ID if not a valid UUID format
-      if (dbNotif.id.length < 30) delete dbNotif.id;
-
-      const { error } = await window.supabaseClient.client
-        .from("notifications")
-        .insert(dbNotif);
-      if (error) throw error;
-      console.log("[NotificationManager] Notification saved to Supabase");
-    } catch (err) {
-      console.error("Error saving notification to Supabase:", err);
-    }
-  }
 };
 
-// Mark single notification as read
-window.markNotificationAsRead = async function (id) {
+// Mark single notification as read (localStorage only)
+window.markNotificationAsRead = function (id) {
   const recipient = window.getNotificationRecipientInfo();
   if (!recipient.id) return;
 
   const cacheKey = `local_notifs_${recipient.type}_${recipient.id}`;
 
-  // 1. Update local cache
+  // Update local cache
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
@@ -970,30 +906,17 @@ window.markNotificationAsRead = async function (id) {
   } catch (e) {
     console.warn("Error updating cache for mark as read", e);
   }
-
-  // 2. Update Supabase
-  if (window.supabaseClient && window.supabaseClient.client && window.supabaseClient.isOnline) {
-    try {
-      const { error } = await window.supabaseClient.client
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("id", id);
-      if (error) throw error;
-    } catch (err) {
-      console.error("Error marking notification as read in Supabase:", err);
-    }
-  }
 };
 
-// Mark all as read
-window.markAllNotificationsAsRead = async function (event) {
+// Mark all as read (localStorage only)
+window.markAllNotificationsAsRead = function (event) {
   if (event) event.stopPropagation();
   const recipient = window.getNotificationRecipientInfo();
   if (!recipient.id) return;
 
   const cacheKey = `local_notifs_${recipient.type}_${recipient.id}`;
 
-  // 1. Update cache
+  // Update local cache
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
@@ -1001,25 +924,10 @@ window.markAllNotificationsAsRead = async function (event) {
       list = list.map(item => ({ ...item, is_read: true }));
       localStorage.setItem(cacheKey, JSON.stringify(list));
       window.renderNotificationsUI(list);
+      window.showToast("Semua notifikasi ditandai dibaca", "success");
     }
   } catch (e) {
     console.warn("Error updating cache for mark all as read", e);
-  }
-
-  // 2. Update Supabase
-  if (window.supabaseClient && window.supabaseClient.client && window.supabaseClient.isOnline) {
-    try {
-      const { error } = await window.supabaseClient.client
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("recipient_type", recipient.type)
-        .eq("recipient_id", recipient.id)
-        .eq("is_read", false);
-      if (error) throw error;
-      window.showToast("Semua notifikasi ditandai dibaca", "success");
-    } catch (err) {
-      console.error("Error marking all notifications as read in Supabase:", err);
-    }
   }
 };
 
@@ -1257,61 +1165,5 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 1000);
 });
 
-// Bind realtime notification changes callback
-if (window.supabaseClient) {
-  window.supabaseClient.onNotificationChange = (payload) => {
-    console.log('[NotificationManager] Realtime notification change:', payload);
-    console.log('[NotificationManager] Notification details:', {
-      type: payload.new?.type,
-      eventType: payload.eventType,
-      recipient: window.getNotificationRecipientInfo?.()
-    });
-
-    window.fetchNotifications();
-
-    // Tampilkan Toast & system notification untuk notifikasi baru yang masuk
-    if (payload.eventType === 'INSERT' && !payload.new.is_read) {
-      const currentRecipient = window.getNotificationRecipientInfo?.() || {};
-      console.log('[NotificationManager] Current recipient:', currentRecipient);
-
-      // Untuk notifikasi permit di Musyrif - refresh widget approval
-      if (payload.new.type === 'permit' && currentRecipient.type === 'musyrif') {
-        console.log('[NotificationManager] Permit notification for musyrif, refreshing widget...');
-        // Show toast immediately
-        window.showToast?.(`Pengajuan Izin Baru: ${payload.new.title}`, 'info');
-        if (typeof window.sendLocalNotification === 'function') {
-          window.sendLocalNotification(payload.new.title, payload.new.body, payload.new.type || 'info');
-        }
-        // Fetch permit data from cloud first, then refresh widget
-        if (window.hybridStorageManager && typeof window.hybridStorageManager.loadPermits === 'function') {
-          window.hybridStorageManager.loadPermits().then(permits => {
-            if (permits && permits.length > 0) {
-              appState.permits = permits;
-              localStorage.setItem('musyrif_permits_db', JSON.stringify(permits));
-              console.log('[NotificationManager] Permits refreshed from cloud:', permits.length);
-            }
-            if (typeof window.loadMusyrifRequests === 'function') {
-              window.loadMusyrifRequests();
-            }
-          }).catch(() => {
-            // Fallback: just call loadMusyrifRequests
-            if (typeof window.loadMusyrifRequests === 'function') {
-              window.loadMusyrifRequests();
-            }
-          });
-        } else {
-          if (typeof window.loadMusyrifRequests === 'function') {
-            window.loadMusyrifRequests();
-          }
-        }
-        return;
-      }
-
-      window.showToast?.(`Notifikasi Baru: ${payload.new.title}`, 'info');
-
-      if (typeof window.sendLocalNotification === 'function') {
-        window.sendLocalNotification(payload.new.title, payload.new.body, payload.new.type || 'info');
-      }
-    }
-  };
-}
+// LocalStorage-only mode - no realtime sync
+// Notifications are now localStorage-only, fetched on role change and app load

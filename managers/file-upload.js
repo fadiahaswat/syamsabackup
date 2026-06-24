@@ -1,8 +1,8 @@
 /**
  * FileUploadManager - Document Upload Handler
  *
- * Mengelola upload dokumen (surat dokter) ke Supabase Storage
- * dengan fallback ke base64 di LocalStorage.
+ * Mengelola upload dokumen (surat dokter) dengan storage localStorage.
+ * Menggunakan base64 encoding untuk menyimpan dokumen.
  */
 
 class FileUploadManager {
@@ -11,12 +11,11 @@ class FileUploadManager {
     this.config = {
       maxSizeBytes: APP_STORAGE?.fileUpload?.maxSizeBytes || 5 * 1024 * 1024, // 5MB
       allowedTypes: APP_STORAGE?.fileUpload?.allowedTypes || ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-      bucket: APP_STORAGE?.fileUpload?.bucket || 'permit-documents',
+      storageKey: 'local_document_uploads',
     };
 
     // State
     this.isUploading = false;
-    this.supabaseConfigured = !!(APP_STORAGE?.supabase?.url && APP_STORAGE?.supabase?.anonKey);
   }
 
   /**
@@ -49,7 +48,7 @@ class FileUploadManager {
   }
 
   /**
-   * Convert file to base64 (for local fallback)
+   * Convert file to base64 (for local storage)
    */
   fileToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -61,32 +60,71 @@ class FileUploadManager {
   }
 
   /**
-   * Upload document to Supabase Storage
+   * Save document to localStorage
    */
-  async uploadToSupabase(path, file) {
-    if (!window.supabaseClient?.client) {
-      throw new Error('Supabase client not available');
+  async saveDocumentLocally(documentId, base64Data, metadata = {}) {
+    try {
+      const storageData = this.getStorageData();
+
+      storageData[documentId] = {
+        data: base64Data,
+        metadata: {
+          ...metadata,
+          savedAt: new Date().toISOString(),
+        }
+      };
+
+      localStorage.setItem(this.config.storageKey, JSON.stringify(storageData));
+      return { success: true };
+    } catch (error) {
+      console.error('[FileUpload] Error saving document locally:', error);
+      return { success: false, error: error.message };
     }
-
-    const { data, error } = await window.supabaseClient.client.storage
-      .from(this.config.bucket)
-      .upload(path, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
-
-    if (error) throw error;
-
-    // Get public URL
-    const { data: urlData } = window.supabaseClient.client.storage
-      .from(this.config.bucket)
-      .getPublicUrl(data.path);
-
-    return urlData.publicUrl;
   }
 
   /**
-   * Upload document with local fallback
+   * Get document from localStorage
+   */
+  getDocument(documentId) {
+    const storageData = this.getStorageData();
+    return storageData[documentId] || null;
+  }
+
+  /**
+   * Delete document from localStorage
+   */
+  deleteDocument(documentId) {
+    const storageData = this.getStorageData();
+    if (storageData[documentId]) {
+      delete storageData[documentId];
+      localStorage.setItem(this.config.storageKey, JSON.stringify(storageData));
+      return { success: true };
+    }
+    return { success: false, error: 'Document not found' };
+  }
+
+  /**
+   * Get all stored documents
+   */
+  getAllDocuments() {
+    return this.getStorageData();
+  }
+
+  /**
+   * Get storage data from localStorage
+   */
+  getStorageData() {
+    try {
+      const data = localStorage.getItem(this.config.storageKey);
+      return data ? JSON.parse(data) : {};
+    } catch (e) {
+      console.error('[FileUpload] Error reading storage:', e);
+      return {};
+    }
+  }
+
+  /**
+   * Upload document with local storage
    */
   async uploadDocument(userId, permitId, file) {
     // Validate first
@@ -95,100 +133,64 @@ class FileUploadManager {
       return {
         success: false,
         errors: validation.errors,
-        storageUrl: null,
         localUrl: null,
       };
     }
 
-    // Generate path for Supabase Storage
-    const ext = file.name.split('.').pop() || 'jpg';
+    // Generate document ID
     const timestamp = Date.now();
-    const path = `${userId}/${permitId}_${timestamp}.${ext}`;
+    const documentId = `${userId}_${permitId}_${timestamp}`;
 
-    // Try upload to Supabase if configured and online
-    let storageUrl = null;
-    if (this.supabaseConfigured && navigator.onLine) {
-      try {
-        storageUrl = await this.uploadToSupabase(path, file);
-        console.log('[FileUpload] Uploaded to Supabase:', storageUrl);
-      } catch (uploadError) {
-        console.warn('[FileUpload] Supabase upload failed, using local fallback:', uploadError);
-      }
-    }
-
-    // Convert to base64 for local storage (always, as backup)
+    // Convert to base64 for local storage
     let localUrl = null;
     try {
       localUrl = await this.fileToBase64(file);
     } catch (base64Error) {
       console.error('[FileUpload] Base64 conversion failed:', base64Error);
+      return {
+        success: false,
+        errors: ['Gagal mengkonversi file'],
+        localUrl: null,
+      };
+    }
+
+    // Save to localStorage
+    const metadata = {
+      userId,
+      permitId,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+    };
+
+    const saveResult = await this.saveDocumentLocally(documentId, localUrl, metadata);
+
+    if (!saveResult.success) {
+      console.warn('[FileUpload] Document saved to base64 but not indexed:', saveResult.error);
     }
 
     return {
       success: true,
       errors: [],
-      storageUrl,
       localUrl,
-      // Prefer Supabase URL if available, fallback to base64
-      finalUrl: storageUrl || localUrl,
+      documentId,
     };
   }
 
   /**
-   * Delete document from Supabase Storage
+   * Delete document (local only)
    */
-  async deleteDocument(path) {
-    if (!this.supabaseConfigured || !navigator.onLine) {
-      return { success: false, error: 'Offline or not configured' };
-    }
-
-    if (!window.supabaseClient?.client) {
-      return { success: false, error: 'Supabase client not available' };
-    }
-
-    try {
-      const { error } = await window.supabaseClient.client.storage
-        .from(this.config.bucket)
-        .remove([path]);
-
-      if (error) throw error;
-
-      return { success: true };
-    } catch (error) {
-      console.error('[FileUpload] Delete error:', error);
-      return { success: false, error: error.message };
-    }
+  async deleteDocumentById(documentId) {
+    return this.deleteDocument(documentId);
   }
 
   /**
-   * Get document URL (prefers Supabase, falls back to local)
+   * Get document URL (returns base64 data URL)
    */
-  getDocumentUrl(url) {
-    if (!url) return null;
-
-    // If it's already a data URL (base64), return as-is
-    if (url.startsWith('data:')) {
-      return url;
-    }
-
-    // If it's a Supabase URL or external URL, return as-is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-
-    // If it's a path, try to get public URL
-    if (this.supabaseConfigured && window.supabaseClient?.client) {
-      try {
-        const { data } = window.supabaseClient.client.storage
-          .from(this.config.bucket)
-          .getPublicUrl(url);
-        return data.publicUrl;
-      } catch (e) {
-        console.warn('[FileUpload] Could not get public URL:', e);
-      }
-    }
-
-    return url;
+  getDocumentUrl(documentId) {
+    const doc = this.getDocument(documentId);
+    if (!doc) return null;
+    return doc.data;
   }
 
   /**
@@ -199,7 +201,7 @@ class FileUploadManager {
   }
 
   /**
-   * Check if URL is a remote URL (Supabase/HTTP)
+   * Check if URL is a remote URL (HTTP)
    */
   isRemoteUrl(url) {
     return url?.startsWith('http://') || url?.startsWith('https://') || false;
@@ -227,16 +229,15 @@ class FileUploadManager {
    * Open document in new tab (for viewing)
    */
   openDocument(url, filename = 'document.pdf') {
-    const finalUrl = this.getDocumentUrl(url);
-    if (!finalUrl) {
+    if (!url) {
       window.showToast?.('Dokumen tidak tersedia', 'error');
       return;
     }
 
-    if (finalUrl.startsWith('data:')) {
+    if (url.startsWith('data:')) {
       // For base64, create blob and open
-      const byteString = atob(finalUrl.split(',')[1]);
-      const mimeType = finalUrl.match(/data:([^;]+);/)?.[1] || 'application/pdf';
+      const byteString = atob(url.split(',')[1]);
+      const mimeType = url.match(/data:([^;]+);/)?.[1] || 'application/pdf';
       const ab = new ArrayBuffer(byteString.length);
       const ia = new Uint8Array(ab);
       for (let i = 0; i < byteString.length; i++) {
@@ -246,7 +247,7 @@ class FileUploadManager {
       const blobUrl = URL.createObjectURL(blob);
       window.open(blobUrl, '_blank');
     } else {
-      window.open(finalUrl, '_blank');
+      window.open(url, '_blank');
     }
   }
 
@@ -254,18 +255,65 @@ class FileUploadManager {
    * Download document
    */
   downloadDocument(url, filename = 'document.pdf') {
-    const finalUrl = this.getDocumentUrl(url);
-    if (!finalUrl) {
+    if (!url) {
       window.showToast?.('Dokumen tidak tersedia', 'error');
       return;
     }
 
     const link = document.createElement('a');
-    link.href = finalUrl;
+    link.href = url;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  /**
+   * Calculate total storage used by documents
+   */
+  getStorageUsage() {
+    let totalBytes = 0;
+    const storageData = this.getStorageData();
+
+    Object.values(storageData).forEach(doc => {
+      if (doc.data) {
+        // Estimate size of base64 string
+        totalBytes += doc.data.length * 0.75; // base64 is ~33% larger than binary
+      }
+    });
+
+    return {
+      bytes: totalBytes,
+      KB: (totalBytes / 1024).toFixed(2),
+      MB: (totalBytes / (1024 * 1024)).toFixed(2),
+    };
+  }
+
+  /**
+   * Clean old documents (older than specified days)
+   */
+  cleanOldDocuments(daysOld = 30) {
+    const storageData = this.getStorageData();
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    let cleanedCount = 0;
+
+    Object.keys(storageData).forEach(docId => {
+      const doc = storageData[docId];
+      if (doc.metadata?.savedAt) {
+        const savedDate = new Date(doc.metadata.savedAt);
+        if (savedDate < cutoffDate) {
+          delete storageData[docId];
+          cleanedCount++;
+        }
+      }
+    });
+
+    if (cleanedCount > 0) {
+      localStorage.setItem(this.config.storageKey, JSON.stringify(storageData));
+    }
+
+    return { cleanedCount };
   }
 }
 
@@ -283,4 +331,4 @@ if (typeof module !== 'undefined' && module.exports) {
 window.FileUploadManager = FileUploadManager;
 window.fileUploadManager = fileUploadManager;
 
-console.log('[FileUploadManager] Module loaded');
+console.log('[FileUploadManager] Module loaded (localStorage mode)');

@@ -1,8 +1,9 @@
 /**
- * SyncDebug - Debug Console for Cloud Sync Issues
+ * SyncDebug - Debug Console for LocalStorage Data
  *
- * Tool untuk debugging sinkronisasi data antar device.
+ * Tool untuk debugging data lokal dan storage.
  * Buka dengan menjalankan: window.openSyncDebug()
+ * Konversi dari cloud sync debug ke localStorage only mode.
  */
 
 class SyncDebug {
@@ -33,8 +34,8 @@ class SyncDebug {
     // Initial refresh
     this.refresh();
 
-    // Auto-refresh every 5 seconds
-    this.autoRefreshInterval = setInterval(() => this.refresh(), 5000);
+    // Auto-refresh every 10 seconds
+    this.autoRefreshInterval = setInterval(() => this.refresh(), 10000);
 
     console.log('[SyncDebug] Debug panel opened');
   }
@@ -59,7 +60,7 @@ class SyncDebug {
     return `
       <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <!-- Header -->
-        <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-emerald-500 to-teal-500">
+        <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-blue-500 to-indigo-500">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,8 +68,8 @@ class SyncDebug {
               </svg>
             </div>
             <div>
-              <h2 class="text-lg font-bold text-white">Sync Debug Console</h2>
-              <p class="text-xs text-white/70">Troubleshooting cloud synchronization</p>
+              <h2 class="text-lg font-bold text-white">Storage Debug Console</h2>
+              <p class="text-xs text-white/70">LocalStorage data management</p>
             </div>
           </div>
           <button onclick="window.syncDebug?.close()" class="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors">
@@ -87,16 +88,13 @@ class SyncDebug {
         <div class="p-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
           <div class="flex flex-wrap gap-2">
             <button onclick="window.syncDebug?.refresh()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors">
-              🔄 Refresh
+              Refresh
             </button>
-            <button onclick="window.syncDebug?.forceSync()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
-              ⚡ Force Sync Now
+            <button onclick="window.syncDebug?.exportData()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
+              Export Data
             </button>
-            <button onclick="window.syncDebug?.clearQueue()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-medium transition-colors">
-              🗑️ Clear Queue
-            </button>
-            <button onclick="window.syncDebug?.testConnection()" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors">
-              🌐 Test Connection
+            <button onclick="window.syncDebug?.clearData()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors">
+              Clear All Data
             </button>
           </div>
         </div>
@@ -113,141 +111,145 @@ class SyncDebug {
 
     try {
       const [
-        syncStatus,
-        queueStats,
-        localStorageSize,
-        supabaseStatus,
-        lastLogs
+        storageInfo,
+        appDataInfo,
+        permitsInfo,
+        tahfizhInfo,
+        recentLogs
       ] = await Promise.all([
-        window.hybridStorageManager?.getSyncStatus() || {},
-        window.syncQueue?.getStats() || {},
-        this.getLocalStorageSize(),
-        this.getSupabaseStatus(),
+        this.getStorageInfo(),
+        this.getAppDataInfo(),
+        this.getPermitsInfo(),
+        this.getTahfizhInfo(),
         this.getRecentLogs()
       ]);
 
       content.innerHTML = `
-        <!-- Connection Status -->
+        <!-- Storage Overview -->
         <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div class="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm flex items-center gap-2">
-            🌐 Connection Status
+            Storage Overview
           </div>
           <div class="p-4 grid grid-cols-2 gap-4">
             <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full ${syncStatus.isOnline ? 'bg-emerald-500' : 'bg-red-500'}"></div>
-              <span>${syncStatus.isOnline ? 'Online' : 'Offline'}</span>
+              <div class="w-3 h-3 rounded-full ${storageInfo.available ? 'bg-emerald-500' : 'bg-red-500'}"></div>
+              <span>LocalStorage: ${storageInfo.available ? 'Available' : 'Unavailable'}</span>
             </div>
             <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full ${supabaseStatus.configured ? 'bg-emerald-500' : 'bg-red-500'}"></div>
-              <span>Supabase: ${supabaseStatus.configured ? 'Configured' : 'Not Configured'}</span>
+              <div class="w-3 h-3 rounded-full ${storageInfo.quotaPercent < 80 ? 'bg-emerald-500' : storageInfo.quotaPercent < 95 ? 'bg-amber-500' : 'bg-red-500'}"></div>
+              <span>Usage: ${storageInfo.quotaPercent.toFixed(1)}%</span>
             </div>
             <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full ${supabaseStatus.authenticated ? 'bg-emerald-500' : 'bg-amber-500'}"></div>
-              <span>Auth: ${supabaseStatus.authenticated ? 'Logged In' : 'Not Logged In'}</span>
+              <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+              <span>Mode: Local Only</span>
             </div>
             <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full ${syncStatus.isSyncing ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'}"></div>
-              <span>${syncStatus.isSyncing ? 'Syncing...' : 'Idle'}</span>
+              <div class="w-3 h-3 rounded-full bg-slate-400"></div>
+              <span>Keys: ${storageInfo.keyCount}</span>
             </div>
           </div>
         </div>
 
-        <!-- Sync Queue -->
+        <!-- App Data -->
         <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div class="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm flex items-center gap-2">
-            📋 Sync Queue Status
+            App Data
           </div>
           <div class="p-4">
             <div class="grid grid-cols-4 gap-4 text-center mb-4">
-              <div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
-                <div class="text-2xl font-bold text-amber-600">${queueStats.pending || 0}</div>
-                <div class="text-xs text-amber-600">Pending</div>
+              <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                <div class="text-2xl font-bold text-blue-600">${appDataInfo.attendanceCount}</div>
+                <div class="text-xs text-blue-600">Attendance Records</div>
               </div>
               <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3">
-                <div class="text-2xl font-bold text-emerald-600">${queueStats.synced || 0}</div>
-                <div class="text-xs text-emerald-600">Synced</div>
-              </div>
-              <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
-                <div class="text-2xl font-bold text-red-600">${queueStats.failed || 0}</div>
-                <div class="text-xs text-red-600">Failed</div>
+                <div class="text-2xl font-bold text-emerald-600">${permitsInfo.totalCount}</div>
+                <div class="text-xs text-emerald-600">Permits</div>
               </div>
               <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-                <div class="text-2xl font-bold text-purple-600">${queueStats.conflict || 0}</div>
-                <div class="text-xs text-purple-600">Conflicts</div>
+                <div class="text-2xl font-bold text-purple-600">${tahfizhInfo.totalCount}</div>
+                <div class="text-xs text-purple-600">Tahfizh Records</div>
+              </div>
+              <div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
+                <div class="text-2xl font-bold text-amber-600">${recentLogs.length}</div>
+                <div class="text-xs text-amber-600">Activity Logs</div>
               </div>
             </div>
             <div class="text-sm text-slate-500">
-              Last Sync: ${syncStatus.lastSync ? new Date(syncStatus.lastSync).toLocaleString('id-ID') : 'Never'}
+              Storage Used: ${(appDataInfo.totalSize + permitsInfo.size + tahfizhInfo.size).toFixed(2)} KB
             </div>
           </div>
         </div>
 
-        <!-- Storage Info -->
+        <!-- Storage Keys -->
         <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div class="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm flex items-center gap-2">
-            💾 Local Storage
-          </div>
-          <div class="p-4 grid grid-cols-2 gap-4">
-            <div>
-              <div class="text-sm text-slate-500">Attendance Data</div>
-              <div class="font-medium">${localStorageSize.attendance} KB</div>
-            </div>
-            <div>
-              <div class="text-sm text-slate-500">Permits</div>
-              <div class="font-medium">${localStorageSize.permits} KB</div>
-            </div>
-            <div>
-              <div class="text-sm text-slate-500">Total Used</div>
-              <div class="font-medium">${localStorageSize.total} KB</div>
-            </div>
-            <div>
-              <div class="text-sm text-slate-500">Mode</div>
-              <div class="font-medium">${window.APP_STORAGE?.mode || 'unknown'}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Supabase Info -->
-        <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div class="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm flex items-center gap-2">
-            ☁️ Supabase Details
-          </div>
-          <div class="p-4">
-            <div class="grid grid-cols-1 gap-2 text-sm">
-              <div><span class="text-slate-500">URL:</span> <span class="font-mono text-xs">${supabaseStatus.url || 'Not configured'}</span></div>
-              <div><span class="text-slate-500">User:</span> ${supabaseStatus.userEmail || 'Not logged in'}</div>
-              <div><span class="text-slate-500">Storage Mode:</span> ${window.APP_STORAGE?.mode}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pending Changes -->
-        <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div class="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm flex items-center gap-2">
-            📝 Pending Changes (Last 10)
+            Storage Keys (${storageInfo.keyCount})
           </div>
           <div class="p-4 max-h-48 overflow-y-auto">
-            ${lastLogs.length > 0 ? lastLogs.map(log => `
-              <div class="text-xs font-mono py-1 px-2 rounded mb-1 ${log.type === 'attendance' ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-purple-50 dark:bg-purple-900/20'}">
-                <span class="font-bold">[${log.entityType}]</span> ${log.operation} - ${new Date(log.timestamp).toLocaleTimeString('id-ID')}
-                <br><span class="text-slate-500">ID: ${log.entityId}</span>
+            ${storageInfo.keys.length > 0 ? storageInfo.keys.map(key => `
+              <div class="text-xs font-mono py-1 px-2 rounded mb-1 bg-slate-50 dark:bg-slate-800 flex justify-between">
+                <span class="truncate">${key.name}</span>
+                <span class="text-slate-400">${key.size} B</span>
               </div>
-            `).join('') : '<div class="text-slate-400 text-sm">No pending changes</div>'}
+            `).join('') : '<div class="text-slate-400 text-sm">No keys found</div>'}
           </div>
         </div>
 
-        <!-- Recent Console Logs -->
+        <!-- Permits Summary -->
         <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <div class="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm flex items-center gap-2">
-            📜 Recent Logs
+            Permits Summary
           </div>
-          <div class="p-4 max-h-48 overflow-y-auto font-mono text-xs">
-            ${lastLogs.slice(0, 5).map(log => `
-              <div class="py-1 border-b border-slate-100 dark:border-slate-700 last:border-0">
-                <span class="text-slate-400">${new Date(log.timestamp).toLocaleTimeString()}</span>
-                <span class="ml-2">${log.message}</span>
+          <div class="p-4">
+            <div class="grid grid-cols-3 gap-4 text-center">
+              <div class="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
+                <div class="text-xl font-bold text-amber-600">${permitsInfo.pendingCount}</div>
+                <div class="text-xs text-amber-600">Pending</div>
               </div>
-            `).join('') || '<div class="text-slate-400 text-sm">No logs available</div>'}
+              <div class="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3">
+                <div class="text-xl font-bold text-emerald-600">${permitsInfo.approvedCount}</div>
+                <div class="text-xs text-emerald-600">Approved</div>
+              </div>
+              <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                <div class="text-xl font-bold text-red-600">${permitsInfo.rejectedCount}</div>
+                <div class="text-xs text-red-600">Rejected</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tahfizh Summary -->
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm flex items-center gap-2">
+            Tahfizh Summary
+          </div>
+          <div class="p-4">
+            <div class="grid grid-cols-2 gap-4 text-center">
+              <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                <div class="text-xl font-bold text-purple-600">${tahfizhInfo.syncedCount}</div>
+                <div class="text-xs text-purple-600">Saved</div>
+              </div>
+              <div class="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+                <div class="text-xl font-bold text-slate-600">${(tahfizhInfo.size / 1024).toFixed(2)} KB</div>
+                <div class="text-xs text-slate-600">Storage Size</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity Logs -->
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="bg-slate-100 dark:bg-slate-800 px-4 py-2 font-bold text-sm flex items-center gap-2">
+            Recent Activity Logs (Last 5)
+          </div>
+          <div class="p-4 max-h-48 overflow-y-auto">
+            ${recentLogs.length > 0 ? recentLogs.map(log => `
+              <div class="py-2 border-b border-slate-100 dark:border-slate-700 last:border-0">
+                <div class="text-xs font-bold text-slate-700 dark:text-slate-300">${log.action || 'System'}</div>
+                <div class="text-xs text-slate-500 truncate">${log.detail || ''}</div>
+                <div class="text-[10px] text-slate-400 mt-1">${log.created_at ? new Date(log.created_at).toLocaleString('id-ID') : '-'}</div>
+              </div>
+            `).join('') : '<div class="text-slate-400 text-sm">No activity logs</div>'}
           </div>
         </div>
       `;
@@ -262,129 +264,188 @@ class SyncDebug {
   }
 
   /**
-   * Get local storage size
+   * Get storage overview info
    */
-  getLocalStorageSize() {
-    let attendance = 0;
-    let permits = 0;
-    let total = 0;
+  getStorageInfo() {
+    let totalSize = 0;
+    const keys = [];
 
     try {
-      const attData = localStorage.getItem('musyrif_app_v5_fix');
-      const permitData = localStorage.getItem('musyrif_permits_db');
-
-      if (attData) attendance = new Blob([attData]).size / 1024;
-      if (permitData) permits = new Blob([permitData]).size / 1024;
-      total = attendance + permits;
-    } catch (e) {
-      console.error('[SyncDebug] Error getting storage size:', e);
-    }
-
-    return {
-      attendance: attendance.toFixed(2),
-      permits: permits.toFixed(2),
-      total: total.toFixed(2)
-    };
-  }
-
-  /**
-   * Get Supabase status
-   */
-  getSupabaseStatus() {
-    const config = window.APP_STORAGE?.supabase || {};
-    const client = window.supabaseClient;
-
-    return {
-      configured: !!(config.url && config.anonKey),
-      url: config.url || null,
-      authenticated: !!(client?.currentUser),
-      userEmail: client?.currentUser?.email || null
-    };
-  }
-
-  /**
-   * Get recent logs from sync queue
-   */
-  async getRecentLogs() {
-    try {
-      if (!window.syncQueue?.db) return [];
-      const changes = await window.syncQueue.export();
-      return changes.slice(-10).reverse();
-    } catch (e) {
-      return [];
-    }
-  }
-
-  /**
-   * Force sync now
-   */
-  async forceSync() {
-    console.log('[SyncDebug] Force sync triggered');
-
-    const status = window.hybridStorageManager?.getSyncStatus();
-    if (!status?.isOnline) {
-      window.showToast?.('Cannot sync while offline!', 'error');
-      return;
-    }
-
-    try {
-      await window.hybridStorageManager?.syncNow();
-      window.showToast?.('Sync triggered! Check console for details.', 'success');
-      setTimeout(() => this.refresh(), 1000);
-    } catch (error) {
-      window.showToast?.('Sync failed: ' + error.message, 'error');
-    }
-  }
-
-  /**
-   * Clear sync queue
-   */
-  async clearQueue() {
-    if (!confirm('Clear all pending sync changes? This cannot be undone!')) return;
-
-    try {
-      await window.syncQueue?.clearAll();
-      window.showToast?.('Sync queue cleared!', 'success');
-      this.refresh();
-    } catch (error) {
-      window.showToast?.('Failed to clear queue: ' + error.message, 'error');
-    }
-  }
-
-  /**
-   * Test connection to Supabase
-   */
-  async testConnection() {
-    console.log('[SyncDebug] Testing Supabase connection...');
-
-    const status = this.getSupabaseStatus();
-
-    if (!status.configured) {
-      window.showToast?.('Supabase not configured!', 'error');
-      return;
-    }
-
-    try {
-      const startTime = Date.now();
-      const response = await fetch(status.url + '/rest/v1/', {
-        method: 'GET',
-        headers: {
-          'apikey': window.APP_STORAGE.supabase.anonKey,
-          'Authorization': `Bearer ${window.APP_STORAGE.supabase.anonKey}`
+      for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+          const value = localStorage.getItem(key);
+          const size = (key.length + (value?.length || 0)) * 2; // UTF-16 encoding
+          totalSize += size;
+          keys.push({ name: key, size: size });
         }
-      });
-      const latency = Date.now() - startTime;
-
-      if (response.ok) {
-        window.showToast?.(`Connection OK! Latency: ${latency}ms`, 'success');
-      } else {
-        window.showToast?.(`Connection error: ${response.status}`, 'error');
       }
-    } catch (error) {
-      window.showToast?.('Connection failed: ' + error.message, 'error');
+    } catch (e) {
+      console.error('[SyncDebug] Error getting storage info:', e);
     }
 
-    this.refresh();
+    // Estimate quota (localStorage typically has ~5MB limit)
+    const estimatedQuota = 5 * 1024 * 1024; // 5MB
+    const quotaPercent = (totalSize / estimatedQuota) * 100;
+
+    return {
+      available: true,
+      totalSize,
+      quotaPercent,
+      keyCount: keys.length,
+      keys: keys.sort((a, b) => b.size - a.size).slice(0, 20)
+    };
+  }
+
+  /**
+   * Get app data info
+   */
+  getAppDataInfo() {
+    let totalSize = 0;
+    let attendanceCount = 0;
+
+    try {
+      // Count attendance records
+      for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key) && key.startsWith('musyrif_attendance_')) {
+          const data = localStorage.getItem(key);
+          if (data) {
+            const parsed = JSON.parse(data);
+            // Count dates with data
+            attendanceCount += Object.keys(parsed).length;
+            totalSize += data.length * 2;
+          }
+        }
+      }
+
+      // Auth data
+      const authKey = localStorage.getItem('musyrif_auth_v2');
+      if (authKey) totalSize += authKey.length * 2;
+    } catch (e) {
+      console.error('[SyncDebug] Error getting app data:', e);
+    }
+
+    return { totalSize, attendanceCount };
+  }
+
+  /**
+   * Get permits info
+   */
+  getPermitsInfo() {
+    let size = 0;
+    let totalCount = 0;
+    let pendingCount = 0;
+    let approvedCount = 0;
+    let rejectedCount = 0;
+
+    try {
+      const permitsData = localStorage.getItem('musyrif_permits_db');
+      if (permitsData) {
+        const permits = JSON.parse(permitsData);
+        totalCount = permits.length;
+
+        permits.forEach(p => {
+          const status = String(p.status || '').toLowerCase();
+          if (status === 'pending') pendingCount++;
+          else if (status === 'approved') approvedCount++;
+          else if (status === 'rejected') rejectedCount++;
+        });
+
+        size = permitsData.length * 2;
+      }
+    } catch (e) {
+      console.error('[SyncDebug] Error getting permits info:', e);
+    }
+
+    return { size, totalCount, pendingCount, approvedCount, rejectedCount };
+  }
+
+  /**
+   * Get tahfizh info
+   */
+  getTahfizhInfo() {
+    let size = 0;
+    let totalCount = 0;
+    let syncedCount = 0;
+
+    try {
+      const setoranData = localStorage.getItem('tahfizh_local_setoran');
+      if (setoranData) {
+        const setoran = JSON.parse(setoranData);
+        totalCount = setoran.length;
+        syncedCount = setoran.filter(r => r.synced).length;
+        size = setoranData.length * 2;
+      }
+    } catch (e) {
+      console.error('[SyncDebug] Error getting tahfizh info:', e);
+    }
+
+    return { size, totalCount, syncedCount };
+  }
+
+  /**
+   * Get recent logs
+   */
+  getRecentLogs() {
+    try {
+      const logsData = localStorage.getItem('local_activity_logs');
+      if (logsData) {
+        const logs = JSON.parse(logsData);
+        return logs.slice(0, 10);
+      }
+    } catch (e) {
+      console.error('[SyncDebug] Error getting logs:', e);
+    }
+    return [];
+  }
+
+  /**
+   * Export all data as JSON
+   */
+  exportData() {
+    try {
+      const data = {};
+
+      for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+          try {
+            data[key] = JSON.parse(localStorage.getItem(key));
+          } catch {
+            data[key] = localStorage.getItem(key);
+          }
+        }
+      }
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `musyrif_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      window.showToast?.('Data exported successfully!', 'success');
+    } catch (error) {
+      window.showToast?.('Export failed: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Clear all localStorage data (with confirmation)
+   */
+  clearData() {
+    if (!confirm('Clear ALL localStorage data? This cannot be undone!')) return;
+
+    if (!confirm('Are you absolutely sure? All attendance, permits, and settings will be deleted!')) return;
+
+    try {
+      localStorage.clear();
+      window.showToast?.('All data cleared. Refreshing...', 'info');
+      setTimeout(() => location.reload(), 1000);
+    } catch (error) {
+      window.showToast?.('Clear failed: ' + error.message, 'error');
+    }
   }
 
   /**
@@ -411,4 +472,4 @@ window.syncDebug = syncDebug;
 window.openSyncDebug = () => syncDebug.open();
 window.closeSyncDebug = () => syncDebug.close();
 
-console.log('[SyncDebug] Debug module loaded. Run window.openSyncDebug() to open.');
+console.log('[SyncDebug] Debug module loaded (localStorage mode). Run window.openSyncDebug() to open.');

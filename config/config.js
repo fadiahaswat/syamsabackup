@@ -131,14 +131,8 @@ window.APP_STORAGE = {
   // Storage version for future migrations
   version: 3,
 
-  // Storage mode: 'local-only' | 'hybrid' | 'cloud-primary' | 'cloud-only'
-  // 'local-only': Default, no cloud sync (existing behavior)
-  // 'hybrid': Cloud backup + offline-first (recommended for unstable connections)
-  // 'cloud-primary': Cloud-first with local cache
-  // 'cloud-only': CLOUD ONLY - All writes go directly to Supabase, NO localStorage writes
-  //               Offline save attempts are BLOCKED with error message
-  //               localStorage is used as READ-ONLY cache for offline viewing
-  mode: 'cloud-only', // Cloud-only: semua data di Supabase, offline writes diblokir
+  // Storage mode: 'local-only' - semua data disimpan di browser localStorage
+  mode: 'local-only',
 
   // Data storage keys
   keys: {
@@ -154,55 +148,4 @@ window.APP_STORAGE = {
     debounceMs: 500,
     enabled: true
   },
-
-  // Cache configuration (for cloud-only and cloud-primary modes)
-  cache: {
-    // How long cached data is considered fresh (ms), default: 5 minutes
-    staleThresholdMs: 5 * 60 * 1000,
-    // Prefix for cache keys to distinguish from writable storage
-    prefix: 'cache_',
-    // Enable offline read cache
-    enableOfflineRead: true,
-  },
-
-  // ==========================================
-  // SUPABASE CLOUD STORAGE CONFIG
-  // ==========================================
-  supabase: {
-    url: 'https://ilrpgbrqlfpzvxxbhuhk.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlscnBnYnJxbGZwenZ4eGJodWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDc4MTQsImV4cCI6MjA5Nzg4MzgxNH0.75g3TvrYcRx9CEPB0C8HNadc-zwQPVKuUVOFS-tCLrg',
-  },
-
-  // Sync configuration
-  sync: {
-    // Enable automatic background sync
-    autoSync: true,
-
-    // Sync interval in milliseconds (default: 30 seconds)
-    syncInterval: 30000,
-
-    // Conflict resolution: 'server-wins' | 'client-wins' | 'manual'
-    // 'server-wins': Server data overwrites local (safer)
-    // 'client-wins': Local changes overwrite server
-    // 'manual': Prompt user to resolve conflicts
-    conflictResolution: 'server-wins',
-
-    // Max retry attempts for failed syncs
-    retryAttempts: 3,
-
-    // Batch size for bulk operations
-    batchSize: 50,
-  },
-
-  // File upload configuration
-  fileUpload: {
-    // Max file size in bytes (default: 5MB)
-    maxSizeBytes: 5 * 1024 * 1024,
-
-    // Allowed MIME types
-    allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-
-    // Storage bucket name
-    bucket: 'permit-documents',
-  }
 };

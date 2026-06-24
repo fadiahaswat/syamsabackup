@@ -161,51 +161,26 @@
       status_label: category === 'sakit' ? 'S' : 'P'
     };
 
-    // Save via storage manager (unifying with hybrid storage/Supabase Client)
-    if (window.hybridStorageManager) {
-      // CLOUD-ONLY MODE: Handle errors properly
-      if (window.APP_STORAGE?.mode === 'cloud-only') {
-        try {
-          await window.hybridStorageManager.savePermit(requestData);
-          // Success - no localStorage save needed
-        } catch (cloudError) {
-          console.error('[PermitRequest] Cloud-only save failed:', cloudError);
-          if (cloudError.name === 'CloudOnlyOfflineError') {
-            window.showToast("⚠️ Tidak dapat mengirim saat offline.\nPermohonan tidak akan tersimpan.", "error", true, 5000);
-          } else if (cloudError.name === 'CloudOnlyAuthError') {
-            window.showToast("🔒 Sesi habis. Silakan login kembali.", "error");
-          } else {
-            window.showToast("Gagal mengirim permohonan: " + cloudError.message, "error");
-          }
-          return; // Don't add to local state or localStorage
-        }
-      } else {
-        // Legacy modes
-        window.hybridStorageManager.savePermit(requestData);
-      }
-    } else if (window.storageManager) {
+    // Save via storage manager
+    if (window.storageManager) {
       window.storageManager.savePermit(requestData);
     }
 
-    // Also add to appState.permits so polling can detect it immediately
+    // Also add to appState.permits
     if (!appState.permits) appState.permits = [];
     appState.permits.push(requestData);
 
-    // Save directly to localStorage (legacy) - skipped in cloud-only mode
-    // In cloud-only, permit data comes from cloud via realtime/polling
-    if (window.APP_STORAGE?.mode !== 'cloud-only') {
-      try {
-        const existingPermits = JSON.parse(localStorage.getItem('musyrif_permits_db') || '[]');
-        existingPermits.push(requestData);
-        localStorage.setItem('musyrif_permits_db', JSON.stringify(existingPermits));
-        console.log("[PermitRequest] Saved directly to localStorage, total permits:", existingPermits.length);
-      } catch (e) {
-        console.warn("[PermitRequest] Error saving to localStorage:", e);
-      }
+    // Save directly to localStorage
+    try {
+      const existingPermits = JSON.parse(localStorage.getItem('musyrif_permits_db') || '[]');
+      existingPermits.push(requestData);
+      localStorage.setItem('musyrif_permits_db', JSON.stringify(existingPermits));
+      console.log("[PermitRequest] Saved to localStorage, total permits:", existingPermits.length);
+    } catch (e) {
+      console.warn("[PermitRequest] Error saving to localStorage:", e);
     }
 
     // Trigger notification to Musyrif of the class
-    // Try multiple sources for musyrif email (in order of reliability)
     let musyrifEmail = "";
     const targetKelasNormalized = String(requestData.kelas || "").replace(/\s+/g, "").toLowerCase();
 
@@ -220,21 +195,12 @@
 
     // 2. Second try: Get from class data sources
     const classDataSource = window.classData || window.MASTER_KELAS || (typeof MASTER_KELAS !== "undefined" ? MASTER_KELAS : null);
-    console.log("[PermitRequest Debug] Available class data sources:", {
-      windowClassData: !!window.classData,
-      windowMasterKelas: !!window.MASTER_KELAS,
-      localMasterKelas: typeof MASTER_KELAS !== "undefined"
-    });
-
     if (!musyrifEmail && classDataSource) {
       const matchedKey = Object.keys(classDataSource).find(k =>
         String(k).replace(/\s+/g, "").toLowerCase() === targetKelasNormalized
       );
-      console.log("[PermitRequest Debug] Class data source matched key:", matchedKey);
       if (matchedKey) {
         musyrifEmail = classDataSource[matchedKey]?.email || "";
-        console.log("[PermitRequest Debug] Source: Class Data Source ->", musyrifEmail);
-        // Cache it for future use
         if (musyrifEmail) {
           localStorage.setItem(`musyrif_email_${targetKelasNormalized}`, musyrifEmail);
         }
@@ -250,8 +216,8 @@
 
     console.log("[PermitRequest Debug] Final resolved musyrifEmail:", musyrifEmail);
 
-    if (typeof window.addNotification === "function") {
-      window.addNotification(
+    if (typeof window.addLocalNotification === "function") {
+      window.addLocalNotification(
         "musyrif",
         musyrifEmail,
         "Pengajuan Izin Baru 📝",
@@ -287,13 +253,13 @@
       </div>
     `;
 
-    // Load from appState.permits which is unified and synced by hybridStorageManager
+    // Load from appState.permits
     const permits = appState.permits || [];
     const studentPermits = permits.filter(p => p && String(p.nis) === nis);
-    
+
     // Sort descending by timestamp / start_date
     studentPermits.sort((a, b) => new Date(b.timestamp || b.created_at || Date.now()) - new Date(a.timestamp || a.created_at || Date.now()));
-    
+
     renderWaliPermitHistoryList(studentPermits);
   };
 
@@ -393,7 +359,6 @@
   window.showExitTicket = function(escapedData) {
     const req = JSON.parse(decodeURIComponent(escapedData));
 
-    // Get student details if not fully present in req (which is true for db-transformed permits)
     const studentInfo = window.findWaliSantriByNis ? window.findWaliSantriByNis(req.nis) : null;
     const studentName = studentInfo?.nama || req.nama || "Santri";
     const studentClass = studentInfo?.kelas || studentInfo?.rombel || req.kelas || appState.waliKelas || "Kelas";
@@ -467,15 +432,12 @@
       return window.showToast("Data pengajuan tidak ditemukan.", "error");
     }
 
-    // Only allow editing pending permits
     if (permit.status !== 'pending') {
       return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat diedit.", "warning");
     }
 
-    // Store the editing ID for later use
     window.editingPermitId = requestId;
 
-    // Fill the form with existing data
     const elNamaWali = document.getElementById("edit-wali-permit-nama-wali");
     const elAlamatWali = document.getElementById("edit-wali-permit-alamat-wali");
     const elCategory = document.getElementById("edit-wali-permit-category");
@@ -492,7 +454,6 @@
     if (elDate) elDate.value = permit.start_date || "";
     if (elDestination) elDestination.value = permit.destination || permit.location || "";
 
-    // Populate time dropdowns
     if (elStartTime) {
       populateTimeDropdown(elStartTime, 6, 21, permit.start_time_limit || "08:00");
     }
@@ -500,7 +461,6 @@
       populateTimeDropdown(elEndTime, 6, 21, permit.end_time_limit || "17:00");
     }
 
-    // Show info about the permit being edited
     const elInfo = document.getElementById("edit-wali-permit-info");
     if (elInfo) {
       elInfo.textContent = `Mengedit pengajuan izin untuk ${permit.nama} (${formatIndonesianDate(permit.start_date)})`;
@@ -527,7 +487,6 @@
 
     const permit = permits[permitIndex];
 
-    // Only allow editing pending permits
     if (permit.status !== 'pending') {
       return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat diedit.", "warning");
     }
@@ -547,12 +506,10 @@
     const endTime = document.getElementById("edit-wali-permit-end-time").value;
     const destination = document.getElementById("edit-wali-permit-destination").value.trim();
 
-    // Validate time
     if (startTime >= endTime) {
       return window.showToast("Jam kembali harus setelah jam keluar.", "warning");
     }
 
-    // Update permit data
     permit.nama_wali = namaWali;
     permit.alamat_wali = alamatWali;
     permit.category = category;
@@ -566,31 +523,10 @@
     permit.updated_at = new Date().toISOString();
     permit.status_label = category === 'sakit' ? 'S' : 'P';
 
-    // Save changes
-    if (window.hybridStorageManager) {
-      // CLOUD-ONLY MODE: Handle errors properly
-      if (window.APP_STORAGE?.mode === 'cloud-only') {
-        try {
-          await window.hybridStorageManager.savePermit(permit);
-        } catch (cloudError) {
-          console.error('[PermitRequest] Cloud-only save failed:', cloudError);
-          if (cloudError.name === 'CloudOnlyOfflineError') {
-            window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
-          } else if (cloudError.name === 'CloudOnlyAuthError') {
-            window.showToast("🔒 Sesi habis. Silakan login kembali.", "error");
-          } else {
-            window.showToast("Gagal menyimpan: " + cloudError.message, "error");
-          }
-          return;
-        }
-      } else {
-        window.hybridStorageManager.savePermit(permit);
-      }
-    } else if (window.storageManager) {
+    if (window.storageManager) {
       window.storageManager.savePermit(permit);
     }
 
-    // Clear editing ID
     window.editingPermitId = null;
 
     window.showToast("Pengajuan izin berhasil diperbarui!", "success");
@@ -613,10 +549,8 @@
       return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat dibatalkan.", "warning");
     }
 
-    // Store the deleting ID for later use
     window.deletingPermitId = requestId;
 
-    // Show confirmation
     document.getElementById("delete-permit-nama").textContent = permit.nama;
     document.getElementById("delete-permit-reason").textContent = permit.reason;
     document.getElementById("delete-permit-date").textContent = formatIndonesianDate(permit.start_date);
@@ -640,27 +574,18 @@
 
     const permit = permits[permitIndex];
 
-    // Only allow deleting pending permits
     if (permit.status !== 'pending') {
       window.closeModal("modal-delete-wali-permit");
       return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat dibatalkan.", "warning");
     }
 
-    // Remove from array
     permits.splice(permitIndex, 1);
     appState.permits = permits;
 
-    // Also remove from localStorage directly
-    const STORAGE_KEY_PERMITS = 'musyrif_permits_db';
-    try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY_PERMITS) || '{}');
-      delete stored[requestId];
-      localStorage.setItem(STORAGE_KEY_PERMITS, JSON.stringify(stored));
-    } catch (e) {
-      console.warn("Could not update localStorage:", e);
+    if (window.storageManager) {
+      window.storageManager.savePermits(appState.permits);
     }
 
-    // Clear deleting ID
     window.deletingPermitId = null;
 
     window.showToast("Pengajuan izin berhasil dibatalkan.", "success");
@@ -684,12 +609,10 @@
     window.closeModal("modal-delete-wali-permit");
   };
 
-
   // =========================================================================
   // 2. FUNGSI UNTUK MUSYRIF (PERSETUJUAN IZIN)
   // =========================================================================
 
-  // Track current pending requests
   let currentPendingRequests = [];
 
   /**
@@ -700,8 +623,6 @@
     if (!kelas) return;
 
     console.log(`[PermitRequestManager] Loading requests for Class ${kelas}`);
-
-    // Load requests from localStorage
     loadMusyrifRequests();
   };
 
@@ -717,7 +638,6 @@
 
     console.log("[PermitRequestManager] loadMusyrifRequests called for class:", kelas);
 
-    // Get permits from appState or from storage
     let permits = appState.permits || [];
     console.log("[PermitRequestManager] Permits from appState:", permits.length);
 
@@ -726,7 +646,6 @@
       const storedPermits = localStorage.getItem('musyrif_permits_db');
       if (storedPermits) {
         const parsed = JSON.parse(storedPermits);
-        // Support both array format (new) and object format (legacy: {id: permit})
         const parsedArray = Array.isArray(parsed)
           ? parsed
           : (parsed && typeof parsed === 'object' ? Object.values(parsed) : []);
@@ -739,7 +658,6 @@
               permits.push(p);
             }
           });
-          // Update appState.permits
           appState.permits = permits;
         }
       }
@@ -747,14 +665,12 @@
       console.warn("[PermitRequestManager] Error loading permits from storage:", e);
     }
 
-    // Filter permits for pending status
     currentPendingRequests = permits.filter(r =>
       r && r.status === "pending"
     );
 
     console.log("[PermitRequestManager] Pending requests:", currentPendingRequests.length);
 
-    // Make sure each pending request has the student name (look up in MASTER_SANTRI)
     currentPendingRequests.forEach(req => {
       if (!req.nama && window.findWaliSantriByNis) {
         const studentInfo = window.findWaliSantriByNis(req.nis);
@@ -765,7 +681,6 @@
     renderMusyrifApprovalWidget(currentPendingRequests.length);
   }
 
-  // Expose ke window agar bisa dipanggil dari HybridStorageManager dan polling
   window.loadMusyrifRequests = loadMusyrifRequests;
 
   /**
@@ -788,110 +703,21 @@
     if (elCount) elCount.textContent = `${count} Pengajuan Pending`;
     if (elBadge) elBadge.textContent = count;
 
-    // Show toast notification
     if (count > 0 && window.showToast) {
       window.showToast(`Ada ${count} pengajuan izin yang menunggu persetujuan`, 'info', false, 3000);
     }
   }
 
-  // Expose ke window agar bisa dipanggil dari HybridStorageManager
   window.renderMusyrifApprovalWidget = renderMusyrifApprovalWidget;
 
-  // FIX BUG #4: Unified Global Polling Manager
-  // Replaces multiple scattered polling intervals with a single orchestrator
-  window.GlobalPollingManager = {
-    isPolling: false,
-    intervalId: null,
-
-    /**
-     * Start unified polling - single interval for all data sync
-     */
-    start() {
-      // Don't start if already polling or in wali mode
-      if (this.isPolling) {
-        console.log("[GlobalPollingManager] Already polling, skipping start");
-        return;
-      }
-      if (window.isWaliMode?.()) {
-        console.log("[GlobalPollingManager] Skipping - in wali mode (realtime preferred)");
-        return;
-      }
-
-      console.log("[GlobalPollingManager] Starting unified polling (every 10s)");
-      this.isPolling = true;
-
-      // Initial load
-      loadMusyrifRequests();
-
-      // Single unified interval - handles all data refresh
-      this.intervalId = setInterval(() => {
-        if (!navigator.onLine) return;
-
-        // 1. Process sync queue (pending offline changes)
-        window.hybridStorageManager?._processQueue();
-
-        // 2. Refresh permits from cloud (will trigger UI via callbacks)
-        if (window.hybridStorageManager?.isOnline) {
-          window.hybridStorageManager.remote?.loadPermits?.(window.hybridStorageManager.kelasId)
-            .then(result => {
-              if (result?.data) {
-                // Update appState if data changed
-                const newPermits = result.data.map(p => window.hybridStorageManager._transformRemotePermit(p));
-                const existingIds = new Set((appState.permits || []).map(p => p.id));
-                const hasNewData = newPermits.some(p => !existingIds.has(p.id));
-
-                if (hasNewData) {
-                  console.log("[GlobalPollingManager] New permits detected, refreshing UI");
-                  window.refreshPermitSurfaces?.();
-                }
-              }
-            })
-            .catch(err => console.warn("[GlobalPollingManager] Permit refresh failed:", err));
-        }
-
-        // 3. Refresh musyrif requests (UI update)
-        loadMusyrifRequests();
-
-        // 4. Refresh tahfizh if online
-        if (typeof window.syncTahfizhToCloud === 'function') {
-          window.syncTahfizhToCloud();
-        }
-
-      }, 10000); // 10 second interval
-
-      console.log("[GlobalPollingManager] Polling started");
-    },
-
-    /**
-     * Stop all polling
-     */
-    stop() {
-      if (this.intervalId) {
-        clearInterval(this.intervalId);
-        this.intervalId = null;
-      }
-      this.isPolling = false;
-      console.log("[GlobalPollingManager] Polling stopped");
-    },
-
-    /**
-     * Restart polling (used when reconnecting or after realtime disconnect)
-     */
-    restart() {
-      console.log("[GlobalPollingManager] Restarting...");
-      this.stop();
-      setTimeout(() => this.start(), 1000);
-    }
-  };
-
-  // Legacy compatibility - redirects to GlobalPollingManager
+  // Polling functions for local-only mode
   window.startApprovalPolling = function() {
-    // FIX BUG #4: Delegate to unified polling manager
-    window.GlobalPollingManager.start();
+    console.log("[PermitRequestManager] Polling started (local-only mode)");
+    loadMusyrifRequests();
   };
 
   window.stopApprovalPolling = function() {
-    window.GlobalPollingManager.stop();
+    console.log("[PermitRequestManager] Polling stopped");
   };
 
   /**
@@ -984,30 +810,12 @@
       permit.approvedAt = new Date().toISOString();
       permit.is_active = true;
 
-      // Save permit
-      if (window.hybridStorageManager) {
-        // CLOUD-ONLY MODE: Handle errors properly
-        if (window.APP_STORAGE?.mode === 'cloud-only') {
-          try {
-            window.hybridStorageManager.savePermit(permit).catch(cloudError => {
-              console.error('[PermitRequest] Cloud-only save failed:', cloudError);
-              if (cloudError.name === 'CloudOnlyOfflineError') {
-                window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
-              }
-            });
-          } catch (cloudError) {
-            // Sync error handled in catch
-          }
-        } else {
-          window.hybridStorageManager.savePermit(permit);
-        }
-      } else if (window.storageManager) {
+      if (window.storageManager) {
         window.storageManager.savePermit(permit);
       }
 
-      // Trigger notification to Wali
-      if (typeof window.addNotification === "function") {
-        window.addNotification(
+      if (typeof window.addLocalNotification === "function") {
+        window.addLocalNotification(
           "wali",
           permit.nis,
           "Status Izin Disetujui 📝",
@@ -1024,30 +832,12 @@
       permit.rejectedAt = new Date().toISOString();
       permit.is_active = false;
 
-      // Save permit
-      if (window.hybridStorageManager) {
-        // CLOUD-ONLY MODE: Handle errors properly
-        if (window.APP_STORAGE?.mode === 'cloud-only') {
-          try {
-            window.hybridStorageManager.savePermit(permit).catch(cloudError => {
-              console.error('[PermitRequest] Cloud-only save failed:', cloudError);
-              if (cloudError.name === 'CloudOnlyOfflineError') {
-                window.showToast("⚠️ Tidak dapat menyimpan saat offline.", "error", true, 5000);
-              }
-            });
-          } catch (cloudError) {
-            // Sync error handled in catch
-          }
-        } else {
-          window.hybridStorageManager.savePermit(permit);
-        }
-      } else if (window.storageManager) {
+      if (window.storageManager) {
         window.storageManager.savePermit(permit);
       }
 
-      // Trigger notification to Wali
-      if (typeof window.addNotification === "function") {
-        window.addNotification(
+      if (typeof window.addLocalNotification === "function") {
+        window.addLocalNotification(
           "wali",
           permit.nis,
           "Status Izin Ditolak 📝",
@@ -1060,17 +850,14 @@
       window.showToast("Pengajuan izin ditolak.", "info");
     }
 
-    // Refresh permit UI elements
     if (window.refreshPermitSurfaces) {
       window.refreshPermitSurfaces();
     }
 
-    // Reload list and update modal
     currentPendingRequests = currentPendingRequests.filter(r => String(r.id) !== String(requestId));
     window.updateMusyrifApprovalModalList();
   };
 
-  // Expose function globally for realtime sync updates
   window.loadMusyrifRequests = loadMusyrifRequests;
 
 })();
