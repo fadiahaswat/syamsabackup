@@ -132,7 +132,7 @@ window.initApp = async function () {
               console.warn('[Wali] Hybrid storage init failed on restore:', err);
             });
           }
-        } else if (authData.kelas === "admin musyrif" || authData.isAdmin) {
+        } else if (authData.kelas?.toLowerCase() === "admin musyrif" || authData.isAdmin) {
           appState.selectedClass = authData.kelas;
           appState.userProfile = authData.profile;
           appState.waliMode = false;
@@ -320,13 +320,14 @@ window.populateClassDropdown = function () {
       '<option value="" disabled selected>Pilih Kelas</option>';
       
     const keys = Object.keys(MASTER_KELAS);
-    if (!keys.includes("admin musyrif")) {
-      keys.push("admin musyrif");
+    const hasAdminKey = keys.some(k => k.toLowerCase() === "admin musyrif");
+    if (!hasAdminKey) {
+      keys.push("Admin Musyrif");
       if (typeof MASTER_KELAS !== "undefined") {
-        MASTER_KELAS["admin musyrif"] = MASTER_KELAS["admin musyrif"] || {
+        MASTER_KELAS["Admin Musyrif"] = MASTER_KELAS["Admin Musyrif"] || {
           wali: "-",
-          musyrif: "Admin",
-          email: "admin@syamsa.sch.id"
+          musyrif: "Andi Aqillah Fadia Haswat, S.A.P.",
+          email: "andiaqillah@muallimin.sch.id"
         };
       }
     }
@@ -334,11 +335,7 @@ window.populateClassDropdown = function () {
     keys.sort().forEach((k) => {
       const opt = document.createElement("option");
       opt.value = k;
-      if (k === "admin musyrif") {
-        opt.textContent = "Admin - Sistem Pengelola";
-      } else {
-        opt.textContent = `${k} - ${MASTER_KELAS[k]?.musyrif || ""}`;
-      }
+      opt.textContent = `${k} - ${MASTER_KELAS[k]?.musyrif || ""}`;
       musyrifSelect.appendChild(opt);
     });
   }
@@ -594,7 +591,7 @@ window.sha256Hex = async function (input) {
 };
 
 window.startAuthenticatedSession = async function (targetClass, profile, supabaseSession = null) {
-  const isAdmin = targetClass === "admin musyrif" || profile?.isAdmin === true;
+  const isAdmin = targetClass?.toLowerCase() === "admin musyrif" || profile?.isAdmin === true;
   
   const authData = {
     kelas: targetClass,
@@ -1912,7 +1909,7 @@ window.handleGoogleCallback = async function (response) {
       window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
 
     if (!classInfo) {
-      if (targetClass === "admin musyrif" && window.supabaseClient?.client) {
+      if (targetClass?.toLowerCase() === "admin musyrif" && window.supabaseClient?.client) {
         try {
           const { data, error } = await window.supabaseClient.client
             .from('admin_emails')
@@ -3801,12 +3798,12 @@ window.closeAttendance = function () {
   
   // Restore Admin storage context
   if (appState.adminMode === true) {
-    appState.selectedClass = "admin musyrif";
-    const musyrifId = appState.userProfile?.id || "class_admin musyrif";
+    appState.selectedClass = "Admin Musyrif";
+    const musyrifId = appState.userProfile?.id || "class_Admin Musyrif";
     window.initStorage?.(musyrifId);
     
     if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
-      window.hybridStorageManager.init("admin musyrif").catch(err => {
+      window.hybridStorageManager.init("Admin Musyrif").catch(err => {
         console.warn('[AdminRestore] Hybrid storage init failed:', err);
       });
     }

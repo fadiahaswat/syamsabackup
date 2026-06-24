@@ -140,7 +140,7 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
     timestamp: new Date().toISOString(),
   };
 
-  const isAdmin = targetClass === "admin musyrif";
+  const isAdmin = targetClass?.toLowerCase() === "admin musyrif";
   appState.adminMode = isAdmin;
   
   if (isAdmin) {
@@ -277,7 +277,7 @@ window.handleGoogleCallback = async function (response) {
       window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
 
     if (!classInfo) {
-      if (targetClass === "admin musyrif" && window.supabaseClient?.client) {
+      if (targetClass?.toLowerCase() === "admin musyrif" && window.supabaseClient?.client) {
         try {
           const { data, error } = await window.supabaseClient.client
             .from('admin_emails')

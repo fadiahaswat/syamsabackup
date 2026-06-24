@@ -84,7 +84,7 @@ window.APP_AUTH = {
     },
     {
       username: "tester-admin",
-      kelas: "admin musyrif",
+      kelas: "Admin Musyrif",
       passwordHash:
         "b822f1cd2dcfc685b47e83e3980289fd5d8e3ff3a82def24d7d1d68bb272eb32",
     },

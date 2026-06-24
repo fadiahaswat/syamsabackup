@@ -73,7 +73,7 @@ window.loadGlobalAttendance = async function () {
     const rekap = {};
     Object.keys(MASTER_KELAS).forEach(k => {
       // Abaikan kelas admin
-      if (k === 'admin musyrif') return;
+      if (k?.toLowerCase() === 'admin musyrif') return;
 
       rekap[k] = {
         shubuh: false,
@@ -403,7 +403,7 @@ window.renderAdminOpsMatrix = async function () {
   
   tbody.innerHTML = "";
   
-  const kelasKeys = Object.keys(MASTER_KELAS).filter(k => k !== "admin musyrif");
+  const kelasKeys = Object.keys(MASTER_KELAS).filter(k => k?.toLowerCase() !== "admin musyrif");
   
   if (kelasKeys.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Tidak ada data kelas.</td></tr>`;
