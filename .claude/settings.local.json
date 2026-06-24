@@ -18,7 +18,8 @@
       "Bash(curl -s -I \"https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js\")",
       "WebSearch",
       "Bash(supabase link *)",
-      "Bash(npx supabase *)"
+      "Bash(npx supabase *)",
+      "WebFetch(domain:gemini.google.com)"
     ]
   }
 }
