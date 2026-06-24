@@ -1954,10 +1954,7 @@ window.handleGoogleCallback = async function (response) {
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
-    const normalizedUserEmail = String(userEmail || "")
-      .trim()
-      .toLowerCase();
-
+    // normalizedUserEmail sudah dideklarasikan di atas (baris 1907)
     if (!allowedEmails.includes(normalizedUserEmail)) {
       return window.showToast(
         "AKSES DITOLAK! Email Anda tidak terdaftar untuk kelas ini.",
