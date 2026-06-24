@@ -140,7 +140,11 @@ self.addEventListener("fetch", (event) => {
           // Cache successful responses for offline fallback
           if (response.ok) {
             const responseClone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone).catch(err => {
+                // Ignore cache.put errors (entry not found during update is normal)
+              });
+            });
           }
           return response;
         }).catch(() => {
