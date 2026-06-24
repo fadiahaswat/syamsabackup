@@ -41,7 +41,11 @@
       "Bash(curl -s \"https://ilrpgbrqlfpzvxxbhuhk.supabase.co/rest/v1/kelas?select=table_name\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlscnBnYnJxbGZwenZ4eGJodWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDc4MTQsImV4cCI6MjA5Nzg4MzgxNH0.75g3TvrYcRx9CEPB0C8HNadc-zwQPVKuUVOFS-tCLrg\")",
       "Bash(curl -s \"https://ilrpgbrqlfpzvxxbhuhk.supabase.co/rest/v1/permit?select=id&limit=1\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlscnBnYnJxbGZwenZ4eGJodWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDc4MTQsImV4cCI6MjA5Nzg4MzgxNH0.75g3TvrYcRx9CEPB0C8HNadc-zwQPVKuUVOFS-tCLrg\")",
       "Bash(curl -s \"https://ilrpgbrqlfpzvxxbhuhk.supabase.co/rest/v1/kelas?select=*&limit=1\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlscnBnYnJxbGZwenZ4eGJodWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDc4MTQsImV4cCI6MjA5Nzg4MzgxNH0.75g3TvrYcRx9CEPB0C8HNadc-zwQPVKuUVOFS-tCLrg\")",
-      "Bash(curl -s \"https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec?action=getKelas\" --connect-timeout 15)"
+      "Bash(curl -s \"https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec?action=getKelas\" --connect-timeout 15)",
+      "Bash(curl -sL \"https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec?action=getKelas\" --connect-timeout 15)",
+      "Bash(findstr /r \"\\\\\"kelas\\\\\":\\\\\"[0-9]\")",
+      "Bash(findstr /v \"kelas_id\")",
+      "Bash(powershell -Command \"\\(curl -sL 'https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec?action=getKelas' | ConvertFrom-Json | Group-Object kelas | Select-Object -ExpandProperty Name\\)\")"
     ]
   },
   "enabledMcpjsonServers": [

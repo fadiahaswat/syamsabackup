@@ -113,7 +113,7 @@
   /**
    * Mengirim permohonan izin Wali
    */
-  window.submitWaliPermit = function(event) {
+  window.submitWaliPermit = async function(event) {
     if (event) event.preventDefault();
 
     const form = document.getElementById("wali-permit-form");
@@ -512,7 +512,7 @@
   /**
    * Menyimpan perubahan pengajuan izin setelah diedit
    */
-  window.submitEditWaliPermit = function(event) {
+  window.submitEditWaliPermit = async function(event) {
     if (event) event.preventDefault();
 
     const requestId = window.editingPermitId;
