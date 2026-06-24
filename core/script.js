@@ -2837,19 +2837,14 @@ window.renderWeeklyCalendar = function () {
     } else {
       let flameFill = "currentColor";
       let flameClass = "";
-      let labelHtml = "";
 
       if (streakInfo.streak > 0) {
         if (streakInfo.status === "completed") {
           flameFill = "url(#flame-grad-active)";
           flameClass = "scale-110 drop-shadow-[0_1px_2px_rgba(239,68,68,0.15)]";
-          const labelColor = isSelected ? "text-white" : "text-orange-600 dark:text-orange-400";
-          labelHtml = `<span class="text-[9px] font-black leading-none ${labelColor}">${streakInfo.streak}</span>`;
         } else if (streakInfo.status === "in_progress") {
           flameFill = "url(#flame-grad-progress)";
           flameClass = "animate-pulse scale-105";
-          const labelColor = isSelected ? "text-white" : "text-amber-600 dark:text-amber-500";
-          labelHtml = `<span class="text-[9px] font-black leading-none ${labelColor}">${streakInfo.streak}</span>`;
         }
       } else {
         if (dateStr === todayStr && hasProgress) {
@@ -2864,17 +2859,11 @@ window.renderWeeklyCalendar = function () {
         }
       }
 
-      const hasStreakOrProgress = streakInfo.streak > 0 || (dateStr === todayStr && hasProgress);
-      const subPillClass = hasStreakOrProgress
-        ? (isSelected ? "bg-white/20" : "bg-orange-50/60 dark:bg-orange-500/10")
-        : "";
-
       indicatorHtml = `
-        <div class="flex items-center justify-center gap-0.5 mt-1 h-5 px-1.5 rounded-full transition-all ${subPillClass}">
-          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-all duration-300 ${flameClass}" viewBox="0 0 24 24" fill="${flameFill}">
+        <div class="flex items-center justify-center mt-1 w-full h-5">
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all duration-300 ${flameClass}" viewBox="0 0 24 24" fill="${flameFill}">
             <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
           </svg>
-          ${labelHtml}
         </div>
       `;
     }
