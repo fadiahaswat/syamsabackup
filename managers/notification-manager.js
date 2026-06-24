@@ -1230,17 +1230,27 @@ document.addEventListener("DOMContentLoaded", () => {
 if (window.supabaseClient) {
   window.supabaseClient.onNotificationChange = (payload) => {
     console.log('[NotificationManager] Realtime notification change:', payload);
+    console.log('[NotificationManager] Notification details:', {
+      type: payload.new?.type,
+      eventType: payload.eventType,
+      recipient: window.getNotificationRecipientInfo?.()
+    });
+
     window.fetchNotifications();
 
     // Tampilkan Toast & system notification untuk notifikasi baru yang masuk
     if (payload.eventType === 'INSERT' && !payload.new.is_read) {
       const currentRecipient = window.getNotificationRecipientInfo?.() || {};
+      console.log('[NotificationManager] Current recipient:', currentRecipient);
 
       // Untuk notifikasi permit di Musyrif - refresh widget approval
       if (payload.new.type === 'permit' && currentRecipient.type === 'musyrif') {
+        console.log('[NotificationManager] Permit notification for musyrif, refreshing widget...');
         // Refresh approval widget to show new pending request
         if (typeof window.loadMusyrifRequests === 'function') {
           window.loadMusyrifRequests();
+        } else {
+          console.log('[NotificationManager] window.loadMusyrifRequests not available!');
         }
         // Show toast
         window.showToast?.(`Pengajuan Izin Baru: ${payload.new.title}`, 'info');

@@ -153,19 +153,35 @@ class HybridStorageManager {
    * Refresh approval widget and show notification banner
    */
   _refreshApprovalWidget() {
+    console.log('[HybridStorageManager] _refreshApprovalWidget called');
+
     // Reload musyrif requests
     if (typeof window.loadMusyrifRequests === 'function') {
+      console.log('[HybridStorageManager] Calling loadMusyrifRequests...');
       window.loadMusyrifRequests();
+    } else {
+      console.log('[HybridStorageManager] loadMusyrifRequests not available!');
     }
 
-    // Show approval banner at top of screen if not already visible
-    const banner = document.getElementById("musyrif-approval-banner");
-    if (banner) {
-      banner.classList.remove("hidden");
-      // Auto-hide after 10 seconds
-      setTimeout(() => {
-        banner.classList.add("hidden");
-      }, 10000);
+    // Also try direct widget manipulation
+    const widget = document.getElementById("musyrif-approval-widget");
+    const permits = appState.permits || [];
+    const pendingCount = permits.filter(p => p && p.status === 'pending').length;
+
+    console.log('[HybridStorageManager] Widget element:', widget, 'Pending count:', pendingCount);
+
+    if (widget) {
+      if (pendingCount > 0) {
+        widget.classList.remove("hidden");
+        const badge = document.getElementById("approval-pending-badge");
+        const count = document.getElementById("approval-pending-count");
+        if (badge) badge.textContent = pendingCount;
+        if (count) count.textContent = `${pendingCount} Pengajuan Pending`;
+        console.log('[HybridStorageManager] Widget shown with pending:', pendingCount);
+      } else {
+        widget.classList.add("hidden");
+        console.log('[HybridStorageManager] Widget hidden - no pending');
+      }
     }
   }
 
@@ -442,10 +458,12 @@ class HybridStorageManager {
    * Handle realtime permit change from another client
    */
   _handleRealtimePermitChange(payload) {
+    console.log('[HybridStorageManager] _handleRealtimePermitChange called:', payload);
     const { eventType, new: newRecord, old: oldRecord } = payload;
 
     if (eventType === 'INSERT' || eventType === 'UPDATE') {
       const permit = this._transformRemotePermit(newRecord);
+      console.log('[HybridStorageManager] Transformed permit:', permit);
 
       // Find existing permit index
       const existingIndex = appState.permits.findIndex(p => p.id === permit.id);
@@ -453,17 +471,22 @@ class HybridStorageManager {
       if (existingIndex >= 0) {
         // Update existing
         appState.permits[existingIndex] = permit;
+        console.log('[HybridStorageManager] Updated existing permit at index:', existingIndex);
       } else {
         // Add new permit at the beginning
         appState.permits.unshift(permit);
+        console.log('[HybridStorageManager] Added new permit, total permits:', appState.permits.length);
 
         // Show local system and in-app alerts if this is a new pending permit request and user is Musyrif
         const currentRecipient = window.getNotificationRecipientInfo?.() || {};
+        console.log('[HybridStorageManager] Current recipient:', currentRecipient);
+        console.log('[HybridStorageManager] Checking conditions - type:', currentRecipient.type, 'status:', permit.status);
+
         if (eventType === 'INSERT' && currentRecipient.type === 'musyrif' && permit.status === 'pending') {
           const studentName = permit.nama || 'Santri';
           const categoryLabel = permit.category === 'sakit' ? 'Sakit' : permit.category === 'izin' ? 'Izin' : 'Pulang';
 
-          console.log(`[HybridStorageManager] New permit request detected, sending local notification for: ${studentName}`);
+          console.log(`[HybridStorageManager] New permit request detected, showing notification for: ${studentName}`);
 
           if (typeof window.sendLocalNotification === 'function') {
             window.sendLocalNotification(
@@ -479,6 +502,25 @@ class HybridStorageManager {
 
           // Refresh approval widget and show banner
           this._refreshApprovalWidget();
+        }
+
+        // Also notify Wali if permit was approved/rejected
+        if (currentRecipient.type === 'wali') {
+          const studentNis = String(permit.nis || '').trim();
+          if (studentNis === currentRecipient.id && (permit.status === 'approved' || permit.status === 'rejected')) {
+            const studentName = permit.nama || 'Santri';
+            const statusLabel = permit.status === 'approved' ? 'Disetujui' : 'Ditolak';
+            if (typeof window.addNotification === 'function') {
+              window.addNotification(
+                'wali',
+                studentNis,
+                `Status Izin ${statusLabel} 📝`,
+                `Pengajuan izin untuk ${studentName} telah ${statusLabel.toLowerCase()}.`,
+                'permit',
+                'tab=home'
+              );
+            }
+          }
         }
       }
 

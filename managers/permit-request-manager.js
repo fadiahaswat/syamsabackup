@@ -172,6 +172,16 @@
     if (!appState.permits) appState.permits = [];
     appState.permits.push(requestData);
 
+    // Save directly to localStorage with the same key used by polling
+    try {
+      const existingPermits = JSON.parse(localStorage.getItem('musyrif_permits_db') || '[]');
+      existingPermits.push(requestData);
+      localStorage.setItem('musyrif_permits_db', JSON.stringify(existingPermits));
+      console.log("[PermitRequest] Saved directly to localStorage, total permits:", existingPermits.length);
+    } catch (e) {
+      console.warn("[PermitRequest] Error saving to localStorage:", e);
+    }
+
     // Trigger notification to Musyrif of the class
     // Try multiple sources for musyrif email (in order of reliability)
     let musyrifEmail = "";
@@ -661,10 +671,16 @@
    */
   function loadMusyrifRequests() {
     const kelas = appState.selectedClass;
-    if (!kelas) return;
+    if (!kelas) {
+      console.log("[PermitRequestManager] loadMusyrifRequests skipped: no class selected");
+      return;
+    }
+
+    console.log("[PermitRequestManager] loadMusyrifRequests called for class:", kelas);
 
     // Get permits from appState or from storage
     let permits = appState.permits || [];
+    console.log("[PermitRequestManager] Permits from appState:", permits.length);
 
     // Also try to load from localStorage directly for fresh data
     try {
@@ -673,6 +689,7 @@
         const parsed = JSON.parse(storedPermits);
         // Merge with existing permits, avoiding duplicates
         if (Array.isArray(parsed)) {
+          console.log("[PermitRequestManager] Permits from localStorage:", parsed.length);
           const existingIds = new Set(permits.map(p => p.id));
           parsed.forEach(p => {
             if (!existingIds.has(p.id)) {
@@ -691,6 +708,8 @@
     currentPendingRequests = permits.filter(r =>
       r && r.status === "pending"
     );
+
+    console.log("[PermitRequestManager] Pending requests:", currentPendingRequests.length);
 
     // Make sure each pending request has the student name (look up in MASTER_SANTRI)
     currentPendingRequests.forEach(req => {
@@ -742,19 +761,33 @@
    * Start polling untuk cek pending permits
    */
   window.startApprovalPolling = function() {
-    if (approvalPollInterval) return; // Already running
+    console.log("[PermitRequestManager] startApprovalPolling called, isWaliMode:", window.isWaliMode?.());
+
+    // Stop any existing polling first
+    if (approvalPollInterval) {
+      clearInterval(approvalPollInterval);
+      approvalPollInterval = null;
+    }
+
+    // Don't start polling for wali mode
+    if (window.isWaliMode?.()) {
+      console.log("[PermitRequestManager] Skipping polling - in wali mode");
+      return;
+    }
 
     // Initial load
+    console.log("[PermitRequestManager] Running initial load...");
     loadMusyrifRequests();
 
-    // Poll every 10 seconds
+    // Poll every 5 seconds for faster updates
     approvalPollInterval = setInterval(() => {
+      console.log("[PermitRequestManager] Polling tick...");
       if (!window.isWaliMode?.()) { // Only poll for musyrif
         loadMusyrifRequests();
       }
-    }, 10000);
+    }, 5000);
 
-    console.log("[PermitRequestManager] Approval polling started");
+    console.log("[PermitRequestManager] Approval polling started (every 5s)");
   };
 
   /**

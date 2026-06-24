@@ -206,6 +206,7 @@ class SupabaseClient {
     // 2. Subscribe to permit changes (uses UUID resolvedKelasUuid)
     let permitChannel = null;
     if (resolvedKelasUuid) {
+      console.log('[SupabaseClient] Subscribing to permit changes with filter: kelas_id=eq.' + resolvedKelasUuid);
       permitChannel = this.client
         .channel('permit-changes')
         .on(
@@ -217,16 +218,19 @@ class SupabaseClient {
             filter: `kelas_id=eq.${resolvedKelasUuid}`
           },
           (payload) => {
-            console.log('[SupabaseClient] Permit changed:', payload);
+            console.log('[SupabaseClient] Permit changed (REALTIME):', payload);
             if (this.onPermitChange) {
               this.onPermitChange(payload);
             }
           }
         )
         .subscribe();
+    } else {
+      console.log('[SupabaseClient] WARNING: No resolvedKelasUuid, permit subscription skipped');
     }
 
     // 3. Subscribe to tahfizh changes (uses text resolvedKelasId)
+    console.log('[SupabaseClient] Subscribing to tahfizh changes with filter: kelas=eq.' + resolvedKelasId);
     const tahfizhChannel = this.client
       .channel('tahfizh-changes')
       .on(
@@ -238,7 +242,7 @@ class SupabaseClient {
           filter: `kelas=eq.${resolvedKelasId}`
         },
         (payload) => {
-          console.log('[SupabaseClient] Tahfizh record changed:', payload);
+          console.log('[SupabaseClient] Tahfizh changed (REALTIME):', payload);
           if (this.onTahfizhChange) {
             this.onTahfizhChange(payload);
           }
