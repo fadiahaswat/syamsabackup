@@ -1058,48 +1058,33 @@ window.renderDashboardPembinaan = function () {
   const waliSantri = appState.waliSantri;
   const waliNis = waliSantri ? String(waliSantri.nis || waliSantri.id || '') : '';
 
-  // Tentukan judul berdasarkan mode
-  if (cardTitle) {
-    if (isWali && waliSantri) {
-      cardTitle.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500 mr-2 inline"></i>Pelanggaran & Pembinaan ${waliSantri.nama || 'Ananda'}`;
-    } else {
-      cardTitle.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500 mr-2 inline"></i>Pelanggaran Hari Ini`;
-    }
-  }
-
-  // Jika mode Wali, tampilkan hanya card, sonst sembunyikan entire card
+  // Mode Wali: SEMBUYIKAN CARD SELURUHNYA - Wali tidak bisa membina
   if (isWali) {
     if (card) {
-      // Ubah judul deskripsi
-      const descEl = card.querySelector("p.text-\\[10px\\]");
-      if (descEl) {
-        descEl.textContent = "Riwayat pelanggaran & pembinaan";
-      }
+      card.classList.add("hidden");
     }
-    // Sembunyikan tombol aksi untuk wali
-    if (actionBtn) {
-      actionBtn.classList.add("hidden");
-    }
-  } else {
-    // Mode Musyrif: tampilkan tombol aksi
-    if (actionBtn) {
-      actionBtn.classList.remove("hidden");
-    }
+    return; // Stop execution here
+  }
+
+  // Mode Musyrif: tampilkan card
+  if (card) {
+    card.classList.remove("hidden");
+  }
+
+  // Tentukan judul berdasarkan mode
+  if (cardTitle) {
+    cardTitle.innerHTML = `<i data-lucide="alert-triangle" class="w-4 h-4 text-red-500 mr-2 inline"></i>Pelanggaran Hari Ini`;
+  }
+
+  // Mode Musyrif: tampilkan tombol aksi
+  if (actionBtn) {
+    actionBtn.classList.remove("hidden");
   }
 
   if (!container) return;
 
   const dateKey = appState.date;
-  let violationList = window.collectPembinaanViolations({ date: dateKey });
-
-  // Filter untuk mode Wali - hanya tampilkan pelanggaran anak tersebut
-  if (isWali && waliNis) {
-    violationList = violationList.filter(p => {
-      const pNis = String(p.nis || p.id || '').trim();
-      return pNis === waliNis;
-    });
-  }
-
+  const violationList = window.collectPembinaanViolations({ date: dateKey });
   const pendingCount = violationList.filter((item) => !item.isCoached).length;
 
   // Update Badge (Merah jika ada pending, Hijau jika semua beres)

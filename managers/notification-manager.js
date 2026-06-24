@@ -1231,18 +1231,27 @@ if (window.supabaseClient) {
   window.supabaseClient.onNotificationChange = (payload) => {
     console.log('[NotificationManager] Realtime notification change:', payload);
     window.fetchNotifications();
-    
+
     // Tampilkan Toast & system notification untuk notifikasi baru yang masuk
     if (payload.eventType === 'INSERT' && !payload.new.is_read) {
       const currentRecipient = window.getNotificationRecipientInfo?.() || {};
-      
-      // Jangan duplikasi notifikasi permit di Musyrif (karena ditangani langsung di _handleRealtimePermitChange)
+
+      // Untuk notifikasi permit di Musyrif - refresh widget approval
       if (payload.new.type === 'permit' && currentRecipient.type === 'musyrif') {
+        // Refresh approval widget to show new pending request
+        if (typeof window.loadMusyrifRequests === 'function') {
+          window.loadMusyrifRequests();
+        }
+        // Show toast
+        window.showToast?.(`Pengajuan Izin Baru: ${payload.new.title}`, 'info');
+        if (typeof window.sendLocalNotification === 'function') {
+          window.sendLocalNotification(payload.new.title, payload.new.body, payload.new.type || 'info');
+        }
         return;
       }
-      
+
       window.showToast?.(`Notifikasi Baru: ${payload.new.title}`, 'info');
-      
+
       if (typeof window.sendLocalNotification === 'function') {
         window.sendLocalNotification(payload.new.title, payload.new.body, payload.new.type || 'info');
       }

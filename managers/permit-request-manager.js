@@ -168,6 +168,10 @@
       window.storageManager.savePermit(requestData);
     }
 
+    // Also add to appState.permits so polling can detect it immediately
+    if (!appState.permits) appState.permits = [];
+    appState.permits.push(requestData);
+
     // Trigger notification to Musyrif of the class
     // Try multiple sources for musyrif email (in order of reliability)
     let musyrifEmail = "";
@@ -659,8 +663,30 @@
     const kelas = appState.selectedClass;
     if (!kelas) return;
 
-    const permits = appState.permits || [];
-    
+    // Get permits from appState or from storage
+    let permits = appState.permits || [];
+
+    // Also try to load from localStorage directly for fresh data
+    try {
+      const storedPermits = localStorage.getItem('musyrif_permits_db');
+      if (storedPermits) {
+        const parsed = JSON.parse(storedPermits);
+        // Merge with existing permits, avoiding duplicates
+        if (Array.isArray(parsed)) {
+          const existingIds = new Set(permits.map(p => p.id));
+          parsed.forEach(p => {
+            if (!existingIds.has(p.id)) {
+              permits.push(p);
+            }
+          });
+          // Update appState.permits
+          appState.permits = permits;
+        }
+      }
+    } catch (e) {
+      console.warn("[PermitRequestManager] Error loading permits from storage:", e);
+    }
+
     // Filter permits for pending status
     currentPendingRequests = permits.filter(r =>
       r && r.status === "pending"
@@ -676,6 +702,9 @@
 
     renderMusyrifApprovalWidget(currentPendingRequests.length);
   }
+
+  // Expose ke window agar bisa dipanggil dari HybridStorageManager dan polling
+  window.loadMusyrifRequests = loadMusyrifRequests;
 
   /**
    * Merender Widget Badge Pending Izin di Dasbor Musyrif
@@ -696,6 +725,11 @@
 
     if (elCount) elCount.textContent = `${count} Pengajuan Pending`;
     if (elBadge) elBadge.textContent = count;
+
+    // Show toast notification
+    if (count > 0 && window.showToast) {
+      window.showToast(`Ada ${count} pengajuan izin yang menunggu persetujuan`, 'info', false, 3000);
+    }
   }
 
   // Expose ke window agar bisa dipanggil dari HybridStorageManager
