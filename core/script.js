@@ -12140,23 +12140,39 @@ window.showOnboarding = function (isAuto = false) {
   const viewOnboarding = document.getElementById("view-onboarding");
   const onboardingCard = document.getElementById("onboarding-card");
   const viewLogin = document.getElementById("view-login");
+  const loginCard = document.getElementById("login-card");
 
   if (!viewOnboarding || !onboardingCard) return;
 
   // Stop any existing timer
   window.stopOnboardingAutoplay();
 
-  // Hide login screen
-  if (viewLogin) viewLogin.classList.add("hidden");
+  // Prepare onboarding card for entry
+  onboardingCard.classList.remove("scale-100", "opacity-100");
+  onboardingCard.classList.add("scale-95", "opacity-0");
 
   // Show onboarding container
   viewOnboarding.classList.remove("hidden");
 
-  // Trigger animations after minor delay
+  // Trigger onboarding entry animation
   setTimeout(() => {
     onboardingCard.classList.remove("scale-95", "opacity-0");
     onboardingCard.classList.add("scale-100", "opacity-100");
   }, 50);
+
+  // If coming from login screen (i.e. not auto-open), animate login card out
+  if (!isAuto && viewLogin && loginCard) {
+    loginCard.classList.remove("scale-100", "opacity-100");
+    loginCard.classList.add("scale-95", "opacity-0");
+    
+    // Hide login after transition
+    setTimeout(() => {
+      viewLogin.classList.add("hidden");
+    }, 300);
+  } else {
+    // If auto-open, just hide login immediately
+    if (viewLogin) viewLogin.classList.add("hidden");
+  }
 
   // Set to first slide
   window.setOnboardingSlide(0);
@@ -12186,20 +12202,38 @@ window.closeOnboarding = function () {
   const viewOnboarding = document.getElementById("view-onboarding");
   const onboardingCard = document.getElementById("onboarding-card");
   const viewLogin = document.getElementById("view-login");
+  const loginCard = document.getElementById("login-card");
 
   if (!viewOnboarding || !onboardingCard) return;
 
   // Save state
   localStorage.setItem("has_seen_onboarding", "true");
 
-  // Animate out
+  // Prepare login card for entry animation
+  if (viewLogin && loginCard) {
+    loginCard.classList.remove("scale-100", "opacity-100");
+    loginCard.classList.add("scale-95", "opacity-0");
+    viewLogin.classList.remove("hidden");
+  }
+
+  // Animate onboarding card out
   onboardingCard.classList.remove("scale-100", "opacity-100");
   onboardingCard.classList.add("scale-95", "opacity-0");
+  viewOnboarding.classList.add("pointer-events-none"); // Prevent interactions during transition
 
+  // Animate login card in (parallel)
+  setTimeout(() => {
+    if (loginCard) {
+      loginCard.classList.remove("scale-95", "opacity-0");
+      loginCard.classList.add("scale-100", "opacity-100");
+    }
+  }, 100); // Slight delay for beautiful overlap
+
+  // Cleanup after animation completes
   setTimeout(() => {
     viewOnboarding.classList.add("hidden");
-    if (viewLogin) viewLogin.classList.remove("hidden");
-  }, 300);
+    viewOnboarding.classList.remove("pointer-events-none");
+  }, 400);
 };
 
 window.setOnboardingSlide = function (index) {
