@@ -269,17 +269,40 @@ window.handleGoogleCallback = async function (response) {
       return window.showToast("Google tidak mengirim alamat email.", "error");
     }
     const targetClass = appState.tempClass;
+    const normalizedUserEmail = String(userEmail || "")
+      .trim()
+      .toLowerCase();
 
-    // 1. AMBIL DATA KELAS DARI VARIABLE GLOBAL (yang diload data-kelas.js)
-    // Pastikan variabelnya window.classData (sesuai data-kelas.js Anda)
-    const classInfo =
+    let classInfo =
       window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
 
     if (!classInfo) {
-      return window.showToast(
-        "Data kelas belum siap. Silakan coba lagi.",
-        "warning",
-      );
+      if (targetClass === "admin musyrif" && window.supabaseClient?.client) {
+        try {
+          const { data, error } = await window.supabaseClient.client
+            .from('admin_emails')
+            .select('email')
+            .eq('email', normalizedUserEmail);
+            
+          if (data && data.length > 0) {
+            classInfo = {
+              wali: "-",
+              musyrif: "Admin",
+              email: normalizedUserEmail
+            };
+            console.log('[GoogleCallback] Admin email verified via Supabase:', normalizedUserEmail);
+          }
+        } catch (e) {
+          console.warn('[GoogleCallback] Supabase admin email check failed:', e);
+        }
+      }
+
+      if (!classInfo) {
+        return window.showToast(
+          "Data kelas belum siap. Silakan coba lagi.",
+          "warning",
+        );
+      }
     }
 
     // 2. VALIDASI EMAIL (KEAMANAN UTAMA)

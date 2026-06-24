@@ -169,20 +169,42 @@
     }
 
     // Trigger notification to Musyrif of the class
+    // Try multiple sources for musyrif email (in order of reliability)
     let musyrifEmail = "";
     const targetKelasNormalized = String(requestData.kelas || "").replace(/\s+/g, "").toLowerCase();
-    if (window.MASTER_KELAS) {
-      const matchedKey = Object.keys(window.MASTER_KELAS).find(k => 
+
+    // 1. First try: Check if we have cached musyrif email for this class from login
+    const cachedMusyrifEmail = localStorage.getItem(`musyrif_email_${targetKelasNormalized}`);
+    if (cachedMusyrifEmail) {
+      musyrifEmail = cachedMusyrifEmail;
+      console.log("[PermitRequest] Using cached musyrif email:", musyrifEmail);
+    }
+
+    // 2. Second try: Get from MASTER_KELAS
+    if (!musyrifEmail && window.MASTER_KELAS) {
+      const matchedKey = Object.keys(window.MASTER_KELAS).find(k =>
         String(k).replace(/\s+/g, "").toLowerCase() === targetKelasNormalized
       );
       if (matchedKey) {
         musyrifEmail = window.MASTER_KELAS[matchedKey]?.email || "";
+        // Cache it for future use
+        if (musyrifEmail) {
+          localStorage.setItem(`musyrif_email_${targetKelasNormalized}`, musyrifEmail);
+        }
       }
     }
+
+    // 3. Third try: Fallback to constructed email based on kelas
     if (!musyrifEmail) {
       musyrifEmail = `${targetKelasNormalized}@musyrif.local`;
     }
-    musyrifEmail = musyrifEmail.trim();
+    musyrifEmail = musyrifEmail.trim().toLowerCase();
+
+    console.log("[PermitRequest] Sending notification to musyrif:", {
+      email: musyrifEmail,
+      kelas: targetKelasNormalized,
+      siswa: siswa.nama
+    });
 
     if (typeof window.addNotification === "function") {
       window.addNotification(

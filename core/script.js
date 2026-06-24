@@ -318,14 +318,29 @@ window.populateClassDropdown = function () {
   if (musyrifSelect) {
     musyrifSelect.innerHTML =
       '<option value="" disabled selected>Pilih Kelas</option>';
-    Object.keys(MASTER_KELAS)
-      .sort()
-      .forEach((k) => {
-        const opt = document.createElement("option");
-        opt.value = k;
-        opt.textContent = `${k} - ${MASTER_KELAS[k].musyrif || ""}`;
-        musyrifSelect.appendChild(opt);
-      });
+      
+    const keys = Object.keys(MASTER_KELAS);
+    if (!keys.includes("admin musyrif")) {
+      keys.push("admin musyrif");
+      if (typeof MASTER_KELAS !== "undefined") {
+        MASTER_KELAS["admin musyrif"] = MASTER_KELAS["admin musyrif"] || {
+          wali: "-",
+          musyrif: "Admin",
+          email: "admin@syamsa.sch.id"
+        };
+      }
+    }
+
+    keys.sort().forEach((k) => {
+      const opt = document.createElement("option");
+      opt.value = k;
+      if (k === "admin musyrif") {
+        opt.textContent = "Admin - Sistem Pengelola";
+      } else {
+        opt.textContent = `${k} - ${MASTER_KELAS[k]?.musyrif || ""}`;
+      }
+      musyrifSelect.appendChild(opt);
+    });
   }
 };
 
@@ -593,7 +608,15 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
   appState.selectedClass = targetClass;
   appState.userProfile = profile;
   appState.adminMode = isAdmin;
-  
+
+  // Cache musyrif email untuk notifikasi dari Wali
+  // Ini penting agar notifikasi bisa dikirim meskipun MASTER_KELAS belum loaded
+  if (!isAdmin && profile?.email) {
+    const kelasKey = String(targetClass).replace(/\s+/g, "").toLowerCase();
+    localStorage.setItem(`musyrif_email_${kelasKey}`, String(profile.email).trim().toLowerCase());
+    console.log('[AuthManager] Cached musyrif email:', profile.email, 'for class:', kelasKey);
+  }
+
   if (isAdmin) {
     appState.waliMode = false;
     appState.waliSantri = null;
@@ -659,34 +682,6 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
   window.initStorage?.(musyrifId);
 };
 
-// ==========================================
-// ADMIN LOGIN
-// ==========================================
-window.handleAdminLogin = function () {
-  const select = document.getElementById("musyrif-kelas");
-  if (select) {
-    let hasAdmin = false;
-    for (let i = 0; i < select.options.length; i++) {
-      if (select.options[i].value === "admin musyrif") {
-        hasAdmin = true;
-        break;
-      }
-    }
-    if (!hasAdmin) {
-      const opt = document.createElement("option");
-      opt.value = "admin musyrif";
-      opt.textContent = "admin musyrif - Admin";
-      select.appendChild(opt);
-    }
-    select.value = "admin musyrif";
-  }
-
-  window.handleMusyrifLogin();
-
-  setTimeout(() => {
-    window.handleMusyrifSubmit();
-  }, 300);
-};
 
 // ==========================================
 // MUSYRIF LOGIN
@@ -1909,17 +1904,40 @@ window.handleGoogleCallback = async function (response) {
       return window.showToast("Google tidak mengirim alamat email.", "error");
     }
     const targetClass = appState.tempClass;
+    const normalizedUserEmail = String(userEmail || "")
+      .trim()
+      .toLowerCase();
 
-    // 1. AMBIL DATA KELAS DARI VARIABLE GLOBAL (yang diload data-kelas.js)
-    // Pastikan variabelnya window.classData (sesuai data-kelas.js Anda)
-    const classInfo =
+    let classInfo =
       window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
 
     if (!classInfo) {
-      return window.showToast(
-        "Data kelas belum siap. Silakan coba lagi.",
-        "warning",
-      );
+      if (targetClass === "admin musyrif" && window.supabaseClient?.client) {
+        try {
+          const { data, error } = await window.supabaseClient.client
+            .from('admin_emails')
+            .select('email')
+            .eq('email', normalizedUserEmail);
+            
+          if (data && data.length > 0) {
+            classInfo = {
+              wali: "-",
+              musyrif: "Admin",
+              email: normalizedUserEmail
+            };
+            console.log('[GoogleCallback] Admin email verified via Supabase:', normalizedUserEmail);
+          }
+        } catch (e) {
+          console.warn('[GoogleCallback] Supabase admin email check failed:', e);
+        }
+      }
+
+      if (!classInfo) {
+        return window.showToast(
+          "Data kelas belum siap. Silakan coba lagi.",
+          "warning",
+        );
+      }
     }
 
     // 2. VALIDASI EMAIL (KEAMANAN UTAMA)

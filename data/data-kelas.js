@@ -95,6 +95,7 @@ async function fetchClassBackground() {
     });
     localStorage.setItem("cache_data_kelas", JSON.stringify(newData));
 
+    window.classData = newData;
     // Auto-update global state & UI dropdown saat background update selesai
     if (typeof MASTER_KELAS !== "undefined") {
       MASTER_KELAS = newData;
