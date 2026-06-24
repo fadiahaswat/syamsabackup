@@ -2830,8 +2830,8 @@ window.renderWeeklyCalendar = function () {
     if (activeSlots.length === 0) {
       // Holiday
       indicatorHtml = `
-        <div class="flex items-center justify-center mt-1 w-full h-5">
-          <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550">-</span>
+        <div class="flex items-center justify-center w-full h-4 sm:h-5">
+          <span class="text-[10px] font-bold text-slate-400 dark:text-slate-550 leading-none">-</span>
         </div>
       `;
     } else {
@@ -2860,7 +2860,7 @@ window.renderWeeklyCalendar = function () {
       }
 
       indicatorHtml = `
-        <div class="flex items-center justify-center mt-1 w-full h-5">
+        <div class="flex items-center justify-center w-full h-4 sm:h-5">
           <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all duration-300 ${flameClass}" viewBox="0 0 24 24" fill="${flameFill}">
             <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
           </svg>
@@ -2884,19 +2884,19 @@ window.renderWeeklyCalendar = function () {
       : "text-slate-400 dark:text-slate-500 font-bold";
 
     const textSecondaryStyle = isSelected
-      ? `color: ${activeTheme.textSub};`
+      ? "color: #ffffff; opacity: 0.85;"
       : "";
     const textSecondaryClass = isSelected
       ? "font-bold"
       : "text-slate-400 dark:text-slate-550 font-medium";
 
     html += `
-      <div onclick="window.handleDateChange('${dateStr}')" class="flex flex-col items-center justify-center p-1 sm:p-2 rounded-2xl transition-all duration-300 cursor-pointer min-w-0 ${cardBgClass}" style="${cardBgStyle}" title="${window.formatDate(dateStr)}">
+      <div onclick="window.handleDateChange('${dateStr}')" class="flex flex-col items-center justify-center gap-1 p-1 sm:p-2 rounded-2xl transition-all duration-300 cursor-pointer min-w-0 ${cardBgClass}" style="${cardBgStyle}" title="${window.formatDate(dateStr)}">
         <!-- Day Label -->
         <span class="text-[8px] sm:text-[10px] uppercase tracking-wider text-center truncate w-full ${textSecondaryClass}" style="${textSecondaryStyle}">${dayLabel}</span>
         
         <!-- Date Number -->
-        <span class="text-xs sm:text-sm text-center mt-0.5 ${textPrimaryClass}" style="${textPrimaryStyle}">${dayNum}</span>
+        <span class="text-xs sm:text-sm text-center ${textPrimaryClass}" style="${textPrimaryStyle}">${dayNum}</span>
         
         <!-- Flame Streak Indicator -->
         ${indicatorHtml}
