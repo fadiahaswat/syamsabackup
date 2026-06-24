@@ -53,7 +53,15 @@
       "Bash(Remove-Item -Force \"managers/supabase-client.js\" -ErrorAction SilentlyContinue)",
       "Bash(Remove-Item -Force \"scratch/test-supabase.js\" -ErrorAction SilentlyContinue)",
       "Bash(Write-Host \"Files deleted\")",
-      "Bash(git commit -m 'Remove Supabase - localStorage only mode *)"
+      "Bash(git commit -m 'Remove Supabase - localStorage only mode *)",
+      "Bash(Remove-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\.mcp.json\" -Force)",
+      "Bash(Write-Host \"Deleted .mcp.json\")",
+      "Bash(Remove-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\skills-lock.json\" -Force)",
+      "Bash(Write-Host \"Deleted skills-lock.json\")",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\syamsa-backup\\\\syamsabackup\" -Force | Where-Object { $_.Name -match '^\\\\.' -or $_.Name -eq '.agent' } | Select-Object Name, FullName)"
+    ],
+    "additionalDirectories": [
+      "d:\\syamsa-backup\\syamsabackup"
     ]
   },
   "enabledMcpjsonServers": [
