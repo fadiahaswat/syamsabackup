@@ -533,6 +533,9 @@ class HybridStorageManager {
     this.syncInterval = setInterval(() => {
       if (this.isOnline && !this.isSyncing) {
         this._processQueue();
+        if (typeof window.syncTahfizhToCloud === 'function') {
+          window.syncTahfizhToCloud();
+        }
       }
     }, this.config.syncInterval);
 

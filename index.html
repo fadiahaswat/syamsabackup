@@ -1974,6 +1974,15 @@
               <span>Masuk sebagai Wali</span>
             </button>
 
+            <!-- Sign in as Admin -->
+            <button
+              onclick="handleAdminLogin()"
+              class="w-full py-3.5 px-6 rounded-2xl bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+            >
+              <i data-lucide="shield-alert" class="w-4 h-4 text-white"></i>
+              <span>Masuk sebagai Admin</span>
+            </button>
+
             <!-- App Guide (Continue with guide) -->
             <button
               onclick="window.showOnboarding(false)"
@@ -2277,7 +2286,10 @@
   
 </header>
 
-
+          <!-- Announcement Banner (Musyrif Only) -->
+          <div id="announcement-banner-container" class="musyrif-only hidden animate-slide-up mb-5">
+            <!-- Rendered dynamically -->
+          </div>
 
         <!-- Dashboard Grid Layout on Desktop -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 !mt-5">
@@ -4537,6 +4549,282 @@
         </div>
       </div>
 
+      <!-- Tab: Admin (Connecteam-Style) -->
+      <div
+        id="tab-admin"
+        class="tab-content hidden min-h-screen pb-40 p-6 pt-safe animate-fade-in overflow-y-auto hide-scrollbar"
+      >
+        <div class="max-w-7xl mx-auto w-full space-y-5">
+          <header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 mt-3 sm:mt-4 w-full rounded-[1.75rem] bg-white/65 dark:bg-slate-900/55 backdrop-blur-xl border border-white/70 dark:border-slate-800/70 shadow-sm p-3 delay-100ms">
+            <div class="flex items-center gap-3 min-w-0">
+              <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 active:scale-95 transition-all duration-300">
+                <div class="absolute inset-1 rounded-full bg-blue-300 blur-md opacity-20 group-hover:opacity-35 transition-opacity duration-300"></div>
+                <div class="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm z-10 transition-transform group-hover:scale-105">
+                  <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+              </button>
+              <div class="flex flex-col justify-center min-w-0">
+                <span class="text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none font-rubik">Sistem Pengelola Pusat</span>
+                <h1 class="text-base sm:text-lg font-black text-slate-800 dark:text-white tracking-tight leading-normal pb-[2px] truncate mb-0.5 select-none">
+                  <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500 dark:from-blue-400 dark:to-indigo-300">
+                    Dashboard Admin
+                  </span>
+                </h1>
+              </div>
+            </div>
+          </header>
+
+          <!-- Sub Navigation Bar -->
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-3 mb-6 hide-scrollbar animate-slide-up delay-150ms">
+            <button onclick="window.switchAdminSubTab('operations')" data-adminsubtab="operations" class="admin-sub-nav-btn active px-4 py-2.5 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5 transition-all bg-syamsa-deep text-white dark:bg-syamsa-blue">
+              <i data-lucide="activity" class="w-3.5 h-3.5"></i> Operations
+            </button>
+            <button onclick="window.switchAdminSubTab('hr')" data-adminsubtab="hr" class="admin-sub-nav-btn px-4 py-2.5 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5 transition-all bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+              <i data-lucide="users" class="w-3.5 h-3.5"></i> HR & Wali
+            </button>
+            <button onclick="window.switchAdminSubTab('tahfizh')" data-adminsubtab="tahfizh" class="admin-sub-nav-btn px-4 py-2.5 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5 transition-all bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+              <i data-lucide="book-open" class="w-3.5 h-3.5"></i> Tahfizh
+            </button>
+            <button onclick="window.switchAdminSubTab('permits')" data-adminsubtab="permits" class="admin-sub-nav-btn px-4 py-2.5 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5 transition-all bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+              <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> Perizinan
+            </button>
+            <button onclick="window.switchAdminSubTab('broadcast')" data-adminsubtab="broadcast" class="admin-sub-nav-btn px-4 py-2.5 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5 transition-all bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+              <i data-lucide="megaphone" class="w-3.5 h-3.5"></i> Broadcast
+            </button>
+            <button onclick="window.switchAdminSubTab('logs')" data-adminsubtab="logs" class="admin-sub-nav-btn px-4 py-2.5 rounded-full text-xs font-black shadow-sm flex items-center gap-1.5 transition-all bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700">
+              <i data-lucide="scroll" class="w-3.5 h-3.5"></i> Logs
+            </button>
+          </div>
+
+          <!-- Subtab 1: Operations -->
+          <div id="admin-subtab-operations" class="admin-subtab-content space-y-4">
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Matriks Kehadiran Harian (Operations)
+              </h2>
+              <p class="text-xs text-slate-400 font-bold mb-4">Pantau pengisian presensi harian seluruh kelas secara langsung. Klik status pengisian shalat kelas untuk mengisi/edit.</p>
+              
+              <div class="overflow-x-auto -mx-5 px-5">
+                <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
+                  <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                    <tr>
+                      <th class="p-3">Kelas</th>
+                      <th class="p-3 text-center">Subuh</th>
+                      <th class="p-3 text-center">Syuruq</th>
+                      <th class="p-3 text-center">Dzuhur</th>
+                      <th class="p-3 text-center">Ashar</th>
+                      <th class="p-3 text-center">Maghrib</th>
+                      <th class="p-3 text-center">Isya</th>
+                      <th class="p-3 text-center">Hubungi Musyrif</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-ops-matrix-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                    <tr>
+                      <td colspan="8" class="p-4 text-center text-slate-400">Loading matriks...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtab 2: HR & Wali -->
+          <div id="admin-subtab-hr" class="admin-subtab-content hidden space-y-4">
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i> Manajemen Wali & Santri
+                  </h2>
+                  <p class="text-xs text-slate-400 font-bold">Kelola akun Wali Santri dan lakukan reset password kustom kembali ke default (NIS).</p>
+                </div>
+                <div class="relative min-w-[200px]">
+                  <input type="text" id="admin-hr-search" placeholder="Cari santri/Wali..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2.5 pl-8 text-xs focus:outline-none focus:border-indigo-500 font-bold" />
+                  <i data-lucide="search" class="absolute left-3 top-3.5 w-3.5 h-3.5 text-slate-400"></i>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto -mx-5 px-5">
+                <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
+                  <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                    <tr>
+                      <th class="p-3">Santri</th>
+                      <th class="p-3">Kelas</th>
+                      <th class="p-3">Username (NIS)</th>
+                      <th class="p-3">Wali</th>
+                      <th class="p-3">Status Password</th>
+                      <th class="p-3 text-center">Tindakan</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-hr-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                    <tr>
+                      <td colspan="6" class="p-4 text-center text-slate-400">Memuat data...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtab 3: Tahfizh -->
+          <div id="admin-subtab-tahfizh" class="admin-subtab-content hidden space-y-4">
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-4 h-4 text-orange-500"></i> Rekap Global Tahfizh
+                  </h2>
+                  <p class="text-xs text-slate-400 font-bold">Ringkasan setoran juz dan hafalan seluruh santri pesantren.</p>
+                </div>
+                <div class="relative min-w-[200px]">
+                  <input type="text" id="admin-tahfizh-search" placeholder="Cari santri..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2.5 pl-8 text-xs focus:outline-none focus:border-orange-500 font-bold" />
+                  <i data-lucide="search" class="absolute left-3 top-3.5 w-3.5 h-3.5 text-slate-400"></i>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto -mx-5 px-5">
+                <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[650px]">
+                  <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                    <tr>
+                      <th class="p-3">Santri</th>
+                      <th class="p-3">Kelas</th>
+                      <th class="p-3">Program</th>
+                      <th class="p-3">Setoran</th>
+                      <th class="p-3 text-center">Kualitas</th>
+                      <th class="p-3">Tanggal</th>
+                      <th class="p-3">Musyrif</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-tahfizh-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                    <tr>
+                      <td colspan="7" class="p-4 text-center text-slate-400">Memuat setoran tahfizh...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtab 4: Perizinan -->
+          <div id="admin-subtab-permits" class="admin-subtab-content hidden space-y-4">
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+                <button onclick="window.switchAdminPermitSubView('list')" id="admin-permit-subview-btn-list" class="px-3 py-1.5 rounded-lg text-xs font-black bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">Persetujuan Izin</button>
+                <button onclick="window.switchAdminPermitSubView('monitor')" id="admin-permit-subview-btn-monitor" class="px-3 py-1.5 rounded-lg text-xs font-black text-slate-400 dark:text-slate-500">Dorm Monitor (Santri di Luar)</button>
+              </div>
+
+              <!-- List Persetujuan -->
+              <div id="admin-permit-subview-list" class="space-y-3">
+                <div class="overflow-x-auto -mx-5 px-5">
+                  <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
+                    <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                      <tr>
+                        <th class="p-3">Santri</th>
+                        <th class="p-3">Kelas</th>
+                        <th class="p-3">Tipe Izin</th>
+                        <th class="p-3">Tanggal Izin</th>
+                        <th class="p-3">Keperluan</th>
+                        <th class="p-3 text-center">Status</th>
+                        <th class="p-3 text-center">Tindakan</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-permits-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                      <tr>
+                        <td colspan="7" class="p-4 text-center text-slate-400">Memuat riwayat perizinan...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Monitor Santri Out -->
+              <div id="admin-permit-subview-monitor" class="hidden space-y-3">
+                <p class="text-xs text-slate-400 font-bold mb-3">Daftar santri yang saat ini memiliki status "Keluar" asrama.</p>
+                <div class="overflow-x-auto -mx-5 px-5">
+                  <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
+                    <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                      <tr>
+                        <th class="p-3">Santri</th>
+                        <th class="p-3">Kelas</th>
+                        <th class="p-3">Mulai Keluar</th>
+                        <th class="p-3">Rencana Kembali</th>
+                        <th class="p-3">Keperluan</th>
+                        <th class="p-3 text-center">Durasi Izin</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-dorm-monitor-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                      <tr>
+                        <td colspan="6" class="p-4 text-center text-slate-400">Tidak ada santri di luar asrama.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtab 5: Broadcast -->
+          <div id="admin-subtab-broadcast" class="admin-subtab-content hidden space-y-4">
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+                <i data-lucide="megaphone" class="w-4 h-4 text-teal-500"></i> Kirim Broadcast Pengumuman
+              </h2>
+              <p class="text-xs text-slate-400 font-bold mb-4">Buat pengumuman global yang akan langsung muncul di bagian atas dashboard Musyrif.</p>
+              
+              <form id="admin-broadcast-form" onsubmit="window.handleAdminBroadcastSubmit(event)" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-black text-slate-500 mb-1">Judul Pengumuman</label>
+                  <input type="text" id="admin-broadcast-title" required placeholder="Contoh: Jadwal Piket Shalat Shubuh Baru" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-black text-slate-500 mb-1">Isi Pengumuman</label>
+                  <textarea id="admin-broadcast-content" required rows="4" placeholder="Tulis rincian pengumuman di sini..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500"></textarea>
+                </div>
+                <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-black text-xs py-3.5 shadow-md shadow-teal-500/10 active:scale-[0.98] transition-all">
+                  Kirim Pengumuman
+                </button>
+              </form>
+            </div>
+
+            <!-- Recent broadcasts -->
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <h3 class="text-xs font-black text-slate-800 dark:text-white mb-3">Pengumuman Terbaru</h3>
+              <div id="admin-recent-broadcasts" class="space-y-3">
+                <p class="text-xs text-slate-400 font-bold">Memuat pengumuman...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtab 6: Logs -->
+          <div id="admin-subtab-logs" class="admin-subtab-content hidden space-y-4">
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+                <i data-lucide="scroll" class="w-4 h-4 text-slate-500"></i> Global Audit Trail (Logs)
+              </h2>
+              <p class="text-xs text-slate-400 font-bold mb-4">Catatan aktivitas sistem dari semua pengelola pesantren secara transparan.</p>
+              
+              <div class="overflow-x-auto -mx-5 px-5">
+                <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
+                  <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                    <tr>
+                      <th class="p-3">Waktu</th>
+                      <th class="p-3">Aktor</th>
+                      <th class="p-3">Tindakan</th>
+                      <th class="p-3">Deskripsi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admin-logs-tbody" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                    <tr>
+                      <td colspan="4" class="p-4 text-center text-slate-400">Memuat logs...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Bottom Navigation Bar -->
       <nav
         class="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto animate-slide-up delay-500ms"
@@ -4588,6 +4876,21 @@
                 class="w-6 h-6 text-slate-400 group-[.active]:text-blue-500 transition-colors relative z-10"
               ></i>
               <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Rekap</span>
+            </button>
+
+            <button
+              onclick="window.switchTab('admin')"
+              data-target="admin"
+              class="nav-btn admin-only group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+            >
+              <div
+                class="absolute inset-0 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
+              ></div>
+              <i
+                data-lucide="shield-check"
+                class="w-6 h-6 text-slate-400 group-[.active]:text-indigo-500 transition-colors relative z-10"
+              ></i>
+              <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Admin</span>
             </button>
 
             <button
@@ -6164,6 +6467,7 @@
     <script src="managers/notification-manager.js"></script>
     <script src="features/qibla.js"></script>
     <script src="managers/permit-request-manager.js"></script>
+    <script src="managers/admin-manager.js"></script>
     <script src="core/script.js"></script>
     <script src="core/pull-to-refresh.js"></script>
     <script src="tahfizh/tahfizh-manager.js"></script>

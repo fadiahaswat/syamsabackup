@@ -132,6 +132,36 @@ window.initApp = async function () {
               console.warn('[Wali] Hybrid storage init failed on restore:', err);
             });
           }
+        } else if (authData.kelas === "admin musyrif" || authData.isAdmin) {
+          appState.selectedClass = authData.kelas;
+          appState.userProfile = authData.profile;
+          appState.waliMode = false;
+          appState.waliSantri = null;
+          appState.waliKelas = null;
+          appState.adminMode = true;
+          FILTERED_SANTRI = [];
+
+          document.getElementById("view-login").classList.add("hidden");
+          document.getElementById("view-main").classList.remove("hidden");
+          window.syncRoleModeUI();
+          window.switchTab("admin");
+          window.updateProfileInfo();
+          const greetName = window.getProfileDisplayName(authData.profile);
+          setTimeout(
+            () => window.showToast(`Ahlan, Admin ${greetName}`, "success"),
+            500,
+          );
+
+          // Initialize Storage Manager
+          const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
+          window.initStorage?.(musyrifId);
+
+          // Initialize Hybrid Storage (cloud sync)
+          if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
+            window.hybridStorageManager.init(authData.kelas).catch(err => {
+              console.warn('[Auth] Hybrid storage init failed for Admin:', err);
+            });
+          }
         } else if (authData.kelas) {
           // Tetap ijinkan login walaupun offline / MASTER_KELAS tidak ter-load sempurna
           appState.selectedClass = authData.kelas;
@@ -432,7 +462,9 @@ window.getWaliPrimaryId = function () {
 
 window.syncRoleModeUI = function () {
   const isWali = window.isWaliMode();
+  const isAdmin = appState.adminMode === true;
   document.body.classList.toggle("wali-mode", isWali);
+  document.body.classList.toggle("admin-mode", isAdmin);
 
   if (!document.getElementById("wali-mode-style")) {
     const style = document.createElement("style");
@@ -459,6 +491,13 @@ window.syncRoleModeUI = function () {
       }
       body.wali-mode .report-action-bar {
         grid-template-columns: minmax(0, 1fr) !important;
+      }
+      body.admin-mode .musyrif-only,
+      body.admin-mode .wali-only {
+        display: none !important;
+      }
+      body:not(.admin-mode) .admin-only {
+        display: none !important;
       }
     `;
     document.head.appendChild(style);
@@ -540,19 +579,37 @@ window.sha256Hex = async function (input) {
 };
 
 window.startAuthenticatedSession = async function (targetClass, profile, supabaseSession = null) {
+  const isAdmin = targetClass === "admin musyrif" || profile?.isAdmin === true;
+  
   const authData = {
     kelas: targetClass,
     profile: profile,
     supabaseSession: supabaseSession,
     timestamp: new Date().toISOString(),
+    isAdmin: isAdmin
   };
   localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
 
   appState.selectedClass = targetClass;
   appState.userProfile = profile;
-  appState.waliMode = false;
-  appState.waliSantri = null;
-  appState.waliKelas = null;
+  appState.adminMode = isAdmin;
+  
+  if (isAdmin) {
+    appState.waliMode = false;
+    appState.waliSantri = null;
+    appState.waliKelas = null;
+    FILTERED_SANTRI = [];
+  } else {
+    appState.waliMode = (profile?.authProvider === "wali");
+    if (!appState.waliMode) {
+      appState.waliSantri = null;
+      appState.waliKelas = null;
+      FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
+        const sKelas = String(s.kelas || s.rombel || "").trim();
+        return sKelas === targetClass;
+      }).sort((a, b) => a.nama.localeCompare(b.nama));
+    }
+  }
 
   // ========== SUPABASE HYBRID STORAGE INITIALIZATION ==========
   // Initialize hybrid storage if cloud mode is enabled
@@ -564,27 +621,71 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
 
       await window.hybridStorageManager.init(kelasId);
       console.log('[AuthManager] Hybrid storage initialized for class:', targetClass);
+
+      // Sync Admin emails to Supabase if logged in as Admin
+      if (isAdmin && window.supabaseClient?.client) {
+        const adminClassInfo = window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
+        if (adminClassInfo && adminClassInfo.email) {
+          const emails = adminClassInfo.email.split(/[;,]/).map(e => e.trim().toLowerCase()).filter(Boolean);
+          for (const email of emails) {
+            await window.supabaseClient.client.from('admin_emails').upsert({ email }).catch(err => {
+              console.warn('[AuthManager] Failed to sync admin email:', email, err);
+            });
+          }
+          console.log('[AuthManager] Admin emails synced to Supabase:', emails);
+        }
+      }
     } catch (error) {
       console.warn('[AuthManager] Hybrid storage init failed:', error);
     }
   }
-
-  FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
-    const sKelas = String(s.kelas || s.rombel || "").trim();
-    return sKelas === targetClass;
-  }).sort((a, b) => a.nama.localeCompare(b.nama));
 
   document.getElementById("view-login").classList.add("hidden");
   document.getElementById("view-main").classList.remove("hidden");
   document.getElementById("view-wali")?.classList.add("hidden");
 
   window.syncRoleModeUI();
-  window.updateDashboard();
+  
+  if (isAdmin) {
+    window.switchTab("admin");
+  } else {
+    window.updateDashboard();
+  }
+  
   window.updateProfileInfo();
 
   // Initialize Storage Manager on manual login
   const musyrifId = profile?.id || `class_${targetClass}`;
   window.initStorage?.(musyrifId);
+};
+
+// ==========================================
+// ADMIN LOGIN
+// ==========================================
+window.handleAdminLogin = function () {
+  const select = document.getElementById("musyrif-kelas");
+  if (select) {
+    let hasAdmin = false;
+    for (let i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === "admin musyrif") {
+        hasAdmin = true;
+        break;
+      }
+    }
+    if (!hasAdmin) {
+      const opt = document.createElement("option");
+      opt.value = "admin musyrif";
+      opt.textContent = "admin musyrif - Admin";
+      select.appendChild(opt);
+    }
+    select.value = "admin musyrif";
+  }
+
+  window.handleMusyrifLogin();
+
+  setTimeout(() => {
+    window.handleMusyrifSubmit();
+  }, 300);
 };
 
 // ==========================================
@@ -857,7 +958,7 @@ window.findWaliSantriByNis = function (nis) {
   return null;
 };
 
-window.handleWaliSubmit = function () {
+window.handleWaliSubmit = async function () {
   const nis = document.getElementById("wali-nis")?.value?.trim() || "";
   const password = document.getElementById("wali-password")?.value || "";
 
@@ -875,15 +976,47 @@ window.handleWaliSubmit = function () {
   }
 
   const foundKelas = String(foundSantri.kelas || foundSantri.rombel || "").trim();
-  const storedPassword = String(
-    foundSantri.password_nis ||
-      foundSantri.nis_password ||
-      foundSantri.password ||
-      "",
-  ).trim();
-  const expectedPassword = storedPassword || nis;
 
-  if (String(password).trim() !== expectedPassword) {
+  // 1. Cek password kustom di Supabase (jika online & hybrid mode)
+  let passwordVerified = false;
+  let checkedSupabase = false;
+
+  if (window.supabaseClient?.client && window.APP_STORAGE?.mode !== 'local-only' && navigator.onLine) {
+    try {
+      const { data, error } = await window.supabaseClient.client
+        .from('wali_password')
+        .select('password_hash')
+        .eq('nis', nis)
+        .maybeSingle();
+
+      if (!error && data && data.password_hash) {
+        checkedSupabase = true;
+        const inputHash = await window.sha256Hex(password);
+        if (inputHash === data.password_hash) {
+          passwordVerified = true;
+        }
+      }
+    } catch (err) {
+      console.warn('[WaliAuth] Supabase password check failed, falling back to local:', err);
+    }
+  }
+
+  // 2. Fallback ke password default jika tidak ada record di Supabase atau offline
+  if (!checkedSupabase) {
+    const storedPassword = String(
+      foundSantri.password_nis ||
+        foundSantri.nis_password ||
+        foundSantri.password ||
+        "",
+    ).trim();
+    const expectedPassword = storedPassword || nis;
+
+    if (String(password).trim() === expectedPassword) {
+      passwordVerified = true;
+    }
+  }
+
+  if (!passwordVerified) {
     return window.showToast("Password NIS salah.", "error");
   }
 
@@ -1990,6 +2123,11 @@ window.startGreetingLoop = function () {
 };
 
 window.updateDashboard = function () {
+  // Render announcement banner if function exists
+  if (window.renderDashboardAnnouncementBanner) {
+    window.renderDashboardAnnouncementBanner();
+  }
+
   // 1. Greeting
   const h = new Date().getHours();
   const greet =
@@ -3541,7 +3679,7 @@ window.openAttendance = async function () {
   }
 
   // 2. CEK LOKASI
-  if (GEO_CONFIG.useGeofencing && !window.gpsBypassEnabled) {
+  if (GEO_CONFIG.useGeofencing && !window.gpsBypassEnabled && appState.adminMode !== true) {
     try {
       await window.verifyLocationCached();
       window.showToast("Lokasi Terverifikasi ✅", "success");
@@ -3646,6 +3784,19 @@ window.closeAttendance = function () {
   // Reset slot attendance — biarkan clock bebas update currentSlotId lagi
   appState.activeAttendanceSlotId = null;
   
+  // Restore Admin storage context
+  if (appState.adminMode === true) {
+    appState.selectedClass = "admin musyrif";
+    const musyrifId = appState.userProfile?.id || "class_admin musyrif";
+    window.initStorage?.(musyrifId);
+    
+    if (window.APP_STORAGE?.mode !== 'local-only' && window.hybridStorageManager) {
+      window.hybridStorageManager.init("admin musyrif").catch(err => {
+        console.warn('[AdminRestore] Hybrid storage init failed:', err);
+      });
+    }
+  }
+  
   viewMain.classList.remove("hidden");
   viewAttendance.classList.remove("animate-slide-up-custom");
   viewAttendance.classList.add("animate-slide-down-custom");
@@ -3653,7 +3804,12 @@ window.closeAttendance = function () {
   setTimeout(() => {
     viewAttendance.classList.add("hidden");
     viewAttendance.classList.remove("animate-slide-down-custom");
-    window.updateDashboard();
+    if (appState.adminMode === true) {
+      window.switchTab("admin");
+      if (window.renderAdminOpsMatrix) window.renderAdminOpsMatrix();
+    } else {
+      window.updateDashboard();
+    }
   }, 350);
 };
 
@@ -5680,6 +5836,12 @@ window.switchTab = function (tabName) {
     window.renderTimesheetCalendar();
     window.renderPembinaanManagement(); // Refresh list di profil
     window.renderPermitHistory();
+  } else if (tabName === "admin") {
+    if (window.switchAdminSubTab) {
+      const activeBtn = document.querySelector(".admin-sub-nav-btn.active");
+      const subtab = activeBtn ? activeBtn.dataset.adminsubtab : "operations";
+      window.switchAdminSubTab(subtab);
+    }
   }
   // 6. Refresh Icon Lucide
   window.syncRoleModeUI();
@@ -6971,6 +7133,7 @@ window.updateProfileStats = function () {
 
 // 1. Cek Slot Accessible
 window.isSlotAccessible = function (slotId, dateStr) {
+  if (appState.adminMode === true) return { locked: false, reason: "" };
   const todayStr = window.getLocalDateStr();
 
   if (dateStr > todayStr) return { locked: true, reason: "future" };

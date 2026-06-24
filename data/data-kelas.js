@@ -43,6 +43,8 @@ async function loadClassData() {
           wali: row.wali || "-",
           musyrif: row.musyrif || "-",
           email: row.email || "",
+          id: row.id || row.supabaseId || "",
+          supabaseId: row.supabaseId || row.id || "",
         };
       }
     });
@@ -86,6 +88,8 @@ async function fetchClassBackground() {
           wali: row.wali || "-",
           musyrif: row.musyrif || "-",
           email: row.email || "",
+          id: row.id || row.supabaseId || "",
+          supabaseId: row.supabaseId || row.id || "",
         };
       }
     });

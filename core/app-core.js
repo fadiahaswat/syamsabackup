@@ -750,6 +750,7 @@ let appState = {
   waliMode: false,
   waliSantri: null,
   waliKelas: null,
+  adminMode: false,
   date: window.getLocalDateStr(),
   reportDate: window.getLocalDateStr(),
   analysisDate: window.getLocalDateStr(),

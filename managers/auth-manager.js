@@ -139,8 +139,29 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
     supabaseSession: supabaseSession,
     timestamp: new Date().toISOString(),
   };
-  localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
 
+  const isAdmin = targetClass === "admin musyrif";
+  appState.adminMode = isAdmin;
+  
+  if (isAdmin) {
+    appState.waliMode = false;
+    appState.waliSantri = null;
+    appState.waliKelas = null;
+    authData.isAdmin = true;
+    FILTERED_SANTRI = [];
+  } else {
+    appState.waliMode = (profile?.authProvider === "wali");
+    if (!appState.waliMode) {
+      appState.waliSantri = null;
+      appState.waliKelas = null;
+      FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
+        const sKelas = String(s.kelas || s.rombel || "").trim();
+        return sKelas === targetClass;
+      }).sort((a, b) => a.nama.localeCompare(b.nama));
+    }
+  }
+
+  localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
   appState.selectedClass = targetClass;
   appState.userProfile = profile;
 
@@ -153,9 +174,23 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
       const kelasId = kelasInfo?.supabaseId || kelasInfo?.id || targetClass;
 
       await window.hybridStorageManager.init(kelasId);
-      console.log('[AuthManager] Hybrid storage initialized for class:', targetClass);
+      console.log('[AuthManager] Hybrid storage initialized for:', targetClass);
+
+      // Sync Admin emails to Supabase if logged in as Admin
+      if (isAdmin && window.supabaseClient?.client) {
+        const adminClassInfo = window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
+        if (adminClassInfo && adminClassInfo.email) {
+          const emails = adminClassInfo.email.split(/[;,]/).map(e => e.trim().toLowerCase()).filter(Boolean);
+          for (const email of emails) {
+            await window.supabaseClient.client.from('admin_emails').upsert({ email }).catch(err => {
+              console.warn('[AuthManager] Failed to sync admin email:', email, err);
+            });
+          }
+          console.log('[AuthManager] Admin emails synced to Supabase:', emails);
+        }
+      }
     } catch (error) {
-      console.warn('[AuthManager] Hybrid storage init failed:', error);
+      console.warn('[AuthManager] Hybrid storage init/sync failed:', error);
     }
   }
 
@@ -163,14 +198,10 @@ window.startAuthenticatedSession = async function (targetClass, profile, supabas
   // Cek update PWA setiap login untuk memastikan dapat data terbaru
   window.checkForPWAUpdate();
 
-  FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
-    const sKelas = String(s.kelas || s.rombel || "").trim();
-    return sKelas === targetClass;
-  }).sort((a, b) => a.nama.localeCompare(b.nama));
-
   document.getElementById("view-login").classList.add("hidden");
   document.getElementById("view-main").classList.remove("hidden");
 
+  window.syncRoleModeUI();
   window.updateDashboard();
   window.updateProfileInfo();
 };
