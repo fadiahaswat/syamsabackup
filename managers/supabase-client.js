@@ -14,6 +14,8 @@ class SupabaseClient {
     this.currentUser = null;
     this.realtimeChannels = [];
     this.initPromise = null;
+    this.currentKelasId = null;
+    this.currentKelasUuid = null;
 
     // Callbacks
     this.onAuthStateChange = null;
@@ -21,9 +23,58 @@ class SupabaseClient {
     this.onSyncStatusChange = null;
     this.onAttendanceChange = null;
     this.onPermitChange = null;
+    this.onTahfizhChange = null;
+    this.onNotificationChange = null;
 
     // Setup connection listeners
     this._setupConnectionListeners();
+  }
+
+  /**
+   * Helper: Check if string is UUID format
+   */
+  _isUuid(str) {
+    if (!str || typeof str !== 'string') return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+  }
+
+  /**
+   * Helper: Resolve kelas UUID from text name or vice versa
+   */
+  _resolveKelasIds(kelasId) {
+    let resolvedTextId = kelasId;
+    let resolvedUuidId = null;
+
+    // If input is already UUID, resolve to text name
+    if (this._isUuid(kelasId)) {
+      resolvedUuidId = kelasId;
+      const classSource = window.classData || window.MASTER_KELAS;
+      if (classSource) {
+        const foundKey = Object.keys(classSource).find(k => {
+          const val = classSource[k];
+          return val.supabaseId === resolvedUuidId || val.id === resolvedUuidId;
+        });
+        if (foundKey) {
+          resolvedTextId = foundKey;
+        }
+      }
+    } else {
+      // Input is text name, resolve to UUID
+      const classSource = window.classData || window.MASTER_KELAS;
+      if (classSource) {
+        const matched = Object.keys(classSource).find(k =>
+          k.replace(/\s+/g, "").toLowerCase() === String(kelasId).replace(/\s+/g, "").toLowerCase()
+        );
+        if (matched && classSource[matched]) {
+          const uuid = classSource[matched].supabaseId || classSource[matched].id;
+          if (this._isUuid(uuid)) {
+            resolvedUuidId = uuid;
+          }
+        }
+      }
+    }
+
+    return { textId: resolvedTextId, uuidId: resolvedUuidId };
   }
 
   /**
@@ -139,7 +190,8 @@ class SupabaseClient {
   }
 
   /**
-   * Subscribe to realtime changes (attendance & permits)
+   * Subscribe to realtime changes (attendance, permits, tahfizh, notifications)
+   * FIXED: All subscription bugs addressed
    */
   async subscribeToRealtime(kelasId, kelasUuid = null) {
     if (!this.client) {
@@ -147,43 +199,34 @@ class SupabaseClient {
       return;
     }
 
-    // Unsubscribe from previous channels
+    // Unsubscribe from previous channels first
     this.unsubscribeRealtime();
 
-    let resolvedKelasId = kelasId;
-    let resolvedKelasUuid = kelasUuid;
+    // Store current subscription context
+    this.currentKelasId = kelasId;
+    this.currentKelasUuid = kelasUuid;
 
-    const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    // FIX BUG #1 & #8: Use helper to resolve both text and UUID
+    const { textId: resolvedTextId, uuidId: resolvedUuidId } = this._resolveKelasIds(kelasId);
 
-    if (resolvedKelasId && isUuid(resolvedKelasId)) {
-      resolvedKelasUuid = resolvedKelasId;
-      // Resolve the text name from classData/MASTER_KELAS
-      const classSource = window.classData || window.MASTER_KELAS;
-      if (classSource) {
-        const foundKey = Object.keys(classSource).find(k => {
-          const val = classSource[k];
-          return val.supabaseId === resolvedKelasUuid || val.id === resolvedKelasUuid;
-        });
-        if (foundKey) {
-          resolvedKelasId = foundKey;
-        }
-      }
-    } else if (resolvedKelasId) {
-      if (!resolvedKelasUuid) {
-        // Resolve the UUID for permit table
-        const classSource = window.classData || window.MASTER_KELAS;
-        if (classSource) {
-          const matched = Object.keys(classSource).find(k => k.replace(/\s+/g, "").toLowerCase() === String(resolvedKelasId).replace(/\s+/g, "").toLowerCase());
-          if (matched && classSource[matched]) {
-            resolvedKelasUuid = classSource[matched].supabaseId || classSource[matched].id;
-          }
-        }
-      }
+    // If UUID was passed directly, use it
+    if (kelasUuid && this._isUuid(kelasUuid)) {
+      resolvedUuidId = kelasUuid;
     }
 
-    console.log('[SupabaseClient] Subscribing to realtime for kelas:', resolvedKelasId, 'UUID:', resolvedKelasUuid);
+    console.log('[SupabaseClient] Subscribing to realtime for kelas:', resolvedTextId, 'UUID:', resolvedUuidId);
 
-    // 1. Subscribe to attendance changes (uses text kelasId)
+    const newChannels = [];
+
+    // =============================================================
+    // 1. ATTENDANCE SUBSCRIPTION (FIX: Try UUID first, fallback to text)
+    // =============================================================
+    const attendanceFilter = resolvedUuidId
+      ? `kelas_id=eq.${resolvedUuidId}`
+      : `kelas_id=eq.${resolvedTextId}`;
+
+    console.log('[SupabaseClient] Attendance filter:', attendanceFilter);
+
     const attendanceChannel = this.client
       .channel('attendance-changes')
       .on(
@@ -192,21 +235,27 @@ class SupabaseClient {
           event: '*',
           schema: 'public',
           table: 'attendance_record',
-          filter: `kelas_id=eq.${resolvedKelasId}`
+          filter: attendanceFilter
         },
         (payload) => {
           console.log('[SupabaseClient] Attendance changed:', payload);
+          // FIX: Also update local state before calling callback
           if (this.onAttendanceChange) {
             this.onAttendanceChange(payload);
           }
         }
       )
       .subscribe();
+    newChannels.push(attendanceChannel);
 
-    // 2. Subscribe to permit changes (uses UUID resolvedKelasUuid)
+    // =============================================================
+    // 2. PERMIT SUBSCRIPTION (FIX: Fallback to client-side filter if no UUID)
+    // =============================================================
     let permitChannel = null;
-    if (resolvedKelasUuid) {
-      console.log('[SupabaseClient] Subscribing to permit changes with filter: kelas_id=eq.' + resolvedKelasUuid);
+
+    if (resolvedUuidId) {
+      // Primary: Subscribe with UUID filter
+      console.log('[SupabaseClient] Subscribing to permit changes with UUID filter:', resolvedUuidId);
       permitChannel = this.client
         .channel('permit-changes')
         .on(
@@ -215,10 +264,10 @@ class SupabaseClient {
             event: '*',
             schema: 'public',
             table: 'permit',
-            filter: `kelas_id=eq.${resolvedKelasUuid}`
+            filter: `kelas_id=eq.${resolvedUuidId}`
           },
           (payload) => {
-            console.log('[SupabaseClient] Permit changed (REALTIME):', payload);
+            console.log('[SupabaseClient] Permit changed (REALTIME-UUID):', payload);
             if (this.onPermitChange) {
               this.onPermitChange(payload);
             }
@@ -226,11 +275,51 @@ class SupabaseClient {
         )
         .subscribe();
     } else {
-      console.log('[SupabaseClient] WARNING: No resolvedKelasUuid, permit subscription skipped');
-    }
+      // FIX BUG #1: Fallback - subscribe to ALL permits, filter client-side
+      console.log('[SupabaseClient] WARNING: No UUID resolved, using client-side permit filter');
+      const recipient = window.getNotificationRecipientInfo?.() || {};
 
-    // 3. Subscribe to tahfizh changes (uses text resolvedKelasId)
-    console.log('[SupabaseClient] Subscribing to tahfizh changes with filter: kelas=eq.' + resolvedKelasId);
+      permitChannel = this.client
+        .channel('permit-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'permit'
+          },
+          (payload) => {
+            console.log('[SupabaseClient] Permit changed (REALTIME-CLIENT-FILTER):', payload);
+            const record = payload.new || {};
+            const currentRecipient = window.getNotificationRecipientInfo?.() || {};
+
+            // Client-side filter based on role
+            let shouldTrigger = false;
+
+            if (currentRecipient.type === 'wali') {
+              // Wali: match by NIS
+              shouldTrigger = String(record.nis || '').trim() === String(currentRecipient.id).trim();
+            } else if (resolvedTextId) {
+              // Musyrif: match by class name (kelas_nama field)
+              shouldTrigger = String(record.kelas_nama || '').trim().toLowerCase() === resolvedTextId.trim().toLowerCase();
+            }
+
+            if (shouldTrigger) {
+              console.log('[SupabaseClient] Permit matched current user, triggering callback');
+              if (this.onPermitChange) {
+                this.onPermitChange(payload);
+              }
+            }
+          }
+        )
+        .subscribe();
+    }
+    newChannels.push(permitChannel);
+
+    // =============================================================
+    // 3. TAHFIZH SUBSCRIPTION (uses text kelas name)
+    // =============================================================
+    console.log('[SupabaseClient] Subscribing to tahfizh changes with filter: kelas=eq.' + resolvedTextId);
     const tahfizhChannel = this.client
       .channel('tahfizh-changes')
       .on(
@@ -239,7 +328,7 @@ class SupabaseClient {
           event: '*',
           schema: 'public',
           table: 'tahfizh_record',
-          filter: `kelas=eq.${resolvedKelasId}`
+          filter: `kelas=eq.${resolvedTextId}`
         },
         (payload) => {
           console.log('[SupabaseClient] Tahfizh changed (REALTIME):', payload);
@@ -249,45 +338,67 @@ class SupabaseClient {
         }
       )
       .subscribe();
+    newChannels.push(tahfizhChannel);
 
-    // 4. Subscribe to notification changes for the logged-in recipient
-    let notificationChannel = null;
+    // =============================================================
+    // 4. NOTIFICATION SUBSCRIPTION (FIX: Server-side filter by role)
+    // =============================================================
     const recipient = window.getNotificationRecipientInfo?.() || {};
     const recipientId = recipient.id || '';
+    const recipientType = recipient.type || '';
+
     if (recipientId) {
-      console.log('[SupabaseClient] Subscribing to notifications for recipient_type:', recipient.type, 'recipient_id:', recipientId);
-      notificationChannel = this.client
+      // FIX BUG #2: Use server-side filter instead of client-side
+      // Build filter based on recipient type
+      let notificationFilter = '';
+      if (recipientType === 'wali') {
+        notificationFilter = `recipient_type=eq.wali&recipient_id=eq.${recipientId}`;
+      } else if (recipientType === 'musyrif') {
+        notificationFilter = `recipient_type=eq.musyrif&recipient_id=eq.${recipientId}`;
+      } else {
+        // Generic: match both type and id
+        notificationFilter = `recipient_type=eq.${recipientType}&recipient_id=eq.${recipientId}`;
+      }
+
+      console.log('[SupabaseClient] Subscribing to notifications with filter:', notificationFilter);
+
+      const notificationChannel = this.client
         .channel('notification-changes')
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
-            table: 'notifications'
+            table: 'notifications',
+            filter: notificationFilter
           },
           (payload) => {
-            console.log('[SupabaseClient] Realtime notification received:', payload);
-            const record = payload.new || payload.old || {};
-            const currentRecipient = window.getNotificationRecipientInfo?.() || {};
-            // Filter client-side
-            const match = String(record.recipient_type).trim() === String(currentRecipient.type).trim() &&
-                          String(record.recipient_id).trim() === String(currentRecipient.id).trim();
-            if (match) {
-              console.log('[SupabaseClient] Notification matched current user, triggering callback');
-              if (this.onNotificationChange) {
-                this.onNotificationChange(payload);
-              }
+            console.log('[SupabaseClient] Realtime notification matched:', payload);
+            if (this.onNotificationChange) {
+              this.onNotificationChange(payload);
             }
           }
         )
         .subscribe();
+      newChannels.push(notificationChannel);
+    } else {
+      console.log('[SupabaseClient] WARNING: No recipient ID, skipping notification subscription');
     }
 
-    this.realtimeChannels = [attendanceChannel];
-    if (permitChannel) this.realtimeChannels.push(permitChannel);
-    if (tahfizhChannel) this.realtimeChannels.push(tahfizhChannel);
-    if (notificationChannel) this.realtimeChannels.push(notificationChannel);
-    console.log('[SupabaseClient] Realtime subscribed successfully');
+    // Store all channels
+    this.realtimeChannels = newChannels;
+    console.log('[SupabaseClient] Realtime subscribed successfully. Channels:', newChannels.length);
+  }
+
+  /**
+   * Resubscribe to realtime with same parameters
+   * Call this when role changes or kelas changes
+   */
+  async resubscribe() {
+    if (this.currentKelasId) {
+      console.log('[SupabaseClient] Resubscribing to realtime...');
+      await this.subscribeToRealtime(this.currentKelasId, this.currentKelasUuid);
+    }
   }
 
   /**

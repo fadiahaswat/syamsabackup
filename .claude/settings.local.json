@@ -19,7 +19,13 @@
       "WebSearch",
       "Bash(supabase link *)",
       "Bash(npx supabase *)",
-      "WebFetch(domain:gemini.google.com)"
+      "WebFetch(domain:gemini.google.com)",
+      "Bash(ls -la \"d:/syamsa-backup/syamsabackup/docs/Design System forxyasa/src/app/\" 2>/dev/null || echo \"Trying different path...\" && ls -la \"d:/syamsa-backup/syamsabackup/docs/Design%20System%20for%20Syamsa/src/app/\" 2>/dev/null | head -20)",
+      "Read(//d/syamsa-backup/syamsabackup/docs/Design%20System%20for%20Syamsa/src/**)",
+      "Bash(ls -la \"docs/Design System forxyasa/src/app/\")",
+      "Bash(ls -la 'docs/Design System forxyasa/src/app/')",
+      "Bash(Get-ChildItem -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\" -Recurse -File)",
+      "Bash(Select-Object FullName, Length)"
     ]
   }
 }

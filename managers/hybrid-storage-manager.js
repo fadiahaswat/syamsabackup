@@ -241,23 +241,59 @@ class HybridStorageManager {
     }
   }
 
+    /**
+   * FIX BUG #3: Comprehensive UI refresh after data changes
+   * Called after realtime events or cloud sync
+   */
   _refreshUI(source = 'cloud_sync') {
+    console.log('[HybridStorageManager] _refreshUI called, source:', source);
+
     // Trigger global refresh callbacks
     if (this.onDataUpdate) {
-      this.onDataUpdate('cloud_sync_complete');
+      this.onDataUpdate(source);
     }
 
-    // Refresh attendance list if available
+    // ====================
+    // ATTENDANCE UPDATES
+    // ====================
     if (typeof window.renderAttendanceList === 'function') {
       window.renderAttendanceList();
     }
-
-    // Refresh dashboard
     if (typeof window.updateDashboard === 'function') {
       window.updateDashboard();
     }
+    if (typeof window.updateQuickStats === 'function') {
+      window.updateQuickStats();
+    }
+    if (typeof window.drawDonutChart === 'function') {
+      window.drawDonutChart();
+    }
+    if (typeof window.renderSchoolStatsWidget === 'function') {
+      window.renderSchoolStatsWidget();
+    }
 
-    // Refresh permit requests and approval list (Musyrif)
+    // ====================
+    // PERMIT UPDATES (FIX: Added missing widgets)
+    // ====================
+    if (typeof window.renderPermitList === 'function') {
+      window.renderPermitList();
+    }
+    if (typeof window.renderActivePermitsWidget === 'function') {
+      window.renderActivePermitsWidget();
+    }
+    if (typeof window.renderPermitHistory === 'function') {
+      window.renderPermitHistory();
+    }
+    if (typeof window.filterPermitsTabList === 'function') {
+      window.filterPermitsTabList();
+    }
+    if (typeof window.refreshPermitSurfaces === 'function') {
+      window.refreshPermitSurfaces();
+    }
+
+    // ====================
+    // MUSYRIF APPROVAL WIDGET
+    // ====================
     if (typeof window.loadMusyrifRequests === 'function') {
       window.loadMusyrifRequests();
     }
@@ -266,17 +302,69 @@ class HybridStorageManager {
       window.updateMusyrifApprovalModalList();
     }
 
-    // Refresh Wali permit history list
+    // ====================
+    // WALI PERMIT HISTORY
+    // ====================
     if (typeof window.loadWaliPermitHistory === 'function') {
       window.loadWaliPermitHistory();
     }
 
-    // Refresh permit surfaces
-    if (typeof window.refreshPermitSurfaces === 'function') {
-      window.refreshPermitSurfaces();
+    // ====================
+    // PEMBINAAN UPDATES
+    // ====================
+    if (typeof window.refreshPembinaanSurfaces === 'function') {
+      window.refreshPembinaanSurfaces();
+    }
+    if (typeof window.renderDashboardPembinaan === 'function') {
+      window.renderDashboardPembinaan();
+    }
+    if (typeof window.renderPembinaanManagement === 'function') {
+      window.renderPembinaanManagement();
     }
 
-    // Show subtle notification for realtime updates (not for local sync)
+    // ====================
+    // TAHFIZH UPDATES
+    // ====================
+    if (typeof window.reloadTahfizhData === 'function') {
+      window.reloadTahfizhData();
+    }
+    if (typeof window.renderAllTahfizhUI === 'function') {
+      window.renderAllTahfizhUI();
+    }
+
+    // ====================
+    // NOTIFICATION UPDATES
+    // ====================
+    if (typeof window.fetchNotifications === 'function') {
+      window.fetchNotifications();
+    }
+    if (typeof window.renderNotificationsUI === 'function') {
+      // Re-render with current data
+      const notificationsList = window.currentNotificationsList || [];
+      window.renderNotificationsUI(notificationsList);
+    }
+
+    // ====================
+    // BANNER UPDATES
+    // ====================
+    if (typeof window.renderBanner === 'function') {
+      window.renderBanner();
+    }
+    if (typeof window.renderKBMBanner === 'function') {
+      window.renderKBMBanner();
+    }
+
+    // ====================
+    // SLOT LIST UPDATES
+    // ====================
+    if (typeof window.renderSlotList === 'function') {
+      window.renderSlotList();
+    }
+    if (typeof window.updateQuickAccessButtons === 'function') {
+      window.updateQuickAccessButtons();
+    }
+
+    // Show toast for realtime updates
     if (source === 'realtime' && window.showToast) {
       window.showToast('🔄 Data diperbarui secara real-time', 'info', false, 2000);
     }
@@ -359,7 +447,8 @@ class HybridStorageManager {
   }
 
   /**
-   * Merge permits data dari cloud ke local
+   * FIX BUG #6: Merge permits with proper conflict resolution
+   * Pending local changes should NOT be overwritten by cloud data
    */
   async _mergePermitsData(cloudPermits) {
     if (!cloudPermits || cloudPermits.length === 0) return;
@@ -381,14 +470,34 @@ class HybridStorageManager {
       const localPermitMap = new Map(appState.permits.map(p => [String(p.id), p]));
 
       // Gabungkan data dari cloud ke local map
+      let mergeCount = 0;
       for (const cloudPermit of transformedCloudPermits) {
         const permitId = String(cloudPermit.id);
         const isPending = pendingIds.has(permitId);
 
-        if (!localPermitMap.has(permitId) || !isPending) {
-          // Jika tidak ada data lokal, atau jika data lokal TIDAK sedang pending di sync queue,
-          // maka gunakan data dari cloud (server wins).
+        // FIX BUG #6: JIKA PENDING, KEEP LOCAL VERSION
+        // Ini mencegah perubahan user yang belum sync di-overwrite oleh data cloud
+        if (isPending) {
+          console.log(`[HybridStorageManager] Skipping cloud data for pending permit: ${permitId}`);
+          continue;
+        }
+
+        // FIX BUG #6: Compare timestamps - keep newer data
+        const localPermit = localPermitMap.get(permitId);
+        const cloudTimestamp = cloudPermit.timestamp || cloudPermit.updated_at || cloudPermit.created_at || 0;
+        const localTimestamp = localPermit?.timestamp || localPermit?.updated_at || localPermit?.created_at || 0;
+
+        if (!localPermit) {
+          // No local data - add cloud data
           localPermitMap.set(permitId, cloudPermit);
+          mergeCount++;
+        } else if (new Date(cloudTimestamp) > new Date(localTimestamp)) {
+          // Cloud is newer - use cloud data
+          localPermitMap.set(permitId, cloudPermit);
+          mergeCount++;
+        } else {
+          // Local is newer or same - keep local
+          console.log(`[HybridStorageManager] Keeping local version (newer): ${permitId}`);
         }
       }
 
@@ -396,7 +505,10 @@ class HybridStorageManager {
 
       // Simpan ke localStorage
       localStorage.setItem('musyrif_permits_db', JSON.stringify(appState.permits));
-      console.log('[HybridStorageManager] Merged permits data with local storage');
+      console.log(`[HybridStorageManager] Merged permits data with local storage. Merged: ${mergeCount}, Total: ${appState.permits.length}`);
+
+      // FIX: Trigger UI refresh after merge
+      this._refreshUI('merge');
     }
   }
 
@@ -770,6 +882,10 @@ class HybridStorageManager {
         if (this.supabaseConfigured && this.kelasId) {
           this._subscribeToRealtime();
         }
+        // FIX BUG #4: Start polling as fallback if realtime unavailable
+        if (typeof window.GlobalPollingManager !== 'undefined') {
+          window.GlobalPollingManager.start();
+        }
       }
     });
 
@@ -779,13 +895,27 @@ class HybridStorageManager {
       if (this.onConnectionChange) {
         this.onConnectionChange(false);
       }
+      // FIX BUG #4: Stop polling when offline
+      if (typeof window.GlobalPollingManager !== 'undefined') {
+        window.GlobalPollingManager.stop();
+      }
     });
   }
 
   /**
    * Start auto-sync interval
+   * FIX BUG #4: Use GlobalPollingManager if available to avoid duplicate polling
    */
   _startAutoSync() {
+    // FIX BUG #4: Delegate to GlobalPollingManager if available
+    // This prevents duplicate polling between HybridStorageManager and PermitRequestManager
+    if (typeof window.GlobalPollingManager !== 'undefined') {
+      window.GlobalPollingManager.start();
+      console.log('[HybridStorageManager] Delegating to GlobalPollingManager for auto-sync');
+      return;
+    }
+
+    // Fallback: Legacy behavior with separate interval
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
     }
@@ -806,6 +936,11 @@ class HybridStorageManager {
    * Stop auto-sync
    */
   stopAutoSync() {
+    // FIX BUG #4: Also stop GlobalPollingManager
+    if (typeof window.GlobalPollingManager !== 'undefined') {
+      window.GlobalPollingManager.stop();
+    }
+
     if (this.syncInterval) {
       clearInterval(this.syncInterval);
       this.syncInterval = null;

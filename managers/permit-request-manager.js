@@ -758,51 +758,101 @@
   // Expose ke window agar bisa dipanggil dari HybridStorageManager
   window.renderMusyrifApprovalWidget = renderMusyrifApprovalWidget;
 
-  // Polling interval untuk refresh widget approval secara periodik
-  let approvalPollInterval = null;
+  // FIX BUG #4: Unified Global Polling Manager
+  // Replaces multiple scattered polling intervals with a single orchestrator
+  window.GlobalPollingManager = {
+    isPolling: false,
+    intervalId: null,
 
-  /**
-   * Start polling untuk cek pending permits
-   */
-  window.startApprovalPolling = function() {
-    console.log("[PermitRequestManager] startApprovalPolling called, isWaliMode:", window.isWaliMode?.());
-
-    // Stop any existing polling first
-    if (approvalPollInterval) {
-      clearInterval(approvalPollInterval);
-      approvalPollInterval = null;
-    }
-
-    // Don't start polling for wali mode
-    if (window.isWaliMode?.()) {
-      console.log("[PermitRequestManager] Skipping polling - in wali mode");
-      return;
-    }
-
-    // Initial load
-    console.log("[PermitRequestManager] Running initial load...");
-    loadMusyrifRequests();
-
-    // Poll every 5 seconds for faster updates
-    approvalPollInterval = setInterval(() => {
-      console.log("[PermitRequestManager] Polling tick...");
-      if (!window.isWaliMode?.()) { // Only poll for musyrif
-        loadMusyrifRequests();
+    /**
+     * Start unified polling - single interval for all data sync
+     */
+    start() {
+      // Don't start if already polling or in wali mode
+      if (this.isPolling) {
+        console.log("[GlobalPollingManager] Already polling, skipping start");
+        return;
       }
-    }, 5000);
+      if (window.isWaliMode?.()) {
+        console.log("[GlobalPollingManager] Skipping - in wali mode (realtime preferred)");
+        return;
+      }
 
-    console.log("[PermitRequestManager] Approval polling started (every 5s)");
+      console.log("[GlobalPollingManager] Starting unified polling (every 10s)");
+      this.isPolling = true;
+
+      // Initial load
+      loadMusyrifRequests();
+
+      // Single unified interval - handles all data refresh
+      this.intervalId = setInterval(() => {
+        if (!navigator.onLine) return;
+
+        // 1. Process sync queue (pending offline changes)
+        window.hybridStorageManager?._processQueue();
+
+        // 2. Refresh permits from cloud (will trigger UI via callbacks)
+        if (window.hybridStorageManager?.isOnline) {
+          window.hybridStorageManager.remote?.loadPermits?.(window.hybridStorageManager.kelasId)
+            .then(result => {
+              if (result?.data) {
+                // Update appState if data changed
+                const newPermits = result.data.map(p => window.hybridStorageManager._transformRemotePermit(p));
+                const existingIds = new Set((appState.permits || []).map(p => p.id));
+                const hasNewData = newPermits.some(p => !existingIds.has(p.id));
+
+                if (hasNewData) {
+                  console.log("[GlobalPollingManager] New permits detected, refreshing UI");
+                  window.refreshPermitSurfaces?.();
+                }
+              }
+            })
+            .catch(err => console.warn("[GlobalPollingManager] Permit refresh failed:", err));
+        }
+
+        // 3. Refresh musyrif requests (UI update)
+        loadMusyrifRequests();
+
+        // 4. Refresh tahfizh if online
+        if (typeof window.syncTahfizhToCloud === 'function') {
+          window.syncTahfizhToCloud();
+        }
+
+      }, 10000); // 10 second interval
+
+      console.log("[GlobalPollingManager] Polling started");
+    },
+
+    /**
+     * Stop all polling
+     */
+    stop() {
+      if (this.intervalId) {
+        clearInterval(this.intervalId);
+        this.intervalId = null;
+      }
+      this.isPolling = false;
+      console.log("[GlobalPollingManager] Polling stopped");
+    },
+
+    /**
+     * Restart polling (used when reconnecting or after realtime disconnect)
+     */
+    restart() {
+      console.log("[GlobalPollingManager] Restarting...");
+      this.stop();
+      setTimeout(() => this.start(), 1000);
+    }
   };
 
-  /**
-   * Stop polling
-   */
+  // Legacy compatibility - redirects to GlobalPollingManager
+  window.startApprovalPolling = function() {
+    // FIX BUG #4: Delegate to unified polling manager
+    window.GlobalPollingManager.start();
+  };
+
   window.stopApprovalPolling = function() {
-    if (approvalPollInterval) {
-      clearInterval(approvalPollInterval);
-      approvalPollInterval = null;
-      console.log("[PermitRequestManager] Approval polling stopped");
-    }
+    window.GlobalPollingManager.stop();
   };
 
   /**

@@ -764,18 +764,49 @@ window.currentNotificationsList = [];
 window.currentNotificationFilter = "all";
 
 // Helper: Ambil informasi penerima berdasarkan mode login
+// FIX BUG #10: Improved role detection with fallback and auth state checking
 window.getNotificationRecipientInfo = function () {
-  if (appState.waliMode === true) {
+  // Check from multiple sources for robust role detection
+  const user = window.supabaseClient?.currentUser;
+  const session = window.supabaseClient?.currentSession;
+
+  // Determine if user is in Wali mode (check appState.waliSantri as primary indicator)
+  const isWali = appState?.waliMode === true || appState?.waliSantri != null;
+
+  if (isWali && appState?.waliSantri) {
+    // Wali mode - use NIS from waliSantri object
     return {
       type: "wali",
-      id: String(appState.waliSantri?.nis || appState.waliSantri?.id || "").trim().toLowerCase()
-    };
-  } else {
-    return {
-      type: "musyrif",
-      id: String(appState.userProfile?.email || "").trim().toLowerCase()
+      id: String(appState.waliSantri.nis || appState.waliSantri.id || "").trim().toLowerCase()
     };
   }
+
+  // Musyrif mode - use email from auth
+  const musyrifId = String(user?.email || appState?.userProfile?.email || "").trim().toLowerCase();
+  return {
+    type: "musyrif",
+    id: musyrifId
+  };
+};
+
+// Helper: Restart realtime subscription when role changes
+window.onRoleChange = function(newRole) {
+  console.log("[NotificationManager] Role changed to:", newRole);
+
+  // Restart realtime subscription if supabase client exists
+  if (window.supabaseClient) {
+    // Unsubscribe first
+    window.supabaseClient.unsubscribeRealtime();
+
+    // Resubscribe with new context (will pick up new role from appState)
+    if (window.hybridStorageManager && window.hybridStorageManager.kelasId) {
+      window.hybridStorageManager._subscribeToRealtime();
+    }
+  }
+
+  // Clear notification cache for old recipient
+  window.currentNotificationsList = [];
+  window.fetchNotifications?.();
 };
 
 // Toggle visibility dropdown
