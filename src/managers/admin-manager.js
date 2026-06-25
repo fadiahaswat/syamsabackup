@@ -68,7 +68,8 @@ window.loadGlobalAttendance = async function () {
         const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
         const savedData = localStorage.getItem(storageKey);
         if (savedData) {
-          const attendanceData = JSON.parse(savedData);
+          const attendanceData = window.safeJsonParse(savedData, {});
+          if (!attendanceData) continue;
           const dayData = attendanceData[dateKey];
           if (dayData) {
             slots.forEach(slotId => {
@@ -106,7 +107,7 @@ window.loadGlobalPermits = async function () {
       try {
         const saved = localStorage.getItem('musyrif_permits_db');
         if (saved) {
-          allPermits = JSON.parse(saved);
+          allPermits = window.safeJsonParse(saved, []);
         }
       } catch (e) {
         console.warn('[AdminManager] Error reading permits from localStorage', e);
@@ -144,7 +145,7 @@ window.loadGlobalTahfizh = async function () {
     try {
       const saved = localStorage.getItem('tahfizh_local_setoran');
       if (saved) {
-        allSetoran = JSON.parse(saved);
+        allSetoran = window.safeJsonParse(saved, []);
       }
     } catch (e) {
       console.warn('[AdminManager] Error reading tahfizh from localStorage', e);

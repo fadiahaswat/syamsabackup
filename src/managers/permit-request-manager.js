@@ -9,8 +9,9 @@
 (function() {
   const STORAGE_KEY = 'permit_requests';
 
-  const DAYS = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  const MONTHS = [
+  // MEDIUM FIX: Use shared constants instead of duplicating
+  const DAYS = window.SHARED_CONSTANTS?.DAYS_INDO || ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  const MONTHS = window.SHARED_CONSTANTS?.MONTHS_FULL || [
     "Januari", "Februari", "Maret", "April", "Mei", "Juni",
     "Juli", "Agustus", "September", "Oktober", "November", "Desember"
   ];

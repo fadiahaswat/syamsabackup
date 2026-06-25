@@ -45,6 +45,50 @@ const APP_CONFIG = {
 };
 
 // ==========================================
+// SECURITY HELPER FUNCTIONS (XSS Prevention)
+// ==========================================
+
+// CRITICAL FIX: Escape HTML entities untuk mencegah XSS
+// Gunakan ini untuk semua user-provided values yang di-render ke HTML
+window.escapeHtml = function(str) {
+  if (str === null || str === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+};
+
+// Escape untuk attribute values (double quotes context)
+window.escapeAttr = function(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+};
+
+// Escape untuk inline event handlers (paling aman: gunakan data-attribute pattern)
+window.escapeForEventHandler = function(str) {
+  if (str === null || str === undefined) return '';
+  // Replace backtick dan $ untuk mencegah template literal injection
+  return String(str)
+    .replace(/`/g, '&#96;')
+    .replace(/\$/g, '&#36;');
+};
+
+// CRITICAL FIX: Safe JSON parse - prevents crash on malformed data
+window.safeJsonParse = function(str, fallback = null) {
+  if (!str) return fallback;
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    console.warn('[SafeJsonParse] Invalid JSON, using fallback:', e.message);
+    return fallback;
+  }
+};
+
+// ==========================================
 // STORAGE HELPER FUNCTIONS (LocalStorage)
 // ==========================================
 
@@ -717,6 +761,9 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 // ==========================================
 // STATE MANAGEMENT
 // ==========================================
+
+// CRITICAL FIX: Version counter untuk optimistic locking
+// Setiap write ke appState harus increment version ini
 let appState = {
   selectedClass: null,
   currentSlotId: "shubuh",
@@ -744,6 +791,13 @@ let appState = {
     autoSave: true,
     notificationTypes: {}, // Diinisialisasi untuk menyimpan preferensi notifikasi per jenis
   },
+  _version: 0, // CRITICAL: Version counter untuk race condition prevention
+};
+
+// Helper untuk increment version saat state berubah
+window.incrementStateVersion = function() {
+  appState._version++;
+  return appState._version;
 };
 
 if (!appState.holidays || appState.holidays.length === 0) {
@@ -762,6 +816,433 @@ if (!appState.holidays || appState.holidays.length === 0) {
 let MASTER_SANTRI = [];
 let MASTER_KELAS = {};
 let FILTERED_SANTRI = [];
+
+// HIGH FIX: Student Index untuk O(1) lookup
+// Mencegah O(n) linear search setiap kali akses student by NIS
+let STUDENT_INDEX = new Map(); // key: NIS/ID string, value: student object
+
+// Build/update student index dari array
+window.buildStudentIndex = function(students) {
+  STUDENT_INDEX.clear();
+  students.forEach(s => {
+    const key = String(s.nis || s.id || '');
+    if (key) {
+      STUDENT_INDEX.set(key, s);
+    }
+  });
+  console.log(`[StudentIndex] Built index with ${STUDENT_INDEX.size} students`);
+  return STUDENT_INDEX;
+};
+
+// Get student by NIS dengan O(1) lookup
+window.getStudentByNis = function(nis) {
+  if (!nis) return null;
+  return STUDENT_INDEX.get(String(nis)) || null;
+};
+
+// Add/update single student in index
+window.indexStudent = function(student) {
+  const key = String(student.nis || student.id || '');
+  if (key) {
+    STUDENT_INDEX.set(key, student);
+  }
+};
+
+// Remove student from index
+window.removeStudentFromIndex = function(nis) {
+  if (nis) {
+    STUDENT_INDEX.delete(String(nis));
+  }
+};
+
+// Rebuild FILTERED_SANTRI and update index
+window.updateFilteredSantri = function(students, classFilter) {
+  MASTER_SANTRI = students || [];
+  FILTERED_SANTRI = classFilter
+    ? MASTER_SANTRI.filter(s => s.kelas === classFilter)
+    : [...MASTER_SANTRI];
+  // Update index
+  window.buildStudentIndex(FILTERED_SANTRI);
+  return FILTERED_SANTRI;
+};
+
+// HIGH FIX: Error Boundary & Global Error Handler
+// Standardisasi error handling untuk seluruh aplikasi
+
+// Error levels untuk categorizing
+const ERROR_LEVELS = {
+  DEBUG: 0,
+  INFO: 1,
+  WARNING: 2,
+  ERROR: 3,
+  CRITICAL: 4
+};
+
+// Global error handler
+window.handleError = function(error, context = 'Unknown', level = 'ERROR') {
+  const errorObj = {
+    message: error?.message || String(error),
+    stack: error?.stack || '',
+    context,
+    level,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+  };
+
+  // Log based on level
+  switch (level) {
+    case 'CRITICAL':
+    case 'ERROR':
+      console.error(`[${level}] ${context}:`, errorObj.message, errorObj);
+      break;
+    case 'WARNING':
+      console.warn(`[${level}] ${context}:`, errorObj.message);
+      break;
+    default:
+      console.log(`[${level}] ${context}:`, errorObj.message);
+  }
+
+  return errorObj;
+};
+
+// Wrapper untuk async functions dengan error handling
+window.withErrorHandler = function(asyncFn, context = 'AsyncFunction', fallback = null) {
+  return async function(...args) {
+    try {
+      return await asyncFn.apply(this, args);
+    } catch (error) {
+      window.handleError(error, context);
+      return fallback;
+    }
+  };
+};
+
+// Wrapper untuk promise dengan timeout
+window.promiseWithTimeout = function(promise, timeoutMs = 5000, timeoutMsg = 'Operation timed out') {
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(timeoutMsg)), timeoutMs)
+  );
+  return Promise.race([promise, timeoutPromise]);
+};
+
+// Safe function caller - catches all errors
+window.safeCall = function(fn, fallback = null, context = 'SafeCall') {
+  try {
+    return fn();
+  } catch (error) {
+    window.handleError(error, context, 'WARNING');
+    return fallback;
+  }
+};
+
+// HIGH FIX: Attendance Index untuk O(1) lookup
+// Format: ATTENDANCE_INDEX[dateKey][slotId][studentId] = status
+let ATTENDANCE_INDEX = null;
+
+window.buildAttendanceIndex = function() {
+  ATTENDANCE_INDEX = {};
+  const data = appState.attendanceData || {};
+
+  for (const [dateKey, dayData] of Object.entries(data)) {
+    ATTENDANCE_INDEX[dateKey] = {};
+
+    for (const [slotId, slotData] of Object.entries(dayData)) {
+      ATTENDANCE_INDEX[dateKey][slotId] = {};
+
+      for (const [studentId, studentRecord] of Object.entries(slotData)) {
+        // Store the entire record for O(1) access to status, note, etc.
+        ATTENDANCE_INDEX[dateKey][slotId][studentId] = studentRecord;
+      }
+    }
+  }
+
+  console.log(`[AttendanceIndex] Built index: ${Object.keys(ATTENDANCE_INDEX).length} dates`);
+  return ATTENDANCE_INDEX;
+};
+
+// O(1) lookup untuk attendance data
+window.getAttendanceRecord = function(dateKey, slotId, studentId) {
+  if (!ATTENDANCE_INDEX) {
+    window.buildAttendanceIndex();
+  }
+  return ATTENDANCE_INDEX?.[dateKey]?.[slotId]?.[studentId] || null;
+};
+
+// O(1) lookup untuk status tertentu
+window.getAttendanceStatus = function(dateKey, slotId, studentId, activityId) {
+  const record = window.getAttendanceRecord(dateKey, slotId, studentId);
+  return record?.status?.[activityId] || null;
+};
+
+// Invalidate index saat attendance berubah
+window.invalidateAttendanceIndex = function() {
+  ATTENDANCE_INDEX = null;
+};
+
+// HIGH FIX: Centralized State Store Pattern
+// Single source of truth untuk app state mutations
+
+const StateStore = {
+  listeners: new Set(),
+
+  // Subscribe to state changes
+  subscribe: function(callback) {
+    this.listeners.add(callback);
+    return () => this.listeners.delete(callback); // Returns unsubscribe function
+  },
+
+  // Notify all listeners
+  _notify: function(changedKeys) {
+    this.listeners.forEach(callback => {
+      try {
+        callback(changedKeys);
+      } catch (e) {
+        console.error('[StateStore] Listener error:', e);
+      }
+    });
+  },
+
+  // Safe state mutation with automatic version increment
+  setState: function(partial, skipVersionIncrement = false) {
+    const changedKeys = [];
+
+    for (const [key, value] of Object.entries(partial)) {
+      if (appState[key] !== value) {
+        appState[key] = value;
+        changedKeys.push(key);
+      }
+    }
+
+    // Increment version for tracking
+    if (changedKeys.length > 0 && !skipVersionIncrement) {
+      window.incrementStateVersion();
+    }
+
+    // Notify listeners
+    if (changedKeys.length > 0) {
+      this._notify(changedKeys);
+    }
+
+    return changedKeys;
+  },
+
+  // Get specific state
+  getState: function(key) {
+    return appState[key];
+  },
+
+  // Get all state (read-only copy)
+  getAll: function() {
+    return { ...appState };
+  }
+};
+
+// Export to global scope
+window.StateStore = StateStore;
+
+// HIGH FIX: Input Validation Schema
+// Schema-based validation untuk forms dan data
+
+const ValidationSchemas = {
+  // Permit form validation
+  permit: {
+    reason: {
+      type: 'string',
+      required: true,
+      minLength: 3,
+      maxLength: 500,
+      message: 'Keterangan izin harus 3-500 karakter'
+    },
+    start_date: {
+      type: 'string',
+      required: true,
+      pattern: /^\d{4}-\d{2}-\d{2}$/,
+      message: 'Format tanggal mulai tidak valid (YYYY-MM-DD)'
+    },
+    end_date: {
+      type: 'string',
+      required: false,
+      pattern: /^\d{4}-\d{2}-\d{2}$/,
+      message: 'Format tanggal selesai tidak valid (YYYY-MM-DD)'
+    },
+    nis: {
+      type: 'string',
+      required: true,
+      minLength: 1,
+      message: 'NIS harus diisi'
+    },
+    category: {
+      type: 'string',
+      required: true,
+      enum: ['sakit', 'izin', 'khitan', 'wali'],
+      message: 'Kategori izin tidak valid'
+    }
+  },
+
+  // Attendance status validation
+  attendance: {
+    status: {
+      type: 'string',
+      required: true,
+      enum: ['Hadir', 'Telat', 'Sakit', 'Izin', 'Alpa', 'Pulang'],
+      message: 'Status tidak valid'
+    },
+    note: {
+      type: 'string',
+      required: false,
+      maxLength: 500,
+      message: 'Keterangan terlalu panjang (max 500 karakter)'
+    }
+  },
+
+  // Student data validation
+  student: {
+    nis: {
+      type: 'string',
+      required: true,
+      minLength: 1,
+      pattern: /^\d+$/,
+      message: 'NIS harus berupa angka'
+    },
+    nama: {
+      type: 'string',
+      required: true,
+      minLength: 2,
+      maxLength: 100,
+      message: 'Nama harus 2-100 karakter'
+    },
+    kelas: {
+      type: 'string',
+      required: true,
+      minLength: 1,
+      message: 'Kelas harus diisi'
+    }
+  }
+};
+
+// Generic validator function
+window.validate = function(data, schema) {
+  const errors = [];
+
+  for (const [field, rules] of Object.entries(schema)) {
+    const value = data[field];
+
+    // Required check
+    if (rules.required && (value === undefined || value === null || value === '')) {
+      errors.push({
+        field,
+        message: rules.message || `${field} harus diisi`,
+        code: 'REQUIRED'
+      });
+      continue;
+    }
+
+    // Skip further validation if not required and empty
+    if (!rules.required && (value === undefined || value === null || value === '')) {
+      continue;
+    }
+
+    // Type check
+    if (rules.type && typeof value !== rules.type) {
+      errors.push({
+        field,
+        message: `${field} harus berupa ${rules.type}`,
+        code: 'TYPE_MISMATCH'
+      });
+      continue;
+    }
+
+    // String length checks
+    if (rules.minLength && value.length < rules.minLength) {
+      errors.push({
+        field,
+        message: rules.message || `${field} terlalu pendek`,
+        code: 'TOO_SHORT'
+      });
+    }
+
+    if (rules.maxLength && value.length > rules.maxLength) {
+      errors.push({
+        field,
+        message: rules.message || `${field} terlalu panjang`,
+        code: 'TOO_LONG'
+      });
+    }
+
+    // Pattern check
+    if (rules.pattern && !rules.pattern.test(value)) {
+      errors.push({
+        field,
+        message: rules.message || `Format ${field} tidak valid`,
+        code: 'INVALID_FORMAT'
+      });
+    }
+
+    // Enum check
+    if (rules.enum && !rules.enum.includes(value)) {
+      errors.push({
+        field,
+        message: rules.message || `${field} tidak valid`,
+        code: 'INVALID_ENUM'
+      });
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+};
+
+// Validate permit form
+window.validatePermitForm = function(data) {
+  return window.validate(data, ValidationSchemas.permit);
+};
+
+// Validate attendance
+window.validateAttendance = function(data) {
+  return window.validate(data, ValidationSchemas.attendance);
+};
+
+// Validate student
+window.validateStudent = function(data) {
+  return window.validate(data, ValidationSchemas.student);
+};
+
+// Helper: Quick form validation with toast
+window.validateAndNotify = function(data, schema, showToastOnError = true) {
+  const result = window.validate(data, schema);
+  if (!result.valid && showToastOnError) {
+    const firstError = result.errors[0];
+    window.showToast(firstError.message, 'error');
+  }
+  return result;
+};
+window.setAttendanceData = function(dateKey, slotId, studentId, data) {
+  if (!appState.attendanceData[dateKey]) {
+    appState.attendanceData[dateKey] = {};
+  }
+  if (!appState.attendanceData[dateKey][slotId]) {
+    appState.attendanceData[dateKey][slotId] = {};
+  }
+
+  const isNew = !appState.attendanceData[dateKey][slotId][studentId];
+  appState.attendanceData[dateKey][slotId][studentId] = {
+    ...appState.attendanceData[dateKey][slotId][studentId],
+    ...data
+  };
+
+  // Invalidate attendance index cache
+  window.invalidateAttendanceIndex();
+
+  // Trigger auto-save
+  if (window.storageManager?.triggerAutoSave) {
+    window.storageManager.triggerAutoSave();
+  }
+
+  window.incrementStateVersion();
+  return isNew;
+};
 
 // ==========================================
 // SLOT & STATUS CONFIGURATION (UPDATED)

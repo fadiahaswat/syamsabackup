@@ -110,6 +110,75 @@ window.updateNotificationUI = function(permission) {
   }
 };
 
+// HIGH FIX: Event Listener Registry untuk cleanup memory leak
+const ListenerRegistry = {
+  listeners: [],
+  observers: [],
+
+  // Register event listener for cleanup later
+  addEventListener: function(element, event, handler, options) {
+    if (!element || !event || !handler) {
+      console.warn('[ListenerRegistry] Invalid parameters');
+      return null;
+    }
+
+    element.addEventListener(event, handler, options);
+    const registration = { element, event, handler, options };
+    this.listeners.push(registration);
+
+    return registration;
+  },
+
+  // Register ResizeObserver for cleanup
+  addResizeObserver: function(element, callback) {
+    if (!element || !callback) {
+      console.warn('[ListenerRegistry] Invalid observer parameters');
+      return null;
+    }
+
+    const observer = new ResizeObserver(callback);
+    observer.observe(element);
+    const registration = { observer, element };
+    this.observers.push(registration);
+
+    return observer;
+  },
+
+  // Cleanup all registered listeners
+  cleanup: function() {
+    // Cleanup event listeners
+    this.listeners.forEach(({ element, event, handler, options }) => {
+      try {
+        element.removeEventListener(event, handler, options);
+      } catch (e) {
+        console.warn('[ListenerRegistry] Failed to remove listener:', e);
+      }
+    });
+    this.listeners = [];
+
+    // Cleanup ResizeObservers
+    this.observers.forEach(({ observer, element }) => {
+      try {
+        observer.unobserve(element);
+        observer.disconnect();
+      } catch (e) {
+        console.warn('[ListenerRegistry] Failed to disconnect observer:', e);
+      }
+    });
+    this.observers = [];
+
+    console.log('[ListenerRegistry] All listeners and observers cleaned up');
+  },
+
+  // Cleanup on page unload
+  init: function() {
+    window.addEventListener('beforeunload', () => this.cleanup());
+  }
+};
+
+// Initialize listener cleanup on load
+ListenerRegistry.init();
+
 // DOM cleanup - remove stray comment markers
 function initDOMCleanup() {
   document.addEventListener("DOMContentLoaded", () => {

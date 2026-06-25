@@ -4,6 +4,49 @@
 // 8. LOG & MISC
 // ==========================================
 
+// CRITICAL FIX: Tambahkan cleanup function untuk mencegah memory leak
+// Cleanup berdasarkan age (max 90 hari) dan max entries (1000)
+window.cleanupActivityLogs = function (maxDays = 90, maxEntries = 1000) {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - maxDays);
+  const cutoffTimestamp = cutoffDate.getTime();
+
+  const beforeCount = appState.activityLog.length;
+
+  // Filter berdasarkan age
+  appState.activityLog = appState.activityLog.filter(log => {
+    try {
+      const logTimestamp = new Date(log.timestamp).getTime();
+      return logTimestamp >= cutoffTimestamp;
+    } catch (e) {
+      // Invalid timestamp, hapus entry ini
+      return false;
+    }
+  });
+
+  // Limit berdasarkan jumlah entries
+  if (appState.activityLog.length > maxEntries) {
+    appState.activityLog = appState.activityLog.slice(0, maxEntries);
+  }
+
+  const removedCount = beforeCount - appState.activityLog.length;
+
+  // Simpan jika ada perubahan
+  if (removedCount > 0) {
+    try {
+      localStorage.setItem(
+        APP_CONFIG.activityLogKey,
+        JSON.stringify(appState.activityLog),
+      );
+      console.log(`[ActivityLogger] Cleanup: removed ${removedCount} old entries, ${appState.activityLog.length} remaining`);
+    } catch (e) {
+      console.error('[ActivityLogger] Failed to save cleaned logs:', e);
+    }
+  }
+
+  return { removed: removedCount, remaining: appState.activityLog.length };
+};
+
 window.logActivity = function (action, detail) {
   const log = {
     timestamp: new Date().toISOString(),
@@ -15,19 +58,39 @@ window.logActivity = function (action, detail) {
   };
 
   appState.activityLog.unshift(log);
-  if (
-    appState.activityLog.length > window.APP_CONSTANTS.maxActivityLogEntries
-  ) {
-    appState.activityLog = appState.activityLog.slice(
-      0,
-      window.APP_CONSTANTS.maxActivityLogEntries,
-    );
+
+  // Limit entries (soft cap)
+  const maxEntries = window.APP_CONSTANTS?.maxActivityLogEntries || 1000;
+  if (appState.activityLog.length > maxEntries) {
+    appState.activityLog = appState.activityLog.slice(0, maxEntries);
   }
 
-  localStorage.setItem(
-    APP_CONFIG.activityLogKey,
-    JSON.stringify(appState.activityLog),
-  );
+  // CRITICAL: Periodic cleanup saat log terlalu besar
+  // Cleanup saat sudah > 500 entries (berdasarkan age)
+  if (appState.activityLog.length > 500) {
+    // Async cleanup untuk tidak blocking
+    setTimeout(() => {
+      window.cleanupActivityLogs(90, 1000);
+    }, 0);
+  }
+
+  try {
+    localStorage.setItem(
+      APP_CONFIG.activityLogKey,
+      JSON.stringify(appState.activityLog),
+    );
+  } catch (e) {
+    // localStorage penuh, coba cleanup dan simpan lagi
+    window.cleanupActivityLogs(30, 500);
+    try {
+      localStorage.setItem(
+        APP_CONFIG.activityLogKey,
+        JSON.stringify(appState.activityLog),
+      );
+    } catch (e2) {
+      console.error('[ActivityLogger] Failed to save logs even after cleanup:', e2);
+    }
+  }
 };
 
 

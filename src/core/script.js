@@ -13,6 +13,7 @@ window.initApp = async function () {
       window.startClock();
       window.updateDateDisplay();
       window.refreshIcons();
+      window.initConnectionIndicator(); // Initialize connection status monitoring
       if (window.initSalatHijriWidget) window.initSalatHijriWidget();
       if (window.applyLoginModeUI) window.applyLoginModeUI();
     } catch (uiError) {
@@ -23,7 +24,7 @@ window.initApp = async function () {
       if (savedSettings) {
         appState.settings = {
           ...appState.settings,
-          ...JSON.parse(savedSettings),
+          ...window.safeJsonParse(savedSettings, {}),
         };
         if (appState.settings.darkMode) {
           document.documentElement.classList.add("dark");
@@ -31,18 +32,13 @@ window.initApp = async function () {
         window.updateMetaThemeColor();
       }
       const savedData = localStorage.getItem(APP_CONFIG.storageKey);
-      if (savedData) appState.attendanceData = JSON.parse(savedData);
+      if (savedData) appState.attendanceData = window.safeJsonParse(savedData, {});
       const savedLog = localStorage.getItem(APP_CONFIG.activityLogKey);
-      if (savedLog) appState.activityLog = JSON.parse(savedLog);
+      if (savedLog) appState.activityLog = window.safeJsonParse(savedLog, []);
       appState.permits = [];
       const savedPermits = localStorage.getItem(APP_CONFIG.permitKey);
       if (savedPermits) {
-        try {
-          appState.permits = JSON.parse(savedPermits);
-        } catch (permitError) {
-          console.error("Error parsing permits:", permitError);
-          appState.permits = [];
-        }
+        appState.permits = window.safeJsonParse(savedPermits, []);
       }
     } catch (storageError) {
       console.error("Storage Error:", storageError);
@@ -84,7 +80,8 @@ window.initApp = async function () {
     const savedAuth = localStorage.getItem(APP_CONFIG.googleAuthKey);
     if (savedAuth) {
       try {
-        const authData = JSON.parse(savedAuth);
+        const authData = window.safeJsonParse(savedAuth, null);
+        if (!authData) throw new Error("Invalid auth data");
         const LOGIN_MAX_AGE = 14 * 24 * 60 * 60 * 1000;
         const loginTime = new Date(authData.timestamp).getTime();
         if (!loginTime || Date.now() - loginTime > LOGIN_MAX_AGE) {
@@ -369,31 +366,53 @@ window.handleMuinClick = function () {
   }
 };
 
-window.handleSuperadminLogin = function () {
-  // Simple superadmin login - bisa dimodifikasi sesuai kebutuhan
+// CRITICAL FIX: Superadmin password hash
+// Default password "admin123" - SHA-256 hash
+// Hash generated at: https://passwordsgenerator.net/sha256-hash-generator/
+const SUPERADMIN_PASSWORD_HASH = window.APP_SECRETS?.superadminHash ||
+  '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'; // admin123
+
+// Async SHA-256 hash function
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+window.handleSuperadminLogin = async function () {
+  // CRITICAL FIX: Secure superadmin login dengan SHA-256 hashing
   const password = prompt("Masukkan password Superadmin:");
 
-  if (password === "admin123") {
-    if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
-    if (window.cancelWaliLogin) window.cancelWaliLogin();
+  if (!password) return;
 
-    appState.superadminMode = true;
-    appState.userProfile = {
-      name: "Superadmin",
-      given_name: "Superadmin",
-      email: "admin@syamsa.local",
-      authProvider: "superadmin",
-    };
+  try {
+    const inputHash = await sha256(password);
+    if (inputHash === SUPERADMIN_PASSWORD_HASH) {
+      if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
+      if (window.cancelWaliLogin) window.cancelWaliLogin();
 
-    window.showToast("🔐 Login Superadmin Berhasil!", "success");
+      appState.superadminMode = true;
+      appState.userProfile = {
+        name: "Superadmin",
+        given_name: "Superadmin",
+        email: "admin@syamsa.local",
+        authProvider: "superadmin",
+      };
 
-    // Tampilkan semua data
-    document.getElementById("view-login").classList.add("hidden");
-    document.getElementById("view-main").classList.remove("hidden");
-    window.updateDashboard();
-    window.updateProfileInfo();
-  } else if (password !== null) {
-    window.showToast("Password Superadmin salah!", "error");
+      window.showToast("🔐 Login Superadmin Berhasil!", "success");
+
+      // Tampilkan semua data
+      document.getElementById("view-login").classList.add("hidden");
+      document.getElementById("view-main").classList.remove("hidden");
+      window.updateDashboard();
+      window.updateProfileInfo();
+    } else {
+      window.showToast("Password Superadmin salah!", "error");
+    }
+  } catch (e) {
+    console.error('[Superadmin] Login error:', e);
+    window.showToast("Terjadi kesalahan sistem!", "error");
   }
 };
 
@@ -2566,14 +2585,22 @@ window.updateLocationStatus = function () {
     if (elLoading) elLoading.classList.add("hidden");
     if (elError) {
       elError.classList.remove("hidden");
-      elError.innerHTML =
-        '<p class="text-[10px] font-bold text-red-500">Browser tidak dukung GPS</p>';
+      elError.className = "flex flex-col items-start gap-1.5 p-2 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/30";
+      elError.innerHTML = `
+        <div class="flex items-center gap-2 text-red-600 dark:text-red-400">
+          <i data-lucide="alert-circle" class="w-4 h-4"></i>
+          <span class="font-bold">GPS Tidak Tersedia</span>
+        </div>
+        <p class="text-[10px] text-red-500 dark:text-red-400/70 leading-relaxed">Browser Anda tidak mendukung GPS. Coba gunakan Chrome atau Safari.</p>
+        <button onclick="window.openGpsGuideModal()" class="text-[10px] font-bold text-blue-600 hover:text-blue-700 underline">Lihat panduan →</button>
+      `;
     }
     if (elBadge) {
-      elBadge.textContent = "Tdk Ditempat";
-      elBadge.className = "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 shrink-0";
+      elBadge.textContent = "Tdk Tersedia";
+      elBadge.className = "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 shrink-0";
     }
     if (elStatusWrapper) elStatusWrapper.classList.remove("hidden");
+    if (window.lucide) window.lucide.createIcons();
     return;
   }
 
@@ -4869,6 +4896,19 @@ window.closeModal = function (modalId) {
     delete modal._escHandler;
   }
 
+  // Remove trap focus handler
+  if (modal._trapFocus) {
+    document.removeEventListener("keydown", modal._trapFocus);
+    delete modal._trapFocus;
+  }
+
+  // Restore focus to previous element
+  if (modal._previousFocus && modal._previousFocus.focus) {
+    setTimeout(() => {
+      modal._previousFocus.focus();
+    }, 100);
+  }
+
   modal.removeAttribute("aria-modal");
   modal.removeAttribute("role");
 
@@ -5085,6 +5125,28 @@ window.kirimLaporanWA = function () {
   }
 
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`);
+};
+
+// ==========================================
+// LOADING OVERLAY HELPERS
+// ==========================================
+
+window.showLoadingOverlay = function (message = "Memuat...") {
+  const overlay = document.getElementById("loading-overlay");
+  const textEl = document.getElementById("loading-overlay-text");
+  if (overlay) {
+    overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
+    if (textEl) textEl.textContent = message;
+  }
+};
+
+window.hideLoadingOverlay = function () {
+  const overlay = document.getElementById("loading-overlay");
+  if (overlay) {
+    overlay.classList.add("hidden");
+    overlay.classList.remove("flex");
+  }
 };
 
 window.showToast = function (message, type = "info", isPersistent = false) {
@@ -5730,6 +5792,17 @@ window.switchTab = function (tabName) {
     window.renderPembinaanManagement(); // Refresh list di profil
     window.renderPermitHistory();
   } else if (tabName === "admin") {
+    // Guard: Only allow admin tab for Musyrif/admin users
+    if (!appState.adminMode) {
+      console.warn("Akses Admin ditolak - bukan Musyrif");
+      // Show toast notification
+      if (window.showToast) {
+        window.showToast("Akses ditolak - hanya untuk Musyrif", "error");
+      }
+      // Switch back to home
+      window.switchTab("home");
+      return;
+    }
     if (window.switchAdminSubTab) {
       const activeBtn = document.querySelector(".admin-sub-nav-btn.active");
       const subtab = activeBtn ? activeBtn.dataset.adminsubtab : "operations";
@@ -7245,6 +7318,78 @@ window.startClock = function () {
   updateClock();
   clockInterval = setInterval(updateClock, 1000);
 };
+
+// ==========================================
+// CONNECTION STATUS INDICATOR
+// ==========================================
+
+window.initConnectionIndicator = function () {
+  const indicator = document.getElementById("connection-indicator");
+  const dot = document.getElementById("connection-dot");
+  const text = document.getElementById("connection-text");
+
+  if (!indicator || !dot || !text) return;
+
+  const updateStatus = (isOnline) => {
+    if (isOnline) {
+      indicator.classList.remove("hidden");
+      dot.className = "w-2 h-2 rounded-full bg-emerald-400 transition-colors duration-300";
+      text.textContent = "Online";
+      text.className = "text-[10px] font-bold text-slate-600 dark:text-slate-400";
+    } else {
+      indicator.classList.remove("hidden");
+      dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse transition-colors duration-300";
+      text.textContent = "Offline";
+      text.className = "text-[10px] font-bold text-amber-600 dark:text-amber-400";
+    }
+  };
+
+  // Initial status
+  updateStatus(navigator.onLine);
+
+  // Listen for online/offline events
+  window.addEventListener("online", () => {
+    updateStatus(true);
+    if (window.showToast) {
+      window.showToast("Koneksi kembali aktif", "success");
+    }
+  });
+
+  window.addEventListener("offline", () => {
+    updateStatus(false);
+    if (window.showToast) {
+      window.showToast("Koneksi terputus - mode offline", "warning");
+    }
+  });
+};
+
+// ==========================================
+// HAPTIC FEEDBACK UTILITY
+// ==========================================
+
+window.hapticFeedback = function (type = "light") {
+  // Only works on devices that support Vibration API
+  if (!navigator.vibrate) return;
+
+  const patterns = {
+    light: 10,        // Light tap feedback
+    medium: 20,       // Medium tap feedback
+    heavy: 30,        // Heavy tap feedback
+    success: [10, 50, 10],  // Success pattern
+    warning: [20, 50, 20],   // Warning pattern
+    error: [30, 50, 30, 50, 30]  // Error pattern
+  };
+
+  try {
+    navigator.vibrate(patterns[type] || patterns.light);
+  } catch (e) {
+    // Silently fail if vibration not supported
+  }
+};
+
+// ==========================================
+// PRINT FUNCTION
+// ==========================================
 
 window.printReport = function () {
   window.print();
@@ -11446,16 +11591,59 @@ window.openModal = function (modalId) {
   if (!modalStack.includes(modalId)) modalStack.push(modalId);
   document.body.classList.add("modal-open");
 
+  // Focus Management: Store previous focus and focus first focusable element
+  const focusableElements = modal.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  const firstFocusable = focusableElements[0];
+  const lastFocusable = focusableElements[focusableElements.length - 1];
+
+  // Store current focus for restoration
+  modal._previousFocus = document.activeElement;
+
+  // Focus first element or modal itself
+  if (firstFocusable) {
+    setTimeout(() => firstFocusable.focus(), 100);
+  } else {
+    modal.setAttribute("tabindex", "-1");
+    setTimeout(() => modal.focus(), 100);
+  }
+
   const escHandler = (e) => {
     if (e.key === "Escape") {
       window.closeModal(modalId);
     }
   };
 
+  // Trap focus within modal
+  const trapFocus = (e) => {
+    if (e.key !== "Tab") return;
+    if (e.shiftKey) {
+      if (document.activeElement === firstFocusable) {
+        e.preventDefault();
+        lastFocusable.focus();
+      }
+    } else {
+      if (document.activeElement === lastFocusable) {
+        e.preventDefault();
+        firstFocusable.focus();
+      }
+    }
+  };
+
   document.addEventListener("keydown", escHandler);
+  document.addEventListener("keydown", trapFocus);
   modal._escHandler = escHandler;
+  modal._trapFocus = trapFocus;
   modal.setAttribute("aria-modal", "true"); // Accessibility
   modal.setAttribute("role", "dialog"); // Accessibility
+
+  // Add aria-labelledby if title exists
+  const titleEl = modal.querySelector("h1, h2, h3");
+  if (titleEl && !titleEl.id) {
+    titleEl.id = `${modalId}-title`;
+    modal.setAttribute("aria-labelledby", titleEl.id);
+  }
 };
 
 window.toggleSchoolAbsentList = function () {

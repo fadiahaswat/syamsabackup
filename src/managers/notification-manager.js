@@ -1,6 +1,67 @@
 // File: notification-manager.js
 
 // ==========================================
+// HIGH FIX: Rate Limiting untuk Notifications
+// ==========================================
+
+const NotificationRateLimiter = {
+  // Track last sent time per notification type
+  lastSent: {},
+
+  // Rate limit config (ms)
+  rateLimits: {
+    default: 60000,        // 1 minute default
+    presensi: 30000,       // 30 seconds for attendance-related
+    urgent: 10000,         // 10 seconds for urgent
+    reminder: 300000,      // 5 minutes for reminders
+  },
+
+  // Check if notification can be sent
+  canSend: function(type, urgency = 'default') {
+    const now = Date.now();
+    const last = this.lastSent[type] || 0;
+    const limit = this.rateLimits[urgency] || this.rateLimits.default;
+
+    if (now - last < limit) {
+      console.log(`[RateLimiter] ${type} rate-limited, ${Math.ceil((limit - (now - last)) / 1000)}s remaining`);
+      return false;
+    }
+
+    return true;
+  },
+
+  // Mark notification as sent
+  markSent: function(type) {
+    this.lastSent[type] = Date.now();
+  },
+
+  // Send with rate limiting
+  send: async function(type, options = {}, urgency = 'default') {
+    if (!this.canSend(type, urgency)) {
+      return false;
+    }
+
+    try {
+      const result = await window.sendNotification(options);
+      if (result !== false) {
+        this.markSent(type);
+        return true;
+      }
+    } catch (e) {
+      console.error('[RateLimiter] Send failed:', e);
+    }
+
+    return false;
+  },
+
+  // Reset all rate limits (for testing)
+  reset: function() {
+    this.lastSent = {};
+    console.log('[RateLimiter] All limits reset');
+  }
+};
+
+// ==========================================
 // DAFTAR SEMUA JENIS NOTIFIKASI MUSYRIF
 // ==========================================
 window.MUSYRIF_NOTIFICATION_TYPES = {

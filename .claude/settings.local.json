@@ -70,7 +70,11 @@
       "PowerShell(Copy-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\data\\\\tahfizh_metadata.json\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\data\\\\tahfizh_metadata.json\" -Force -ErrorAction SilentlyContinue)",
       "PowerShell(Copy-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\features\\\\wali-register.html\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\features\\\\wali-register.html\" -Force -ErrorAction SilentlyContinue)",
       "Skill(run)",
-      "Skill(run:*)"
+      "Skill(run:*)",
+      "Bash(powershell -Command \"\\(Get-Content 'd:\\\\syamsa-backup\\\\syamsabackup\\\\index.html'\\).Count; \\(Get-Content 'd:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\core\\\\script.js'\\).Count\")",
+      "Bash(node --check \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\core\\\\script.js\")",
+      "Bash(powershell -Command \"Get-Content 'd:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\modules\\\\dashboard\\\\dashboard-module.js' -Encoding UTF8 | Select-Object -First 5\")",
+      "Read(//d/syamsa-backup/syamsa-backup/src/core/**)"
     ],
     "additionalDirectories": [
       "d:\\syamsa-backup\\syamsabackup"

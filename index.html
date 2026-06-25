@@ -78,17 +78,27 @@
         --radius-panel: 1.5rem;
         --radius-control: 0.875rem;
         --radius-full: 999px;
-        
+
         --color-blue: #0C81E4;
         --color-blue-hover: #0C4E8C;
         --color-blue-ring: rgba(12, 129, 228, 0.15);
-        
+
         --color-purple: #11C4D4; /* Sian */
         --color-purple-hover: #0C4E8C;
         --color-purple-ring: rgba(17, 196, 212, 0.15);
-        
+
         --color-mint: #4FE7AF;
         --color-deep: #0C4E8C;
+
+        /* ===== ANIMATION TIMING TOKENS ===== */
+        --motion-fast: 100ms;
+        --motion-standard: 200ms;
+        --motion-slow: 300ms;
+        --motion-slower: 500ms;
+        --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+        --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+        --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+        --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
       }
 
       html.dark {
@@ -98,6 +108,190 @@
         --border-soft: rgba(148, 163, 184, 0.18);
         --shadow-card: 0 18px 46px -28px rgba(0, 0, 0, 0.8);
         --shadow-card-hover: 0 22px 54px -30px rgba(17, 196, 212, 0.22);
+      }
+
+      /* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+
+      /* Reduced Motion Support */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+
+      /* Improved Focus States for Accessibility */
+      button:focus-visible,
+      a:focus-visible,
+      [role="button"]:focus-visible {
+        outline: 2px solid var(--color-brand);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      /* Skip Link for Screen Readers */
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--color-brand);
+        color: white;
+        padding: 8px 16px;
+        z-index: 1000;
+        transition: top 0.2s;
+      }
+      .skip-link:focus {
+        top: 0;
+      }
+
+      /* ===== BUTTON STANDARDIZATION ===== */
+      /* Ensure minimum touch target size (44px) for accessibility */
+      .btn {
+        min-height: 44px;
+        min-width: 44px;
+      }
+      /* Standard button height */
+      .btn-standard {
+        min-height: 48px;
+        padding: 0.75rem 1.5rem;
+      }
+      /* Compact button for secondary actions */
+      .btn-compact {
+        min-height: 36px;
+        padding: 0.5rem 1rem;
+      }
+      /* Large button for primary CTAs */
+      .btn-large {
+        min-height: 56px;
+        padding: 1rem 2rem;
+      }
+
+      /* ===== SKELETON LOADING ===== */
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          rgba(226, 232, 240, 0.5) 25%,
+          rgba(241, 245, 249, 0.8) 50%,
+          rgba(226, 232, 240, 0.5) 75%
+        );
+        background-size: 200% 100%;
+        animation: skeleton-shimmer 1.5s ease-in-out infinite;
+      }
+      .dark .skeleton {
+        background: linear-gradient(
+          90deg,
+          rgba(30, 41, 59, 0.5) 25%,
+          rgba(51, 65, 85, 0.8) 50%,
+          rgba(30, 41, 59, 0.5) 75%
+        );
+        background-size: 200% 100%;
+      }
+      @keyframes skeleton-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      /* Skeleton text line */
+      .skeleton-text {
+        height: 0.75rem;
+        border-radius: 0.25rem;
+      }
+      .skeleton-text-sm {
+        height: 0.625rem;
+        border-radius: 0.25rem;
+      }
+      /* Skeleton avatar */
+      .skeleton-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 9999px;
+      }
+      /* Skeleton card */
+      .skeleton-card {
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+      }
+
+      /* Disable skeleton animation for reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        .skeleton {
+          animation: none;
+          background: rgba(226, 232, 240, 0.3);
+        }
+        .dark .skeleton {
+          background: rgba(30, 41, 59, 0.3);
+        }
+      }
+
+      /* ===== KEYBOARD NAVIGATION ===== */
+      /* Visual indicator for keyboard focus */
+      :focus-visible {
+        outline: 2px solid var(--color-brand);
+        outline-offset: 2px;
+      }
+      /* Tab list styling */
+      [role="tablist"] [role="tab"]:focus-visible {
+        outline: 2px solid var(--color-brand);
+        outline-offset: -2px;
+        border-radius: 0.5rem;
+      }
+      /* Menu keyboard navigation */
+      [role="menu"] [role="menuitem"]:focus,
+      [role="menu"] [role="menuitem"]:focus-visible {
+        background-color: var(--color-brand);
+        color: white;
+        outline: none;
+      }
+      /* Skip to main content link */
+      .skip-to-content {
+        position: absolute;
+        top: -100%;
+        left: 0;
+        padding: 1rem;
+        background: var(--color-brand);
+        color: white;
+        z-index: 9999;
+        transition: top 0.2s;
+      }
+      .skip-to-content:focus {
+        top: 0;
+      }
+
+      /* ===== SCROLL BEHAVIOR IMPROVEMENTS ===== */
+      /* Smooth scrolling (disabled for prefers-reduced-motion) */
+      @media (prefers-reduced-motion: no-preference) {
+        html {
+          scroll-behavior: smooth;
+        }
+        .scroll-smooth {
+          scroll-behavior: smooth;
+        }
+      }
+      /* Better scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.4);
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(148, 163, 184, 0.6);
+      }
+      /* Prevent overscroll bounce on iOS */
+      .overscroll-none {
+        overscroll-behavior: none;
+      }
+      /* Pull to refresh zone indicator */
+      .ptr-zone {
+        overscroll-behavior: contain;
       }
 
       html {
@@ -132,6 +326,285 @@
         background: linear-gradient(180deg, rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.98));
       }
 
+      /* ===== TABLE RESPONSIVE STYLES ===== */
+      .table-responsive-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .table-responsive-wrapper::-webkit-scrollbar {
+        height: 4px;
+      }
+      .table-responsive-wrapper::-webkit-scrollbar-track {
+        background: rgba(226, 232, 240, 0.5);
+        border-radius: 2px;
+      }
+      .table-responsive-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.6);
+        border-radius: 2px;
+      }
+      /* Sticky first column for tables */
+      .table-sticky-col:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background: inherit;
+      }
+      .table-sticky-col:first-child::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: rgba(0,0,0,0.1);
+      }
+      /* Zebra striping for tables */
+      .table-zebra tbody tr:nth-child(odd) {
+        background-color: rgba(248, 250, 252, 0.5);
+      }
+      .dark .table-zebra tbody tr:nth-child(odd) {
+        background-color: rgba(30, 41, 59, 0.3);
+      }
+
+      /* ===== PROGRESS INDICATORS ===== */
+      .progress-bar {
+        height: 8px;
+        border-radius: 9999px;
+        background-color: rgba(226, 232, 240, 0.8);
+        overflow: hidden;
+      }
+      .dark .progress-bar {
+        background-color: rgba(30, 41, 59, 0.8);
+      }
+      .progress-bar-fill {
+        height: 100%;
+        border-radius: 9999px;
+        transition: width 0.3s ease-out;
+      }
+      .progress-bar-fill.animate {
+        animation: progress-shimmer 2s ease-in-out infinite;
+        background: linear-gradient(
+          90deg,
+          currentColor 25%,
+          rgba(255,255,255,0.4) 50%,
+          currentColor 75%
+        );
+        background-size: 200% 100%;
+      }
+      @keyframes progress-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      /* Circular progress */
+      .progress-circle {
+        transform: rotate(-90deg);
+      }
+      .progress-circle-bg {
+        stroke: rgba(226, 232, 240, 0.8);
+      }
+      .dark .progress-circle-bg {
+        stroke: rgba(30, 41, 59, 0.8);
+      }
+      .progress-circle-fill {
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.3s ease-out;
+      }
+
+      /* ===== CUSTOM SELECT STYLING ===== */
+      .custom-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.75rem center;
+        background-repeat: no-repeat;
+        background-size: 1.25em 1.25em;
+        padding-right: 2.5rem;
+      }
+      .dark .custom-select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      }
+
+      /* ===== BREADCRUMB NAVIGATION ===== */
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+        color: var(--color-slate-500, #64748b);
+      }
+      .breadcrumb-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .breadcrumb-link {
+        color: var(--color-slate-500, #64748b);
+        text-decoration: none;
+        transition: color var(--motion-fast) var(--ease-standard);
+      }
+      .breadcrumb-link:hover {
+        color: var(--color-brand, #0C81E4);
+      }
+      .breadcrumb-separator {
+        color: var(--color-slate-300, #cbd5e1);
+      }
+      .breadcrumb-current {
+        color: var(--color-slate-700, #334155);
+        font-weight: 600;
+      }
+      .dark .breadcrumb-current {
+        color: var(--color-slate-300, #cbd5e1);
+      }
+
+      /* ===== TYPOGRAPHY SCALE ===== */
+      .text-display {
+        font-size: 2.5rem;
+        line-height: 1.1;
+        letter-spacing: -0.025em;
+        font-weight: 800;
+      }
+      .text-h1 {
+        font-size: 1.875rem;
+        line-height: 1.2;
+        letter-spacing: -0.025em;
+        font-weight: 700;
+      }
+      .text-h2 {
+        font-size: 1.5rem;
+        line-height: 1.25;
+        font-weight: 700;
+      }
+      .text-h3 {
+        font-size: 1.25rem;
+        line-height: 1.3;
+        font-weight: 600;
+      }
+      .text-h4 {
+        font-size: 1.125rem;
+        line-height: 1.4;
+        font-weight: 600;
+      }
+      .text-body {
+        font-size: 1rem;
+        line-height: 1.5;
+      }
+      .text-body-sm {
+        font-size: 0.875rem;
+        line-height: 1.5;
+      }
+      .text-caption {
+        font-size: 0.75rem;
+        line-height: 1.4;
+      }
+      .text-overline {
+        font-size: 0.625rem;
+        line-height: 1.4;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      /* ===== TOOLTIP COMPONENT ===== */
+      .tooltip-wrapper {
+        position: relative;
+        display: inline-flex;
+      }
+      .tooltip {
+        position: absolute;
+        z-index: 50;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.4;
+        white-space: nowrap;
+        color: white;
+        background-color: #1e293b;
+        border-radius: 0.375rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity var(--motion-fast) var(--ease-standard),
+                    visibility var(--motion-fast) var(--ease-standard);
+        pointer-events: none;
+      }
+      .tooltip-wrapper:hover .tooltip,
+      .tooltip-wrapper:focus-within .tooltip {
+        opacity: 1;
+        visibility: visible;
+      }
+      /* Tooltip positions */
+      .tooltip-top {
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 0.5rem;
+      }
+      .tooltip-bottom {
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-top: 0.5rem;
+      }
+      .tooltip-left {
+        right: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-right: 0.5rem;
+      }
+      .tooltip-right {
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-left: 0.5rem;
+      }
+      /* Tooltip arrow */
+      .tooltip::after {
+        content: '';
+        position: absolute;
+        border: 6px solid transparent;
+      }
+      .tooltip-top::after {
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-top-color: #1e293b;
+      }
+      .tooltip-bottom::after {
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-bottom-color: #1e293b;
+      }
+
+      /* ===== DATE/TIME PICKER STYLING ===== */
+      input[type="date"],
+      input[type="time"],
+      input[type="datetime-local"] {
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      input[type="date"]::-webkit-calendar-picker-indicator,
+      input[type="time"]::-webkit-calendar-picker-indicator,
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        padding: 0.25rem;
+        cursor: pointer;
+        border-radius: 0.25rem;
+        opacity: 0.6;
+        transition: opacity var(--motion-fast) var(--ease-standard);
+      }
+      input[type="date"]::-webkit-calendar-picker-indicator:hover,
+      input[type="time"]::-webkit-calendar-picker-indicator:hover,
+      input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+      }
+      /* Dark mode date picker */
+      @media (prefers-color-scheme: dark) {
+        input[type="date"],
+        input[type="time"],
+        input[type="datetime-local"] {
+          color-scheme: dark;
+        }
+      }
+
       /* Modal z-index base */
       .modal {
         z-index: 100;
@@ -162,12 +635,24 @@
         white-space: nowrap;
         animation: marquee-text 8s linear infinite;
       }
-      
+
       @keyframes blob {
         0% { transform: translate(0px, 0px) scale(1); }
         33% { transform: translate(30px, -50px) scale(1.1); }
         66% { transform: translate(-20px, 20px) scale(0.95); }
         100% { transform: translate(0px, 0px) scale(1); }
+      }
+
+      /* Disable decorative animations for reduced motion preference */
+      @media (prefers-reduced-motion: reduce) {
+        .animate-marquee-text {
+          animation: none !important;
+        }
+        .blob,
+        .blob-1,
+        .blob-2 {
+          animation: none !important;
+        }
       }
 
       /* Cohesive input fallback. Component-level Tailwind focus classes win when present. */
@@ -436,10 +921,16 @@
       #view-main > nav {
         bottom: 0 !important;
         padding-bottom: max(0.75rem, env(safe-area-inset-bottom)) !important;
+        transition: transform 0.3s ease, opacity 0.3s ease;
       }
       #view-main > nav .nav-btn {
         padding-top: 0.625rem !important;
         padding-bottom: 0.625rem !important;
+      }
+      /* Simplified: Remove shrink animation for cleaner UX */
+      #view-main > nav.nav-shrunk {
+        transform: scale(0.95) !important;
+        opacity: 0.85 !important;
       }
 
       /* --- Utilities --- */
@@ -1769,9 +2260,31 @@
     <div
       id="view-loading"
       class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white dark:bg-[#0f172a] transition-opacity duration-500"
+      role="status"
+      aria-label="Memuat aplikasi"
     >
       <div class="max-w-[220px] sm:max-w-[280px] w-full px-4 flex flex-col items-center">
-        <img src="assets/branding/Primary%20Logo.webp" class="w-full h-auto object-contain animate-pulse" alt="Syamsa" />
+        <img src="assets/branding/Primary%20Logo.webp" class="w-full h-auto object-contain" alt="Syamsa" />
+        <!-- Loading spinner -->
+        <div class="mt-6 flex items-center gap-2">
+          <div class="w-2 h-2 rounded-full bg-palette-blue animate-bounce" style="animation-delay: 0ms;"></div>
+          <div class="w-2 h-2 rounded-full bg-palette-blue animate-bounce" style="animation-delay: 150ms;"></div>
+          <div class="w-2 h-2 rounded-full bg-palette-blue animate-bounce" style="animation-delay: 300ms;"></div>
+        </div>
+        <p class="mt-4 text-xs text-slate-400 font-medium">Memuat...</p>
+      </div>
+    </div>
+
+    <!-- Reusable Loading Overlay (for in-app loading) -->
+    <div
+      id="loading-overlay"
+      class="fixed inset-0 z-[99] hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm"
+      role="status"
+      aria-label="Memuat data"
+    >
+      <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-xl flex flex-col items-center gap-3 min-w-[160px]">
+        <div class="w-8 h-8 border-3 border-slate-200 border-t-palette-blue rounded-full animate-spin"></div>
+        <p id="loading-overlay-text" class="text-sm font-semibold text-slate-600 dark:text-slate-300">Memuat...</p>
       </div>
     </div>
 
@@ -2265,6 +2778,12 @@
       </div>
     </div>
 
+    <!-- Offline/Online Indicator -->
+    <div id="connection-indicator" class="hidden sm:flex items-center gap-1.5 px-2.5 py-2 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm transition-all duration-300" role="status" aria-live="polite">
+      <span id="connection-dot" class="w-2 h-2 rounded-full bg-emerald-400 transition-colors duration-300"></span>
+      <span id="connection-text" class="text-[10px] font-bold text-slate-600 dark:text-slate-400">Online</span>
+    </div>
+
     <!-- Standalone Notification Bell Button -->
     <button onclick="window.switchTab('notifications')" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-500 dark:text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
@@ -2433,7 +2952,7 @@
                   </div>
 
                   <!-- State 2: Error -->
-                  <div id="loc-error" class="hidden items-center gap-1.5 text-[11px] sm:text-xs text-red-500">
+                  <div id="loc-error" class="hidden flex-col items-start gap-1 text-[11px] sm:text-xs">
                     <!-- Pesan error di-inject via JS -->
                   </div>
 
@@ -2457,7 +2976,7 @@
                   </button>
                   
                   <!-- Tombol Refresh -->
-                  <button onclick="window.updateLocationStatus()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-palette-blue dark:hover:text-palette-cyan hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-slate-200/30 dark:border-slate-700/30 transition-all active:scale-90 shrink-0">
+                  <button onclick="window.updateLocationStatus()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-palette-blue dark:hover:text-palette-cyan hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-slate-200/30 dark:border-slate-700/30 transition-all active:scale-90 shrink-0" aria-label="Perbarui lokasi GPS" title="Perbarui lokasi GPS">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
                   </button>
                 </div>
@@ -3074,9 +3593,18 @@
 
           <div class="mt-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-sm p-2 sm:p-4 overflow-hidden">
             <div id="tab-notification-list" class="divide-y divide-slate-100 dark:divide-slate-800/50 animate-slide-up delay-250ms">
-              <div class="p-8 text-center text-slate-400 dark:text-slate-500">
-                <i data-lucide="bell" class="w-8 h-8 mx-auto mb-2 opacity-50 animate-pulse"></i>
+              <!-- Empty State: Memuat -->
+              <div id="notif-loading-state" class="p-8 text-center text-slate-400 dark:text-slate-500">
+                <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-2 opacity-50 animate-spin"></i>
                 <p class="text-xs font-semibold">Memuat notifikasi...</p>
+              </div>
+              <!-- Empty State: Tidak Ada Notifikasi -->
+              <div id="notif-empty-state" class="hidden p-8 text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                  <span class="text-3xl">✨</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tidak Ada Notifikasi</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Semua berjalan lancar. Tidak ada pemberitahuan baru saat ini.</p>
               </div>
             </div>
           </div>
@@ -4525,15 +5053,15 @@
               </div>
               <div class="p-4 space-y-3">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Waktu</label><div class="flex gap-2 mt-1"><input id="tahfizh-tanggal" type="datetime-local" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><button id="tahfizh-nowBtn" type="button" class="h-12 px-3 rounded-xl bg-orange-500 text-white font-black text-xs shadow-sm shadow-orange-500/20 active:scale-95 transition-all">Kini</button></div><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-                <div><label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Musyrif</label><select id="tahfizh-musyrif" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-                <div><label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Santri</label><select id="tahfizh-namaSantri" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-                <div><label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Kelas</label><input id="tahfizh-kelas" readonly class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/70 p-3 text-sm font-bold"><input id="tahfizh-santriId" type="hidden"><input id="tahfizh-program" type="hidden"></div>
-                <div><label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Jenis</label><select id="tahfizh-jenis" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-                <div><label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Juz</label><select id="tahfizh-juz" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div><label for="tahfizh-tanggal" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Waktu</label><div class="flex gap-2 mt-1"><input id="tahfizh-tanggal" type="datetime-local" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><button id="tahfizh-nowBtn" type="button" class="h-12 px-3 rounded-xl bg-orange-500 text-white font-black text-xs shadow-sm shadow-orange-500/20 active:scale-95 transition-all">Kini</button></div><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div><label for="tahfizh-musyrif" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Musyrif</label><select id="tahfizh-musyrif" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div><label for="tahfizh-namaSantri" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Santri</label><select id="tahfizh-namaSantri" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div><label for="tahfizh-kelas" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Kelas</label><input id="tahfizh-kelas" readonly class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/70 p-3 text-sm font-bold"><input id="tahfizh-santriId" type="hidden"><input id="tahfizh-program" type="hidden"></div>
+                <div><label for="tahfizh-jenis" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Jenis</label><select id="tahfizh-jenis" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div><label for="tahfizh-juz" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Juz</label><select id="tahfizh-juz" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
               </div>
-              <div id="tahfizh-halaman-container" class="hidden"><label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Halaman</label><input id="tahfizh-halaman" type="number" step="0.5" min="0" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-              <div id="tahfizh-surat-container" class="hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50 p-4"><p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Pilih Surat</p><div id="tahfizh-surat-checklist-area" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto"></div><p class="form-error hidden text-xs font-bold text-red-500 mt-2"></p></div>
+              <div id="tahfizh-halaman-container" class="hidden"><label for="tahfizh-halaman" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Halaman</label><input id="tahfizh-halaman" type="number" step="0.5" min="0" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+              <div id="tahfizh-surat-container" class="hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50 p-4"><p class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 mb-2">Pilih Surat</p><div id="tahfizh-surat-checklist-area" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto"></div><p class="form-error hidden text-xs font-bold text-red-500 mt-2"></p></div>
               <button id="tahfizh-submit-button" type="submit" class="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-400 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-orange-500/20 active:scale-95 transition-all"><i id="tahfizh-submit-button-icon" data-lucide="save" class="w-4 h-4"></i><span id="tahfizh-submit-button-text">Simpan Setoran</span><span id="tahfizh-submit-spinner" class="hidden w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></span></button>
               </div>
             </form>
@@ -4542,7 +5070,7 @@
           <section id="tahfizh-page-analisis" class="tahfizh-page-content hidden space-y-4">
             <div class="musyrif-only max-w-xl tahfizh-card rounded-2xl overflow-hidden">
               <div class="p-5">
-                <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2.5 ml-1">Pilih Santri</label>
+                <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 mb-2.5 ml-1">Pilih Santri</label>
                 <div class="relative flex items-center h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 group focus-within:ring-4 focus-within:ring-orange-500/10 focus-within:border-orange-500 transition-all">
                   <div class="w-11 h-full flex items-center justify-center shrink-0 pointer-events-none">
                     <i data-lucide="search" class="w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors"></i>
@@ -4694,7 +5222,12 @@
                   </thead>
                   <tbody id="admin-ops-matrix-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
                     <tr>
-                      <td colspan="8" class="p-4 text-center text-slate-400">Loading matriks...</td>
+                      <td colspan="8" class="p-8 text-center">
+                        <div class="flex flex-col items-center gap-2">
+                          <span class="text-2xl">⏳</span>
+                          <p class="text-xs text-slate-500 font-semibold">Memuat matriks presensi...</p>
+                        </div>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -4732,7 +5265,12 @@
                   </thead>
                   <tbody id="admin-hr-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
                     <tr>
-                      <td colspan="6" class="p-4 text-center text-slate-400">Memuat data...</td>
+                      <td colspan="6" class="p-8 text-center">
+                        <div class="flex flex-col items-center gap-2">
+                          <span class="text-2xl">⏳</span>
+                          <p class="text-xs text-slate-500 font-semibold">Memuat data Santri & Wali...</p>
+                        </div>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -4771,7 +5309,12 @@
                   </thead>
                   <tbody id="admin-tahfizh-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
                     <tr>
-                      <td colspan="7" class="p-4 text-center text-slate-400">Memuat setoran tahfizh...</td>
+                      <td colspan="7" class="p-8 text-center">
+                        <div class="flex flex-col items-center gap-2">
+                          <span class="text-2xl">⏳</span>
+                          <p class="text-xs text-slate-500 font-semibold">Memuat setoran tahfizh...</p>
+                        </div>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -5020,7 +5563,7 @@
               <!-- KIRI: 4 Item Rata Kiri -->
               <div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                 <!-- Item 1: Tombol Kembali (Arrow Left) -->
-                <button onclick="closeAttendance()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white text-slate-900 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all shrink-0">
+                <button onclick="closeAttendance()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white text-slate-900 flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all shrink-0" aria-label="Tutup halaman presensi" title="Tutup">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left w-4.5 h-4.5"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
                 </button>
 
@@ -5042,9 +5585,12 @@
                 </div>
               </div>
 
-              <!-- KANAN: Autosave Indicator (Clean Icon Only, No Pulse) -->
-              <div id="save-indicator" class="flex items-center justify-center p-2 rounded-lg bg-white/5 border border-white/5 shrink-0 text-slate-400" title="Status Autosave">
-                <i data-lucide="save" class="w-3.5 h-3.5"></i>
+              <!-- KANAN: Autosave Indicator -->
+              <div id="save-indicator" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/10 shrink-0 text-slate-300 transition-all duration-300" title="Status Autosave" role="status" aria-live="polite">
+                <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin hidden" id="save-spinner"></i>
+                <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400 hidden" id="save-check"></i>
+                <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-400 hidden" id="save-warning"></i>
+                <span id="save-text" class="text-[10px] font-semibold">Siap</span>
               </div>
             </div>
             
@@ -5291,40 +5837,43 @@
 
     <div
       id="modal-confirm"
-      class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center p-6"
+      class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md hidden items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
     >
       <div
-        class="bg-white dark:bg-slate-900 w-full max-w-xs rounded-[1.75rem] p-8 animate-slide-up text-center shadow-2xl border border-white/10"
+        class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 animate-slide-up shadow-2xl border border-slate-100 dark:border-slate-800"
       >
         <div
-          class="w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-900/20 mx-auto mb-5 flex items-center justify-center"
+          class="w-14 h-14 rounded-full bg-red-50 dark:bg-red-900/20 mx-auto mb-4 flex items-center justify-center"
         >
-          <i data-lucide="alert-triangle" class="w-8 h-8 text-amber-500"></i>
+          <i data-lucide="alert-triangle" class="w-7 h-7 text-red-500"></i>
         </div>
         <h3
           id="confirm-title"
-          class="text-lg font-black text-slate-800 dark:text-white mb-2"
+          class="text-base font-black text-slate-800 dark:text-white mb-2 text-center"
         >
           Konfirmasi
         </h3>
         <p
           id="confirm-message"
-          class="text-xs text-slate-500 dark:text-slate-400 mb-8 leading-relaxed px-2"
+          class="text-sm text-slate-600 dark:text-slate-400 mb-6 leading-relaxed text-center"
         >
           ...
         </p>
         <div class="flex gap-3">
           <button
             id="confirm-no"
-            class="flex-1 py-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white font-bold text-xs transition-all active:scale-95"
+            class="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white font-bold text-sm transition-all active:scale-[0.98] hover:bg-slate-200 dark:hover:bg-slate-700"
           >
             Batal
           </button>
           <button
             id="confirm-yes"
-            class="flex-1 py-3.5 rounded-xl bg-red-500 text-white font-bold text-xs transition-all active:scale-95 shadow-lg shadow-red-500/30"
+            class="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm transition-all active:scale-[0.98] hover:bg-red-600 shadow-lg shadow-red-500/30"
           >
-            Ya, Hapus
+            Ya, Lanjutkan
           </button>
         </div>
       </div>

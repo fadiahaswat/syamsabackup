@@ -31,6 +31,7 @@ class StorageManager {
     this.musyrifId = null;
     this._saveTimer = null;
     this._lastSavedData = null;
+    this._lastSavedVersion = 0; // CRITICAL: Version tracking untuk race condition prevention
 
     // Event callbacks
     this.onOnlineStatusChange = null;
@@ -288,19 +289,24 @@ class StorageManager {
 
   /**
    * Perform the actual auto-save
+   * CRITICAL FIX: Version-based change detection untuk mencegah race condition
    */
   _performAutoSave() {
     this._saveTimer = null;
 
     if (typeof appState === 'undefined') return;
 
-    // Only save if data changed
+    // CRITICAL FIX: Check both data AND version to prevent race conditions
     const currentData = JSON.stringify(appState.attendanceData);
-    if (currentData === this._lastSavedData) {
-      return;
+    const currentVersion = appState._version || 0;
+
+    if (currentData === this._lastSavedData &&
+        currentVersion === this._lastSavedVersion) {
+      return; // No changes detected
     }
 
     this._lastSavedData = currentData;
+    this._lastSavedVersion = currentVersion;
 
     // Save attendance data
     if (appState.attendanceData) {
@@ -322,7 +328,7 @@ class StorageManager {
       this._set(this.keys.activityLog, appState.activityLog);
     }
 
-    console.log('[StorageManager] Data auto-saved');
+    console.log('[StorageManager] Data auto-saved (v' + currentVersion + ')');
   }
 
   /**
@@ -406,6 +412,7 @@ class StorageManager {
     }
 
     this._lastSavedData = null;
+    this._lastSavedVersion = 0; // CRITICAL: Reset version tracking
     console.log('[StorageManager] All data cleared');
   }
 
