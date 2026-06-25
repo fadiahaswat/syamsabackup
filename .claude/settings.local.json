@@ -58,7 +58,19 @@
       "Bash(Write-Host \"Deleted .mcp.json\")",
       "Bash(Remove-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\skills-lock.json\" -Force)",
       "Bash(Write-Host \"Deleted skills-lock.json\")",
-      "PowerShell(Get-ChildItem -Path \"d:\\\\syamsa-backup\\\\syamsabackup\" -Force | Where-Object { $_.Name -match '^\\\\.' -or $_.Name -eq '.agent' } | Select-Object Name, FullName)"
+      "PowerShell(Get-ChildItem -Path \"d:\\\\syamsa-backup\\\\syamsabackup\" -Force | Where-Object { $_.Name -match '^\\\\.' -or $_.Name -eq '.agent' } | Select-Object Name, FullName)",
+      "PowerShell(Move-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\core\\\\script.js\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\core\\\\script.js\" -Force)",
+      "PowerShell(Move-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\data\\\\tahfizh_metadata.json\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\data\\\\tahfizh_metadata.json\" -Force)",
+      "PowerShell(Copy-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\core\\\\script.js\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\core\\\\script.js\" -Force)",
+      "PowerShell(Copy-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\data\\\\tahfizh_metadata.json\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\data\\\\tahfizh_metadata.json\" -Force)",
+      "PowerShell(Copy-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\features\\\\wali-register.html\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\features\\\\wali-register.html\" -Force)",
+      "PowerShell(New-Item -ItemType Directory -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\features\" -Force)",
+      "PowerShell($srcFiles = Get-ChildItem -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\" -Recurse -File | Select-Object Name; Write-Host \"Files in src/: $\\($srcFiles.Count\\)\"; $srcFiles | Select-Object Name)",
+      "PowerShell(Copy-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\core\\\\script.js\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\core\\\\script.js\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Copy-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\data\\\\tahfizh_metadata.json\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\data\\\\tahfizh_metadata.json\" -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Copy-Item -Path \"d:\\\\syamsa-backup\\\\syamsabackup\\\\features\\\\wali-register.html\" -Destination \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\features\\\\wali-register.html\" -Force -ErrorAction SilentlyContinue)",
+      "Skill(run)",
+      "Skill(run:*)"
     ],
     "additionalDirectories": [
       "d:\\syamsa-backup\\syamsabackup"

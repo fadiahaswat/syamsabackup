@@ -31,19 +31,19 @@ const STATIC_ASSETS = [
 
 // JS files that should ALWAYS be fetched from network (for latest code)
 const ALWAYS_FRESH_JS = [
-  "config/config.js",
-  "core/app-core.js",
-  "core/script.js",
-  "managers/storage-manager.js",
-  "managers/file-upload.js",
-  "managers/auth-manager.js",
-  "managers/santri-manager.js",
-  "managers/attendance-manager.js",
-  "managers/notification-manager.js",
-  "data/data-santri.js",
-  "data/data-kelas.js",
-  "data/tahfizh_metadata.json",
-  "features/qibla.js",
+  "src/config/config.js",
+  "src/core/app-core.js",
+  "src/core/script.js",
+  "src/managers/storage-manager.js",
+  "src/managers/file-upload.js",
+  "src/managers/auth-manager.js",
+  "src/managers/santri-manager.js",
+  "src/managers/attendance-manager.js",
+  "src/managers/notification-manager.js",
+  "src/data/data-santri.js",
+  "src/data/data-kelas.js",
+  "src/data/tahfizh_metadata.json",
+  "src/features/qibla.js",
 ];
 
 // Check if URL is a JS file that should always be fresh

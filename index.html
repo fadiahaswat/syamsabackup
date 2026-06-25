@@ -48,6 +48,12 @@
     <link rel="stylesheet" href="output.css" />
     <link rel="stylesheet" href="style.css" />
 
+    <!-- Modular Stylesheets -->
+    <link rel="stylesheet" href="src/styles/theme.css" />
+    <link rel="stylesheet" href="src/styles/base.css" />
+    <link rel="stylesheet" href="src/styles/components.css" />
+    <link rel="stylesheet" href="src/styles/report.css" />
+
     <!-- Libraries -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -6525,187 +6531,27 @@
     </template>
 
     <!-- Scripts -->
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        const strayNodes = [];
-        while (walker.nextNode()) {
-          if (walker.currentNode.textContent.trim() === "-->") {
-            strayNodes.push(walker.currentNode);
-          }
-        }
-        strayNodes.forEach((node) => node.remove());
-      });
-    </script>
-    <script src="config/config.js"></script>
-    <script src="data/data-kelas.js"></script>
-    <script src="data/data-santri.js"></script>
-    <script src="managers/santri-manager.js"></script>
-    <script src="managers/storage-manager.js"></script>
-    <script src="managers/file-upload.js"></script>
-    <script src="core/app-core.js"></script>
-    <script src="managers/notification-manager.js"></script>
-    <script src="features/qibla.js"></script>
-    <script src="managers/permit-request-manager.js"></script>
-    <script src="managers/admin-manager.js"></script>
-    <script src="core/script.js"></script>
-    <script src="core/pull-to-refresh.js"></script>
-    <script src="tahfizh/tahfizh-manager.js"></script>
+    <script src="src/config/config.js"></script>
+    <script src="src/data/data-kelas.js"></script>
+    <script src="src/data/data-santri.js"></script>
+    <script src="src/managers/santri-manager.js"></script>
+    <script src="src/managers/storage-manager.js"></script>
+    <script src="src/managers/file-upload.js"></script>
+    <script src="src/core/app-core.js"></script>
+    <script src="src/core/templates.js"></script>
+    <script src="src/managers/notification-manager.js"></script>
+    <script src="src/features/qibla.js"></script>
+    <script src="src/managers/permit-request-manager.js"></script>
+    <script src="src/managers/admin-manager.js"></script>
+    <script src="src/core/script.js"></script>
+    <script src="src/core/pull-to-refresh.js"></script>
+    <script src="src/modules/tahfizh/tahfizh-manager.js"></script>
 
     <!-- Countdown Timer Script -->
-    <script>
-      // Target: Libur Akhir Tahun - 27 Juni 2026, 12:30
-      const LIBUR_TARGET_DATE = new Date('2026-06-27T12:30:00').getTime();
+    <script src="src/core/countdown.js"></script>
 
-      function updateCountdown() {
-        const now = new Date().getTime();
-        const distance = LIBUR_TARGET_DATE - now;
-
-        if (distance < 0) {
-          document.getElementById('countdown-days').textContent = '00';
-          document.getElementById('countdown-hours').textContent = '00';
-          document.getElementById('countdown-minutes').textContent = '00';
-          document.getElementById('countdown-seconds').textContent = '00';
-          return;
-        }
-
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-        const pad = (n) => n.toString().padStart(2, '0');
-
-        document.getElementById('countdown-days').textContent = pad(days);
-        document.getElementById('countdown-hours').textContent = pad(hours);
-        document.getElementById('countdown-minutes').textContent = pad(minutes);
-        document.getElementById('countdown-seconds').textContent = pad(seconds);
-      }
-
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
-
-      function updateCountdownVisibility() {
-        const widget = document.getElementById('countdown-libur-widget');
-        const isAdmin = document.body.classList.contains('admin-mode');
-        const isWali = document.body.classList.contains('wali-mode');
-        const isMusyrif = !isAdmin && !isWali;
-        // Widget hanya tampil untuk wali; sembunyikan untuk admin & musyrif
-        if (widget) widget.classList.toggle('hidden', isAdmin || isMusyrif);
-      }
-
-      updateCountdownVisibility();
-      window.refreshCountdownVisibility = updateCountdownVisibility;
-    </script>
-
-    <script>
-      // Mendaftarkan Service Worker agar aplikasi bisa di-install & jalan offline
-      // Hanya register jika menggunakan HTTP/HTTPS (bukan file://)
-      console.log("[SW] Starting service worker registration...");
-      console.log("[SW] Protocol:", window.location.protocol);
-      console.log("[SW] SW supported:", "serviceWorker" in navigator);
-
-      if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
-        window.addEventListener("load", async () => {
-          console.log("[SW] Window loaded, registering service worker...");
-
-          try {
-            // Register consolidated service worker
-            const swReg = await navigator.serviceWorker.register("./sw.js");
-            console.log("[SW] Consolidated SW registered:", swReg);
-          } catch (err) {
-            console.warn("[SW] Gagal daftar SW:", err);
-          }
-        });
-
-        // Notification Permission Check
-        window.addEventListener("load", async () => {
-          // Tunda sebentar agar semua script load dulu
-          await new Promise(resolve => setTimeout(resolve, 500));
-
-          console.log("[Notification] Checking permission state:", Notification.permission);
-
-          // AUTO INIT: Langsung inisialisasi jika izin sudah diberikan
-          if (Notification.permission === "granted") {
-            console.log("[Notification] Permission already granted");
-            window.updateNotificationUI?.("granted");
-          } else if (Notification.permission === "denied") {
-            console.log("[Notification] Permission denied - user blocked notifications");
-            window.updateNotificationUI?.("denied");
-          } else {
-            // "default" - Wait for user gesture, do NOT auto-request on page load (prevents browser blocking)
-            console.log("[Notification] Permission is default. Waiting for user click to request permission.");
-            window.updateNotificationUI?.("default");
-          }
-        });
-
-        // Button click handler
-        window.addEventListener("load", () => {
-          const notifyBtn = document.getElementById("notification-permission-btn");
-          if (notifyBtn) {
-            notifyBtn.addEventListener("click", async () => {
-              if (Notification.permission === "denied") {
-                window.showToast?.("Buka pengaturan browser untuk aktifkan notifikasi", "warning");
-                return;
-              }
-
-              if (Notification.permission === "granted") {
-                window.showToast?.("Notifikasi sudah aktif!", "info");
-                return;
-              }
-
-              const permission = await Notification.requestPermission();
-              if (permission === "granted") {
-                window.updateNotificationUI?.("granted");
-                window.showToast?.("Notifikasi aktif! 🎉", "success");
-              } else {
-                window.updateNotificationUI?.("denied");
-                window.showToast?.("Izin notifikasi diperlukan", "warning");
-              }
-            });
-          }
-        });
-      } else {
-        console.log("[SW] Service workers not available or running from file://");
-        if (window.location.protocol === "file:") {
-          console.log("[SW] NOTE: Notifications require HTTPS or localhost, not file:// protocol");
-        }
-      }
-    </script>
-
-    <!-- Global function untuk update UI notifikasi (di luar script block agar accessible) -->
-    <script>
-      // Function to update notification UI based on permission state
-      window.updateNotificationUI = function(permission) {
-        const notifyBtn = document.getElementById("notification-permission-btn");
-        if (!notifyBtn) return;
-
-        if (permission === "granted") {
-          // Aktif - hijau
-          notifyBtn.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="bell-ring" class="w-4 h-4"></i> Notifikasi Aktif</span>';
-          notifyBtn.classList.remove("bg-slate-100", "dark:bg-slate-800", "bg-red-100", "dark:bg-red-900/30");
-          notifyBtn.classList.add("bg-green-100", "dark:bg-green-900/30", "text-green-700", "dark:text-green-400");
-        } else if (permission === "denied") {
-          // Ditolak - merah
-          notifyBtn.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="bell-off" class="w-4 h-4"></i> Notifikasi Ditolak</span>';
-          notifyBtn.classList.remove("bg-slate-100", "dark:bg-slate-800", "bg-green-100", "dark:bg-green-900/30");
-          notifyBtn.classList.add("bg-red-100", "dark:bg-red-900/30", "text-red-700", "dark:text-red-400");
-        } else {
-          // Default - abu-abu
-          notifyBtn.innerHTML = '<span class="flex items-center gap-2"><i data-lucide="bell" class="w-4 h-4"></i> Aktifkan Notifikasi</span>';
-          notifyBtn.classList.remove("bg-green-100", "dark:bg-green-900/30", "bg-red-100", "dark:bg-red-900/30");
-          notifyBtn.classList.add("bg-slate-100", "dark:bg-slate-800", "text-slate-700", "dark:text-slate-300");
-        }
-
-        // Update lucide icons
-        if (window.lucide) window.lucide.createIcons();
-
-        // Save permission state
-        if (appState?.settings) {
-          appState.settings.notifications = permission === "granted";
-          localStorage.setItem("musyrif_settings", JSON.stringify(appState.settings));
-        }
-      };
-    </script>
+    <!-- App Initialization (Service Worker & Notifications) -->
+    <script src="src/core/app-init.js"></script>
 
     <!-- Tambahkan sebelum </body> -->
     <!-- Popup Modal Detail Sesi Bento -->

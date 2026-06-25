@@ -1,0 +1,50 @@
+/* Theme Variables - Design System */
+:root {
+  --color-brand: #0C81E4;
+  --color-brand-hover: #0C4E8C;
+  --color-brand-ring: rgba(12, 129, 228, 0.15);
+  --surface: rgba(255, 255, 255, 0.86);
+  --surface-strong: #ffffff;
+  --surface-muted: #F1F5F9;
+  --border-soft: rgba(148, 163, 184, 0.22);
+  --shadow-card: 0 14px 40px -24px rgba(15, 23, 42, 0.28);
+  --shadow-card-hover: 0 18px 46px -26px rgba(12, 78, 140, 0.32);
+  --radius-chip: 0.5rem;
+  --radius-card: 1.5rem;
+  --radius-panel: 1.5rem;
+  --radius-control: 0.875rem;
+  --radius-full: 999px;
+
+  --color-blue: #0C81E4;
+  --color-blue-hover: #0C4E8C;
+  --color-blue-ring: rgba(12, 129, 228, 0.15);
+
+  --color-purple: #11C4D4;
+  --color-purple-hover: #0C4E8C;
+  --color-purple-ring: rgba(17, 196, 212, 0.15);
+
+  --color-mint: #4FE7AF;
+  --color-deep: #0C4E8C;
+}
+
+html.dark {
+  --surface: rgba(15, 23, 42, 0.86);
+  --surface-strong: #0f172a;
+  --surface-muted: rgba(30, 41, 59, 0.58);
+  --border-soft: rgba(148, 163, 184, 0.18);
+  --shadow-card: 0 18px 46px -28px rgba(0, 0, 0, 0.8);
+  --shadow-card-hover: 0 22px 54px -30px rgba(17, 196, 212, 0.22);
+}
+
+html {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+  height: 100%;
+  min-height: 100dvh;
+  height: -webkit-fill-available;
+  background-color: #F8FAFC;
+}
+html.dark {
+  background-color: #0f172a;
+}

@@ -1,0 +1,125 @@
+/* Base Styles & Reset */
+body {
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+  height: 100dvh !important;
+}
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: max(1.25rem, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0), rgba(248, 250, 252, 0.98));
+  pointer-events: none;
+  z-index: 1;
+}
+html.dark body::after {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.98));
+}
+
+/* Modal z-index base */
+.modal {
+  z-index: 100;
+}
+
+/* Prevent body scroll when modal open */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Keyboard focus indicator & global focus state */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* Running text animation for location */
+@keyframes marquee-text {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+.animate-marquee-text {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee-text 8s linear infinite;
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+/* Cohesive input fallback */
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px var(--color-brand-ring);
+  outline: none;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* Design-system normalization for hand-authored Tailwind surfaces */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  min-height: 2.75rem;
+  border-color: var(--border-soft) !important;
+  border-radius: var(--radius-control) !important;
+  background-color: var(--surface-strong);
+}
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.dark select,
+.dark textarea {
+  background-color: rgba(15, 23, 42, 0.82);
+  color: #f8fafc;
+}
+
+button {
+  border-radius: var(--radius-control);
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Smooth transitions */
+* {
+  transition-property:
+    background-color, border-color, color, fill, stroke, opacity,
+    box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Base & Reset --- */
+body {
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+/* --- Safe Area Padding --- */
+.pt-safe {
+  padding-top: max(20px, env(safe-area-inset-top));
+}
+.pb-safe {
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+}
+.top-safe-area {
+  top: env(safe-area-inset-top);
+}
