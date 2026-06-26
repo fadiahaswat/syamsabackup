@@ -1,3 +1,78 @@
+window.AppStorage = window.AppStorage || {};
+if (typeof window.AppStorage.getItem !== "function") {
+  window.AppStorage.getItem = function (key, fallback = null, storage = localStorage) {
+      try {
+        const value = storage.getItem(key);
+        return value === null ? fallback : value;
+      } catch {
+        return fallback;
+      }
+    };
+}
+if (typeof window.AppStorage.setItem !== "function") {
+  window.AppStorage.setItem = function (key, value, storage = localStorage) {
+      try {
+        storage.setItem(key, value);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+}
+if (typeof window.AppStorage.removeItem !== "function") {
+  window.AppStorage.removeItem = function (key, storage = localStorage) {
+      try {
+        storage.removeItem(key);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+}
+if (typeof window.AppStorage.getJson !== "function") {
+  window.AppStorage.getJson = function (key, fallback = null, storage = localStorage) {
+      const value = window.AppStorage.getItem(key, null, storage);
+      if (!value) return fallback;
+      try {
+        return JSON.parse(value);
+      } catch {
+        return fallback;
+      }
+    };
+}
+if (typeof window.AppStorage.setJson !== "function") {
+  window.AppStorage.setJson = function (key, value, storage = localStorage) {
+      return window.AppStorage.setItem(key, JSON.stringify(value), storage);
+    };
+}
+if (!window.AppStorage.session) {
+  window.AppStorage.session = {};
+}
+if (typeof window.AppStorage.session.getItem !== "function") {
+  window.AppStorage.session.getItem =
+    (key, fallback = null) =>
+      window.AppStorage.getItem(key, fallback, sessionStorage);
+}
+if (typeof window.AppStorage.session.setItem !== "function") {
+  window.AppStorage.session.setItem =
+    (key, value) =>
+      window.AppStorage.setItem(key, value, sessionStorage);
+}
+if (typeof window.AppStorage.session.removeItem !== "function") {
+  window.AppStorage.session.removeItem =
+    (key) => window.AppStorage.removeItem(key, sessionStorage);
+}
+if (typeof window.AppStorage.session.getJson !== "function") {
+  window.AppStorage.session.getJson =
+    (key, fallback = null) =>
+      window.AppStorage.getJson(key, fallback, sessionStorage);
+}
+if (typeof window.AppStorage.session.setJson !== "function") {
+  window.AppStorage.session.setJson =
+    (key, value) =>
+      window.AppStorage.setJson(key, value, sessionStorage);
+}
+
 window.updateMetaThemeColor = function () {
   const isDark = document.documentElement.classList.contains("dark");
   const metas = document.querySelectorAll('meta[name="theme-color"]');
@@ -20,25 +95,25 @@ window.initApp = async function () {
       console.error("UI Init Error:", uiError);
     }
     try {
-      const savedSettings = localStorage.getItem(APP_CONFIG.settingsKey);
+      const savedSettings = window.AppStorage.getItem(APP_CONFIG.settingsKey);
       if (savedSettings) {
         appState.settings = {
           ...appState.settings,
-          ...window.safeJsonParse(savedSettings, {}),
+          ...window.AppStorage.getJson(APP_CONFIG.settingsKey, {}),
         };
         if (appState.settings.darkMode) {
           document.documentElement.classList.add("dark");
         }
         window.updateMetaThemeColor();
       }
-      const savedData = localStorage.getItem(APP_CONFIG.storageKey);
-      if (savedData) appState.attendanceData = window.safeJsonParse(savedData, {});
-      const savedLog = localStorage.getItem(APP_CONFIG.activityLogKey);
-      if (savedLog) appState.activityLog = window.safeJsonParse(savedLog, []);
+      const savedData = window.AppStorage.getItem(APP_CONFIG.storageKey);
+      if (savedData) appState.attendanceData = window.AppStorage.getJson(APP_CONFIG.storageKey, {});
+      const savedLog = window.AppStorage.getItem(APP_CONFIG.activityLogKey);
+      if (savedLog) appState.activityLog = window.AppStorage.getJson(APP_CONFIG.activityLogKey, []);
       appState.permits = [];
-      const savedPermits = localStorage.getItem(APP_CONFIG.permitKey);
+      const savedPermits = window.AppStorage.getItem(APP_CONFIG.permitKey);
       if (savedPermits) {
-        appState.permits = window.safeJsonParse(savedPermits, []);
+        appState.permits = window.AppStorage.getJson(APP_CONFIG.permitKey, []);
       }
     } catch (storageError) {
       console.error("Storage Error:", storageError);
@@ -77,10 +152,10 @@ window.initApp = async function () {
     window.populateClassDropdown();
 
     // Selalu coba auto-login menggunakan data yang tersedia (network atau cache)
-    const savedAuth = localStorage.getItem(APP_CONFIG.googleAuthKey);
+    const savedAuth = window.AppStorage.getItem(APP_CONFIG.googleAuthKey);
     if (savedAuth) {
       try {
-        const authData = window.safeJsonParse(savedAuth, null);
+        const authData = window.AppStorage.getJson(APP_CONFIG.googleAuthKey, null);
         if (!authData) throw new Error("Invalid auth data");
         const LOGIN_MAX_AGE = 14 * 24 * 60 * 60 * 1000;
         const loginTime = new Date(authData.timestamp).getTime();
@@ -184,7 +259,7 @@ window.initApp = async function () {
         // Hanya hapus sesi jika memang error autentikasi kadaluarsa / testing dinonaktifkan.
         // Jangan hapus sesi hanya karena data tidak lengkap (misal offline/timeout).
         if (authError.message === "Sesi login kadaluarsa" || authError.message.includes("dinonaktifkan")) {
-          localStorage.removeItem(APP_CONFIG.googleAuthKey);
+          window.AppStorage.removeItem(APP_CONFIG.googleAuthKey);
         }
       }
     }
@@ -204,7 +279,7 @@ window.initApp = async function () {
     try {
       const viewMain = document.getElementById("view-main");
       if (viewMain && viewMain.classList.contains("hidden")) {
-        const hasSeen = localStorage.getItem("has_seen_onboarding") === "true";
+        const hasSeen = window.AppStorage.getItem("has_seen_onboarding") === "true";
         if (!hasSeen) {
           // Show onboarding immediately (no delay) to prevent login page glitch
           if (window.showOnboarding) window.showOnboarding(true);
@@ -589,7 +664,7 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
     timestamp: new Date().toISOString(),
     isAdmin: isAdmin
   };
-  localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
+  window.AppStorage.setJson(APP_CONFIG.googleAuthKey, authData);
 
   appState.selectedClass = targetClass;
   appState.userProfile = profile;
@@ -599,7 +674,7 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
   // Ini penting agar notifikasi bisa dikirim meskipun MASTER_KELAS belum loaded
   if (!isAdmin && profile?.email) {
     const kelasKey = String(targetClass).replace(/\s+/g, "").toLowerCase();
-    localStorage.setItem(`musyrif_email_${kelasKey}`, String(profile.email).trim().toLowerCase());
+    window.AppStorage.setItem(`musyrif_email_${kelasKey}`, String(profile.email).trim().toLowerCase());
     console.log('[AuthManager] Cached musyrif email:', profile.email, 'for class:', kelasKey);
   }
 
@@ -934,7 +1009,7 @@ window.handleWaliSubmit = async function () {
 
   // Cek custom password dari localStorage
   try {
-    const savedPasswords = localStorage.getItem('wali_passwords_db');
+    const savedPasswords = window.AppStorage.getItem("wali_passwords_db");
     if (savedPasswords) {
       const passwords = JSON.parse(savedPasswords);
       if (passwords[nis]) {
@@ -980,12 +1055,12 @@ window.handleWaliSubmit = async function () {
   };
 
   FILTERED_SANTRI = [foundSantri];
-  localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify({
+  window.AppStorage.setJson(APP_CONFIG.googleAuthKey, {
     kelas: foundKelas,
     waliNis: String(foundSantri.nis || foundSantri.id || nis).trim(),
     profile: appState.userProfile,
     timestamp: new Date().toISOString(),
-  }));
+  });
 
   document.getElementById("view-login")?.classList.add("hidden");
   document.getElementById("view-main")?.classList.remove("hidden");
@@ -1101,7 +1176,7 @@ window.getWaliTahfizhSummary = function (student = appState.waliSantri) {
   const studentName = String(student?.nama || "").trim().toLowerCase();
   let entries = [];
   try {
-    entries = JSON.parse(localStorage.getItem("tahfizh_local_setoran") || "[]");
+    entries = window.AppStorage.getJson("tahfizh_local_setoran", []);
   } catch {
     entries = [];
   }
@@ -1301,7 +1376,7 @@ window.handleWaliLogout = function () {
   appState.selectedClass = null;
   appState.userProfile = null;
   FILTERED_SANTRI = [];
-  localStorage.removeItem(APP_CONFIG.googleAuthKey);
+  window.AppStorage.removeItem(APP_CONFIG.googleAuthKey);
   document.body.classList.remove("wali-mode");
 
   if (window.cleanupPermitRequestListener) window.cleanupPermitRequestListener();
@@ -1321,15 +1396,11 @@ window.getWaliStorageKey = function (type, student = appState.waliSantri) {
 };
 
 window.getWaliStoredList = function (type) {
-  try {
-    return JSON.parse(localStorage.getItem(window.getWaliStorageKey(type)) || "[]");
-  } catch {
-    return [];
-  }
+  return window.AppStorage.getJson(window.getWaliStorageKey(type), []);
 };
 
 window.saveWaliStoredList = function (type, list) {
-  localStorage.setItem(window.getWaliStorageKey(type), JSON.stringify(list || []));
+  window.AppStorage.setJson(window.getWaliStorageKey(type), list || []);
 };
 
 window.getWaliCategorySummary = function (student = appState.waliSantri, days = 7) {
@@ -1430,17 +1501,13 @@ window.getWaliPembinaanItems = function () {
 };
 
 window.getWaliNotificationPrefs = function () {
-  try {
-    return JSON.parse(localStorage.getItem(window.getWaliStorageKey("notif_prefs")) || "{}");
-  } catch {
-    return {};
-  }
+  return window.AppStorage.getJson(window.getWaliStorageKey("notif_prefs"), {});
 };
 
 window.toggleWaliNotificationPref = function (key) {
   const prefs = window.getWaliNotificationPrefs();
   prefs[key] = prefs[key] === false;
-  localStorage.setItem(window.getWaliStorageKey("notif_prefs"), JSON.stringify(prefs));
+  window.AppStorage.setJson(window.getWaliStorageKey("notif_prefs"), prefs);
   window.renderWaliView();
   window.showToast("Preferensi notifikasi wali disimpan.", "success");
 };
@@ -1921,7 +1988,7 @@ window.handleLogout = function () {
     clockInterval = null;
   }
 
-  localStorage.removeItem(APP_CONFIG.googleAuthKey);
+  window.AppStorage.removeItem(APP_CONFIG.googleAuthKey);
   appState.selectedClass = null;
   appState.waliMode = false;
   appState.waliSantri = null;
@@ -5044,10 +5111,7 @@ window.logActivity = function (action, detail) {
     );
   }
 
-  localStorage.setItem(
-    APP_CONFIG.activityLogKey,
-    JSON.stringify(appState.activityLog),
-  );
+  window.AppStorage.setJson(APP_CONFIG.activityLogKey, appState.activityLog);
 };
 
 window.viewActivityLog = function () {
@@ -5210,10 +5274,7 @@ window.toggleDarkMode = function () {
   document.documentElement.classList.toggle("dark");
   appState.settings.darkMode =
     document.documentElement.classList.contains("dark");
-  localStorage.setItem(
-    APP_CONFIG.settingsKey,
-    JSON.stringify(appState.settings),
-  );
+  window.AppStorage.setJson(APP_CONFIG.settingsKey, appState.settings);
   window.updateMetaThemeColor();
 
   // Sync settings to local storage
@@ -5238,7 +5299,7 @@ window.toggleNotifications = async function () {
         const permission = await Notification.requestPermission();
         if (permission === "granted") {
           appState.settings.notifications = true;
-          localStorage.setItem(APP_CONFIG.settingsKey, JSON.stringify(appState.settings));
+          window.AppStorage.setJson(APP_CONFIG.settingsKey, appState.settings);
           window.showToast("Notifikasi Aktif", "success");
         } else {
           window.showToast("Izin notifikasi ditolak", "error");
@@ -5248,13 +5309,13 @@ window.toggleNotifications = async function () {
       }
     } else if (Notification.permission === "granted") {
       appState.settings.notifications = true;
-      localStorage.setItem(APP_CONFIG.settingsKey, JSON.stringify(appState.settings));
+      window.AppStorage.setJson(APP_CONFIG.settingsKey, appState.settings);
       window.showToast("Notifikasi Aktif", "success");
     }
   } else {
     // Disabling notifications
     appState.settings.notifications = false;
-    localStorage.setItem(APP_CONFIG.settingsKey, JSON.stringify(appState.settings));
+    window.AppStorage.setJson(APP_CONFIG.settingsKey, appState.settings);
     window.showToast("Notifikasi Nonaktif", "info");
   }
 
@@ -5302,7 +5363,7 @@ window.saveData = async function () {
         setTimeout(async () => {
           try {
             // Save to localStorage
-            localStorage.setItem(APP_CONFIG.storageKey, dataStr);
+            window.AppStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
             // Use StorageManager
             if (window.storageManager) {
@@ -5330,7 +5391,7 @@ window.saveData = async function () {
         }, 500);
       } else {
         // No autoSave mode - just save to localStorage
-        localStorage.setItem(APP_CONFIG.storageKey, dataStr);
+        window.AppStorage.setItem(APP_CONFIG.storageKey, dataStr);
         if (window.storageManager) {
           await window.storageManager.saveAttendance(dateKey, slotId, slotData);
         }
@@ -5794,10 +5855,10 @@ window.switchTab = function (tabName) {
   } else if (tabName === "admin") {
     // Guard: Only allow admin tab for Musyrif/admin users
     if (!appState.adminMode) {
-      console.warn("Akses Admin ditolak - bukan Musyrif");
+      console.warn("Akses Admin ditolak - bukan admin");
       // Show toast notification
       if (window.showToast) {
-        window.showToast("Akses ditolak - hanya untuk Musyrif", "error");
+        window.showToast("Akses ditolak - hanya untuk Admin", "error");
       }
       // Switch back to home
       window.switchTab("home");
@@ -5815,6 +5876,7 @@ window.switchTab = function (tabName) {
 };
 
 window.getGrade = function (score) {
+  if (window.SharedUtils?.getGrade) return window.SharedUtils.getGrade(score);
   if (score >= 97) return "A";
   if (score >= 93) return "A-";
   if (score >= 89) return "B+";
@@ -5826,19 +5888,17 @@ window.getGrade = function (score) {
 };
 
 window.getPredikat = function (grade) {
-  if (grade === "A" || grade === "A-") {
-    return "Mumtaz";
-  }
-  if (grade === "B+" || grade === "B") {
-    return "Jayyid Jiddan";
-  }
-  if (grade === "B-" || grade === "C+") {
-    return "Jayyid";
-  }
+  if (window.SharedUtils?.getPredikat) return window.SharedUtils.getPredikat(grade);
+  if (grade === "A" || grade === "A-") return "Mumtaz";
+  if (grade === "B+" || grade === "B") return "Jayyid Jiddan";
+  if (grade === "B-" || grade === "C+") return "Jayyid";
   return "Maqbul";
 };
 
 window.getPredikatMeaning = function (grade) {
+  if (window.SharedUtils?.getPredikatMeaning) {
+    return window.SharedUtils.getPredikatMeaning(grade);
+  }
   if (grade === "A") return "Sempurna";
   if (grade === "A-") return "Istimewa";
   if (grade === "B+" || grade === "B") return "Baik Sekali";
@@ -7489,7 +7549,7 @@ window.updatePermitCount = function () {
 };
 
 window.persistPermits = function () {
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
+  window.AppStorage.setJson(APP_CONFIG.permitKey, appState.permits || []);
 };
 
 window.refreshPermitSurfaces = function () {
@@ -9283,7 +9343,10 @@ window.getReportDateRange = function (mode) {
 
 // Rumus Haversine untuk menghitung jarak antar 2 koordinat (dalam meter)
 window.getDistanceFromLatLonInMeters = function (lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // Radius bumi dalam meter
+  if (window.SharedUtils?.getDistanceFromLatLonInMeters) {
+    return window.SharedUtils.getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2);
+  }
+  const R = 6371e3;
   const dLat = window.deg2rad(lat2 - lat1);
   const dLon = window.deg2rad(lon2 - lon1);
   const a =
@@ -9293,8 +9356,7 @@ window.getDistanceFromLatLonInMeters = function (lat1, lon1, lat2, lon2) {
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c; // Jarak dalam meter
-  return d;
+  return R * c;
 };
 
 window.getCachedLocation = function () {
@@ -9316,6 +9378,7 @@ window.getCachedLocation = function () {
 };
 
 window.deg2rad = function (deg) {
+  if (window.SharedUtils?.deg2rad) return window.SharedUtils.deg2rad(deg);
   return deg * (Math.PI / 180);
 };
 
@@ -12440,7 +12503,7 @@ window.closeOnboarding = function () {
   if (!viewOnboarding || !onboardingCard) return;
 
   // Save state
-  localStorage.setItem("has_seen_onboarding", "true");
+  window.AppStorage.setItem("has_seen_onboarding", "true");
 
   // Prepare login card for entry animation
   if (viewLogin && loginCard) {

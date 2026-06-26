@@ -5,6 +5,19 @@ let clockInterval = null;
 let lucideTimeout = null;
 let modalStack = [];
 
+if (!window.AppStorage) {
+  window.AppStorage = {
+    setJson(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  };
+}
+
 // ==========================================
 // STORAGE MANAGER INSTANCE (LocalStorage-based)
 // ==========================================
@@ -17,10 +30,7 @@ window.addEventListener("beforeunload", () => {
     clearTimeout(saveTimeout);
     if (typeof appState !== "undefined" && appState.attendanceData) {
       // Simpan ke localStorage sebagai backup
-      localStorage.setItem(
-        APP_CONFIG.storageKey,
-        JSON.stringify(appState.attendanceData),
-      );
+      window.AppStorage.setJson(APP_CONFIG.storageKey, appState.attendanceData);
       // Force save if storage manager exists
       if (window.storageManager) {
         window.storageManager.saveNow();
@@ -51,39 +61,44 @@ const APP_CONFIG = {
 // CRITICAL FIX: Escape HTML entities untuk mencegah XSS
 // Gunakan ini untuk semua user-provided values yang di-render ke HTML
 window.escapeHtml = function(str) {
-  if (str === null || str === undefined) return '';
-  const div = document.createElement('div');
+  if (window.SharedUtils?.escapeHtml) return window.SharedUtils.escapeHtml(str);
+  if (str === null || str === undefined) return "";
+  const div = document.createElement("div");
   div.textContent = String(str);
   return div.innerHTML;
 };
 
 // Escape untuk attribute values (double quotes context)
 window.escapeAttr = function(str) {
-  if (str === null || str === undefined) return '';
+  if (window.SharedUtils?.escapeAttr) return window.SharedUtils.escapeAttr(str);
+  if (str === null || str === undefined) return "";
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 };
 
 // Escape untuk inline event handlers (paling aman: gunakan data-attribute pattern)
 window.escapeForEventHandler = function(str) {
-  if (str === null || str === undefined) return '';
-  // Replace backtick dan $ untuk mencegah template literal injection
-  return String(str)
-    .replace(/`/g, '&#96;')
-    .replace(/\$/g, '&#36;');
+  if (window.SharedUtils?.escapeForEventHandler) {
+    return window.SharedUtils.escapeForEventHandler(str);
+  }
+  if (str === null || str === undefined) return "";
+  return String(str).replace(/`/g, "&#96;").replace(/\$/g, "&#36;");
 };
 
 // CRITICAL FIX: Safe JSON parse - prevents crash on malformed data
 window.safeJsonParse = function(str, fallback = null) {
+  if (window.SharedUtils?.safeJsonParse) {
+    return window.SharedUtils.safeJsonParse(str, fallback);
+  }
   if (!str) return fallback;
   try {
     return JSON.parse(str);
   } catch (e) {
-    console.warn('[SafeJsonParse] Invalid JSON, using fallback:', e.message);
+    console.warn("[SafeJsonParse] Invalid JSON, using fallback:", e.message);
     return fallback;
   }
 };
@@ -310,10 +325,11 @@ function getPredikat(grade) {
 }
 
 window.sanitizeHTML = function (str) {
+  if (window.SharedUtils?.sanitizeHTML) return window.SharedUtils.sanitizeHTML(str);
   if (!str) return "";
   const div = document.createElement("div");
   div.textContent = str;
-  return div.textContent; // Return text, NOT innerHTML
+  return div.textContent;
 };
 
 window.getCurrentActorName = function () {
@@ -665,6 +681,9 @@ window.parseJwt = function (token) {
 
 // Helper Tanggal yang Aman (Local Time YYYY-MM-DD)
 window.getLocalDateStr = function (dateObj = new Date()) {
+  if (window.SharedUtils?.getLocalDateStr) {
+    return window.SharedUtils.getLocalDateStr(dateObj);
+  }
   try {
     const year = dateObj.getFullYear();
     const month = String(dateObj.getMonth() + 1).padStart(2, "0");
@@ -709,6 +728,7 @@ window.MONTHS_FULL_ID = MONTHS_FULL_ID;
 
 // Format tanggal ke "Senin, 1 Jan 2025"
 window.formatDate = function (dateStr) {
+  if (window.SharedUtils?.formatDate) return window.SharedUtils.formatDate(dateStr);
   if (!dateStr) return "-";
   const d = new Date(dateStr + "T12:00:00");
   return `${DAYS_ID[d.getDay()]}, ${d.getDate()} ${MONTHS_SHORT_ID[d.getMonth()]} ${d.getFullYear()}`;
