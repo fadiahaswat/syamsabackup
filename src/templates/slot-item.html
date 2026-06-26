@@ -1,0 +1,31 @@
+<div class="slot-item col-span-1 flex flex-col p-3.5 sm:p-4 rounded-3xl border cursor-pointer transition-all duration-300 group relative overflow-hidden bg-white dark:bg-slate-800 hover:-translate-y-1 hover:shadow-lg">
+  <div class="slot-decor absolute -top-10 -right-10 w-24 h-24 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-[30px] pointer-events-none"></div>
+
+  <div class="flex flex-col gap-2 relative z-10">
+    <div class="flex justify-between items-start">
+      <div class="slot-icon-bg w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border group-hover:scale-105 transition-transform shrink-0">
+        <i class="slot-icon w-5 h-5 block text-current"></i>
+      </div>
+      <div class="flex flex-col items-end gap-1 shrink-0">
+        <span class="slot-status-badge text-[9px] font-bold px-1.5 py-0.5 rounded border">Menunggu</span>
+        <div class="slot-card-stats hidden"></div>
+      </div>
+    </div>
+
+    <div>
+      <h4 class="slot-label font-black text-sm sm:text-base leading-tight tracking-tight">Label</h4>
+      <span class="slot-time-range text-[9px] sm:text-[10px] font-bold opacity-75 font-mono tracking-wide">--:--</span>
+    </div>
+
+    <div class="mt-1.5 w-full bg-black/20 dark:bg-black/40 rounded-full h-2 overflow-hidden p-[1px] border border-white/10 dark:border-slate-700/30">
+      <div class="slot-progress-bar h-full rounded-full bg-gradient-to-r from-white/70 to-white transition-all duration-500 shadow-[0_0_8px_rgba(255,255,255,0.8)]" style="width: 0%"></div>
+    </div>
+
+    <div class="flex justify-between items-center text-[8px] font-black tracking-wider mt-1 select-none">
+      <span class="slot-progress-status uppercase text-current opacity-75">Menunggu</span>
+      <span class="slot-progress-text font-mono text-current opacity-75">0%</span>
+    </div>
+  </div>
+
+  <div class="flex-grow"></div>
+</div>

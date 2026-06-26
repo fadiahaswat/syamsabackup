@@ -1,7 +1,7 @@
 # PERBAIKAN CODEBASE - SYAMSA PRESENSI APP
 
-**Last Updated:** 2026-06-25
-**Status:** 🚧 IN PROGRESS (FASE 1 COMPLETE)
+**Last Updated:** 2026-06-26
+**Status:** 🚧 IN PROGRESS (FASE 1 & 2 ONGOING)
 
 ---
 
@@ -36,6 +36,10 @@
 |---|-------|------|--------|---------|
 | MED-1 | Duplicate Constants | `constants.js` (NEW) | ✅ DONE | Buat `src/core/constants.js` dengan shared constants |
 | MED-2 | Magic Numbers | `constants.js` | ✅ DONE | Definisikan `MS_PER_SECOND`, `MS_PER_MINUTE`, `MS_PER_HOUR`, `MS_PER_DAY` |
+| MED-3 | Dead Code | `admin-manager.js` | ✅ DONE | Hapus `syncTahfizhToCloud()` yang tidak digunakan |
+| MED-5 | Missing Accessibility | `index.html` | ✅ DONE | Tambahkan ARIA labels ke tombol dan elemen interaktif |
+| MED-9 | Missing Loading States | `app-core.js` | ✅ DONE | Skeleton loaders, spinner, error/empty states |
+| MED-10 | Error Recovery | `app-core.js` | ✅ DONE | `executeWithTimeoutNotification()`, `retryWithBackoff()` |
 
 ### ⏳ HIGH - BELUM
 
@@ -47,14 +51,10 @@
 
 | # | Issue | File | Status | Catatan |
 |---|-------|------|--------|---------|
-| MED-3 | Dead Code | `admin-manager.js` | ⏳ TODO | Hapus `syncTahfizhToCloud()` yang tidak digunakan |
 | MED-4 | Inconsistent Naming | Multiple files | ⏳ TODO | Standardisasi camelCase/PascalCase |
-| MED-5 | Missing Accessibility | `index.html` | ⏳ TODO | Tambahkan ARIA labels |
 | MED-6 | Global Window Pollution | All manager files | ⏳ TODO | Module pattern atau ES6 exports |
 | MED-7 | Missing TypeScript | All files | ⏳ TODO | Gradual TypeScript migration |
 | MED-8 | CSS Specificity Issues | `index.html` | ⏳ TODO | Refactor CSS architecture |
-| MED-9 | Missing Loading States | Multiple files | ⏳ TODO | Skeleton loaders dan progress indicators |
-| MED-10 | Error Recovery | `script.js` | ⏳ TODO | User notification on timeout fallback |
 
 ### ⏳ LOW - BELUM
 
@@ -71,10 +71,10 @@
 ```
 CRITICAL:  3/4 completed  (75%)
 HIGH:      9/10 completed (90%) ⭐
-MEDIUM:    2/10 completed (20%)
+MEDIUM:    6/10 completed (60%) 📈
 LOW:       0/3 completed  (0%)
 ─────────────────────────────────
-TOTAL:     14/27 completed (52%) 🎉
+TOTAL:     18/27 completed (67%) 🎉
 ```
 
 ---

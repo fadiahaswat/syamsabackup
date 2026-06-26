@@ -797,7 +797,42 @@ let appState = {
 // Helper untuk increment version saat state berubah
 window.incrementStateVersion = function() {
   appState._version++;
+  console.log(`[State] Version incremented to ${appState._version}`);
   return appState._version;
+};
+
+// CENTRALIZED STATE MUTATION - Always use this for state changes
+// This ensures version tracking and triggers auto-save
+window.mutateState = function(partial, { autoSave = true, silent = false } = {}) {
+  const changedKeys = [];
+
+  for (const [key, value] of Object.entries(partial)) {
+    if (appState[key] !== value) {
+      appState[key] = value;
+      changedKeys.push(key);
+    }
+  }
+
+  if (changedKeys.length > 0) {
+    // Always increment version on any state change
+    window.incrementStateVersion();
+
+    // Notify listeners if StateStore is available
+    if (window.StateStore?.listeners) {
+      window.StateStore._notify(changedKeys);
+    }
+
+    // Trigger auto-save
+    if (autoSave && window.saveData) {
+      window.saveData();
+    }
+
+    if (!silent) {
+      console.log(`[State] Mutated: ${changedKeys.join(', ')}`);
+    }
+  }
+
+  return changedKeys;
 };
 
 if (!appState.holidays || appState.holidays.length === 0) {
@@ -933,6 +968,220 @@ window.safeCall = function(fn, fallback = null, context = 'SafeCall') {
     window.handleError(error, context, 'WARNING');
     return fallback;
   }
+};
+
+// ==========================================
+// MEDIUM FIX #9: LOADING STATES (Skeleton Loaders)
+// ==========================================
+
+/**
+ * Show skeleton loader in a container element
+ * @param {string|HTMLElement} container - Container element or selector
+ * @param {string} type - Type of skeleton: 'table', 'card', 'list', 'text'
+ * @param {number} rows - Number of skeleton rows for list/table types
+ */
+window.showSkeleton = function(container, type = 'list', rows = 5) {
+  const el = typeof container === 'string' ? document.querySelector(container) : container;
+  if (!el) return;
+
+  const skeletonTemplates = {
+    table: Array(rows).fill(`
+      <tr class="animate-pulse">
+        <td class="p-3"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div></td>
+        <td class="p-3"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div></td>
+        <td class="p-3"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-16"></div></td>
+        <td class="p-3"><div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-20"></div></td>
+      </tr>
+    `).join(''),
+    card: `
+      <div class="animate-pulse space-y-4 p-4">
+        <div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-full"></div>
+        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div>
+        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-4/6"></div>
+      </div>
+    `,
+    list: Array(rows).fill(`
+      <div class="flex items-center gap-3 p-3 animate-pulse">
+        <div class="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+        <div class="flex-1 space-y-2">
+          <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+          <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+        </div>
+      </div>
+    `).join(''),
+    text: Array(rows).fill(`
+      <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-2"></div>
+    `).join(''),
+    stats: `
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-pulse">
+        ${Array(4).fill('<div class="h-20 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>').join('')}
+      </div>
+    `
+  };
+
+  el.innerHTML = skeletonTemplates[type] || skeletonTemplates.list;
+};
+
+/**
+ * Show inline loading spinner
+ * @param {string|HTMLElement} container - Container element or selector
+ * @param {string} message - Optional loading message
+ */
+window.showLoadingSpinner = function(container, message = 'Memuat...') {
+  const el = typeof container === 'string' ? document.querySelector(container) : container;
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="flex flex-col items-center justify-center p-6 gap-3" role="status" aria-live="polite">
+      <div class="w-8 h-8 border-3 border-slate-200 border-t-palette-blue rounded-full animate-spin"></div>
+      <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">${window.escapeHtml(message)}</span>
+    </div>
+  `;
+};
+
+/**
+ * Show error state in a container
+ * @param {string|HTMLElement} container - Container element or selector
+ * @param {string} message - Error message to display
+ * @param {Function} retryFn - Optional retry callback function
+ */
+window.showErrorState = function(container, message = 'Terjadi kesalahan', retryFn = null) {
+  const el = typeof container === 'string' ? document.querySelector(container) : container;
+  if (!el) return;
+
+  const retryButton = retryFn ? `
+    <button onclick="window.showLoadingSpinner('${typeof container === 'string' ? container : '#' + container.id}'); setTimeout(${retryFn.toString()}, 100);"
+      class="mt-3 px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold transition-colors">
+      Coba Lagi
+    </button>
+  ` : '';
+
+  el.innerHTML = `
+    <div class="flex flex-col items-center justify-center p-6 gap-2 text-center" role="alert">
+      <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <p class="text-sm text-slate-600 dark:text-slate-300 font-medium">${window.escapeHtml(message)}</p>
+      ${retryButton}
+    </div>
+  `;
+};
+
+/**
+ * Show empty state in a container
+ * @param {string|HTMLElement} container - Container element or selector
+ * @param {string} title - Empty state title
+ * @param {string} message - Empty state description
+ * @param {string} icon - Lucide icon name (optional)
+ */
+window.showEmptyState = function(container, title = 'Tidak ada data', message = '', icon = 'inbox') {
+  const el = typeof container === 'string' ? document.querySelector(container) : container;
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="flex flex-col items-center justify-center p-8 gap-3 text-center">
+      <div class="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-2">
+        <i data-lucide="${icon}" class="w-8 h-8 text-slate-400"></i>
+      </div>
+      <p class="text-sm font-bold text-slate-600 dark:text-slate-300">${window.escapeHtml(title)}</p>
+      ${message ? `<p class="text-xs text-slate-400">${window.escapeHtml(message)}</p>` : ''}
+    </div>
+  `;
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+// ==========================================
+// MEDIUM FIX #10: ERROR RECOVERY (Timeout Notifications)
+// ==========================================
+
+/**
+ * Execute async operation with timeout and user notification
+ * @param {Promise} promise - The promise to execute
+ * @param {number} timeoutMs - Timeout in milliseconds (default: 10 seconds)
+ * @param {string} operationName - Name of operation for notification
+ * @returns {Promise<{success: boolean, data?: any, error?: string}>}
+ */
+window.executeWithTimeoutNotification = async function(promise, timeoutMs = 10000, operationName = 'Operasi') {
+  let timeoutId;
+
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`timeout:${operationName}`));
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId);
+    return { success: true, data: result };
+  } catch (error) {
+    clearTimeout(timeoutId);
+
+    if (error.message?.startsWith('timeout:')) {
+      const opName = error.message.replace('timeout:', '');
+      // User notification on timeout
+      window.showToast(`${opName} membutuhkan waktu terlalu lama. Data mungkin tidak tersimpan sepenuhnya.`, 'warning', true);
+      window.handleError(error, `Timeout: ${opName}`, 'WARNING');
+      return {
+        success: false,
+        error: 'timeout',
+        message: `${opName} timeout setelah ${timeoutMs / 1000} detik`
+      };
+    }
+
+    window.handleError(error, `Execute: ${operationName}`, 'ERROR');
+    return { success: false, error: 'operation_failed', message: error.message };
+  }
+};
+
+/**
+ * Show persistent error notification with recovery suggestion
+ * @param {string} title - Error title
+ * @param {string} message - Error message
+ * @param {string[]} suggestions - Array of recovery suggestions
+ */
+window.showPersistentError = function(title, message, suggestions = []) {
+  const suggestionText = suggestions.length > 0
+    ? suggestions.map(s => `• ${s}`).join('\n')
+    : '';
+
+  const fullMessage = suggestionText ? `${message}\n\n💡 Saran:\n${suggestionText}` : message;
+
+  window.showToast(fullMessage, 'error', true);
+  window.handleError(new Error(message), title, 'ERROR');
+};
+
+/**
+ * Recovery helper - retry with exponential backoff
+ * @param {Function} fn - Async function to retry
+ * @param {number} maxRetries - Maximum number of retries (default: 3)
+ * @param {number} baseDelayMs - Base delay in ms (default: 1000)
+ * @returns {Promise<any>}
+ */
+window.retryWithBackoff = async function(fn, maxRetries = 3, baseDelayMs = 1000) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < maxRetries) {
+        const delay = baseDelayMs * Math.pow(2, attempt - 1); // Exponential: 1s, 2s, 4s
+        console.log(`[Retry] Attempt ${attempt} failed, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError;
 };
 
 // HIGH FIX: Attendance Index untuk O(1) lookup

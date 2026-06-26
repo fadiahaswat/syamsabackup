@@ -221,7 +221,7 @@ window.initApp = async function () {
 };
 
 window.initBottomNavScroll = function () {
-  const bottomNav = document.querySelector("nav");
+  const bottomNav = document.getElementById("bottom-nav") || document.querySelector("#view-main > nav");
   if (!bottomNav) return;
   let shrinkTimer = null;
 
@@ -5764,7 +5764,7 @@ window.switchTab = function (tabName) {
   });
 
   // 4.5. Update Bottom Nav Expansion State for new tab
-  const bottomNav = document.querySelector("nav");
+  const bottomNav = document.getElementById("bottom-nav") || document.querySelector("#view-main > nav");
   if (bottomNav) {
     const activeTab = tabName === "home" ? document.getElementById("main-content") : document.getElementById(`tab-${tabName}`);
     const maxScrollTop = activeTab ? Math.max(0, activeTab.scrollHeight - activeTab.clientHeight) : 0;

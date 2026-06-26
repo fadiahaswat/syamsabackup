@@ -178,17 +178,7 @@ window.loadGlobalTahfizh = async function () {
 };
 
 /**
- * 4. TAHFIZH SYNC: Menyelaraskan setoran tahfizh - mode localStorage only
- * Sinkronisasi cloud dinonaktifkan
- */
-window.syncTahfizhToCloud = async function () {
-  // Mode localStorage only - tidak ada sinkronisasi cloud
-  console.log('[TahfizhSync] Cloud sync disabled - working in localStorage only mode');
-  return;
-};
-
-/**
- * 5. HR & WALI: Reset password kustom Wali agar kembali ke default (NIS)
+ * 4. HR & WALI: Reset password kustom Wali agar kembali ke default (NIS)
  * Menggunakan localStorage
  */
 window.resetWaliPassword = async function (nis) {

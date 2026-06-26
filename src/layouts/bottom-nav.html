@@ -1,0 +1,98 @@
+<!-- Bottom Navigation Bar - Mobile -->
+<!-- Extracted from index.html for modular architecture -->
+<nav
+  id="bottom-nav"
+  class="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto animate-slide-up delay-500ms"
+  aria-label="Navigasi utama"
+>
+<div
+  class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-full shadow-xl shadow-slate-200/30 dark:shadow-black/30 border border-white/50 dark:border-white/10 p-1.5"
+>
+  <div class="flex items-center justify-between gap-1">
+    <!-- Home Button -->
+    <button
+      onclick="window.switchTab('home')"
+      data-target="home"
+      class="nav-btn active group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+      aria-label="Dashboard"
+    >
+      <div
+        class="absolute inset-0 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
+      ></div>
+      <i
+        data-lucide="home"
+        class="w-6 h-6 text-slate-400 group-[.active]:text-emerald-500 transition-colors relative z-10"
+      ></i>
+      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Home</span>
+    </button>
+
+    <!-- Tahfizh Button -->
+    <button
+      onclick="window.switchTab('tahfizh')"
+      data-target="tahfizh"
+      class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+      aria-label="Tahfizh"
+    >
+      <div
+        class="absolute inset-0 bg-orange-500/10 dark:bg-orange-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
+      ></div>
+      <i
+        data-lucide="book-open-check"
+        class="w-6 h-6 text-slate-400 group-[.active]:text-orange-500 transition-colors relative z-10"
+      ></i>
+      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Tahfizh</span>
+    </button>
+
+    <!-- Report Button -->
+    <button
+      onclick="window.switchTab('report')"
+      data-target="report"
+      class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+      aria-label="Laporan"
+    >
+      <div
+        class="absolute inset-0 bg-blue-500/10 dark:bg-blue-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
+      ></div>
+      <i
+        data-lucide="file-bar-chart"
+        class="w-6 h-6 text-slate-400 group-[.active]:text-blue-500 transition-colors relative z-10"
+      ></i>
+      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Rekap</span>
+    </button>
+
+    <!-- Admin Button (Musyrif Only) -->
+    <button
+      onclick="window.switchTab('admin')"
+      data-target="admin"
+      class="nav-btn admin-only group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+      aria-label="Admin"
+    >
+      <div
+        class="absolute inset-0 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
+      ></div>
+      <i
+        data-lucide="shield-check"
+        class="w-6 h-6 text-slate-400 group-[.active]:text-indigo-500 transition-colors relative z-10"
+      ></i>
+      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Admin</span>
+    </button>
+
+    <!-- Profile Button -->
+    <button
+      onclick="window.switchTab('profile')"
+      data-target="profile"
+      class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+      aria-label="Profil"
+    >
+      <div
+        class="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
+      ></div>
+      <i
+        data-lucide="user"
+        class="w-6 h-6 text-slate-400 group-[.active]:text-purple-500 transition-colors relative z-10"
+      ></i>
+      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Profil</span>
+    </button>
+  </div>
+</div>
+</nav>

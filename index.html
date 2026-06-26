@@ -53,6 +53,7 @@
     <link rel="stylesheet" href="src/styles/base.css" />
     <link rel="stylesheet" href="src/styles/components.css" />
     <link rel="stylesheet" href="src/styles/report.css" />
+    <link rel="stylesheet" href="src/styles/shell.css" />
 
     <!-- Libraries -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -1308,6 +1309,680 @@
       .divider-spacing-sm { margin: 0.5rem 0; }
       .divider-spacing-md { margin: 1rem 0; }
       .divider-spacing-lg { margin: 1.5rem 0; }
+
+      /* ===== LIST COMPONENT ===== */
+      .list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .list-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: background-color var(--motion-fast) var(--ease-standard);
+      }
+      .list-item:hover {
+        background-color: rgba(148, 163, 184, 0.1);
+      }
+      .list-item.active {
+        background-color: rgba(12, 129, 228, 0.1);
+        color: var(--color-brand);
+      }
+      .list-item-content {
+        flex: 1;
+        min-width: 0;
+      }
+      .list-item-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .dark .list-item-title {
+        color: #f1f5f9;
+      }
+      .list-item-subtitle {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 0.125rem;
+      }
+      .list-item-icon {
+        flex-shrink: 0;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        background-color: rgba(148, 163, 184, 0.1);
+        color: #64748b;
+      }
+      .list-item-action {
+        flex-shrink: 0;
+        color: #94a3b8;
+      }
+      /* List with borders */
+      .list-bordered .list-item {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 0;
+      }
+      .list-bordered .list-item:last-child {
+        border-bottom: none;
+      }
+      /* List with avatar */
+      .list-item-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 9999px;
+        flex-shrink: 0;
+      }
+
+      /* ===== MODAL VARIANTS ===== */
+      .modal-panel {
+        background-color: white;
+        border-radius: 1.5rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      .dark .modal-panel {
+        background-color: #1e293b;
+      }
+      /* Modal sizes */
+      .modal-sm { max-width: 20rem; }
+      .modal-md { max-width: 28rem; }
+      .modal-lg { max-width: 36rem; }
+      .modal-xl { max-width: 48rem; }
+      .modal-full { max-width: calc(100vw - 2rem); }
+      /* Modal header */
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      }
+      .modal-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1e293b;
+      }
+      .dark .modal-title {
+        color: #f1f5f9;
+      }
+      .modal-close {
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        color: #64748b;
+        cursor: pointer;
+        transition: all var(--motion-fast) var(--ease-standard);
+      }
+      .modal-close:hover {
+        background-color: rgba(148, 163, 184, 0.1);
+        color: #334155;
+      }
+      /* Modal body */
+      .modal-body {
+        padding: 1.5rem;
+      }
+      /* Modal footer */
+      .modal-footer {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.1);
+      }
+
+      /* ===== DRAWER / SIDEBAR COMPONENT ===== */
+      .drawer {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        width: 20rem;
+        max-width: 100vw;
+        background-color: white;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        z-index: 110;
+        transition: transform var(--motion-slow) var(--ease-standard);
+      }
+      .dark .drawer {
+        background-color: #1e293b;
+      }
+      .drawer-left {
+        left: 0;
+        transform: translateX(-100%);
+      }
+      .drawer-right {
+        right: 0;
+        transform: translateX(100%);
+      }
+      .drawer-open.drawer-left {
+        transform: translateX(0);
+      }
+      .drawer-open.drawer-right {
+        transform: translateX(0);
+      }
+      .drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      }
+      .drawer-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+      }
+      .dark .drawer-title {
+        color: #f1f5f9;
+      }
+      .drawer-body {
+        padding: 1rem 1.5rem;
+        overflow-y: auto;
+        height: calc(100% - 4rem);
+      }
+      .drawer-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.1);
+      }
+      /* Drawer overlay */
+      .drawer-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 105;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity var(--motion-standard) var(--ease-standard),
+                    visibility var(--motion-standard) var(--ease-standard);
+      }
+      .drawer-overlay-open {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      /* ===== SPINNER / LOADING COMPONENTS ===== */
+      .spinner {
+        display: inline-block;
+        width: 1.5rem;
+        height: 1.5rem;
+        border: 2px solid rgba(148, 163, 184, 0.3);
+        border-top-color: var(--color-brand);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+      }
+      .spinner-sm { width: 1rem; height: 1rem; border-width: 2px; }
+      .spinner-lg { width: 2rem; height: 2rem; border-width: 3px; }
+      .spinner-xl { width: 3rem; height: 3rem; border-width: 4px; }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      /* Alternative spinner - dots */
+      .spinner-dots {
+        display: flex;
+        gap: 0.25rem;
+      }
+      .spinner-dots span {
+        width: 0.5rem;
+        height: 0.5rem;
+        background-color: var(--color-brand);
+        border-radius: 50%;
+        animation: bounce 1.4s ease-in-out infinite;
+      }
+      .spinner-dots span:nth-child(1) { animation-delay: 0s; }
+      .spinner-dots span:nth-child(2) { animation-delay: 0.16s; }
+      .spinner-dots span:nth-child(3) { animation-delay: 0.32s; }
+      @keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+      }
+      /* Pulse animation */
+      .pulse {
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      /* Spinner with text */
+      .loading-text {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .loading-text-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #64748b;
+      }
+
+      /* ===== EMPTY STATE COMPONENT ===== */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1.5rem;
+        text-align: center;
+      }
+      .empty-state-icon {
+        width: 4rem;
+        height: 4rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(148, 163, 184, 0.1);
+        color: #94a3b8;
+        margin-bottom: 1rem;
+      }
+      .empty-state-icon svg {
+        width: 2rem;
+        height: 2rem;
+      }
+      .empty-state-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 0.5rem;
+      }
+      .dark .empty-state-title {
+        color: #e2e8f0;
+      }
+      .empty-state-description {
+        font-size: 0.875rem;
+        color: #64748b;
+        max-width: 20rem;
+        line-height: 1.5;
+      }
+      .empty-state-action {
+        margin-top: 1.5rem;
+      }
+      /* Empty state variants */
+      .empty-state-compact {
+        padding: 1.5rem 1rem;
+      }
+      .empty-state-compact .empty-state-icon {
+        width: 3rem;
+        height: 3rem;
+        margin-bottom: 0.75rem;
+      }
+      .empty-state-compact .empty-state-icon svg {
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+      .empty-state-compact .empty-state-title {
+        font-size: 0.875rem;
+      }
+      .empty-state-compact .empty-state-description {
+        font-size: 0.75rem;
+      }
+
+      /* ===== IMAGE & VIDEO CONTAINER ===== */
+      /* Image container */
+      .img-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--radius-card, 1.5rem);
+      }
+      .img-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      /* Image with overlay */
+      .img-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+        display: flex;
+        align-items: flex-end;
+        padding: 1rem;
+      }
+      /* Image placeholder */
+      .img-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(148, 163, 184, 0.1);
+        color: #94a3b8;
+      }
+      /* Image rounded variants */
+      .img-rounded-sm { border-radius: 0.5rem; }
+      .img-rounded-md { border-radius: 1rem; }
+      .img-rounded-lg { border-radius: 1.5rem; }
+      .img-rounded-full { border-radius: 9999px; }
+      /* Image fit variants */
+      .img-cover { object-fit: cover; }
+      .img-contain { object-fit: contain; }
+      /* Video container */
+      .video-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: var(--radius-card, 1.5rem);
+        background-color: #000;
+      }
+      .video-container video {
+        width: 100%;
+        display: block;
+      }
+      .video-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(0,0,0,0.3);
+      }
+      /* Lazy loading image */
+      .img-lazy {
+        opacity: 0;
+        transition: opacity var(--motion-slow) var(--ease-standard);
+      }
+      .img-lazy.loaded {
+        opacity: 1;
+      }
+
+      /* ===== CODE & PRE COMPONENT ===== */
+      .code-block {
+        background-color: #1e293b;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.8125rem;
+        line-height: 1.6;
+      }
+      .code-block-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 1rem;
+        background-color: rgba(0,0,0,0.3);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      .code-block-lang {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: #94a3b8;
+        text-transform: uppercase;
+      }
+      .code-block-copy {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: #94a3b8;
+        background: none;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition: all var(--motion-fast) var(--ease-standard);
+      }
+      .code-block-copy:hover {
+        background-color: rgba(255,255,255,0.1);
+        color: white;
+      }
+      .code-block pre {
+        margin: 0;
+        padding: 1rem;
+        overflow-x: auto;
+        color: #e2e8f0;
+      }
+      .code-block code {
+        font-family: inherit;
+      }
+      /* Inline code */
+      .code-inline {
+        padding: 0.125rem 0.375rem;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.8125em;
+        background-color: rgba(148, 163, 184, 0.15);
+        border-radius: 0.25rem;
+        color: #be185d;
+      }
+      .dark .code-inline {
+        background-color: rgba(148, 163, 184, 0.2);
+        color: #f472b6;
+      }
+
+      /* ===== SEARCH COMPONENT ===== */
+      .search {
+        position: relative;
+      }
+      .search-input {
+        width: 100%;
+        padding: 0.625rem 1rem;
+        padding-left: 2.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #1e293b;
+        background-color: white;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 9999px;
+        transition: all var(--motion-fast) var(--ease-standard);
+      }
+      .dark .search-input {
+        color: #f1f5f9;
+        background-color: #1e293b;
+        border-color: rgba(148, 163, 184, 0.2);
+      }
+      .search-input:focus {
+        outline: none;
+        border-color: var(--color-brand);
+        box-shadow: 0 0 0 3px rgba(12, 129, 228, 0.15);
+      }
+      .search-input::placeholder {
+        color: #94a3b8;
+      }
+      .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        pointer-events: none;
+      }
+      .search-icon svg {
+        width: 1rem;
+        height: 1rem;
+      }
+      .search-clear {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1.5rem;
+        height: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: #94a3b8;
+        cursor: pointer;
+        transition: all var(--motion-fast) var(--ease-standard);
+      }
+      .search-clear:hover {
+        background-color: rgba(148, 163, 184, 0.1);
+        color: #64748b;
+      }
+      /* Search results dropdown */
+      .search-results {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        right: 0;
+        background-color: white;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        max-height: 20rem;
+        overflow-y: auto;
+        z-index: 50;
+      }
+      .dark .search-results {
+        background-color: #1e293b;
+        border-color: rgba(148, 163, 184, 0.1);
+      }
+      .search-result-item {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background-color var(--motion-fast) var(--ease-standard);
+      }
+      .search-result-item:hover {
+        background-color: rgba(148, 163, 184, 0.1);
+      }
+      .search-result-item:first-child {
+        border-radius: 0.75rem 0.75rem 0 0;
+      }
+      .search-result-item:last-child {
+        border-radius: 0 0 0.75rem 0.75rem;
+      }
+
+      /* ===== TAG COMPONENT ===== */
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        line-height: 1;
+        border-radius: 0.375rem;
+        background-color: rgba(148, 163, 184, 0.15);
+        color: #475569;
+      }
+      .dark .tag {
+        background-color: rgba(148, 163, 184, 0.2);
+        color: #94a3b8;
+      }
+      /* Tag variants */
+      .tag-blue {
+        background-color: rgba(59, 130, 246, 0.15);
+        color: #2563eb;
+      }
+      .tag-green {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #059669;
+      }
+      .tag-yellow {
+        background-color: rgba(245, 158, 11, 0.15);
+        color: #d97706;
+      }
+      .tag-red {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #dc2626;
+      }
+      .tag-purple {
+        background-color: rgba(139, 92, 246, 0.15);
+        color: #7c3aed;
+      }
+      /* Tag with remove button */
+      .tag-remove {
+        width: 0.875rem;
+        height: 0.875rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity var(--motion-fast) var(--ease-standard);
+      }
+      .tag-remove:hover {
+        opacity: 1;
+      }
+
+      /* ===== SKELETON SCREEN COMPONENT ===== */
+      .skeleton-screen {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .skeleton-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      .skeleton-circle {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        background: linear-gradient(90deg,
+          rgba(226, 232, 240, 0.5) 25%,
+          rgba(241, 245, 249, 0.8) 50%,
+          rgba(226, 232, 240, 0.5) 75%);
+        background-size: 200% 100%;
+        animation: skeleton-shimmer 1.5s ease-in-out infinite;
+      }
+      .dark .skeleton-circle {
+        background: linear-gradient(90deg,
+          rgba(30, 41, 59, 0.5) 25%,
+          rgba(51, 65, 85, 0.8) 50%,
+          rgba(30, 41, 59, 0.5) 75%);
+        background-size: 200% 100%;
+      }
+      .skeleton-line {
+        height: 1rem;
+        border-radius: 0.25rem;
+        background: linear-gradient(90deg,
+          rgba(226, 232, 240, 0.5) 25%,
+          rgba(241, 245, 249, 0.8) 50%,
+          rgba(226, 232, 240, 0.5) 75%);
+        background-size: 200% 100%;
+        animation: skeleton-shimmer 1.5s ease-in-out infinite;
+      }
+      .dark .skeleton-line {
+        background: linear-gradient(90deg,
+          rgba(30, 41, 59, 0.5) 25%,
+          rgba(51, 65, 85, 0.8) 50%,
+          rgba(30, 41, 59, 0.5) 75%);
+        background-size: 200% 100%;
+      }
+      @keyframes skeleton-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      /* Skeleton text variants */
+      .skeleton-text-sm { width: 40%; }
+      .skeleton-text-md { width: 70%; }
+      .skeleton-text-lg { width: 90%; }
+      /* Skeleton card */
+      .skeleton-card {
+        background: white;
+        border-radius: var(--radius-card, 1.5rem);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-card);
+      }
+      .dark .skeleton-card {
+        background-color: #1e293b;
+      }
+      .skeleton-card-image {
+        width: 100%;
+        height: 12rem;
+        border-radius: 0.75rem;
+      }
+      /* Disable skeleton animation for reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        .skeleton-circle,
+        .skeleton-line {
+          animation: none;
+          background: rgba(226, 232, 240, 0.3);
+        }
+        .dark .skeleton-circle,
+        .dark .skeleton-line {
+          background: rgba(30, 41, 59, 0.3);
+        }
+      }
 
       /* Modal z-index base */
       .modal {
@@ -3413,6 +4088,14 @@
             <span>Rekap Presensi</span>
           </button>
           <button
+            onclick="window.switchTab('admin')"
+            data-target="admin"
+            class="nav-btn admin-only sidebar-nav-btn"
+          >
+            <i data-lucide="shield-check" class="w-5 h-5 flex-shrink-0"></i>
+            <span>Admin</span>
+          </button>
+          <button
             onclick="window.switchTab('profile')"
             data-target="profile"
             class="nav-btn sidebar-nav-btn"
@@ -3489,13 +4172,13 @@
     </div>
 
     <!-- Standalone Notification Bell Button -->
-    <button onclick="window.switchTab('notifications')" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-500 dark:text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
-      <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500"></span>
+    <button onclick="window.switchTab('notifications')" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-500 dark:text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue" aria-label="Buka notifikasi" title="Notifikasi">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+      <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" aria-hidden="true"></span>
     </button>
 
     <!-- Standalone Profile Button -->
-    <button onclick="switchTab('profile')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue active:scale-95 transition-all duration-300">
+    <button onclick="switchTab('profile')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue active:scale-95 transition-all duration-300" aria-label="Buka profil" title="Profil">
       <div class="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-30 group-hover:opacity-60 transition-opacity duration-300"></div>
       <div id="header-avatar" class="relative w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-black text-xs shadow-md z-10 transition-transform group-hover:scale-105">
         AA
@@ -3968,24 +4651,24 @@
             <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
               
               <!-- 1. Input Sakit (Kuning/Amber) -->
-              <button onclick="window.openPermitModal('daily'); window.setPermitTab('sakit');" class="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-all active:scale-90 group">
-                <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-amber-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <button onclick="window.openPermitModal('daily'); window.setPermitTab('sakit');" class="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-all active:scale-90 group" aria-label="Input izin sakit">
+                <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-amber-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M12 7v4"/></svg>
                 </div>
                 <span class="text-[9px] sm:text-[10px] font-bold text-amber-700 dark:text-amber-400">Sakit</span>
               </button>
 
               <!-- 2. Input Izin (Biru/Blue) -->
-              <button onclick="window.openPermitModal('daily'); window.setPermitTab('izin');" class="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all active:scale-90 group">
-                <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-blue-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <button onclick="window.openPermitModal('daily'); window.setPermitTab('izin');" class="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all active:scale-90 group" aria-label="Input izin">
+                <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-blue-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
                 </div>
                 <span class="text-[9px] sm:text-[10px] font-bold text-blue-700 dark:text-blue-400">Izin</span>
               </button>
 
               <!-- 3. Input Pulang (Ungu/Purple) -->
-              <button onclick="window.openPermitModal('pulang')" class="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-all active:scale-90 group">
-                <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-purple-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+              <button onclick="window.openPermitModal('pulang')" class="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-all active:scale-90 group" aria-label="Input izin pulang">
+                <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-purple-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"></path><path d="M15 6v6"></path><path d="M2 12h19.6"></path><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"></path><circle cx="7" cy="18" r="2"></circle><path d="M9 18h5"></path><circle cx="16" cy="18" r="2"></circle></svg>
                 </div>
                 <span class="text-[9px] sm:text-[10px] font-bold text-purple-700 dark:text-purple-400">Pulang</span>
@@ -4043,8 +4726,8 @@
             </div>
 
             <!-- Tombol Pengajuan -->
-            <button onclick="window.openWaliPermitModal()" class="w-full py-3 px-4 rounded-2xl bg-palette-blue hover:bg-palette-deep text-white text-xs font-black shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            <button onclick="window.openWaliPermitModal()" class="w-full py-3 px-4 rounded-2xl bg-palette-blue hover:bg-palette-deep text-white text-xs font-black shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2" aria-label="Ajukan izin baru">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
               <span>Ajukan Izin Baru</span>
             </button>
 
@@ -4134,14 +4817,14 @@
       </div>
       
       <!-- Range Selector Tabs (iOS Style Segmented Control) -->
-      <div class="flex p-0.5 bg-slate-100/80 dark:bg-slate-900/60 backdrop-blur-sm rounded-lg border border-slate-200/50 dark:border-slate-800 shadow-inner shrink-0 w-full md:w-auto">
-        <button id="stats-range-weekly" onclick="window.changeStatsRange('weekly')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-slate-200/50 dark:border-slate-700/50">
+      <div class="flex p-0.5 bg-slate-100/80 dark:bg-slate-900/60 backdrop-blur-sm rounded-lg border border-slate-200/50 dark:border-slate-800 shadow-inner shrink-0 w-full md:w-auto" role="group" aria-label="Pilih rentang statistik">
+        <button id="stats-range-weekly" onclick="window.changeStatsRange('weekly')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-slate-200/50 dark:border-slate-700/50" aria-label="Statistik mingguan">
           Pekanan
         </button>
-        <button id="stats-range-monthly" onclick="window.changeStatsRange('monthly')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent">
+        <button id="stats-range-monthly" onclick="window.changeStatsRange('monthly')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent" aria-label="Statistik bulanan">
           Bulanan
         </button>
-        <button id="stats-range-semester" onclick="window.changeStatsRange('semester')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent">
+        <button id="stats-range-semester" onclick="window.changeStatsRange('semester')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent" aria-label="Statistik semester">
           Semester
         </button>
       </div>
@@ -6164,6 +6847,7 @@
 
       <!-- Bottom Navigation Bar -->
       <nav
+        id="bottom-nav"
         class="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto animate-slide-up delay-500ms"
       >
         <div
@@ -7796,6 +8480,8 @@
     <script src="src/features/qibla.js"></script>
     <script src="src/managers/permit-request-manager.js"></script>
     <script src="src/managers/admin-manager.js"></script>
+    <script src="src/js/loader.js"></script>
+    <script src="src/js/router.js"></script>
     <script src="src/core/script.js"></script>
     <script src="src/core/pull-to-refresh.js"></script>
     <script src="src/modules/tahfizh/tahfizh-manager.js"></script>
@@ -7805,6 +8491,7 @@
 
     <!-- App Initialization (Service Worker & Notifications) -->
     <script src="src/core/app-init.js"></script>
+    <script src="src/js/app.js"></script>
 
     <!-- Tambahkan sebelum </body> -->
     <!-- Popup Modal Detail Sesi Bento -->
