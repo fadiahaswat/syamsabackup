@@ -4588,6 +4588,19 @@ window.generateBulkButtons = function () {
   const sunnahActs = acts.filter((a) => a.category === "sunnah");
 
   let html = "";
+  const slotLabel = slot?.label || "Sesi ini";
+  html += `
+      <div class="rounded-2xl border border-emerald-100 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 p-3">
+          <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                  <p class="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Aksi tercepat</p>
+                  <p class="mt-1 text-xs font-bold text-slate-600 dark:text-slate-300">Tandai semua santri hadir untuk ${window.sanitizeHTML(slotLabel)}, lalu ubah pengecualian satu per satu.</p>
+              </div>
+          </div>
+          <button onclick="window.applyBulkPresentForCurrentSlot()" class="mt-3 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm shadow-emerald-500/20 active:scale-95 transition-all">
+              Tandai Semua Hadir
+          </button>
+      </div>`;
 
   // 1. Bagian Shalat Fardu (Otomatis handle dependent: Qabliyah/Badiyah/Dzikir)
   if (hasFardu) {
@@ -4673,6 +4686,47 @@ window.generateBulkButtons = function () {
   }
 
   container.innerHTML = html;
+};
+
+window.applyBulkPresentForCurrentSlot = function () {
+  const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
+  const dateKey = appState.date;
+  const slot = SLOT_WAKTU[slotId];
+  const currentDay = new Date(dateKey).getDay();
+  if (!slot) return;
+
+  if (!appState.attendanceData[dateKey]) appState.attendanceData[dateKey] = {};
+  if (!appState.attendanceData[dateKey][slotId]) appState.attendanceData[dateKey][slotId] = {};
+  const dbSlot = appState.attendanceData[dateKey][slotId];
+
+  FILTERED_SANTRI.forEach((s) => {
+    const id = String(s.nis || s.id);
+    if (!dbSlot[id]) dbSlot[id] = { status: {}, note: "" };
+
+    slot.activities.forEach((act) => {
+      if (window.isActivityHoliday(dateKey, slot.id, act.id)) return;
+      if (window.isCategoryHoliday(dateKey, act.category)) return;
+      if (act.showOnDays && !act.showOnDays.includes(currentDay)) return;
+      if (act.onlyRamadhan && !window.isRamadhan(dateKey)) return;
+
+      if (["fardu", "school", "kbm"].includes(act.category)) {
+        dbSlot[id].status[act.id] = "Hadir";
+      } else if (["dependent", "sunnah"].includes(act.category)) {
+        dbSlot[id].status[act.id] = "Ya";
+      }
+    });
+
+    if (Object.keys(dbSlot[id].status || {}).length > 0) {
+      dbSlot[id].inputDate = window.getLocalDateStr();
+      dbSlot[id].updatedAt = new Date().toISOString();
+    }
+  });
+
+  window.saveData();
+  window.renderAttendanceList();
+  window.refreshPembinaanSurfaces?.();
+  window.showToast("Semua santri ditandai hadir. Ubah pengecualian bila ada.", "success");
+  window.closeModal("modal-bulk-actions");
 };
 
 // Logika Eksekusi Bulk Action
@@ -10784,7 +10838,7 @@ window.jumpToDate = function (dateStr) {
     window.updateDateDisplay();
     window.updateDashboard(); // Refresh dashboard data sesuai tanggal baru
 
-    // Pindah ke tab Home dan scroll ke atas
+    // Pindah ke tab Dashboard dan scroll ke atas
     window.switchTab("home");
     window.scrollTo(0, 0);
 

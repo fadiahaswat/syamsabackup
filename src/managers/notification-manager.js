@@ -1093,8 +1093,9 @@ window.renderFilteredNotifications = function () {
   listContainer.innerHTML = '';
 
   if (filteredList.length === 0) {
-    let emptyMsg = "Tidak ada notifikasi baru";
-    let emptyIcon = "bell-off";
+    let emptyTitle = "Belum ada notifikasi";
+    let emptyMsg = "Pemberitahuan presensi, izin, tahfizh, dan sistem akan muncul di sini.";
+    const emptyIcon = "bell-off";
     if (filter !== "all") {
       const catLabels = {
         attendance: "Kehadiran",
@@ -1102,12 +1103,17 @@ window.renderFilteredNotifications = function () {
         tahfizh: "Tahfizh",
         system: "Sistem"
       };
-      emptyMsg = `Tidak ada notifikasi kategori ${catLabels[filter] || filter}`;
+      const label = catLabels[filter] || filter;
+      emptyTitle = `Belum ada notifikasi ${label}`;
+      emptyMsg = `Notifikasi kategori ${label.toLowerCase()} akan muncul setelah ada aktivitas terkait.`;
     }
     listContainer.innerHTML = `
-      <div class="p-12 text-center text-slate-400 dark:text-slate-550">
-        <i data-lucide="${emptyIcon}" class="w-12 h-12 mx-auto mb-3 opacity-40"></i>
-        <p class="text-sm font-semibold">${emptyMsg}</p>
+      <div class="p-10 text-center text-slate-400 dark:text-slate-500">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center">
+          <i data-lucide="${emptyIcon}" class="w-7 h-7"></i>
+        </div>
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-300">${emptyTitle}</p>
+        <p class="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">${emptyMsg}</p>
       </div>
     `;
     if (window.lucide) window.lucide.createIcons();

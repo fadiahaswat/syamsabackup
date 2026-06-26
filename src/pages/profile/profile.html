@@ -1,85 +1,95 @@
-<div
+﻿<div
         id="tab-profile"
         class="tab-content hidden flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-4 sm:p-6 space-y-5 pt-safe"
       >
         <div id="profile-hero-card-wrapper" class="relative z-30">
-        <div
-          id="profile-hero-card"
-          class="bg-slate-900 dark:bg-black p-5 sm:p-6 rounded-[1.75rem] text-center relative overflow-hidden border border-slate-800/60 shadow-2xl shadow-slate-900/20 backdrop-blur-xl group"
-        >
-          <div
-            class="absolute top-0 right-0 w-56 h-56 bg-palette-mint rounded-full blur-[90px] opacity-20 -mr-16 -mt-16 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-          ></div>
-          <div class="absolute bottom-0 left-0 w-44 h-44 bg-palette-blue rounded-full blur-[80px] opacity-15 -ml-14 -mb-14 pointer-events-none"></div>
-          <img src="assets/icons/icon.webp" class="absolute -right-8 -top-8 w-44 h-44 opacity-[0.06] pointer-events-none select-none rotate-[15deg]" alt="" />
+          <section
+            id="profile-hero-card"
+            class="surface-solid bg-slate-950 dark:bg-black p-4 sm:p-5 rounded-[1.75rem] relative overflow-hidden border border-slate-800/70 text-white"
+            aria-labelledby="profile-name"
+          >
+            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-palette-blue via-palette-mint to-emerald-400"></div>
+            <img src="assets/icons/icon.webp" class="absolute right-4 top-4 w-24 h-24 opacity-[0.045] pointer-events-none select-none" alt="" />
 
-          <div class="relative z-10">
-            <div
-              class="w-20 h-20 bg-white/10 rounded-full mx-auto mb-4 p-1 border border-white/10 shadow-lg shadow-black/20"
-            >
-              <div
-                id="profile-avatar"
-                class="w-full h-full bg-white rounded-full flex items-center justify-center text-slate-500 overflow-hidden"
-              >
-                <i data-lucide="user" class="w-10 h-10"></i>
+            <div class="relative z-10 flex flex-col gap-4">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] bg-white/10 rounded-2xl p-1 border border-white/10 shadow-sm shrink-0">
+                    <div
+                      id="profile-avatar"
+                      class="w-full h-full bg-white rounded-xl flex items-center justify-center text-slate-500 overflow-hidden"
+                    >
+                      <i data-lucide="user" class="w-8 h-8"></i>
+                    </div>
+                  </div>
+
+                  <div class="min-w-0 text-left">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Profil pengguna</p>
+                    <h2
+                      id="profile-name"
+                      class="text-lg sm:text-xl font-black text-white tracking-tight truncate"
+                    >
+                      ...
+                    </h2>
+                    <p
+                      id="profile-role-tab"
+                      class="mt-2 inline-flex max-w-full items-center justify-center px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-300/20 text-[10px] font-black text-palette-mint uppercase tracking-wider truncate"
+                    >
+                      Administrator
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    onclick="window.manualSync()"
+                    id="pwa-sync-btn"
+                    class="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-emerald-400/10 border border-emerald-300/20 text-emerald-300 hover:bg-emerald-400/20 active:scale-95 transition-all"
+                    title="Sinkronkan data"
+                    aria-label="Sinkronkan data"
+                  >
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                  </button>
+
+                  <button
+                    onclick="handleLogout()"
+                    class="profile-compact-logout hidden h-10 w-10 items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white hover:bg-red-500/20 hover:text-red-100 active:scale-95 transition-all"
+                    title="Keluar"
+                    aria-label="Keluar dari akun"
+                  >
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div class="rounded-xl bg-white/[0.06] border border-white/10 p-3 text-left">
+                  <div class="flex items-center gap-2 text-slate-400 mb-2">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                    <p class="text-[10px] font-bold uppercase tracking-wider">Rata-rata presensi</p>
+                  </div>
+                  <div
+                    class="text-2xl font-black text-white leading-none"
+                    id="profile-avg-attendance"
+                  >
+                    0%
+                  </div>
+                </div>
+                <div class="rounded-xl bg-white/[0.06] border border-white/10 p-3 text-left">
+                  <div class="flex items-center gap-2 text-slate-400 mb-2">
+                    <i data-lucide="calendar-check-2" class="w-3.5 h-3.5"></i>
+                    <p class="text-[10px] font-bold uppercase tracking-wider">Hari aktif</p>
+                  </div>
+                  <div
+                    class="text-2xl font-black text-palette-mint leading-none"
+                    id="profile-days-count"
+                  >
+                    0
+                  </div>
+                </div>
               </div>
             </div>
-            <h2
-              id="profile-name"
-              class="text-xl font-black text-white mb-1 tracking-tight truncate"
-            >
-              ...
-            </h2>
-            <p
-              id="profile-role-tab"
-              class="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[10px] font-black text-palette-mint uppercase tracking-wider mb-4"
-            >
-              Administrator
-            </p>
-            <button
-              onclick="handleLogout()"
-              class="profile-compact-logout hidden h-9 w-9 items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white hover:bg-red-500/20 hover:text-red-100 active:scale-95 transition-all shrink-0"
-              title="Logout"
-            >
-              <i data-lucide="log-out" class="w-4 h-4"></i>
-            </button>
-
-            <!-- Sync Button for PWA -->
-            <button
-              onclick="window.manualSync()"
-              id="pwa-sync-btn"
-              class="h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 active:scale-95 transition-all shrink-0"
-              title="Sinkronkan Data"
-            >
-              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-            </button>
-
-            <div class="grid grid-cols-2 gap-2">
-              <div class="text-center rounded-xl bg-white/5 border border-white/10 p-3">
-                <div
-                  class="text-xl font-black text-white"
-                  id="profile-avg-attendance"
-                >
-                  0%
-                </div>
-                <p class="text-[9px] font-black text-slate-400 uppercase mt-0.5 tracking-wider">
-                  Rata-rata
-                </p>
-              </div>
-              <div class="text-center rounded-xl bg-white/5 border border-white/10 p-3">
-                <div
-                  class="text-xl font-black text-palette-mint"
-                  id="profile-days-count"
-                >
-                  0
-                </div>
-                <p class="text-[9px] font-black text-slate-400 uppercase mt-0.5 tracking-wider">
-                  Hari Aktif
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+          </section>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -318,9 +328,9 @@
                 <div class="h-full w-[25%] bg-rose-500 rounded-r-full"></div>
               </div>
               <div class="grid grid-cols-4 text-center">
-                <div><div class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Bimbingan</div><div class="text-[8px] text-slate-400">1–10</div></div>
-                <div><div class="text-[9px] font-bold text-amber-600 dark:text-amber-400">SP 1</div><div class="text-[8px] text-slate-400">11–20</div></div>
-                <div><div class="text-[9px] font-bold text-orange-600 dark:text-orange-400">SP 2</div><div class="text-[8px] text-slate-400">21–30</div></div>
+                <div><div class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Bimbingan</div><div class="text-[8px] text-slate-400">1-10</div></div>
+                <div><div class="text-[9px] font-bold text-amber-600 dark:text-amber-400">SP 1</div><div class="text-[8px] text-slate-400">11-20</div></div>
+                <div><div class="text-[9px] font-bold text-orange-600 dark:text-orange-400">SP 2</div><div class="text-[8px] text-slate-400">21-30</div></div>
                 <div><div class="text-[9px] font-bold text-rose-600 dark:text-rose-400">SP 3/T</div><div class="text-[8px] text-slate-400">&gt;31</div></div>
               </div>
             </div>
@@ -465,7 +475,7 @@
           >
             <span class="flex items-center gap-3"
               ><i data-lucide="shield-check" class="w-4 h-4"></i>
-              Dashboard Admin</span
+              Area Pengelolaan</span
             >
             <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-300"></i>
           </button>
@@ -524,3 +534,4 @@
         </div> <!-- Close flex flex-col gap-6 inside Right Column -->
       </div> <!-- Close Right Column -->
     </div>
+

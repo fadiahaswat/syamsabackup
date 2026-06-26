@@ -425,6 +425,9 @@ window.renderAttendanceReviewGate = function (
   slotId,
   needsReview,
 ) {
+  const existingBanner = document.getElementById("attendance-review-banner");
+  if (existingBanner) existingBanner.remove();
+
   if (scrollContainer && scrollContainer._attendanceReviewScrollHandler) {
     scrollContainer.removeEventListener(
       "scroll",
@@ -440,17 +443,32 @@ window.renderAttendanceReviewGate = function (
     window.setAttendanceSaveIndicator("notStarted");
 
     if (scrollContainer) {
+      const banner = document.createElement("div");
+      banner.id = "attendance-review-banner";
+      banner.className =
+        "sticky top-0 z-20 mb-3 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-3 shadow-sm backdrop-blur-xl";
+      banner.innerHTML = `
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-start gap-3 min-w-0">
+            <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
+              <i data-lucide="clipboard-check" class="h-4 w-4" aria-hidden="true"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-black text-amber-900 dark:text-amber-100">Default hadir belum dikonfirmasi</p>
+              <p class="mt-0.5 text-[11px] font-semibold leading-relaxed text-amber-700 dark:text-amber-200">Periksa santri yang sakit, izin, pulang, telat, atau alpa. Setelah sesuai, tekan tombol konfirmasi.</p>
+            </div>
+          </div>
+          <button type="button" onclick="window.markAttendanceReviewConfirmed('${dateKey}', '${slotId}'); document.getElementById('attendance-review-banner')?.remove();" class="shrink-0 rounded-xl bg-amber-600 px-3 py-2 text-[10px] font-black text-white shadow-sm active:scale-95">
+            Sudah dicek
+          </button>
+        </div>
+      `;
+      scrollContainer.prepend(banner);
+      if (window.refreshIcons) window.refreshIcons();
+
       const confirmWhenAtBottom = () => {
         if (scrollContainer.scrollTop > 12) {
           window.setAttendanceSaveIndicator("pending");
-        }
-        const atBottom =
-          scrollContainer.scrollTop + scrollContainer.clientHeight >=
-          scrollContainer.scrollHeight - 24;
-        if (atBottom) {
-          scrollContainer.removeEventListener("scroll", confirmWhenAtBottom);
-          delete scrollContainer._attendanceReviewScrollHandler;
-          window.markAttendanceReviewConfirmed(dateKey, slotId);
         }
       };
       scrollContainer._attendanceReviewScrollHandler = confirmWhenAtBottom;
@@ -464,6 +482,8 @@ window.renderAttendanceReviewGate = function (
 };
 
 window.clearAttendanceReviewGate = function () {
+  document.getElementById("attendance-review-banner")?.remove();
+
   const container = document.getElementById("attendance-list-container");
   if (container && container._attendanceReviewScrollHandler) {
     container.removeEventListener(

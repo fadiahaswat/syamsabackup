@@ -6,6 +6,7 @@
   --surface: rgba(255, 255, 255, 0.86);
   --surface-strong: #ffffff;
   --surface-muted: #F1F5F9;
+  --surface-subtle: rgba(248, 250, 252, 0.78);
   --border-soft: rgba(148, 163, 184, 0.22);
   --shadow-card: 0 14px 40px -24px rgba(15, 23, 42, 0.28);
   --shadow-card-hover: 0 18px 46px -26px rgba(12, 78, 140, 0.32);
@@ -25,12 +26,22 @@
 
   --color-mint: #4FE7AF;
   --color-deep: #0C4E8C;
+  --status-success: #10b981;
+  --status-warning: #f59e0b;
+  --status-danger: #ef4444;
+  --status-info: #0C81E4;
+  --status-neutral: #64748b;
+  --role-musyrif: #0C81E4;
+  --role-wali: #10b981;
+  --role-admin: #6366f1;
+  --role-tahfizh: #f97316;
 }
 
 html.dark {
   --surface: rgba(15, 23, 42, 0.86);
   --surface-strong: #0f172a;
   --surface-muted: rgba(30, 41, 59, 0.58);
+  --surface-subtle: rgba(15, 23, 42, 0.62);
   --border-soft: rgba(148, 163, 184, 0.18);
   --shadow-card: 0 18px 46px -28px rgba(0, 0, 0, 0.8);
   --shadow-card-hover: 0 22px 54px -30px rgba(17, 196, 212, 0.22);

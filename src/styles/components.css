@@ -11,6 +11,30 @@
   box-shadow: var(--shadow-card) !important;
 }
 
+.surface-card,
+.surface-panel,
+.operational-card,
+.stat-card,
+.data-card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-card);
+}
+
+.surface-solid {
+  background: var(--surface-strong);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-card);
+}
+
+.surface-subtle {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-card);
+}
+
 .interactive-card:hover,
 .slot-item:hover {
   box-shadow: var(--shadow-card-hover) !important;
@@ -40,6 +64,106 @@
 [class*="shadow-2xl"],
 [class*="shadow-xl"] {
   box-shadow: var(--shadow-card) !important;
+}
+
+.shadow-lg,
+[class*="shadow-lg"] {
+  box-shadow: var(--shadow-card) !important;
+}
+
+.search,
+.filter-bar,
+.segmented-control {
+  border-radius: var(--radius-control);
+}
+
+.search-input,
+input[type="search"],
+input[id*="search"],
+input[placeholder*="Cari"] {
+  min-height: 2.75rem;
+  border-radius: var(--radius-control) !important;
+  border-color: var(--border-soft) !important;
+  background: var(--surface-strong) !important;
+}
+
+.filter-chip,
+.notif-filter-btn,
+.admin-sub-nav-btn,
+.permit-filter-btn,
+.segmented-control button,
+[data-filter] {
+  min-height: 2.5rem;
+  border-radius: var(--radius-full) !important;
+  box-shadow: none !important;
+}
+
+.status-success,
+.status-approved,
+.badge-success {
+  color: var(--status-success);
+}
+
+.status-warning,
+.status-pending,
+.badge-warning {
+  color: var(--status-warning);
+}
+
+.status-danger,
+.status-rejected,
+.badge-danger {
+  color: var(--status-danger);
+}
+
+.status-info,
+.badge-info {
+  color: var(--status-info);
+}
+
+.role-musyrif { color: var(--role-musyrif); }
+.role-wali { color: var(--role-wali); }
+.role-admin { color: var(--role-admin); }
+.role-tahfizh { color: var(--role-tahfizh); }
+
+#profile-hero-card {
+  display: block;
+  text-align: left;
+}
+
+#profile-hero-card.sticky-hero {
+  min-height: auto;
+  padding: 0.875rem !important;
+}
+
+#profile-hero-card.sticky-hero .grid {
+  display: none;
+}
+
+.loading-text,
+.loading-state {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.dark .loading-text,
+.dark .loading-state {
+  color: #94a3b8;
+}
+
+.table-responsive-wrapper,
+.mobile-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767px) {
+  table.min-w-\[600px\],
+  table.min-w-\[650px\],
+  table.min-w-\[720px\] {
+    font-size: 0.75rem;
+  }
 }
 
 /* Interactive card hover lift effect */

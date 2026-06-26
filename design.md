@@ -48,6 +48,27 @@ Shadow:
 - Hindari shadow besar untuk elemen yang muncul berulang.
 - Gunakan backdrop blur hanya untuk nav, overlay, atau modal; jangan jadikan default semua card.
 
+Surface:
+
+- `surface-solid`: form, tabel, modal content, dan area kerja yang butuh keterbacaan tinggi.
+- `surface-card`: card data berulang, stat card, dan panel ringkasan.
+- `glass-card`: nav, overlay, modal, atau panel yang menempel di atas konten. Jangan dipakai sebagai default semua card.
+
+Role colors:
+
+- Musyrif: brand blue.
+- Wali: emerald.
+- Admin/Pengelolaan: indigo.
+- Tahfizh: orange.
+
+Status colors:
+
+- Success/approved/active: emerald.
+- Warning/pending/review: amber.
+- Danger/rejected/alpa/error: red/rose.
+- Info/system: brand blue.
+- Neutral/empty/inactive: slate.
+
 ## Typography
 
 - Hindari `font-black` untuk semua elemen.
@@ -65,6 +86,7 @@ Button:
 - Secondary: aksi pendukung.
 - Ghost/icon: hanya untuk aksi familiar, wajib punya `aria-label`.
 - Touch target minimum 44px, ideal 48px.
+- Radius tombol biasa mengikuti `--radius-control`; pill hanya untuk chip/filter/nav kecil.
 
 Card:
 
@@ -84,6 +106,24 @@ Empty state:
 - Jelaskan kondisi.
 - Jelaskan tindakan berikutnya.
 - Tambahkan CTA bila relevan.
+- Gunakan shared empty state kecuali konteks membutuhkan ilustrasi khusus.
+
+Search, filter, segmented control:
+
+- Search selalu memakai tinggi minimal 44px, radius control, ikon search di kiri, clear button bila ada input aktif.
+- Filter chip memakai pill, teks pendek, dan status aktif yang jelas.
+- Segmented control dipakai untuk mode setara, bukan aksi utama.
+
+Table:
+
+- Desktop boleh memakai tabel.
+- Mobile harus dibungkus scroll horizontal minimal, dan untuk data operasional berulang sebaiknya disediakan versi list/card.
+
+Modal:
+
+- Bottom sheet untuk mobile form panjang atau pilihan cepat.
+- Centered modal untuk konfirmasi, preview, dan dialog kecil.
+- Tombol tutup ikon wajib punya `aria-label`.
 
 Error state:
 
@@ -116,3 +156,10 @@ Dashboard:
 - Musyrif: tampilkan perlu tindakan, presensi saat ini, santri perlu perhatian, lalu ringkasan.
 - Wali: tampilkan kondisi anak hari ini, tahfizh terakhir, izin aktif, pembinaan, kontak musyrif.
 
+## Keputusan Label
+
+- Gunakan `Dashboard`, bukan `Home`.
+- Gunakan `Laporan` untuk navigasi dan laporan presensi, bukan `Rekap`.
+- Gunakan `Area Pengelolaan` atau `Pengelolaan` untuk area admin. `Admin` hanya dipakai untuk role atau konteks teknis akun.
+- Copy untuk Wali harus personal dan berorientasi anak.
+- Copy untuk Musyrif/Admin harus operasional dan berorientasi tindakan.

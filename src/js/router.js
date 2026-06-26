@@ -15,7 +15,7 @@ const AppRouter = {
     report: { tabId: 'tab-report', title: 'Laporan' },
     notifications: { tabId: 'tab-notifications', title: 'Notifikasi' },
     profile: { tabId: 'tab-profile', title: 'Profil' },
-    admin: { tabId: 'tab-admin', title: 'Admin' }
+    admin: { tabId: 'tab-admin', title: 'Pengelolaan' }
   },
 
   /**

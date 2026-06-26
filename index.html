@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="id" class="scroll-smooth bg-syamsa-background dark:bg-[#0f172a]">
   <head>
     <meta charset="UTF-8" />
@@ -71,6 +71,7 @@
         --surface: rgba(255, 255, 255, 0.86);
         --surface-strong: #ffffff;
         --surface-muted: #F1F5F9;
+        --surface-subtle: rgba(248, 250, 252, 0.78);
         --border-soft: rgba(148, 163, 184, 0.22);
         --shadow-card: 0 14px 40px -24px rgba(15, 23, 42, 0.28);
         --shadow-card-hover: 0 18px 46px -26px rgba(12, 78, 140, 0.32);
@@ -90,6 +91,15 @@
 
         --color-mint: #4FE7AF;
         --color-deep: #0C4E8C;
+        --status-success: #10b981;
+        --status-warning: #f59e0b;
+        --status-danger: #ef4444;
+        --status-info: #0C81E4;
+        --status-neutral: #64748b;
+        --role-musyrif: #0C81E4;
+        --role-wali: #10b981;
+        --role-admin: #6366f1;
+        --role-tahfizh: #f97316;
 
         /* ===== ANIMATION TIMING TOKENS ===== */
         --motion-fast: 100ms;
@@ -106,6 +116,7 @@
         --surface: rgba(15, 23, 42, 0.86);
         --surface-strong: #0f172a;
         --surface-muted: rgba(30, 41, 59, 0.58);
+        --surface-subtle: rgba(15, 23, 42, 0.62);
         --border-soft: rgba(148, 163, 184, 0.18);
         --shadow-card: 0 18px 46px -28px rgba(0, 0, 0, 0.8);
         --shadow-card-hover: 0 22px 54px -30px rgba(17, 196, 212, 0.22);
@@ -2114,6 +2125,116 @@
         box-shadow: var(--shadow-card) !important;
       }
 
+      .surface-card,
+      .surface-panel,
+      .operational-card,
+      .stat-card,
+      .data-card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-panel);
+        box-shadow: var(--shadow-card);
+      }
+
+      .surface-solid {
+        background: var(--surface-strong);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-panel);
+        box-shadow: var(--shadow-card);
+      }
+
+      .surface-subtle {
+        background: var(--surface-subtle);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-card);
+      }
+
+      .shadow-lg,
+      [class*="shadow-lg"] {
+        box-shadow: var(--shadow-card) !important;
+      }
+
+      .search,
+      .filter-bar,
+      .segmented-control {
+        border-radius: var(--radius-control);
+      }
+
+      .search-input,
+      input[type="search"],
+      input[id*="search"],
+      input[placeholder*="Cari"] {
+        min-height: 2.75rem;
+        border-radius: var(--radius-control) !important;
+        border-color: var(--border-soft) !important;
+        background: var(--surface-strong) !important;
+      }
+
+      .filter-chip,
+      .notif-filter-btn,
+      .admin-sub-nav-btn,
+      .permit-filter-btn,
+      .segmented-control button,
+      [data-filter] {
+        min-height: 2.5rem;
+        border-radius: var(--radius-full) !important;
+        box-shadow: none !important;
+      }
+
+      .status-success,
+      .status-approved,
+      .badge-success {
+        color: var(--status-success);
+      }
+
+      .status-warning,
+      .status-pending,
+      .badge-warning {
+        color: var(--status-warning);
+      }
+
+      .status-danger,
+      .status-rejected,
+      .badge-danger {
+        color: var(--status-danger);
+      }
+
+      .status-info,
+      .badge-info {
+        color: var(--status-info);
+      }
+
+      .role-musyrif { color: var(--role-musyrif); }
+      .role-wali { color: var(--role-wali); }
+      .role-admin { color: var(--role-admin); }
+      .role-tahfizh { color: var(--role-tahfizh); }
+
+      .loading-text,
+      .loading-state {
+        color: #64748b;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .dark .loading-text,
+      .dark .loading-state {
+        color: #94a3b8;
+      }
+
+      .table-responsive-wrapper,
+      .mobile-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      @media (max-width: 767px) {
+        table.min-w-\[600px\],
+        table.min-w-\[650px\],
+        table.min-w-\[720px\] {
+          font-size: 0.75rem;
+        }
+      }
+
       /* Interactive card hover lift effect */
       .interactive-card {
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
@@ -2588,7 +2709,7 @@
       }
 
       /* ==================================================================
-           TABLET (768px–1023px): FULLSCREEN APP
+           TABLET (768px-1023px): FULLSCREEN APP
            ================================================================== */
       @media (min-width: 768px) and (max-width: 1023px) {
         body {
@@ -2675,7 +2796,7 @@
       }
 
       /* ==================================================================
-           DESKTOP (≥ 1024px): LAYOUT SIDEBAR + KONTEN
+           DESKTOP (>= 1024px): LAYOUT SIDEBAR + KONTEN
            ================================================================== */
 
       /* Sidebar nav button */
@@ -2807,7 +2928,7 @@
           margin-top: 0 !important;
         }
 
-        /* Sidebar nav items wrapper — clean flex column */
+        /* Sidebar nav items wrapper - clean flex column */
         #desktop-sidebar .sidebar-nav-list {
           display: flex;
           flex-direction: column;
@@ -3531,10 +3652,18 @@
 
         #profile-hero-card {
           min-height: 12rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          display: block;
           border-radius: 1.5rem !important;
+          text-align: left !important;
+        }
+
+        #profile-hero-card.sticky-hero {
+          min-height: auto;
+          padding: 0.875rem !important;
+        }
+
+        #profile-hero-card.sticky-hero .grid {
+          display: none;
         }
 
         #tab-profile > .grid.lg\:grid-cols-12 > div:first-child {
@@ -4039,7 +4168,7 @@
 
           <div id="testing-mode-info" class="hidden mt-4">
             <p class="text-[10px] text-amber-500 font-bold text-center uppercase tracking-wider">
-              ⚡ Mode Testing - Klik logo 5x untuk bypass
+              Mode Testing - Klik logo 5x untuk bypass
             </p>
           </div>
         </div>
@@ -4102,9 +4231,10 @@
             onclick="window.switchTab('admin')"
             data-target="admin"
             class="nav-btn admin-only sidebar-nav-btn"
+            aria-label="Pengelolaan"
           >
             <i data-lucide="shield-check" class="w-5 h-5 flex-shrink-0"></i>
-            <span>Admin</span>
+            <span>Pengelolaan</span>
           </button>
           <button
             onclick="window.switchTab('profile')"
@@ -4145,7 +4275,7 @@
         </div>
       </aside>
 
-      <!-- Tab: Home / Dashboard -->
+      <!-- Tab: Dashboard -->
       <div
         id="main-content"
         class="tab-content flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-6 pt-safe"
@@ -4210,9 +4340,9 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"/>
                 </svg>
-                <span class="text-sm font-medium">⚠️ Mode Offline — Data hanya dapat dilihat, tidak dapat disimpan</span>
+                <span class="text-sm font-medium">Mode Offline - Data hanya dapat dilihat, tidak dapat disimpan</span>
               </div>
-              <button onclick="document.getElementById('cloud-only-offline-banner').classList.add('hidden')" class="text-white/80 hover:text-white transition-colors">
+              <button onclick="document.getElementById('cloud-only-offline-banner').classList.add('hidden')" class="text-white/80 hover:text-white transition-colors" aria-label="Tutup pemberitahuan mode offline" title="Tutup">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -4260,7 +4390,7 @@
             <section id="dashboard-greeting-panel" class="animate-slide-up delay-100ms text-white pl-3 sm:pl-5">
               <div class="max-w-[240px] sm:max-w-sm overflow-hidden mb-1">
                 <span id="dash-title-sub-greeting" class="text-sm sm:text-base font-normal text-white/75 leading-tight transition-opacity duration-500 block whitespace-nowrap font-rubik">
-                  مساء الخير
+                  Masa al-khair
                 </span>
               </div>
 
@@ -5024,11 +5154,11 @@
               </div>
               <!-- Empty State: Tidak Ada Notifikasi -->
               <div id="notif-empty-state" class="hidden p-8 text-center">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-                  <span class="text-3xl">✨</span>
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center">
+                  <i data-lucide="bell-off" class="w-7 h-7"></i>
                 </div>
-                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tidak Ada Notifikasi</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Semua berjalan lancar. Tidak ada pemberitahuan baru saat ini.</p>
+                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Belum ada notifikasi</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Pemberitahuan presensi, izin, tahfizh, dan sistem akan muncul di sini.</p>
               </div>
             </div>
           </div>
@@ -5053,7 +5183,7 @@
             <div class="flex flex-col justify-center min-w-0">
               <div class="report-lang-rotator max-w-[170px] sm:max-w-[240px] overflow-hidden h-[15px] sm:h-[18px] mb-0">
                 <span class="report-lang-ar text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none block whitespace-nowrap font-rubik">
-                  تقييم الحضور
+                  Taqyim al-Hudur
                 </span>
                 <span class="report-lang-ar-fixed text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none block whitespace-nowrap font-rubik">
                   &#1578;&#1602;&#1610;&#1610;&#1605; &#1575;&#1604;&#1581;&#1590;&#1608;&#1585;
@@ -5068,7 +5198,7 @@
                 </span>
               </h1>
               <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100/50 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] w-fit">
-                <span id="report-badge-label" class="font-bold uppercase tracking-widest text-[8px]">Rekap & Analisis</span>
+                <span id="report-badge-label" class="font-bold uppercase tracking-widest text-[8px]">Laporan & Analisis</span>
               </div>
             </div>
           </div>
@@ -5079,7 +5209,7 @@
             onclick="window.switchReportView('report')"
             class="px-3 sm:px-4 py-2 flex items-center justify-center gap-2 rounded-full bg-palette-blue text-white text-xs font-black shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.98]"
           >
-            <i data-lucide="layout-grid" class="w-4 h-4"></i> <span class="hidden sm:inline">Rekap</span>
+            <i data-lucide="layout-grid" class="w-4 h-4"></i> <span class="hidden sm:inline">Laporan</span>
           </button>
           <button
             id="analysis-view-btn"
@@ -5780,83 +5910,93 @@
         class="tab-content hidden flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-4 sm:p-6 space-y-5 pt-safe"
       >
         <div id="profile-hero-card-wrapper" class="relative z-30">
-        <div
-          id="profile-hero-card"
-          class="bg-slate-900 dark:bg-black p-5 sm:p-6 rounded-[1.75rem] text-center relative overflow-hidden border border-slate-800/60 shadow-2xl shadow-slate-900/20 backdrop-blur-xl group"
-        >
-          <div
-            class="absolute top-0 right-0 w-56 h-56 bg-palette-mint rounded-full blur-[90px] opacity-20 -mr-16 -mt-16 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
-          ></div>
-          <div class="absolute bottom-0 left-0 w-44 h-44 bg-palette-blue rounded-full blur-[80px] opacity-15 -ml-14 -mb-14 pointer-events-none"></div>
-          <img src="assets/icons/icon.webp" class="absolute -right-8 -top-8 w-44 h-44 opacity-[0.06] pointer-events-none select-none rotate-[15deg]" alt="" />
+          <section
+            id="profile-hero-card"
+            class="surface-solid bg-slate-950 dark:bg-black p-4 sm:p-5 rounded-[1.75rem] relative overflow-hidden border border-slate-800/70 text-white"
+            aria-labelledby="profile-name"
+          >
+            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-palette-blue via-palette-mint to-emerald-400"></div>
+            <img src="assets/icons/icon.webp" class="absolute right-4 top-4 w-24 h-24 opacity-[0.045] pointer-events-none select-none" alt="" />
 
-          <div class="relative z-10">
-            <div
-              class="w-20 h-20 bg-white/10 rounded-full mx-auto mb-4 p-1 border border-white/10 shadow-lg shadow-black/20"
-            >
-              <div
-                id="profile-avatar"
-                class="w-full h-full bg-white rounded-full flex items-center justify-center text-slate-500 overflow-hidden"
-              >
-                <i data-lucide="user" class="w-10 h-10"></i>
+            <div class="relative z-10 flex flex-col gap-4">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem] bg-white/10 rounded-2xl p-1 border border-white/10 shadow-sm shrink-0">
+                    <div
+                      id="profile-avatar"
+                      class="w-full h-full bg-white rounded-xl flex items-center justify-center text-slate-500 overflow-hidden"
+                    >
+                      <i data-lucide="user" class="w-8 h-8"></i>
+                    </div>
+                  </div>
+
+                  <div class="min-w-0 text-left">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Profil pengguna</p>
+                    <h2
+                      id="profile-name"
+                      class="text-lg sm:text-xl font-black text-white tracking-tight truncate"
+                    >
+                      ...
+                    </h2>
+                    <p
+                      id="profile-role-tab"
+                      class="mt-2 inline-flex max-w-full items-center justify-center px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-300/20 text-[10px] font-black text-palette-mint uppercase tracking-wider truncate"
+                    >
+                      Administrator
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                  <button
+                    onclick="window.manualSync()"
+                    id="pwa-sync-btn"
+                    class="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-emerald-400/10 border border-emerald-300/20 text-emerald-300 hover:bg-emerald-400/20 active:scale-95 transition-all"
+                    title="Sinkronkan data"
+                    aria-label="Sinkronkan data"
+                  >
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                  </button>
+
+                  <button
+                    onclick="handleLogout()"
+                    class="profile-compact-logout hidden h-10 w-10 items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white hover:bg-red-500/20 hover:text-red-100 active:scale-95 transition-all"
+                    title="Keluar"
+                    aria-label="Keluar dari akun"
+                  >
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div class="rounded-xl bg-white/[0.06] border border-white/10 p-3 text-left">
+                  <div class="flex items-center gap-2 text-slate-400 mb-2">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                    <p class="text-[10px] font-bold uppercase tracking-wider">Rata-rata presensi</p>
+                  </div>
+                  <div
+                    class="text-2xl font-black text-white leading-none"
+                    id="profile-avg-attendance"
+                  >
+                    0%
+                  </div>
+                </div>
+                <div class="rounded-xl bg-white/[0.06] border border-white/10 p-3 text-left">
+                  <div class="flex items-center gap-2 text-slate-400 mb-2">
+                    <i data-lucide="calendar-check-2" class="w-3.5 h-3.5"></i>
+                    <p class="text-[10px] font-bold uppercase tracking-wider">Hari aktif</p>
+                  </div>
+                  <div
+                    class="text-2xl font-black text-palette-mint leading-none"
+                    id="profile-days-count"
+                  >
+                    0
+                  </div>
+                </div>
               </div>
             </div>
-            <h2
-              id="profile-name"
-              class="text-xl font-black text-white mb-1 tracking-tight truncate"
-            >
-              ...
-            </h2>
-            <p
-              id="profile-role-tab"
-              class="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[10px] font-black text-palette-mint uppercase tracking-wider mb-4"
-            >
-              Administrator
-            </p>
-            <button
-              onclick="handleLogout()"
-              class="profile-compact-logout hidden h-9 w-9 items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white hover:bg-red-500/20 hover:text-red-100 active:scale-95 transition-all shrink-0"
-              title="Logout"
-            >
-              <i data-lucide="log-out" class="w-4 h-4"></i>
-            </button>
-
-            <!-- Sync Button for PWA -->
-            <button
-              onclick="window.manualSync()"
-              id="pwa-sync-btn"
-              class="h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 active:scale-95 transition-all shrink-0"
-              title="Sinkronkan Data"
-            >
-              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-            </button>
-
-            <div class="grid grid-cols-2 gap-2">
-              <div class="text-center rounded-xl bg-white/5 border border-white/10 p-3">
-                <div
-                  class="text-xl font-black text-white"
-                  id="profile-avg-attendance"
-                >
-                  0%
-                </div>
-                <p class="text-[9px] font-black text-slate-400 uppercase mt-0.5 tracking-wider">
-                  Rata-rata
-                </p>
-              </div>
-              <div class="text-center rounded-xl bg-white/5 border border-white/10 p-3">
-                <div
-                  class="text-xl font-black text-palette-mint"
-                  id="profile-days-count"
-                >
-                  0
-                </div>
-                <p class="text-[9px] font-black text-slate-400 uppercase mt-0.5 tracking-wider">
-                  Hari Aktif
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+          </section>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -6095,9 +6235,9 @@
                 <div class="h-full w-[25%] bg-rose-500 rounded-r-full"></div>
               </div>
               <div class="grid grid-cols-4 text-center">
-                <div><div class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Bimbingan</div><div class="text-[8px] text-slate-400">1–10</div></div>
-                <div><div class="text-[9px] font-bold text-amber-600 dark:text-amber-400">SP 1</div><div class="text-[8px] text-slate-400">11–20</div></div>
-                <div><div class="text-[9px] font-bold text-orange-600 dark:text-orange-400">SP 2</div><div class="text-[8px] text-slate-400">21–30</div></div>
+                <div><div class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Bimbingan</div><div class="text-[8px] text-slate-400">1-10</div></div>
+                <div><div class="text-[9px] font-bold text-amber-600 dark:text-amber-400">SP 1</div><div class="text-[8px] text-slate-400">11-20</div></div>
+                <div><div class="text-[9px] font-bold text-orange-600 dark:text-orange-400">SP 2</div><div class="text-[8px] text-slate-400">21-30</div></div>
                 <div><div class="text-[9px] font-bold text-rose-600 dark:text-rose-400">SP 3/T</div><div class="text-[8px] text-slate-400">&gt;31</div></div>
               </div>
             </div>
@@ -6242,7 +6382,7 @@
           >
             <span class="flex items-center gap-3"
               ><i data-lucide="shield-check" class="w-4 h-4"></i>
-              Dashboard Admin</span
+              Area Pengelolaan</span
             >
             <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-300"></i>
           </button>
@@ -6320,7 +6460,7 @@
               <div class="flex flex-col justify-center min-w-0">
                 <div class="tahfizh-lang-rotator max-w-[190px] sm:max-w-[260px] overflow-hidden h-[16px] sm:h-[18px] mb-0 relative">
                   <span class="tahfizh-lang-ar absolute inset-0 text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none whitespace-nowrap font-rubik">
-                    متابعة الحفظ
+                    Mutabaah al-Hifzh
                   </span>
                   <span class="tahfizh-lang-id absolute inset-0 text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none whitespace-nowrap font-rubik">Monitoring Hafalan</span>
                 </div>
@@ -6339,7 +6479,7 @@
               <button onclick="window.switchTahfizhSubTab('analisis')" class="h-10 w-10 rounded-2xl bg-white/80 dark:bg-slate-950/50 border border-orange-100/80 dark:border-orange-500/15 text-orange-500 dark:text-orange-300 flex items-center justify-center shadow-sm active:scale-95 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-all" title="Analisis Tahfizh">
                 <i data-lucide="user-search" class="w-4 h-4"></i>
               </button>
-              <button onclick="window.switchTahfizhSubTab('rekap')" class="h-10 w-10 rounded-2xl bg-orange-500 text-white border border-orange-400 flex items-center justify-center shadow-sm shadow-orange-500/20 active:scale-95 hover:bg-orange-600 transition-all" title="Rekap Tahfizh">
+              <button onclick="window.switchTahfizhSubTab('rekap')" class="h-10 w-10 rounded-2xl bg-orange-500 text-white border border-orange-400 flex items-center justify-center shadow-sm shadow-orange-500/20 active:scale-95 hover:bg-orange-600 transition-all" title="Riwayat Tahfizh">
                 <i data-lucide="file-text" class="w-4 h-4"></i>
               </button>
             </div>
@@ -6349,7 +6489,7 @@
             <div class="grid grid-cols-3 gap-1">
               <button onclick="window.switchTahfizhSubTab('beranda')" data-subtab="beranda" class="tahfizh-sub-nav-btn active h-10 px-2 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-black active:scale-[0.98]"><i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i><span>Beranda</span></button>
               <button onclick="window.switchTahfizhSubTab('analisis')" data-subtab="analisis" class="tahfizh-sub-nav-btn h-10 px-2 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-black active:scale-[0.98]"><i data-lucide="user-search" class="w-4 h-4 shrink-0"></i><span>Analisis</span></button>
-              <button onclick="window.switchTahfizhSubTab('rekap')" data-subtab="rekap" class="tahfizh-sub-nav-btn h-10 px-2 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-black active:scale-[0.98]"><i data-lucide="file-text" class="w-4 h-4 shrink-0"></i><span>Rekap</span></button>
+              <button onclick="window.switchTahfizhSubTab('rekap')" data-subtab="rekap" class="tahfizh-sub-nav-btn h-10 px-2 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-black active:scale-[0.98]"><i data-lucide="file-text" class="w-4 h-4 shrink-0"></i><span>Riwayat</span></button>
             </div>
           </div>
 
@@ -6560,7 +6700,7 @@
         <template id="tahfizh-tpl-peringkat-item"><li class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2"><span class="medal-bg"></span><div class="min-w-0 flex-1"><p class="item-nama font-black text-[11px] text-slate-800 dark:text-white truncate"></p><p class="item-kelas text-[9px] font-bold text-slate-400"></p></div><div class="text-right"><p class="item-score font-black text-xs text-slate-800 dark:text-white"></p><p class="item-unit text-[9px] font-bold text-slate-400"></p></div></li></template>
         <template id="tahfizh-tpl-tahfizh-section"><div><div class="flex flex-wrap items-center justify-between gap-2 mb-4"><div><h3 class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Target Juz</h3><p class="text-[10px] font-bold text-slate-400">Pantau target dinamis per santri</p></div><div class="tahfizh-target-tabs flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-center hide-scrollbar"></div></div><div id="tahfizh-content"></div></div></template>
         <template id="tahfizh-tpl-tahfizh-content"><div class="space-y-4"><div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/40 p-3"><div class="flex items-center gap-3"><div class="target-ring flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full bg-orange-50 dark:bg-orange-500/10 border-4 border-orange-100 dark:border-orange-500/20"><span class="text-percentage text-xl font-black leading-none text-orange-600 dark:text-orange-400">0%</span><span class="text-[8px] font-bold uppercase text-orange-500/80">Target</span></div><div class="min-w-0 flex-1"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="text-progress-label truncate text-sm font-black text-slate-900 dark:text-white"></p><p class="target-summary mt-1 text-[10px] font-bold text-slate-400"></p></div><i data-lucide="flag" class="w-4 h-4 shrink-0 text-orange-500"></i></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner"><div class="progress-bar h-full rounded-full bg-orange-500"></div></div></div></div></div><div class="relative"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input class="tahfizh-search w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 pl-9 pr-3 text-xs font-bold" placeholder="Cari nama..."></div><div class="grid grid-cols-1 gap-3 text-xs"><div><div class="mb-2 flex items-center justify-between"><p class="font-black text-emerald-600">Tuntas (<span class="count-tuntas">0</span>)</p><span class="text-[9px] font-bold text-slate-400">Sudah memenuhi target</span></div><ul class="list-tuntas space-y-0 max-h-[220px] overflow-y-auto pr-1"></ul></div><div><div class="mb-2 flex items-center justify-between"><p class="font-black text-orange-600">Belum (<span class="count-belum">0</span>)</p><span class="text-[9px] font-bold text-slate-400">Perlu ditindaklanjuti</span></div><ul class="list-belum space-y-0 max-h-[220px] overflow-y-auto pr-1"></ul></div></div></div></template>
-        <template id="tahfizh-history-row-template"><tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors"><td class="p-3.5"><div class="flex items-center gap-2"><span class="data-program-icon"></span><span class="data-kelas-icon"></span><div><p class="data-nama font-black text-xs text-slate-800 dark:text-white"></p></div></div></td><td class="p-3.5"><p class="data-jenis font-black text-xs text-slate-800 dark:text-white"></p><p class="text-[10px] font-bold text-slate-400"><span class="data-juz-text"></span> - <span class="data-unit"></span></p></td><td class="data-tanggal p-3.5 text-[10px] font-bold text-slate-500"></td><td class="p-3.5 text-right"><button class="delete-btn rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 p-2 active:scale-95 transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr></template>
+        <template id="tahfizh-history-row-template"><tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors"><td class="p-3.5"><div class="flex items-center gap-2"><span class="data-program-icon"></span><span class="data-kelas-icon"></span><div><p class="data-nama font-black text-xs text-slate-800 dark:text-white"></p></div></div></td><td class="p-3.5"><p class="data-jenis font-black text-xs text-slate-800 dark:text-white"></p><p class="text-[10px] font-bold text-slate-400"><span class="data-juz-text"></span> - <span class="data-unit"></span></p></td><td class="data-tanggal p-3.5 text-[10px] font-bold text-slate-500"></td><td class="p-3.5 text-right"><button class="delete-btn rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 p-2 active:scale-95 transition-all" aria-label="Hapus riwayat setoran" title="Hapus"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr></template>
         <template id="tahfizh-rekap-content-template"><div class="rekap-tab-content bg-white/90 dark:bg-slate-900/90 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 overflow-hidden backdrop-blur-xl"><div class="p-4 flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800"><div class="min-w-0"><div class="flex items-center gap-2 min-w-0"><span class="w-9 h-9 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-500 border border-orange-100 dark:border-orange-500/20 flex items-center justify-center shrink-0"><i data-lucide="file-text" class="w-4 h-4"></i></span><div class="min-w-0"><h3 class="data-title font-black text-sm text-slate-800 dark:text-white truncate"></h3><p class="data-musyrif text-[10px] font-bold text-slate-400 truncate"></p></div></div><p class="data-timestamp text-[9px] font-bold text-slate-400 mt-2 ml-11"></p></div><button class="export-pdf-btn h-10 w-10 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[10px] font-black shadow-sm shadow-orange-500/20 active:scale-95 transition-all flex items-center justify-center">PDF</button></div><div class="overflow-x-auto hide-scrollbar"><table class="w-full text-left border-collapse min-w-[680px]"><thead><tr class="bg-slate-50 dark:bg-slate-950/80 text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 border-b border-slate-200/70 dark:border-slate-800"><th class="p-3.5 font-black col-no sortable" data-sort="nama">No</th><th class="p-3.5 font-black sortable" data-sort="nama">Nama</th><th class="p-3.5 font-black sortable" data-sort="nilai">Nilai</th><th class="p-3.5 font-black sortable" data-sort="ziyadah">Ziyadah</th><th class="p-3.5 font-black sortable" data-sort="keterangan">Status</th></tr></thead><tbody class="data-table-body text-xs divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div></div></template>
         <template id="tahfizh-tpl-rekap-row"><tr class="border-t border-slate-100 dark:border-slate-800"><td class="col-no p-3 text-xs font-bold text-slate-400"></td><td class="p-3"><button class="detail-santri-text text-left font-black text-sm text-slate-800 dark:text-white"></button></td><td class="col-nilai p-3 font-black"></td><td class="col-ziyadah p-3 font-bold"></td><td class="col-status p-3"></td></tr></template>
         <template id="tahfizh-tpl-juz-block"><div class="rounded-2xl border border-slate-200 dark:border-slate-800 p-4"><div class="flex justify-between mb-3"><p class="block-title font-black text-sm"></p><p class="block-stats text-xs font-bold text-slate-400"></p></div><div class="block-grid grid grid-cols-5 gap-1.5"></div></div></template>
@@ -6570,7 +6710,7 @@
         <div id="tahfizhStudentDetailModal" class="modal hidden fixed inset-0 z-[100] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
           <div class="modal-backdrop absolute inset-0" onclick="this.closest('.modal').classList.add('hidden')"></div>
           <div class="relative w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 p-5 shadow-2xl">
-            <button onclick="document.getElementById('tahfizhStudentDetailModal').classList.add('hidden')" class="absolute top-4 right-4 rounded-xl bg-slate-100 dark:bg-slate-800 p-2"><i data-lucide="x" class="w-4 h-4"></i></button>
+            <button onclick="document.getElementById('tahfizhStudentDetailModal').classList.add('hidden')" class="absolute top-4 right-4 rounded-xl bg-slate-100 dark:bg-slate-800 p-2" aria-label="Tutup detail santri" title="Tutup"><i data-lucide="x" class="w-4 h-4"></i></button>
             <h3 id="tahfizh-detail-nama" class="text-xl font-black"></h3>
             <p id="tahfizh-detail-info" class="text-xs font-bold text-slate-400 mb-4"></p>
             <div class="h-56 mb-5"><canvas id="tahfizh-progressChart"></canvas></div>
@@ -6604,7 +6744,7 @@
                 <span class="text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none font-rubik">Sistem Pengelola Pusat</span>
                 <h1 class="text-base sm:text-lg font-black text-slate-800 dark:text-white tracking-tight leading-normal pb-[2px] truncate mb-0.5 select-none">
                   <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500 dark:from-blue-400 dark:to-indigo-300">
-                    Dashboard Admin
+                    Area Pengelolaan
                   </span>
                 </h1>
               </div>
@@ -6659,7 +6799,7 @@
                     <tr>
                       <td colspan="8" class="p-8 text-center">
                         <div class="flex flex-col items-center gap-2">
-                          <span class="text-2xl">⏳</span>
+                          <span class="text-2xl">...</span>
                           <p class="text-xs text-slate-500 font-semibold">Memuat matriks presensi...</p>
                         </div>
                       </td>
@@ -6702,7 +6842,7 @@
                     <tr>
                       <td colspan="6" class="p-8 text-center">
                         <div class="flex flex-col items-center gap-2">
-                          <span class="text-2xl">⏳</span>
+                          <span class="text-2xl">...</span>
                           <p class="text-xs text-slate-500 font-semibold">Memuat data Santri & Wali...</p>
                         </div>
                       </td>
@@ -6746,7 +6886,7 @@
                     <tr>
                       <td colspan="7" class="p-8 text-center">
                         <div class="flex flex-col items-center gap-2">
-                          <span class="text-2xl">⏳</span>
+                          <span class="text-2xl">...</span>
                           <p class="text-xs text-slate-500 font-semibold">Memuat setoran tahfizh...</p>
                         </div>
                       </td>
@@ -6951,6 +7091,7 @@
               onclick="window.switchTab('admin')"
               data-target="admin"
               class="nav-btn admin-only hidden group relative items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+              aria-label="Pengelolaan"
             >
               <div
                 class="absolute inset-0 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
@@ -6959,7 +7100,7 @@
                 data-lucide="shield-check"
                 class="w-6 h-6 text-slate-400 group-[.active]:text-indigo-500 transition-colors relative z-10"
               ></i>
-              <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Admin</span>
+              <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Kelola</span>
             </button>
 
             <button
@@ -7052,7 +7193,7 @@
           <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 mask-image-r flex-1" id="att-summary-badges">
             <!-- Dynamic Badges -->
           </div>
-          <button onclick="document.getElementById('att-summary-widget').classList.add('hidden')" class="w-7 h-7 flex items-center justify-center shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors active:scale-90">
+          <button onclick="document.getElementById('att-summary-widget').classList.add('hidden')" class="w-7 h-7 flex items-center justify-center shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors active:scale-90" aria-label="Tutup ringkasan presensi" title="Tutup">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x w-3.5 h-3.5"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
           </button>
         </div>
@@ -8185,6 +8326,8 @@
                 .classList.add('hidden')
             "
             class="text-slate-400 hover:text-red-500 transition-colors"
+            aria-label="Tutup form pembinaan"
+            title="Tutup"
           >
             <i data-lucide="x" class="w-5 h-5"></i>
           </button>
@@ -8290,6 +8433,8 @@
           <button
             onclick="document.getElementById('modal-gps-guide').classList.add('hidden')"
             class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            aria-label="Tutup panduan GPS"
+            title="Tutup"
           >
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
@@ -8329,7 +8474,7 @@
           <div id="gps-tab-content-android" class="gps-tab-content space-y-3 text-xs text-slate-700 dark:text-slate-300">
             <div class="flex gap-2.5 items-start">
               <span class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black shrink-0">1</span>
-              <p class="leading-relaxed">Ketuk ikon <b>gembok / pengaturan situs</b> (🔒) di sebelah kiri alamat website (URL) di bagian atas browser Anda.</p>
+              <p class="leading-relaxed">Ketuk ikon <b>gembok / pengaturan situs</b> (ðŸ”’) di sebelah kiri alamat website (URL) di bagian atas browser Anda.</p>
             </div>
             <div class="flex gap-2.5 items-start">
               <span class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black shrink-0">2</span>
@@ -8373,7 +8518,7 @@
           <div id="gps-tab-content-pc" class="gps-tab-content hidden space-y-3 text-xs text-slate-700 dark:text-slate-300">
             <div class="flex gap-2.5 items-start">
               <span class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black shrink-0">1</span>
-              <p class="leading-relaxed">Klik ikon <b>gembok</b> (🔒) yang ada di sebelah kiri alamat URL website pada browser Anda.</p>
+              <p class="leading-relaxed">Klik ikon <b>gembok</b> (ðŸ”’) yang ada di sebelah kiri alamat URL website pada browser Anda.</p>
             </div>
             <div class="flex gap-2.5 items-start">
               <span class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black shrink-0">2</span>
@@ -8641,4 +8786,7 @@
 
   </body>
 </html>
+
+
+
 

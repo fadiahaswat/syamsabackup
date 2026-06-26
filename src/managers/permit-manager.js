@@ -1647,7 +1647,7 @@ window.deletePermitsTabItem = function(id) {
 window.zoomPermitDocument = function(src) {
   const overlay = document.createElement("div");
   overlay.className = "fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out animate-fade-in";
-  overlay.innerHTML = `<img src="${src}" class="max-w-full max-h-[90vh] rounded-3xl shadow-2xl border border-white/10" /><button class="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors" onclick="this.parentElement.remove()"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>`;
+  overlay.innerHTML = `<img src="${src}" class="max-w-full max-h-[90vh] rounded-3xl shadow-2xl border border-white/10" /><button class="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-colors" onclick="this.parentElement.remove()" aria-label="Tutup pratinjau dokumen" title="Tutup"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>`;
   overlay.onclick = () => overlay.remove();
   document.body.appendChild(overlay);
 };
