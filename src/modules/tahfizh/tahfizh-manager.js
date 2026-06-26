@@ -145,6 +145,68 @@ const TahfizhState = {
     countdownInterval: null,
     useDummyData: false,
 };
+window.TahfizhState = TahfizhState;
+
+function parseTahfizhJSON(raw, fallback) {
+    if (!raw) return fallback;
+    try {
+        return JSON.parse(raw);
+    } catch (error) {
+        console.warn("Data lokal Tahfizh tidak valid, memakai fallback:", error);
+        return fallback;
+    }
+}
+
+async function fetchTahfizhMetadata() {
+    const candidates = [
+        'src/data/tahfizh_metadata.json',
+        './src/data/tahfizh_metadata.json',
+        './data/tahfizh_metadata.json',
+        'data/tahfizh_metadata.json'
+    ];
+
+    let lastError = null;
+    for (const path of candidates) {
+        try {
+            const response = await fetch(path, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+            return await response.json();
+        } catch (error) {
+            lastError = error;
+            console.warn(`Gagal memuat metadata Tahfizh dari ${path}:`, error);
+        }
+    }
+
+    throw lastError || new Error('Metadata Tahfizh tidak ditemukan');
+}
+
+function shouldSendTahfizhPendingNotification(pendingCount) {
+    if (!pendingCount || !window.sendLocalNotification) return false;
+    if (appState?.settings?.notifications === false) return false;
+    if (typeof window.isMusyrifNotificationTypeEnabled === 'function' && !window.isMusyrifNotificationTypeEnabled('setoran_pending')) return false;
+
+    const today = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().slice(0, 10);
+    const key = 'tahfizh_pending_notif_state';
+    const state = parseTahfizhJSON(localStorage.getItem(key), {});
+    if (state.date === today && Number(state.count) === Number(pendingCount)) return false;
+
+    localStorage.setItem(key, JSON.stringify({ date: today, count: pendingCount, sentAt: new Date().toISOString() }));
+    return true;
+}
+
+function notifyWaliTahfizhVerified(studentNis, studentName, detail) {
+    const normalizedNis = String(studentNis || '').trim();
+    if (!normalizedNis || typeof window.addNotification !== 'function') return;
+
+    window.addNotification(
+        'wali',
+        normalizedNis,
+        'Setoran Hafalan Disetujui',
+        `Alhamdulillah! Setoran hafalan ${detail} untuk ${studentName} telah disetujui oleh Musyrif.`,
+        'tahfizh',
+        'tab=tahfizh'
+    );
+}
 
 // DOM Cache untuk Tahfizh
 const TDOM = {};
@@ -445,16 +507,18 @@ async function reloadTahfizhData() {
                 localStorage.setItem('tahfizh_local_metadata', JSON.stringify({ refJuz: [], refSurat: [] }));
                 localMetadata = JSON.stringify({ refJuz: [], refSurat: [] });
             } else {
-                const response = await fetch('./data/tahfizh_metadata.json');
-                if (!response.ok) throw new Error('Gagal mengambil metadata lokal');
-                const data = await response.json();
+                const data = await fetchTahfizhMetadata();
                 localStorage.setItem('tahfizh_local_metadata', JSON.stringify({ refJuz: data.refJuz || [], refSurat: data.refSurat || [] }));
                 localMetadata = JSON.stringify({ refJuz: data.refJuz || [], refSurat: data.refSurat || [] });
             }
         }
 
-        const parsedSetoran = JSON.parse(localSetoran);
-        const parsedMetadata = JSON.parse(localMetadata);
+        const parsedSetoran = parseTahfizhJSON(localSetoran, []);
+        let parsedMetadata = parseTahfizhJSON(localMetadata, { refJuz: [], refSurat: [] });
+        if (!Array.isArray(parsedMetadata.refJuz) || !Array.isArray(parsedMetadata.refSurat)) {
+            parsedMetadata = { refJuz: [], refSurat: [] };
+            localStorage.setItem('tahfizh_local_metadata', JSON.stringify(parsedMetadata));
+        }
 
         const data = {
             setoran: parsedSetoran,
@@ -470,9 +534,9 @@ async function reloadTahfizhData() {
 
         // Notifikasi: Ada setoran tahfizh pending
         const pendingCount = TahfizhState.pendingSetoran?.length || 0;
-        if (pendingCount > 0 && window.sendLocalNotification && appState?.settings?.notifications) {
+        if (shouldSendTahfizhPendingNotification(pendingCount)) {
           window.sendLocalNotification(
-            "📝 Setoran Menunggu Validasi",
+            "Setoran Menunggu Validasi",
             `Ada ${pendingCount} setoran hafalan yang menunggu persetujuan Anda.`
           );
         }
@@ -834,21 +898,14 @@ async function handleValidationAction(rowNumber, status) {
             const detail = [jenisSetoran, juzLabel].filter(Boolean).join(' - ');
 
             if (studentNis && typeof window.addNotification === 'function') {
-                window.addNotification(
-                    'wali',
-                    studentNis,
-                    'Setoran Hafalan Disetujui 📖',
-                    `Alhamdulillah! Setoran hafalan ${detail} untuk ${studentName} telah disetujui oleh Musyrif.`,
-                    'tahfizh',
-                    'tab=tahfizh'
-                );
+                notifyWaliTahfizhVerified(studentNis, studentName, detail);
                 console.log(`[TahfizhManager] Notification sent to wali for NIS: ${studentNis}`);
             }
 
             // Kirim local notification juga
             if (window.sendLocalNotification) {
                 window.sendLocalNotification(
-                    'Setoran Hafalan Disetujui 📖',
+                    'Setoran Hafalan Disetujui',
                     `Setoran ${detail} untuk ${studentName} telah disetujui!`,
                     'tahfizh'
                 );
@@ -2220,6 +2277,16 @@ async function handleTahfizhFormSubmit(e) {
         }
 
         localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+
+        if (successCount > 0) {
+            const studentNis = String(baseData.santriId || activeSantri?.nis || activeSantri?.id || '').trim();
+            const studentName = baseData.namaSantri || activeSantri?.nama || 'Santri';
+            const firstPayload = payloads[0] || {};
+            const juzLabel = firstPayload.juz ? getTahfizhJuzLabel(firstPayload.juz) : '';
+            const unitLabel = payloads.length > 1 ? `${payloads.length} setoran` : (firstPayload.surat || (firstPayload.halaman ? `${firstPayload.halaman} hlm` : ''));
+            const detail = [firstPayload.jenis || 'Setoran', juzLabel, unitLabel].filter(Boolean).join(' - ');
+            notifyWaliTahfizhVerified(studentNis, studentName, detail);
+        }
     } catch (err) {
         failCount = payloads.length;
     }

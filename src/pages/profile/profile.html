@@ -44,7 +44,7 @@
                   <button
                     onclick="window.manualSync()"
                     id="pwa-sync-btn"
-                    class="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-emerald-400/10 border border-emerald-300/20 text-emerald-300 hover:bg-emerald-400/20 active:scale-95 transition-all"
+                    class="profile-sync-btn h-10 w-10 inline-flex items-center justify-center rounded-xl bg-emerald-400/10 border border-emerald-300/20 text-emerald-300 hover:bg-emerald-400/20 active:scale-95 transition-all"
                     title="Sinkronkan data"
                     aria-label="Sinkronkan data"
                   >
@@ -423,6 +423,57 @@
                 <p class="text-xs">Menunggu data dimuat...</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div class="musyrif-only bg-white/80 dark:bg-slate-800/80 rounded-[1.75rem] p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/20 border border-white/60 dark:border-slate-700/50 space-y-4 backdrop-blur-xl">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-palette-blue flex items-center justify-center shrink-0">
+              <i data-lucide="calendar-clock" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <h3 class="text-sm font-black text-slate-900 dark:text-white leading-tight">Rentang Perpulangan Libur Kenaikan Kelas</h3>
+              <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Mulai pulang sampai batas balik pondok</p>
+            </div>
+            </div>
+            <span id="holiday-countdown-status-badge" class="shrink-0 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-900/60 text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Belum Aktif</span>
+          </div>
+
+          <div id="holiday-countdown-summary" class="hidden rounded-2xl bg-slate-50/90 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/60 p-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p id="holiday-countdown-summary-title" class="text-xs font-black text-slate-800 dark:text-white truncate">-</p>
+                <p id="holiday-countdown-summary-meta" class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-1">-</p>
+              </div>
+              <button onclick="window.editHolidayCountdownSchedule()" class="h-9 w-9 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 active:scale-95 transition-all flex items-center justify-center" title="Edit jadwal" aria-label="Edit jadwal libur">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label class="block">
+              <span class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Mulai Perpulangan</span>
+              <input id="holiday-return-home-input" type="datetime-local" class="w-full rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10" />
+            </label>
+            <label class="block">
+              <span class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Batas Balik Pondok</span>
+              <input id="holiday-return-pondok-input" type="datetime-local" class="w-full rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10" />
+            </label>
+          </div>
+
+          <div class="flex gap-2">
+            <button id="holiday-countdown-save-btn" onclick="window.saveHolidayCountdownSchedule()" class="flex-1 py-2.5 px-3 rounded-xl bg-palette-blue text-white text-xs font-black shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+              <i data-lucide="save" class="w-4 h-4"></i>
+              <span id="holiday-countdown-save-label">Simpan Rentang Libur</span>
+            </button>
+            <button id="holiday-countdown-cancel-btn" onclick="window.cancelHolidayCountdownEdit()" class="hidden h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 active:scale-95 transition-all items-center justify-center" title="Batal edit" aria-label="Batal edit jadwal">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <button onclick="window.resetHolidayCountdownSchedule()" class="h-10 w-10 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-300 active:scale-95 transition-all flex items-center justify-center" title="Hapus jadwal" aria-label="Hapus jadwal libur">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
           </div>
         </div>
 

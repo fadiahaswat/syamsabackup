@@ -269,13 +269,13 @@
     let musyrifEmail = "";
     const targetKelasNormalized = String(requestData.kelas || "").replace(/\s+/g, "").toLowerCase();
 
-    console.log("[PermitRequest Debug] Resolving Musyrif email for class:", requestData.kelas, `(normalized: ${targetKelasNormalized})`);
+    permitDebugLog("[PermitRequest Debug] Resolving Musyrif email for class:", requestData.kelas, `(normalized: ${targetKelasNormalized})`);
 
     // 1. First try: Check if we have cached musyrif email for this class from login
     const cachedMusyrifEmail = localStorage.getItem(`musyrif_email_${targetKelasNormalized}`);
     if (cachedMusyrifEmail) {
       musyrifEmail = cachedMusyrifEmail;
-      console.log("[PermitRequest Debug] Source: LocalStorage Cache ->", musyrifEmail);
+      permitDebugLog("[PermitRequest Debug] Source: LocalStorage Cache ->", musyrifEmail);
     }
 
     // 2. Second try: Get from class data sources
@@ -295,11 +295,11 @@
     // 3. Third try: Fallback to constructed email based on kelas
     if (!musyrifEmail) {
       musyrifEmail = `${targetKelasNormalized}@musyrif.local`;
-      console.log("[PermitRequest Debug] Source: Fallback local email ->", musyrifEmail);
+      permitDebugLog("[PermitRequest Debug] Source: Fallback local email ->", musyrifEmail);
     }
     musyrifEmail = musyrifEmail.trim().toLowerCase();
 
-    console.log("[PermitRequest Debug] Final resolved musyrifEmail:", musyrifEmail);
+    permitDebugLog("[PermitRequest Debug] Final resolved musyrifEmail:", musyrifEmail);
 
     notifyUser(
       "musyrif",
@@ -716,6 +716,12 @@
   // 2. FUNGSI UNTUK MUSYRIF (PERSETUJUAN IZIN)
   // =========================================================================
 
+  const permitDebugLog = (...args) => {
+    if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {
+      console.log(...args);
+    }
+  };
+
   let currentPendingRequests = [];
 
   /**
@@ -725,7 +731,7 @@
     const kelas = appState.selectedClass;
     if (!kelas) return;
 
-    console.log(`[PermitRequestManager] Loading requests for Class ${kelas}`);
+    permitDebugLog(`[PermitRequestManager] Loading requests for Class ${kelas}`);
     loadMusyrifRequests();
   };
 
@@ -735,14 +741,14 @@
   function loadMusyrifRequests() {
     const kelas = appState.selectedClass;
     if (!kelas) {
-      console.log("[PermitRequestManager] loadMusyrifRequests skipped: no class selected");
+      permitDebugLog("[PermitRequestManager] loadMusyrifRequests skipped: no class selected");
       return;
     }
 
-    console.log("[PermitRequestManager] loadMusyrifRequests called for class:", kelas);
+    permitDebugLog("[PermitRequestManager] loadMusyrifRequests called for class:", kelas);
 
     let permits = dedupePermits(appState.permits || []);
-    console.log("[PermitRequestManager] Permits from appState:", permits.length);
+    permitDebugLog("[PermitRequestManager] Permits from appState:", permits.length);
 
     // Also try to load from localStorage directly for fresh data
     try {
@@ -754,7 +760,7 @@
           : (parsed && typeof parsed === 'object' ? Object.values(parsed) : []);
 
         if (parsedArray.length > 0) {
-          console.log("[PermitRequestManager] Permits from localStorage:", parsedArray.length);
+          permitDebugLog("[PermitRequestManager] Permits from localStorage:", parsedArray.length);
           permits = dedupePermits([...permits, ...parsedArray]);
           appState.permits = permits;
         }
@@ -767,7 +773,7 @@
       r && r.status === "pending" && isPermitInSelectedMusyrifClass(r)
     );
 
-    console.log("[PermitRequestManager] Pending requests:", currentPendingRequests.length);
+    permitDebugLog("[PermitRequestManager] Pending requests:", currentPendingRequests.length);
 
     currentPendingRequests.forEach(req => {
       const studentInfo = getPermitStudent(req);
@@ -809,12 +815,12 @@
 
   // Polling functions for local-only mode
   window.startApprovalPolling = function() {
-    console.log("[PermitRequestManager] Polling started (local-only mode)");
+    permitDebugLog("[PermitRequestManager] Polling started (local-only mode)");
     loadMusyrifRequests();
   };
 
   window.stopApprovalPolling = function() {
-    console.log("[PermitRequestManager] Polling stopped");
+    permitDebugLog("[PermitRequestManager] Polling stopped");
   };
 
   /**

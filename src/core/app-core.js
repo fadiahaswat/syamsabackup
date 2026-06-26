@@ -107,12 +107,18 @@ window.safeJsonParse = function(str, fallback = null) {
 // STORAGE HELPER FUNCTIONS (LocalStorage)
 // ==========================================
 
+const appCoreDebugLog = (...args) => {
+  if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {
+    console.log(...args);
+  }
+};
+
 /**
  * Initialize Storage Manager
  * Call this after user login to set the musyrifId
  */
 window.initStorage = function(musyrifId) {
-  console.log('[Storage] Initializing with musyrifId:', musyrifId);
+  appCoreDebugLog('[Storage] Initializing with musyrifId:', musyrifId);
 
   try {
     // Use the global storage manager instance
@@ -144,7 +150,7 @@ window.initStorage = function(musyrifId) {
     // Initialize with musyrif ID
     sm.init(finalMusyrifId);
 
-    console.log('[Storage] Initialized for musyrifId:', finalMusyrifId);
+    appCoreDebugLog('[Storage] Initialized for musyrifId:', finalMusyrifId);
 
     return sm;
   } catch (error) {
@@ -329,7 +335,7 @@ window.sanitizeHTML = function (str) {
   if (!str) return "";
   const div = document.createElement("div");
   div.textContent = str;
-  return div.textContent;
+  return div.innerHTML;
 };
 
 window.getCurrentActorName = function () {

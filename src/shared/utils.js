@@ -40,7 +40,7 @@
     if (!str) return "";
     const div = document.createElement("div");
     div.textContent = str;
-    return div.textContent;
+    return div.innerHTML;
   };
 
   const safeJsonParse = function (str, fallback = null) {

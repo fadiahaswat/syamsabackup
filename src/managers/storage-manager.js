@@ -9,6 +9,12 @@
  * - Auto-save dengan debounce untuk mencegah excessive writes
  * - Online/offline detection untuk UI indicators
  */
+const storageDebugLog = (...args) => {
+  if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {
+    console.log(...args);
+  }
+};
+
 class StorageManager {
   constructor() {
     // Storage keys from config
@@ -47,7 +53,7 @@ class StorageManager {
   _setupConnectionListeners() {
     window.addEventListener('online', () => {
       this.isOnline = true;
-      console.log('[StorageManager] Connection restored');
+      console.info('[StorageManager] Connection restored');
       if (this.onOnlineStatusChange) {
         this.onOnlineStatusChange(true);
       }
@@ -55,7 +61,7 @@ class StorageManager {
 
     window.addEventListener('offline', () => {
       this.isOnline = false;
-      console.log('[StorageManager] Connection lost - offline mode');
+      console.warn('[StorageManager] Connection lost - offline mode');
       if (this.onOnlineStatusChange) {
         this.onOnlineStatusChange(false);
       }
@@ -67,13 +73,13 @@ class StorageManager {
    * @param {string} musyrifId - Unique identifier for the musyrif/class
    */
   init(musyrifId) {
-    console.log('[StorageManager] Initializing with musyrifId:', musyrifId);
+    storageDebugLog('[StorageManager] Initializing with musyrifId:', musyrifId);
     this.musyrifId = musyrifId;
 
     // Load data from localStorage into appState
     this._loadFromStorage();
 
-    console.log('[StorageManager] Initialization complete', {
+    storageDebugLog('[StorageManager] Initialization complete', {
       isOnline: this.isOnline,
       musyrifId: this.musyrifId
     });
@@ -90,27 +96,27 @@ class StorageManager {
    * Load all data from localStorage
    */
   _loadFromStorage() {
-    console.log('[StorageManager] Loading data from localStorage...');
+    storageDebugLog('[StorageManager] Loading data from localStorage...');
 
     // Load attendance data
     const attendanceData = this._get(this.keys.attendance);
     if (attendanceData && typeof appState !== 'undefined') {
       appState.attendanceData = attendanceData;
-      console.log('[StorageManager] Attendance data loaded, dates:', Object.keys(attendanceData || {}));
+      storageDebugLog('[StorageManager] Attendance data loaded, dates:', Object.keys(attendanceData || {}));
     }
 
     // Load permits
     const permits = this._get(this.keys.permits);
     if (permits && typeof appState !== 'undefined') {
       appState.permits = permits;
-      console.log('[StorageManager] Permits loaded:', permits.length);
+      storageDebugLog('[StorageManager] Permits loaded:', permits.length);
     }
 
     // Load settings
     const settings = this._get(this.keys.settings);
     if (settings && typeof appState !== 'undefined') {
       appState.settings = { ...appState.settings, ...settings };
-      console.log('[StorageManager] Settings loaded');
+      storageDebugLog('[StorageManager] Settings loaded');
     }
 
     // Load activity log
@@ -328,7 +334,7 @@ class StorageManager {
       this._set(this.keys.activityLog, appState.activityLog);
     }
 
-    console.log('[StorageManager] Data auto-saved (v' + currentVersion + ')');
+    storageDebugLog('[StorageManager] Data auto-saved (v' + currentVersion + ')');
   }
 
   /**
@@ -413,7 +419,7 @@ class StorageManager {
 
     this._lastSavedData = null;
     this._lastSavedVersion = 0; // CRITICAL: Reset version tracking
-    console.log('[StorageManager] All data cleared');
+    storageDebugLog('[StorageManager] All data cleared');
   }
 
   /**
@@ -424,7 +430,7 @@ class StorageManager {
       clearTimeout(this._saveTimer);
       this._saveTimer = null;
     }
-    console.log('[StorageManager] Destroyed');
+    storageDebugLog('[StorageManager] Destroyed');
   }
 }
 
@@ -439,4 +445,4 @@ window.StorageManager = StorageManager;
 // Create global instance
 window.storageManager = new StorageManager();
 
-console.log('[StorageManager] Module loaded');
+storageDebugLog('[StorageManager] Module loaded');

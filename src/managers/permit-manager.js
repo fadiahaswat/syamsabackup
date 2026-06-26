@@ -326,6 +326,8 @@ window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) 
         }
       }
     }
+    const sickWarning = window.getSickPermitWarning?.(permit, currentDateStr);
+    if (sickWarning) return null;
     return {
       type: "Sakit",
       label: "S",
@@ -632,10 +634,9 @@ window.savePermitLogic = async function () {
     const location = document.querySelector('input[name="loc_sakit"]:checked')?.value || "Asrama";
 
     // Hitung durasi sakit
-    const startDateObj = new Date(startDate);
-    const endDateObj = endDateSick ? new Date(endDateSick) : new Date(startDate);
-    endDateObj.setDate(endDateObj.getDate() + 1); // Inclusive
-    const diffDays = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24)) + 1;
+    const diffDays = window.getInclusiveDayCount
+      ? window.getInclusiveDayCount(startDate, endDateSick || startDate)
+      : 1;
 
     // VALIDASI: Jika lebih dari 2 hari, harus ada surat dokter
     let suratDokterUrl = null;
@@ -998,9 +999,13 @@ window.markAsRecovered = function (id) {
 window.markAsReturned = function (id) {
   const permit = appState.permits.find((p) => p.id === id);
   if (permit) {
-    // Kalau pulang tepat waktu, kita set is_active false
-    // Agar sesi hari ini bisa diisi Hadir manual oleh Musyrif
+    const wasOverdue = Boolean(
+      window.getPermitRuntimeWarning?.(permit, appState.date, window.getPermitSlotIdForView?.())?.type === "PermitOverdue"
+    );
     permit.is_active = false;
+    permit.returned_at = new Date().toISOString();
+    permit.return_note = wasOverdue ? "Kembali setelah melewati deadline" : "Kembali tepat waktu";
+    permit.is_overdue = false;
 
     window.persistPermits();
     window.showToast(
@@ -1011,8 +1016,7 @@ window.markAsReturned = function (id) {
   }
 };
 
-// 3. PERPANJANG IZIN (P -> I atau I -> I)
-// 2. PULANG -> PERPANJANG (Poin 5: Pulang -> Izin)
+// 3. PERPANJANG IZIN/PULANG
 window.extendPermit = function (id) {
   const permit = appState.permits.find((p) => p.id === id);
   if (!permit) return;
@@ -1025,16 +1029,10 @@ window.extendPermit = function (id) {
 
   permit.end_date = newDate;
 
-  // Poin 5: "mengabari jadi I Izin"
-  // Jika asalnya Pulang, kita ubah jadi Izin karena sudah lewat jatah pulang.
-  if (permit.category === "pulang") {
-    permit.category = "izin";
-    permit.status_label = "I";
-    permit.reason += " (Diperpanjang/Telat)";
-    window.showToast("Status diubah ke Izin (Diperpanjang)", "info");
-  } else {
-    window.showToast("Masa izin diperpanjang", "success");
-  }
+  permit.is_active = true;
+  permit.is_overdue = false;
+  permit.extended_at = new Date().toISOString();
+  window.showToast("Masa izin diperpanjang", "success");
 
   window.persistPermits();
   window.refreshPermitSurfaces();

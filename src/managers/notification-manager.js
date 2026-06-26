@@ -1,5 +1,11 @@
 // File: notification-manager.js
 
+const notificationDebugLog = (...args) => {
+  if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {
+    console.log(...args);
+  }
+};
+
 // ==========================================
 // HIGH FIX: Rate Limiting untuk Notifications
 // ==========================================
@@ -23,7 +29,7 @@ const NotificationRateLimiter = {
     const limit = this.rateLimits[urgency] || this.rateLimits.default;
 
     if (now - last < limit) {
-      console.log(`[RateLimiter] ${type} rate-limited, ${Math.ceil((limit - (now - last)) / 1000)}s remaining`);
+      notificationDebugLog(`[RateLimiter] ${type} rate-limited, ${Math.ceil((limit - (now - last)) / 1000)}s remaining`);
       return false;
     }
 
@@ -57,7 +63,7 @@ const NotificationRateLimiter = {
   // Reset all rate limits (for testing)
   reset: function() {
     this.lastSent = {};
-    console.log('[RateLimiter] All limits reset');
+    notificationDebugLog('[RateLimiter] All limits reset');
   }
 };
 
@@ -99,6 +105,11 @@ window.MUSYRIF_NOTIFICATION_TYPES = {
   // --- Pembinaan ---
   alpa_menumpuk: { label: "Alpa menumpuk (butuh intervensi)", category: "pembinaan" },
   pola_alpa_berulang: { label: "Pola alpa berulang", category: "pembinaan" },
+};
+
+window.isMusyrifNotificationTypeEnabled = function (key) {
+  const types = appState?.settings?.notificationTypes || {};
+  return types[key] !== false;
 };
 
 window.toggleNotifications = function () {
@@ -176,7 +187,7 @@ window.renderMusyrifNotificationSettings = function () {
     `;
 
     items.forEach(([key, meta]) => {
-      const isActive = types[key] !== false; // Default: aktif
+      const isActive = window.isMusyrifNotificationTypeEnabled(key);
       html += `
         <button onclick="window.toggleMusyrifNotificationType('${key}')" class="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
           <span class="text-xs font-medium text-slate-700 dark:text-slate-200 text-left">${meta.label}</span>
@@ -275,28 +286,28 @@ function notifLog(...args) {
 // 2. Fungsi Mengirim Notifikasi (IMPROVED)
 window.sendLocalNotification = function (title, body, type = "info") {
   // Debug log
-  console.log("[NOTIF] sendLocalNotification called:", title, body, type);
+  notifLog("sendLocalNotification called:", title, body, type);
 
   // Check if notifications are enabled
   if (appState.settings && appState.settings.notifications === false) {
-    console.log("[NOTIF] ❌ Notifications disabled in settings");
+    notifLog("Notifications disabled in settings");
     return;
   }
-  console.log("[NOTIF] ✅ Settings check passed");
+  notifLog("Settings check passed");
 
   // Check browser support
   if (!("Notification" in window)) {
-    console.log("[NOTIF] ❌ Browser does not support notifications");
+    notifLog("Browser does not support notifications");
     return;
   }
-  console.log("[NOTIF] ✅ Notification API supported");
+  notifLog("Notification API supported");
 
   // Check permission
   if (Notification.permission !== "granted") {
-    console.log("[NOTIF] ❌ Permission not granted:", Notification.permission);
+    notifLog("Permission not granted:", Notification.permission);
     return;
   }
-  console.log("[NOTIF] ✅ Permission granted");
+  notifLog("Permission granted");
 
   const options = {
     body: body,
@@ -309,31 +320,31 @@ window.sendLocalNotification = function (title, body, type = "info") {
     data: { url: location.href, type },
   };
 
-  console.log("[NOTIF] Options:", options);
+  notifLog("Options:", options);
 
   // Try using Service Worker first
   if ("serviceWorker" in navigator) {
-    console.log("[NOTIF] Using Service Worker...");
+    notifLog("Using Service Worker...");
     navigator.serviceWorker.ready
       .then((registration) => {
-        console.log("[NOTIF] SW ready, registration:", registration.scope);
+        notifLog("SW ready, registration:", registration.scope);
         registration.showNotification(title, options)
           .then(() => {
-            console.log("[NOTIF] ✅ Notification shown via SW!");
+            notifLog("Notification shown via SW!");
           })
           .catch((err) => {
             console.error("[NOTIF] ❌ SW showNotification failed:", err);
-            console.log("[NOTIF] Falling back to direct Notification");
+            notifLog("Falling back to direct Notification");
             new Notification(title, options);
           });
       })
       .catch((err) => {
         console.error("[NOTIF] ❌ SW.ready failed:", err);
-        console.log("[NOTIF] Falling back to direct Notification");
+        notifLog("Falling back to direct Notification");
         new Notification(title, options);
       });
   } else {
-    console.log("[NOTIF] No SW, using direct Notification");
+    notifLog("No SW, using direct Notification");
     new Notification(title, options);
   }
 };
@@ -375,10 +386,11 @@ window.checkScheduledNotifications = function () {
   }
 
   const types = appState.settings.notificationTypes || {};
+  const isTypeEnabled = window.isMusyrifNotificationTypeEnabled;
   notifLog("Notification types settings:", types);
 
   // 1. Sesi presensi telah dimulai (sesi_presensi_mulai)
-  if (types.sesi_presensi_mulai && m === 0) {
+  if (isTypeEnabled("sesi_presensi_mulai") && m === 0) {
     Object.values(SLOT_WAKTU).forEach((slot) => {
       if (h === slot.startHour) {
         window.sendLocalNotification(
@@ -390,7 +402,7 @@ window.checkScheduledNotifications = function () {
   }
 
   // 2. Sesi Mahad telah dimulai (sesi_mahad_mulai)
-  if (types.sesi_mahad_mulai) {
+  if (isTypeEnabled("sesi_mahad_mulai")) {
     // Tahfizh Subuh jam 05:00 pagi
     if (h === 5 && m === 0) {
       window.sendLocalNotification(
@@ -418,14 +430,14 @@ window.checkScheduledNotifications = function () {
 
   Object.entries(slotsConfig).forEach(([slotId, limit]) => {
     let diffMins = (limit.endH - h) * 60 + (limit.endM - m);
-    if (diffMins === 5 && types.sisa_5_menit) {
+    if (diffMins === 5 && isTypeEnabled("sisa_5_menit")) {
       const slotLabel = SLOT_WAKTU[slotId]?.label || slotId;
       window.sendLocalNotification(
         "Sisa 5 Menit! ⏳",
         `Waktu presensi ${slotLabel} tersisa 5 menit lagi sebelum ditutup.`
       );
     }
-    if (diffMins === 1 && types.sisa_1_menit) {
+    if (diffMins === 1 && isTypeEnabled("sisa_1_menit")) {
       const slotLabel = SLOT_WAKTU[slotId]?.label || slotId;
       window.sendLocalNotification(
         "Sisa 1 Menit! 🚨",
@@ -436,7 +448,7 @@ window.checkScheduledNotifications = function () {
 
   // 5. Presensi hari sebelumnya masih belum lengkap (belum_lengkap_kemarin)
   // Dicek tiap jam 07:30 pagi
-  if (types.belum_lengkap_kemarin && h === 7 && m === 30) {
+  if (isTypeEnabled("belum_lengkap_kemarin") && h === 7 && m === 30) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = window.getLocalDateStr(yesterday);
@@ -463,7 +475,7 @@ window.checkScheduledNotifications = function () {
 
   // 6. Ada santri yang belum dipresensi (ada_santri_belum)
   // Dicek 15 menit sebelum slot berakhir
-  if (types.ada_santri_belum) {
+  if (isTypeEnabled("ada_santri_belum")) {
     Object.entries(slotsConfig).forEach(([slotId, limit]) => {
       let diffMins = (limit.endH - h) * 60 + (limit.endM - m);
       if (diffMins === 15) {
@@ -484,7 +496,7 @@ window.checkScheduledNotifications = function () {
 
   // 7. Ada data izin yang belum diverifikasi (ada_izin_belum_verif)
   // Dicek jam 09:00 pagi dan 16:00 sore
-  if (types.ada_izin_belum_verif && m === 0 && (h === 9 || h === 16)) {
+  if (isTypeEnabled("ada_izin_belum_verif") && m === 0 && (h === 9 || h === 16)) {
     const pendingPermits = (appState.permits || []).filter((p) => {
       const status = String(p.status || "").toLowerCase();
       return status === "pending" || status === "perlu verifikasi";
@@ -502,7 +514,7 @@ window.checkScheduledNotifications = function () {
   if (m === 0 || m === 30) {
     const todayStr = window.getLocalDateStr();
     
-    if (types.ada_rapat_musyrif) {
+    if (isTypeEnabled("ada_rapat_musyrif")) {
       const hasRapat = (appState.reminders || []).some(r => !r.done && r.title.toLowerCase().includes("rapat") && r.date === todayStr);
       if (hasRapat && h === 8) { // Remind at 8 AM
         window.sendLocalNotification(
@@ -512,7 +524,7 @@ window.checkScheduledNotifications = function () {
       }
     }
 
-    if (types.ada_kegiatan_mulai) {
+    if (isTypeEnabled("ada_kegiatan_mulai")) {
       const hasKegiatan = (appState.agendas || []).some(a => a.type === "kegiatan" && a.date === todayStr);
       if (hasKegiatan && h === 7) { // Remind at 7 AM
         window.sendLocalNotification(
@@ -525,7 +537,7 @@ window.checkScheduledNotifications = function () {
 
   // 10. Pengingat perpulangan (pengingat_perpulangan)
   // Dicek jam 08:00 pagi jika ada perpulangan dalam 3 hari ke depan
-  if (types.pengingat_perpulangan && h === 8 && m === 0) {
+  if (isTypeEnabled("pengingat_perpulangan") && h === 8 && m === 0) {
     const today = new Date();
     (appState.agendas || []).forEach(a => {
       if (a.type === "perpulangan") {
@@ -543,7 +555,7 @@ window.checkScheduledNotifications = function () {
 
   // 11. Pengingat puasa sunnah & wajib (pengingat_puasa)
   // Dicek jam 04:00 (Sahur) dan jam 17:00 (Persiapan Iftar)
-  if (types.pengingat_puasa) {
+  if (isTypeEnabled("pengingat_puasa")) {
     if (h === 4 && m === 0) {
       const todayFasting = window.getFastingInfo(now);
       if (todayFasting) {
@@ -572,7 +584,7 @@ window.checkScheduledNotifications = function () {
 
   // 12. Pengingat jadwal tahfizh (pengingat_tahfizh)
   // Dicek jam 15:30 sebelum sesi tahfizh sore (jika ada) atau jam 20:00 untuk tahfizh besok pagi
-  if (types.pengingat_tahfizh) {
+  if (isTypeEnabled("pengingat_tahfizh")) {
     if (h === 20 && m === 0) {
       window.sendLocalNotification(
         "Jadwal Tahfizh Besok Pagi 📖",
@@ -583,10 +595,11 @@ window.checkScheduledNotifications = function () {
 
   // 13. Sakit lebih dari 2 hari tanpa surat dokter (sakit_tanpa_surat)
   // Dicek jam 09:00 dan 15:00
-  if (types.sakit_tanpa_surat && (h === 9 || h === 15) && m === 0) {
+  if (isTypeEnabled("sakit_tanpa_surat") && (h === 9 || h === 15) && m === 0) {
     const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().split("T")[0];
     const activeSickPermits = (appState.permits || []).filter((p) => {
-      return p.is_active !== false && p.category === "sakit" && !p.hasDocument;
+      const hasDocument = p.hasDocument || p.surat_dokter || p.document || p.doctor_note;
+      return p.is_active !== false && p.category === "sakit" && !hasDocument;
     });
 
     activeSickPermits.forEach((permit) => {
@@ -607,7 +620,7 @@ window.checkScheduledNotifications = function () {
 
   // 14. Izin/Pulang melewati deadline - Otomatis jadi Alpa (izin_lewat_deadline)
   // Dicek jam 08:00 dan 17:00
-  if (types.izin_lewat_deadline && (h === 8 || h === 17) && m === 0) {
+  if (isTypeEnabled("izin_lewat_deadline") && (h === 8 || h === 17) && m === 0) {
     const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().split("T")[0];
     const expiredPermits = (appState.permits || []).filter((p) => {
       if (p.is_active === false) return false;
@@ -620,9 +633,9 @@ window.checkScheduledNotifications = function () {
       const studentId = permit.nis || permit.studentId || "Santri";
       const permitType = permit.category === "pulang" ? "Izin Pulang" : "Izin";
 
-      // Tandai permit sebagai expired
-      permit.is_active = false;
-      permit.expiredByNotification = true;
+      // Tandai overdue tanpa menutup izin; izin aktif tetap menjadi sumber Alpa lanjutan.
+      permit.is_overdue = true;
+      permit.overdueNotifiedAt = new Date().toISOString();
 
       window.sendLocalNotification(
         "⚠️ Izin Kadaluarsa - Alpa!",
@@ -639,7 +652,7 @@ window.checkScheduledNotifications = function () {
 
   // 15. Ada setoran tahfizh menunggu validasi (setoran_pending)
   // Dicek jam 08:00 dan 14:00
-  if (types.setoran_pending && (h === 8 || h === 14) && m === 0) {
+  if (isTypeEnabled("setoran_pending") && (h === 8 || h === 14) && m === 0) {
     // Cek TahfizhState jika tersedia (dari tahfizh-manager.js)
     const pendingCount = window.TahfizhState?.pendingSetoran?.length;
     if (pendingCount !== undefined && pendingCount > 0) {
@@ -652,7 +665,7 @@ window.checkScheduledNotifications = function () {
 
   // 16. Deadline perpulangan Hari H (deadline_perpulangan_h)
   // Dicek jam 07:00 pada hari perpulangan
-  if (types.deadline_perpulangan_h && h === 7 && m === 0) {
+  if (isTypeEnabled("deadline_perpulangan_h") && h === 7 && m === 0) {
     const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().split("T")[0];
     const perpulanganHariIni = (appState.agendas || []).filter(a =>
       a.type === "perpulangan" && a.date === todayStr
@@ -668,7 +681,7 @@ window.checkScheduledNotifications = function () {
 
   // 17. Sesi presensi terkunci (sesi_terkunci)
   // Dicek jam 08:00 - cek sesi kemarin yang mungkin terkunci
-  if (types.sesi_terkunci && h === 8 && m === 0) {
+  if (isTypeEnabled("sesi_terkunci") && h === 8 && m === 0) {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split("T")[0];
@@ -694,7 +707,7 @@ window.checkScheduledNotifications = function () {
 
   // 18. Storage hampir penuh (storage_hampir_penuh)
   // Dicek jam 09:00 setiap hari
-  if (types.storage_hampir_penuh && h === 9 && m === 0) {
+  if (isTypeEnabled("storage_hampir_penuh") && h === 9 && m === 0) {
     const maxBytes = window.APP_CONSTANTS?.maxStorageBytes || 5 * 1024 * 1024; // Default 5MB
     const warningThreshold = maxBytes * 0.8; // 80% dari max
 
@@ -720,7 +733,7 @@ window.checkScheduledNotifications = function () {
 
   // 19. Alpa menumpuk - perlu pembinaan (alpa_menumpuk)
   // Dicek jam 10:00 setiap hari
-  if (types.alpa_menumpuk && h === 10 && m === 0) {
+  if (isTypeEnabled("alpa_menumpuk") && h === 10 && m === 0) {
     const daysToCheck = 30; // Cek dalam 30 hari terakhir
     const alpaThreshold = 5; // Threshold: 5x alpa
     const alpaMap = {}; // { nis: count }
@@ -766,7 +779,7 @@ window.checkScheduledNotifications = function () {
 
   // 20. Pola alpa berulang - alpa di hari yang sama terus (pola_alpa_berulang)
   // Dicek jam 11:00 setiap hari
-  if (types.pola_alpa_berulang && h === 11 && m === 0) {
+  if (isTypeEnabled("pola_alpa_berulang") && h === 11 && m === 0) {
     const daysToCheck = 60; // Cek 60 hari terakhir
     const patternThreshold = 3; // Minimal 3x di hari yang sama
     const dayNames = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -824,6 +837,27 @@ window.checkScheduledNotifications = function () {
 window.currentNotificationsList = [];
 window.currentNotificationFilter = "all";
 
+window.escapeNotificationHTML = function (value) {
+  let escaped;
+  if (typeof window.sanitizeHTML === "function") {
+    escaped = window.sanitizeHTML(String(value || ""));
+  } else {
+    const div = document.createElement("div");
+    div.textContent = String(value || "");
+    escaped = div.innerHTML;
+  }
+  return escaped.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+};
+
+window.escapeNotificationText = function (value) {
+  if (typeof window.sanitizeHTML === "function") {
+    return window.sanitizeHTML(String(value || ""));
+  }
+  const div = document.createElement("div");
+  div.textContent = String(value || "");
+  return div.innerHTML;
+};
+
 // Helper: Ambil informasi penerima berdasarkan mode login
 // FIX BUG #10: Improved role detection with fallback and auth state checking
 window.getNotificationRecipientInfo = function () {
@@ -848,7 +882,7 @@ window.getNotificationRecipientInfo = function () {
 
 // Helper: Restart notification cache when role changes
 window.onRoleChange = function(newRole) {
-  console.log("[NotificationManager] Role changed to:", newRole);
+  notificationDebugLog("[NotificationManager] Role changed to:", newRole);
 
   // Clear notification cache for old recipient
   window.currentNotificationsList = [];
@@ -859,25 +893,25 @@ window.onRoleChange = function(newRole) {
 // Fetch notifications from localStorage only
 window.fetchNotifications = function () {
   const recipient = window.getNotificationRecipientInfo();
-  console.log("[NotificationManager] fetchNotifications called:", recipient);
+  notificationDebugLog("[NotificationManager] fetchNotifications called:", recipient);
 
   if (!recipient.id) {
-    console.log("[NotificationManager] Skip fetch: No recipient ID logged in");
+    notificationDebugLog("[NotificationManager] Skip fetch: No recipient ID logged in");
     window.renderNotificationsUI([]);
     return;
   }
 
   const cacheKey = `local_notifs_${recipient.type}_${recipient.id}`;
-  console.log("[NotificationManager] Cache key:", cacheKey);
+  notificationDebugLog("[NotificationManager] Cache key:", cacheKey);
   let notificationsList = [];
 
   // Load from localStorage cache
   try {
     const cached = localStorage.getItem(cacheKey);
-    console.log("[NotificationManager] Cached data:", cached ? "exists" : "empty");
+    notificationDebugLog("[NotificationManager] Cached data:", cached ? "exists" : "empty");
     if (cached) {
       notificationsList = JSON.parse(cached);
-      console.log("[NotificationManager] Loaded from cache, count:", notificationsList.length);
+      notificationDebugLog("[NotificationManager] Loaded from cache, count:", notificationsList.length);
     }
   } catch (e) {
     console.warn("Failed to load cached notifications", e);
@@ -889,7 +923,7 @@ window.fetchNotifications = function () {
 // Add new notification (localStorage only)
 window.addNotification = function (recipientType, recipientId, title, body, type = "default", deepLink = "") {
   if (!recipientId) {
-    console.log("[NotificationManager] addNotification skipped: no recipientId");
+    notificationDebugLog("[NotificationManager] addNotification skipped: no recipientId");
     return;
   }
 
@@ -901,7 +935,7 @@ window.addNotification = function (recipientType, recipientId, title, body, type
       .filter(Boolean);
 
     if (emails.length > 1) {
-      console.log("[NotificationManager] Splitting notification for multiple Musyrifs:", emails);
+      notificationDebugLog("[NotificationManager] Splitting notification for multiple Musyrifs:", emails);
       emails.forEach(email => {
         window.addNotification(recipientType, email, title, body, type, deepLink);
       });
@@ -911,7 +945,7 @@ window.addNotification = function (recipientType, recipientId, title, body, type
     }
   }
 
-  console.log("[NotificationManager] addNotification called:", { recipientType, recipientId, title, body });
+  notificationDebugLog("[NotificationManager] addNotification called:", { recipientType, recipientId, title, body });
 
   const newNotif = {
     id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
@@ -927,8 +961,8 @@ window.addNotification = function (recipientType, recipientId, title, body, type
 
   // Update cache of recipient
   const currentRecipient = window.getNotificationRecipientInfo();
-  console.log("[NotificationManager] Current recipient:", currentRecipient);
-  console.log("[NotificationManager] Match?:", currentRecipient.type === recipientType && currentRecipient.id === newNotif.recipient_id);
+  notificationDebugLog("[NotificationManager] Current recipient:", currentRecipient);
+  notificationDebugLog("[NotificationManager] Match?:", currentRecipient.type === recipientType && currentRecipient.id === newNotif.recipient_id);
 
   // Selalu simpan ke cache, baik match maupun tidak (untuk mode Wali/Musyrif berbeda)
   const cacheKey = `local_notifs_${recipientType}_${newNotif.recipient_id}`;
@@ -937,7 +971,7 @@ window.addNotification = function (recipientType, recipientId, title, body, type
     let list = cached ? JSON.parse(cached) : [];
     list.unshift(newNotif);
     localStorage.setItem(cacheKey, JSON.stringify(list.slice(0, 50)));
-    console.log("[NotificationManager] Cached notification for:", cacheKey);
+    notificationDebugLog("[NotificationManager] Cached notification for:", cacheKey);
 
     // Update UI hanya jika recipient yang login match
     if (currentRecipient.type === recipientType && currentRecipient.id === newNotif.recipient_id) {
@@ -1034,16 +1068,19 @@ window.renderNotificationsUI = function (notificationsList = []) {
   const unreadEl = document.getElementById("notif-stat-unread");
   const attEl = document.getElementById("notif-stat-attendance");
   const permitEl = document.getElementById("notif-stat-permit");
+  const tahfizhEl = document.getElementById("notif-stat-tahfizh");
 
   const totalCount = notificationsList.length;
   const unreadCount = notificationsList.filter(item => !item.is_read).length;
   const attCount = notificationsList.filter(item => item.type === "attendance").length;
   const permitCount = notificationsList.filter(item => item.type === "permit").length;
+  const tahfizhCount = notificationsList.filter(item => item.type === "tahfizh").length;
 
   if (totalEl) totalEl.textContent = totalCount;
   if (unreadEl) unreadEl.textContent = unreadCount;
   if (attEl) attEl.textContent = attCount;
   if (permitEl) permitEl.textContent = permitCount;
+  if (tahfizhEl) tahfizhEl.textContent = tahfizhCount;
 
   // Update badge in header
   const badge = document.getElementById("notif-badge");
@@ -1154,19 +1191,23 @@ window.renderFilteredNotifications = function () {
     const borderClass = categoryBorders[item.type] || categoryBorders.default;
     const isUnread = !item.is_read;
     const dateStr = item.created_at ? window.formatNotificationTime(item.created_at) : "";
+    const safeId = window.escapeNotificationHTML(item.id);
+    const safeDeepLink = window.escapeNotificationHTML(item.deep_link || "");
+    const safeTitle = window.escapeNotificationText(item.title);
+    const safeBody = window.escapeNotificationText(item.body);
 
     html += `
-      <div onclick="window.handleNotificationClick('${item.id}', '${item.deep_link || ""}')" 
+      <div onclick="window.handleNotificationClick('${safeId}', '${safeDeepLink}')" 
            class="p-5 flex items-start gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 cursor-pointer transition-all active:scale-[0.99] relative border-l-4 ${isUnread ? borderClass : "border-transparent"} ${isUnread ? "bg-slate-50/10 dark:bg-slate-850/5" : ""}">
         <div class="p-2.5 rounded-2xl shrink-0 ${colorClass}">
           <i data-lucide="${icon}" class="w-5 h-5"></i>
         </div>
         <div class="flex-1 min-w-0">
           <div class="flex justify-between items-baseline gap-2">
-            <h4 class="text-sm font-black text-slate-850 dark:text-white truncate ${isUnread ? "font-extrabold text-palette-blue dark:text-sky-400" : ""}">${item.title}</h4>
+            <h4 class="text-sm font-black text-slate-850 dark:text-white truncate ${isUnread ? "font-extrabold text-palette-blue dark:text-sky-400" : ""}">${safeTitle}</h4>
             <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 shrink-0">${dateStr}</span>
           </div>
-          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">${item.body}</p>
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">${safeBody}</p>
         </div>
         ${isUnread ? `
           <span class="absolute top-1/2 right-4 -translate-y-1/2 w-2 h-2 rounded-full bg-palette-blue dark:bg-sky-400 animate-pulse"></span>

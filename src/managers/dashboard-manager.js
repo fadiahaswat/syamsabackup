@@ -1002,18 +1002,19 @@ window.collectPembinaanViolations = window.collectPembinaanViolations || functio
     const dates = dateFilter ? [dateFilter] : Object.keys(source);
 
     dates.forEach((dateKey) => {
-      const dayData = source[dateKey];
-      if (!dayData) return;
+      const dayData = source[dateKey] || {};
 
       Object.values(SLOT_WAKTU).forEach((slot) => {
         const sData = dayData[slot.id]?.[id];
-        if (!sData?.status) return;
 
         const mainActId = window.getPembinaanMainActId(slot);
-        const status = sData.status[mainActId];
+        const status =
+          sData?.status?.[mainActId] ||
+          window.getEffectivePermitStatus?.(id, dateKey, slot.id)?.type ||
+          null;
         if (!window.isPembinaanViolationStatus(status)) return;
 
-        const isCoached = Boolean(sData.coaching?.done);
+        const isCoached = Boolean(sData?.coaching?.done);
         if (coachedOnly && !isCoached) return;
         if (!includeUncoached && !isCoached) return;
 
@@ -1027,8 +1028,8 @@ window.collectPembinaanViolations = window.collectPembinaanViolations || functio
           activityId: mainActId,
           status,
           isCoached,
-          coachingInfo: sData.coaching || null,
-          record: sData,
+          coachingInfo: sData?.coaching || null,
+          record: sData || null,
         });
       });
     });
@@ -1179,7 +1180,6 @@ window.renderDashboardPembinaan = function () {
     });
   }
 
-  const card = document.getElementById("dashboard-pembinaan-card");
   if (card) card.classList.remove("hidden");
 
   if (window.lucide) window.lucide.createIcons();
@@ -1769,7 +1769,7 @@ window.renderSchoolStatsWidget = function () {
   // Mencegah pembagian dengan 0 yang menghasilkan NaN%
   let presentPercent = 0;
   if (totalSiswa > 0) {
-    presentPercent = Math.round((stats.h / totalSiswa) * 100);
+    presentPercent = Math.round(((stats.h + stats.t) / totalSiswa) * 100);
     if (presentPercent > 100) presentPercent = 100; // Proteksi maksimal 100%
   }
 

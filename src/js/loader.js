@@ -6,12 +6,63 @@
 const ComponentLoader = {
   // Cache for loaded components
   cache: new Map(),
+  isFileProtocol: window.location.protocol === 'file:',
 
   // Base path for components
   basePath: 'src/components',
   pagesPath: 'src/pages',
   templatesPath: 'src/templates',
   layoutsPath: 'src/layouts',
+
+  /**
+   * Resolve extracted component paths to inline DOM that still exists in index.html.
+   * This keeps the app usable when opened directly through file://, where fetch()
+   * cannot read neighboring HTML files because of browser CORS rules.
+   */
+  getInlineFallback(path) {
+    const normalizedPath = path.replace(/\\/g, '/');
+    const inlineNodes = {
+      'src/layouts/bottom-nav.html': { id: 'bottom-nav', mode: 'outer' },
+      'src/layouts/sidebar-desktop.html': { id: 'desktop-sidebar', mode: 'outer' },
+      'src/pages/auth/onboarding.html': { id: 'view-onboarding', mode: 'outer' },
+      'src/pages/auth/login.html': { id: 'view-login', mode: 'outer' },
+      'src/pages/attendance/attendance.html': { id: 'view-attendance', mode: 'outer' },
+      'src/pages/qibla/qibla.html': { id: 'view-qibla', mode: 'outer' },
+      'src/pages/dashboard/dashboard.html': { id: 'main-content', mode: 'outer' },
+      'src/pages/notifications/notifications.html': { id: 'tab-notifications', mode: 'outer' },
+      'src/pages/report/report.html': { id: 'tab-report', mode: 'outer' },
+      'src/pages/profile/profile.html': { id: 'tab-profile', mode: 'outer' },
+      'src/pages/tahfizh/tahfizh.html': { id: 'tab-tahfizh', mode: 'outer' },
+      'src/pages/admin/admin.html': { id: 'tab-admin', mode: 'outer' },
+      'src/templates/slot-item.html': { id: 'tpl-slot-item', mode: 'template' },
+      'src/templates/slot-item-wide.html': { id: 'tpl-slot-item-wide', mode: 'template' },
+      'src/templates/santri-row.html': { id: 'tpl-santri-row', mode: 'template' },
+      'src/templates/activity-btn.html': { id: 'tpl-activity-btn', mode: 'template' },
+      'src/templates/tahfizh/jadwal-perpulangan.html': { id: 'tahfizh-tpl-jadwal-perpulangan', mode: 'template' },
+      'src/templates/tahfizh/accordion-item.html': { id: 'tahfizh-tpl-accordion-item', mode: 'template' },
+      'src/templates/tahfizh/peringkat-section.html': { id: 'tahfizh-tpl-peringkat-section', mode: 'template' },
+      'src/templates/tahfizh/peringkat-item.html': { id: 'tahfizh-tpl-peringkat-item', mode: 'template' },
+      'src/templates/tahfizh/tahfizh-section.html': { id: 'tahfizh-tpl-tahfizh-section', mode: 'template' },
+      'src/templates/tahfizh/tahfizh-content.html': { id: 'tahfizh-tpl-tahfizh-content', mode: 'template' },
+      'src/templates/tahfizh/history-row.html': { id: 'tahfizh-history-row-template', mode: 'template' },
+      'src/templates/tahfizh/rekap-content.html': { id: 'tahfizh-rekap-content-template', mode: 'template' },
+      'src/templates/tahfizh/rekap-row.html': { id: 'tahfizh-tpl-rekap-row', mode: 'template' },
+      'src/templates/tahfizh/juz-block.html': { id: 'tahfizh-tpl-juz-block', mode: 'template' },
+      'src/templates/tahfizh/analisis-prompt.html': { id: 'tahfizh-analisis-prompt-template', mode: 'template' },
+      'src/templates/tahfizh/analisis-dashboard.html': { id: 'tahfizh-analisis-dashboard-template', mode: 'template' },
+      'src/components/modals/modal-rekap.html': { id: 'modal-rekap', mode: 'outer' },
+      'src/components/modals/modal-permit.html': { id: 'modal-permit', mode: 'outer' },
+      'src/components/modals/modal-notification-settings.html': { id: 'modal-notification-settings', mode: 'outer' }
+    };
+
+    const fallback = inlineNodes[normalizedPath];
+    if (!fallback) return '';
+
+    const node = document.getElementById(fallback.id);
+    if (!node) return '';
+
+    return fallback.mode === 'template' ? node.innerHTML : node.outerHTML;
+  },
 
   /**
    * Load HTML content from a file
@@ -21,6 +72,16 @@ const ComponentLoader = {
   async load(path) {
     if (this.cache.has(path)) {
       return this.cache.get(path);
+    }
+
+    const inlineHtml = this.getInlineFallback(path);
+    if (inlineHtml) {
+      this.cache.set(path, inlineHtml);
+      return inlineHtml;
+    }
+
+    if (this.isFileProtocol) {
+      return '';
     }
 
     try {
@@ -339,6 +400,10 @@ const ComponentLoader = {
    * Preload critical components
    */
   async preloadCritical() {
+    if (this.isFileProtocol) {
+      return;
+    }
+
     const critical = [
       `${this.layoutsPath}/header.html`,
       `${this.layoutsPath}/bottom-nav.html`,

@@ -1,16 +1,21 @@
 // File: data-kelas.js
 
 window.classData = {}; // Variabel global penampung data kelas
+const classDataDebugLog = (...args) => {
+  if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {
+    console.log(...args);
+  }
+};
 
 async function loadClassData() {
   try {
-    console.log("📥 Mengambil data Kelas & Email Musyrif...");
+    classDataDebugLog("Mengambil data Kelas & Email Musyrif...");
 
     // Cek Cache dulu agar cepat
     const cache = localStorage.getItem("cache_data_kelas");
     if (cache) {
       window.classData = JSON.parse(cache);
-      console.log("✅ Data Kelas dimuat dari cache lokal.");
+      classDataDebugLog("Data Kelas dimuat dari cache lokal.");
       
       // Auto-update global state & UI dropdown dari cache segera
       window.MASTER_KELAS = window.classData;
@@ -49,8 +54,8 @@ async function loadClassData() {
 
     // Simpan ke cache
     localStorage.setItem("cache_data_kelas", JSON.stringify(window.classData));
-    console.log(
-      "✅ Data Kelas berhasil diunduh:",
+    classDataDebugLog(
+      "Data Kelas berhasil diunduh:",
       Object.keys(window.classData).length,
       "kelas.",
     );
@@ -66,7 +71,7 @@ async function loadClassData() {
 
     return window.classData;
   } catch (error) {
-    console.error("❌ Error loadClassData:", error);
+    console.error("Error loadClassData:", error);
     return {};
   }
 }

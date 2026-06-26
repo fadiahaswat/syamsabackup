@@ -330,5 +330,3 @@ if (typeof module !== 'undefined' && module.exports) {
 
 window.FileUploadManager = FileUploadManager;
 window.fileUploadManager = fileUploadManager;
-
-console.log('[FileUploadManager] Module loaded (localStorage mode)');

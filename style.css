@@ -1617,6 +1617,10 @@ body.qibla-browser-active.qibla-browser-green {
   margin-left: auto !important;
 }
 
+#profile-hero-card.sticky-hero .profile-sync-btn {
+  display: none !important;
+}
+
 #tahfizh-hero-card.sticky-hero > .relative > .min-w-0 > span,
 #tahfizh-hero-card.sticky-hero p {
   display: none !important;
@@ -1658,15 +1662,42 @@ body.qibla-browser-active.qibla-browser-green {
 #profile-hero-card.sticky-hero > .relative {
   display: flex !important;
   align-items: center !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
   gap: 0.75rem !important;
   min-width: 0 !important;
 }
 
-#profile-hero-card.sticky-hero > .relative > h2 {
+#profile-hero-card.sticky-hero > .relative > div:first-child {
   flex: 1 1 auto !important;
   min-width: 0 !important;
 }
 
+#profile-hero-card.sticky-hero > .relative > div:first-child,
+#profile-hero-card.sticky-hero > .relative > div:first-child > div:first-child {
+  display: flex !important;
+  align-items: center !important;
+}
+
+#profile-hero-card.sticky-hero > .relative > div:first-child > div:first-child {
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+#profile-hero-card.sticky-hero > .relative > div:first-child > div:first-child > div:first-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+#profile-hero-card.sticky-hero #profile-name {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+#profile-hero-card.sticky-hero #profile-name + p,
+#profile-hero-card.sticky-hero #profile-role-tab,
 #profile-hero-card.sticky-hero > .relative > p {
   display: none !important;
 }
@@ -1688,6 +1719,25 @@ body.qibla-browser-active.qibla-browser-green {
   margin: 0 !important;
   padding: 0 !important;
   flex-shrink: 0 !important;
+}
+
+#profile-hero-card.sticky-hero .w-16.h-16 {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  margin: 0 !important;
+  padding: 0.125rem !important;
+  border-radius: 0.875rem !important;
+  flex-shrink: 0 !important;
+}
+
+#profile-hero-card.sticky-hero .w-16.h-16 #profile-avatar {
+  border-radius: 0.75rem !important;
+}
+
+#profile-hero-card.sticky-hero #profile-avatar i,
+#profile-hero-card.sticky-hero #profile-avatar svg {
+  width: 1rem !important;
+  height: 1rem !important;
 }
 
 #tahfizh-hero-card.sticky-hero button {

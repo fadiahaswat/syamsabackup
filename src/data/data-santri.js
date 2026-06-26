@@ -1,6 +1,11 @@
 // File: data-santri.js
 
 window.santriData = []; // Variabel global penampung data santri
+const santriDataDebugLog = (...args) => {
+  if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {
+    console.log(...args);
+  }
+};
 
 async function loadSantriData() {
   const CACHE_KEY = "cache_data_santri_full";
@@ -8,7 +13,7 @@ async function loadSantriData() {
   const EXPIRY_MS = window.APP_CONSTANTS.santriCacheExpiryMs;
 
   try {
-    console.log("📥 Mengambil data Santri...");
+    santriDataDebugLog("Mengambil data Santri...");
     const now = new Date().getTime();
     const cachedStr = localStorage.getItem(CACHE_KEY);
     const cachedTime = Number(localStorage.getItem(CACHE_TIME) || 0);
@@ -27,12 +32,12 @@ async function loadSantriData() {
         fetchSantriBackground();
       }
 
-      console.log("✅ Data Santri dimuat dari cache lokal (Cepat).");
+      santriDataDebugLog("Data Santri dimuat dari cache lokal (Cepat).");
       return window.santriData;
     }
 
     // 2. Jika Cache Kosong (Pertama kali buka), Download Baru secara sinkron
-    console.log("🌐 Mengunduh data santri pertama kali dari server...");
+    santriDataDebugLog("Mengunduh data santri pertama kali dari server...");
     const response = await fetch(window.APP_CREDENTIALS.googleSheetUrl);
 
     if (!response.ok) throw new Error("Gagal koneksi server santri");
@@ -52,10 +57,10 @@ async function loadSantriData() {
       window.MASTER_SANTRI = data;
     }
 
-    console.log("✅ Data Santri berhasil diunduh:", data.length, "santri.");
+    santriDataDebugLog("Data Santri berhasil diunduh:", data.length, "santri.");
     return window.santriData;
   } catch (error) {
-    console.error("❌ Error loadSantriData:", error);
+    console.error("Error loadSantriData:", error);
     return [];
   }
 }
@@ -81,7 +86,7 @@ async function fetchSantriBackground() {
       window.MASTER_SANTRI = data;
     }
 
-    console.log("✅ Data Santri background update selesai.");
+    santriDataDebugLog("Data Santri background update selesai.");
   } catch (e) {
     console.warn("Background update santri gagal:", e);
   }

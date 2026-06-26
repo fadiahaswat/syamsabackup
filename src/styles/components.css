@@ -139,11 +139,61 @@ input[placeholder*="Cari"] {
 
 #profile-hero-card.sticky-hero {
   min-height: auto;
-  padding: 0.875rem !important;
+  padding: 0.6rem 1rem !important;
 }
 
 #profile-hero-card.sticky-hero .grid {
   display: none;
+}
+
+#profile-hero-card.sticky-hero .profile-sync-btn {
+  display: none !important;
+}
+
+#profile-hero-card.sticky-hero > .relative {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  min-width: 0 !important;
+}
+
+#profile-hero-card.sticky-hero > .relative > div:first-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+#profile-hero-card.sticky-hero > .relative > div:first-child,
+#profile-hero-card.sticky-hero > .relative > div:first-child > div:first-child {
+  display: flex !important;
+  align-items: center !important;
+}
+
+#profile-hero-card.sticky-hero > .relative > div:first-child > div:first-child {
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+#profile-hero-card.sticky-hero > .relative > div:first-child > div:first-child > div:first-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+#profile-hero-card.sticky-hero .w-16.h-16 {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  padding: 0.125rem !important;
+  border-radius: 0.875rem !important;
+  flex-shrink: 0 !important;
+}
+
+#profile-hero-card.sticky-hero #profile-avatar {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0.75rem !important;
 }
 
 .loading-text,

@@ -4,26 +4,33 @@
  */
 
 // Service Worker Registration
+const appInitDebugLog = (...args) => {
+  if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {
+    console.log(...args);
+  }
+};
+
 function initServiceWorker() {
-  console.log("[SW] Starting service worker registration...");
-  console.log("[SW] Protocol:", window.location.protocol);
-  console.log("[SW] SW supported:", "serviceWorker" in navigator);
+  appInitDebugLog("[SW] Starting service worker registration...");
+  appInitDebugLog("[SW] Protocol:", window.location.protocol);
+  appInitDebugLog("[SW] SW supported:", "serviceWorker" in navigator);
 
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
     window.addEventListener("load", async () => {
-      console.log("[SW] Window loaded, registering service worker...");
+      appInitDebugLog("[SW] Window loaded, registering service worker...");
 
       try {
         const swReg = await navigator.serviceWorker.register("./sw.js");
-        console.log("[SW] Consolidated SW registered:", swReg);
+        appInitDebugLog("[SW] Consolidated SW registered:", swReg);
       } catch (err) {
         console.warn("[SW] Gagal daftar SW:", err);
       }
     });
   } else {
-    console.log("[SW] Service workers not available or running from file://");
     if (window.location.protocol === "file:") {
-      console.log("[SW] NOTE: Notifications require HTTPS or localhost, not file:// protocol");
+      console.warn("[SW] Notifikasi/service worker butuh HTTPS atau localhost, bukan file://");
+    } else {
+      console.warn("[SW] Service worker tidak didukung browser ini");
     }
   }
 }
@@ -38,17 +45,17 @@ function initNotifications() {
     // Tunda sebentar agar semua script load dulu
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    console.log("[Notification] Checking permission state:", Notification.permission);
+    appInitDebugLog("[Notification] Checking permission state:", Notification.permission);
 
     // AUTO INIT: Langsung inisialisasi jika izin sudah diberikan
     if (Notification.permission === "granted") {
-      console.log("[Notification] Permission already granted");
+      appInitDebugLog("[Notification] Permission already granted");
       window.updateNotificationUI?.("granted");
     } else if (Notification.permission === "denied") {
-      console.log("[Notification] Permission denied - user blocked notifications");
+      console.warn("[Notification] Izin notifikasi diblokir browser");
       window.updateNotificationUI?.("denied");
     } else {
-      console.log("[Notification] Permission is default. Waiting for user click to request permission.");
+      appInitDebugLog("[Notification] Permission is default. Waiting for user click to request permission.");
       window.updateNotificationUI?.("default");
     }
   });

@@ -1099,19 +1099,28 @@ window.getWaliTodayRows = function (student = appState.waliSantri, dateKey = app
     const slotData = appState.attendanceData?.[dateKey]?.[slot.id];
     const studentData = slotData?.[studentId];
     const activities = isHoliday ? [] : window.getWaliActiveActivities(slot, dateKey);
-    const statuses = activities.map((act) => ({
-      id: act.id,
-      label: act.label,
-      status: studentData?.status?.[act.id] || null,
-      category: act.category,
-    }));
+    const effectivePermit = window.getEffectivePermitStatus?.(studentId, dateKey, slot.id);
+    const statuses = activities.map((act) => {
+      let status = studentData?.status?.[act.id] || null;
+      if (!status && effectivePermit) {
+        status = ["fardu", "kbm", "school"].includes(act.category)
+          ? effectivePermit.type
+          : "Tidak";
+      }
+      return {
+        id: act.id,
+        label: act.label,
+        status,
+        category: act.category,
+      };
+    });
 
     return {
       id: slot.id,
       label: slot.label,
       time: slot.subLabel,
       isHoliday,
-      isFilled: Boolean(studentData),
+      isFilled: Boolean(studentData || effectivePermit),
       statuses,
     };
   });
@@ -1162,9 +1171,20 @@ window.getWaliActivePermit = function (student = appState.waliSantri, dateKey = 
     if (status === "rejected") return false;
     if (permit.is_active === false) return false;
     if (permit.start_date && permit.start_date > dateKey) return false;
-    if (permit.end_date && permit.end_date < dateKey) return false;
+    const category = String(permit.category || "").toLowerCase();
+    if (category === "sakit" && window.getSickPermitWarning?.(permit, dateKey)) return false;
+    if (permit.end_date && permit.end_date < dateKey && category === "sakit") return false;
     return true;
   });
+};
+
+window.getWaliPermitWarnings = function (student = appState.waliSantri, dateKey = appState.date) {
+  return window.getWaliPermits(student)
+    .map((permit) => ({
+      permit,
+      warning: window.getPermitRuntimeWarning?.(permit, dateKey, window.getPermitSlotIdForView()),
+    }))
+    .filter((item) => item.warning);
 };
 
 window.getWaliHealthStatus = function (student = appState.waliSantri, dateKey = appState.date) {
@@ -1213,6 +1233,7 @@ window.updateWaliDashboardSummary = function () {
   const summary7 = window.getWaliAttendanceSummary?.(student, 7) || { total: 0, Hadir: 0, Ya: 0, Telat: 0 };
   const tahfizh = window.getWaliTahfizhSummary?.(student) || { total: 0, latestType: "-", latestJuz: "-" };
   const activePermit = window.getWaliActivePermit?.(student, appState.date);
+  const permitWarnings = window.getWaliPermitWarnings?.(student, appState.date) || [];
   const healthStatus = window.getWaliHealthStatus?.(student, appState.date) || "Sehat";
   const isSick = healthStatus === "Sakit";
 
@@ -1246,10 +1267,12 @@ window.updateWaliDashboardSummary = function () {
       : "w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors";
   }
   if (permitLabelEl) permitLabelEl.textContent = "Izin";
-  if (permitEl) permitEl.textContent = activePermit ? "Izin aktif" : "Lihat / Ajukan";
+  if (permitEl) permitEl.textContent = permitWarnings.length ? "Perlu tindak lanjut" : activePermit ? "Izin aktif" : "Lihat / Ajukan";
   if (statusEl) {
-    statusEl.textContent = activePermit ? "Sedang Izin" : "Aktif";
-    statusEl.className = activePermit
+    statusEl.textContent = permitWarnings.length ? "Perlu Tindak Lanjut" : activePermit ? "Sedang Izin" : "Aktif";
+    statusEl.className = permitWarnings.length
+      ? "shrink-0 rounded-full bg-amber-500/15 border border-amber-400/20 px-3 py-1 text-[10px] font-black text-amber-200"
+      : activePermit
       ? "shrink-0 rounded-full bg-blue-500/15 border border-blue-400/20 px-3 py-1 text-[10px] font-black text-blue-200"
       : "shrink-0 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-[10px] font-black text-palette-mint";
   }
@@ -1582,7 +1605,8 @@ window.setWaliTab = function (tabName) {
 };
 
 window.submitWaliPermitRequest = function () {
-  const category = document.getElementById("wali-permit-category")?.value || "izin";
+  let category = document.getElementById("wali-permit-category")?.value || "pulang";
+  if (category === "izin") category = "pulang";
   const start = document.getElementById("wali-permit-start")?.value || window.getLocalDateStr();
   const end = document.getElementById("wali-permit-end")?.value || "";
   const reason = document.getElementById("wali-permit-reason")?.value?.trim() || "";
@@ -1668,6 +1692,7 @@ window.renderWaliHomePage = function () {
   const priorityStatus = window.getWaliPriorityStatus(rows);
   const summary7 = window.getWaliAttendanceSummary(student, 7);
   const activePermit = window.getWaliActivePermit(student);
+  const permitWarnings = window.getWaliPermitWarnings?.(student, appState.date) || [];
   const lastActivity = window.getWaliLastActivity(student);
   const asrama = window.getWaliAsramaStatus(student);
   const violations = window.getWaliPembinaanItems();
@@ -1700,7 +1725,7 @@ window.renderWaliHomePage = function () {
         <div class="mt-3 space-y-2">
           <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-[10px] font-black uppercase text-slate-400">Aktivitas terakhir</p><p class="mt-1 text-sm font-black text-slate-800 dark:text-white">${lastActivity ? `${lastActivity.label} (${lastActivity.time})` : "Belum ada presensi hari ini"}</p></div>
           <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-[10px] font-black uppercase text-slate-400">Status asrama</p><p class="mt-1 text-sm font-black text-slate-800 dark:text-white">${asrama.label}</p><p class="mt-1 text-xs font-bold text-slate-500">${window.sanitizeHTML(asrama.detail)}</p></div>
-          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-[10px] font-black uppercase text-slate-400">Izin perlu tindak lanjut</p><p class="mt-1 text-sm font-black text-slate-800 dark:text-white">${activePermit ? window.sanitizeHTML(activePermit.reason || "Izin aktif") : "Tidak ada"}</p></div>
+          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-[10px] font-black uppercase text-slate-400">Izin perlu tindak lanjut</p><p class="mt-1 text-sm font-black text-slate-800 dark:text-white">${permitWarnings.length ? window.sanitizeHTML(permitWarnings[0].warning.message) : activePermit ? window.sanitizeHTML(activePermit.reason || "Izin aktif") : "Tidak ada"}</p></div>
         </div>
       </div>
 
@@ -1792,7 +1817,7 @@ window.renderWaliPermitsPage = function () {
       <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
         <h2 class="text-sm font-black text-slate-900 dark:text-white">Ajukan Kebutuhan</h2>
         <div class="mt-3 space-y-3">
-          <select id="wali-permit-category" class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold"><option value="sakit">Sakit</option><option value="izin">Izin Kegiatan</option><option value="pulang">Izin Pulang</option></select>
+          <select id="wali-permit-category" class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold"><option value="sakit">Sakit</option><option value="pulang">Izin Pulang / Keperluan Pribadi</option></select>
           <div class="grid grid-cols-2 gap-2"><input id="wali-permit-start" type="date" value="${window.getLocalDateStr()}" class="rounded-xl border border-slate-200 p-3 text-sm font-bold"><input id="wali-permit-end" type="date" class="rounded-xl border border-slate-200 p-3 text-sm font-bold"></div>
           <textarea id="wali-permit-reason" rows="4" placeholder="Alasan dan detail kebutuhan..." class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold"></textarea>
           <input id="wali-permit-pickup" placeholder="Penjemput (opsional)" class="w-full rounded-xl border border-slate-200 p-3 text-sm font-bold">
@@ -2426,7 +2451,7 @@ window.updateDashboard = function () {
       }
       mainCard.onclick = () =>
         window.showToast(`Kegiatan ${slot.label} libur pada hari ini.`, "info");
-    } else if (access.locked) {
+    } else if (!window.isWaliMode() && access.locked) {
       mainCard.classList.add("opacity-80", "grayscale");
       if (heroActionBtn) {
         heroActionBtn.className =
@@ -2936,6 +2961,9 @@ window.calculateDateStreak = function (dateStr) {
 window.renderWeeklyCalendar = function () {
   const container = document.getElementById("weekly-calendar-bar");
   if (!container) return;
+  const card = document.getElementById("weekly-calendar-card") || container.closest(".rounded-\\[1\\.75rem\\]");
+  if (card) card.classList.remove("hidden");
+  const isWali = window.isWaliMode?.();
 
   const todayStr = window.getLocalDateStr();
   const selectedDate = new Date(appState.date);
@@ -2982,6 +3010,7 @@ window.renderWeeklyCalendar = function () {
   };
 
   const activeTheme = themeColors[slotTheme] || themeColors.blue;
+  const navButtonHeight = window.isWaliMode?.() ? "h-[52px]" : "h-12";
 
   let html = `
     <!-- SVG Gradients for Flame Streaks -->
@@ -3001,7 +3030,7 @@ window.renderWeeklyCalendar = function () {
 
     <div class="flex items-center justify-between gap-1 w-full">
       <!-- Prev Week -->
-      <button onclick="window.changeWeekView(-1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100/50 dark:hover:bg-white/10 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Sebelumnya">
+      <button onclick="window.changeWeekView(-1)" class="w-8 ${navButtonHeight} flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100/50 dark:hover:bg-white/10 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Sebelumnya">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"></path></svg>
       </button>
 
@@ -3035,7 +3064,9 @@ window.renderWeeklyCalendar = function () {
 
     // Build flame SVG indicator HTML
     let indicatorHtml = "";
-    if (activeSlots.length === 0) {
+    if (isWali) {
+      indicatorHtml = "";
+    } else if (activeSlots.length === 0) {
       // Holiday
       indicatorHtml = `
         <div class="flex items-center justify-center w-full h-4 sm:h-5">
@@ -3098,8 +3129,12 @@ window.renderWeeklyCalendar = function () {
       ? "font-bold"
       : "text-slate-400 dark:text-slate-550 font-medium";
 
+    const dayCardSpacing = isWali
+      ? "gap-0.5 px-1.5 py-2 sm:px-2 sm:py-2.5 min-h-[52px]"
+      : "gap-1 p-1 sm:p-2";
+
     html += `
-      <div onclick="window.handleDateChange('${dateStr}')" class="flex flex-col items-center justify-center gap-1 p-1 sm:p-2 rounded-2xl transition-all duration-300 cursor-pointer min-w-0 ${cardBgClass}" style="${cardBgStyle}" title="${window.formatDate(dateStr)}">
+      <div onclick="window.handleDateChange('${dateStr}')" class="flex flex-col items-center justify-center ${dayCardSpacing} rounded-2xl transition-all duration-300 cursor-pointer min-w-0 ${cardBgClass}" style="${cardBgStyle}" title="${window.formatDate(dateStr)}">
         <!-- Day Label -->
         <span class="text-[8px] sm:text-[10px] uppercase tracking-wider text-center truncate w-full ${textSecondaryClass}" style="${textSecondaryStyle}">${dayLabel}</span>
         
@@ -3116,7 +3151,7 @@ window.renderWeeklyCalendar = function () {
       </div>
 
       <!-- Next Week -->
-      <button onclick="window.changeWeekView(1)" class="w-8 h-12 flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Berikutnya">
+      <button onclick="window.changeWeekView(1)" class="w-8 ${navButtonHeight} flex shrink-0 items-center justify-center rounded-xl bg-transparent hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-90" title="Pekan Berikutnya">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
       </button>
     </div>
@@ -3137,6 +3172,22 @@ window.renderSlotList = function () {
 
   // Custom ordering: Shubuh & Ashar side-by-side, Sekolah below, Maghrib & Isya side-by-side
   const renderOrder = ["shubuh", "ashar", "sekolah", "maghrib", "isya"];
+  const isWali = window.isWaliMode?.();
+  const waliRowsById = isWali
+    ? new Map(window.getWaliTodayRows(appState.waliSantri, appState.date).map((row) => [row.id, row]))
+    : null;
+  const waliStatusPriority = ["Alpa", "Pulang", "Sakit", "Izin", "Telat", "Hadir", "Ya", "Tidak"];
+  const waliStatusMeta = {
+    Hadir: { label: "Hadir", icon: "check", badge: "bg-white/90 text-emerald-950 border border-white/30 shadow-sm", progress: "Hadir", percent: "100%" },
+    Ya: { label: "Terlaksana", icon: "check", badge: "bg-white/90 text-emerald-950 border border-white/30 shadow-sm", progress: "Terlaksana", percent: "100%" },
+    Telat: { label: "Telat", icon: "clock", badge: "bg-amber-400 text-white border border-amber-300 shadow-md", progress: "Telat", percent: "90%" },
+    Sakit: { label: "Sakit", icon: "heart-handshake", badge: "bg-blue-500 text-white border border-blue-400 shadow-md", progress: "Sakit", percent: "75%" },
+    Izin: { label: "Izin", icon: "file-text", badge: "bg-indigo-500 text-white border border-indigo-400 shadow-md", progress: "Izin", percent: "75%" },
+    Pulang: { label: "Pulang", icon: "home", badge: "bg-violet-500 text-white border border-violet-400 shadow-md", progress: "Pulang", percent: "0%" },
+    Alpa: { label: "Alpa", icon: "x", badge: "bg-red-600 text-white border border-red-500 shadow-md", progress: "Alpa", percent: "0%" },
+    Tidak: { label: "Tidak", icon: "x", badge: "bg-slate-600 text-white border border-slate-500 shadow-md", progress: "Tidak", percent: "0%" },
+    empty: { label: "Belum Ada Data", icon: "circle-dashed", badge: "bg-white/90 text-slate-600 border border-white/30 shadow-sm", progress: "Belum Ada Data", percent: "0%" },
+  };
 
   renderOrder.forEach((slotId) => {
     const s = SLOT_WAKTU[slotId];
@@ -3200,6 +3251,15 @@ window.renderSlotList = function () {
     }
 
     const isHoliday = window.isSlotHoliday(s.id, appState.date);
+    const waliRow = isWali ? waliRowsById?.get(s.id) : null;
+    const waliStatuses = waliRow?.statuses?.map((item) => item.status).filter(Boolean) || [];
+    const waliPrimaryStatus = waliRow?.isHoliday
+      ? "empty"
+      : waliStatusPriority.find((status) => waliStatuses.includes(status)) || "empty";
+    const waliMeta = waliStatusMeta[waliPrimaryStatus] || waliStatusMeta.empty;
+    const waliBadgeLabel = isWali && waliPrimaryStatus === "empty" && s.id !== "sekolah"
+      ? "Belum Ada"
+      : waliMeta.label;
 
     // Style according to state
     if (isHoliday) {
@@ -3270,7 +3330,25 @@ window.renderSlotList = function () {
       }
 
       const isCurrentRunningSlot = isToday && s.id === window.determineCurrentSlot();
-      if (stats.isFilled) {
+      if (isWali) {
+        const badgeIcon = {
+          check: `<path d="M20 6 9 17l-5-5"/>`,
+          x: `<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`,
+          clock: `<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>`,
+          "circle-dashed": `<path d="M10.1 2.18a10 10 0 0 1 3.8 0"/><path d="M17.6 3.71a10 10 0 0 1 2.69 2.7"/><path d="M21.82 10.1a10 10 0 0 1 0 3.8"/><path d="M20.29 17.6a10 10 0 0 1-2.7 2.69"/><path d="M13.9 21.82a10 10 0 0 1-3.8 0"/><path d="M6.4 20.29a10 10 0 0 1-2.69-2.7"/><path d="M2.18 13.9a10 10 0 0 1 0-3.8"/><path d="M3.71 6.4a10 10 0 0 1 2.7-2.69"/>`,
+          "heart-handshake": `<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>`,
+          "file-text": `<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>`,
+          home: `<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>`,
+        }[waliMeta.icon] || `<path d="M20 6 9 17l-5-5"/>`;
+        badge.innerHTML = `<span class="flex items-center gap-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide text-current">${badgeIcon}</svg>
+          ${waliBadgeLabel}
+        </span>`;
+        badge.className = `slot-status-badge text-[8px] sm:text-[9px] font-black px-1.5 sm:px-2 py-0.5 rounded-full max-w-[76px] sm:max-w-none truncate ${waliMeta.badge}`;
+        if (progressStatusEl) progressStatusEl.textContent = waliMeta.progress;
+        if (progressTextEl) progressTextEl.textContent = waliMeta.percent;
+        if (progressBar) progressBar.style.width = waliMeta.percent;
+      } else if (stats.isFilled) {
         badge.innerHTML = `<span class="flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check text-current"><path d="M20 6 9 17l-5-5"/></svg>
           Selesai
@@ -3304,7 +3382,10 @@ window.renderSlotList = function () {
       const hasNonHStats = (stats.t > 0 || stats.s > 0 || stats.i > 0 || stats.p > 0 || stats.a > 0);
       const statsContainer = clone.querySelector(".slot-card-stats");
       if (statsContainer) {
-        if (hasNonHStats) {
+        if (isWali) {
+          statsContainer.innerHTML = "";
+          statsContainer.classList.add("hidden");
+        } else if (hasNonHStats) {
           statsContainer.innerHTML = `
             <div class="flex flex-wrap sm:flex-nowrap gap-0.5 mt-0.5 justify-end max-w-[52px] sm:max-w-none">
               ${stats.t > 0 ? `<span class="flex items-center justify-center w-4 h-4 rounded-full bg-cyan-500 text-white shadow-sm" title="Telat: ${stats.t}"><svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg></span>` : ''}
@@ -3326,6 +3407,9 @@ window.renderSlotList = function () {
     item.onclick = () => {
       if (isHoliday) {
         return window.showToast(`Kegiatan ${s.label} libur pada hari ini.`, "info");
+      }
+      if (isWali) {
+        return window.switchTab?.("report");
       }
       window.openBentoModal(s, access, stats);
     };
@@ -3565,8 +3649,7 @@ window.calculateSlotStats = function (slotId, customDate = null) {
   // JIKA LIBUR, otomatis kembalikan angka 0 (Progress Bar akan kosong/aman)
   if (window.isSlotHoliday(slotId, dateKey)) return stats;
 
-  const slotData = appState.attendanceData[dateKey]?.[slotId];
-  if (!slotData) return stats;
+  const slotData = appState.attendanceData[dateKey]?.[slotId] || {};
 
   const dayNum = new Date(dateKey).getDay();
   const slotConfig = SLOT_WAKTU[slotId];
@@ -3589,7 +3672,10 @@ window.calculateSlotStats = function (slotId, customDate = null) {
   // Hitung spesifik untuk santri yang sedang difilter saja (mencegah progress > 100%)
   FILTERED_SANTRI.forEach((s) => {
     const id = String(s.nis || s.id);
-    const status = slotData[id]?.status?.[mainAct.id];
+    const status =
+      slotData[id]?.status?.[mainAct.id] ||
+      window.getEffectivePermitStatus?.(id, dateKey, slotId)?.type ||
+      null;
 
     if (status) {
       if (status === "Hadir") stats.h++;
@@ -3602,7 +3688,9 @@ window.calculateSlotStats = function (slotId, customDate = null) {
     }
   });
 
+  const hasVirtualStatuses = stats.total > 0 && !appState.attendanceData[dateKey]?.[slotId];
   stats.isFilled =
+    hasVirtualStatuses ||
     slotData.__reviewConfirmed === true ||
     (slotData.__requiresReview !== true &&
       stats.total === FILTERED_SANTRI.length);
@@ -3673,8 +3761,6 @@ window.getAttendanceStatus = function (santriId, slotId, customDate = null) {
 
     const slotData = appState.attendanceData?.[dateKey]?.[slotId];
 
-    if (!slotData) return null;
-
     const dayNum = new Date(dateKey).getDay();
 
     const slotConfig = SLOT_WAKTU[slotId];
@@ -3693,7 +3779,11 @@ window.getAttendanceStatus = function (santriId, slotId, customDate = null) {
 
     const id = String(santriId);
 
-    return slotData[id]?.status?.[mainAct.id] || null;
+    return (
+      slotData?.[id]?.status?.[mainAct.id] ||
+      window.getEffectivePermitStatus?.(id, dateKey, slotId)?.type ||
+      null
+    );
   } catch (err) {
     console.error("getAttendanceStatus error:", err);
     return null;
@@ -6661,10 +6751,56 @@ window.updateReportTab = function () {
     // C. Riwayat Harian Kehadiran (Daily Timeline)
     let timelineHTML = `
       <div class="space-y-3">
-        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider pl-1">Riwayat Harian Kehadiran</h4>
+        <h4 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider pl-1">${appState.reportMode === "monthly" || appState.reportMode === "semester" ? "Ringkasan Kehadiran Rentang" : "Riwayat Harian Kehadiran"}</h4>
         <div class="flex flex-col gap-2.5 max-h-[500px] overflow-y-auto pr-1 hide-scrollbar">
     `;
 
+    if (appState.reportMode === "monthly" || appState.reportMode === "semester") {
+      const filledDays = datesList.filter((dateKey) =>
+        Object.values(SLOT_WAKTU).some((slot) => {
+          if (window.isSlotHoliday?.(slot.id, dateKey)) return false;
+          return Boolean(appState.attendanceData?.[dateKey]?.[slot.id]?.[studentId]?.status);
+        }),
+      ).length;
+      const statusCards = [
+        ["Hadir", statsCounts.Hadir, "check-circle", "text-emerald-600 dark:text-emerald-400", "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/20"],
+        ["Telat", statsCounts.Telat, "clock", "text-amber-600 dark:text-amber-400", "bg-amber-50 dark:bg-amber-950/20 border-amber-100 dark:border-amber-900/20"],
+        ["Sakit/Izin", statsCounts.Sakit + statsCounts.Izin, "file-text", "text-blue-600 dark:text-blue-400", "bg-blue-50 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/20"],
+        ["Alpa", statsCounts.Alpa, "alert-circle", "text-rose-600 dark:text-rose-400", "bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/20"],
+      ];
+      const periodCards = statusCards.map(([label, value, icon, textClass, boxClass]) => `
+        <div class="rounded-2xl border ${boxClass} p-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[10px] font-black uppercase tracking-tight ${textClass}">${label}</span>
+            <i data-lucide="${icon}" class="w-4 h-4 ${textClass}"></i>
+          </div>
+          <p class="mt-2 text-xl font-black ${textClass}">${value}</p>
+          <p class="text-[9px] font-bold text-slate-400">rekaman status</p>
+        </div>
+      `).join("");
+      timelineHTML += `
+        <div class="bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 p-4 transition-all duration-300 backdrop-blur-xl">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 shadow-sm shrink-0">
+              <i data-lucide="calendar-range" class="w-5 h-5"></i>
+            </div>
+            <div class="min-w-0">
+              <h5 class="text-sm font-black text-slate-800 dark:text-white leading-tight">${range.label}</h5>
+              <p class="text-[10px] font-bold text-slate-400 mt-1">Diringkas dari ${filledDays} hari berisi presensi, agar daftar bulan/semester tetap ringkas.</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 mt-4">
+            ${periodCards}
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-2">Shalat: <span class="font-black text-slate-700 dark:text-slate-200">${stats.shalat.h}/${stats.shalat.total}</span></div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-2">Sekolah: <span class="font-black text-slate-700 dark:text-slate-200">${stats.sekolah.h}/${stats.sekolah.total}</span></div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-2">Ma'had: <span class="font-black text-slate-700 dark:text-slate-200">${stats.mahad.h}/${stats.mahad.total}</span></div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-2">Sunnah: <span class="font-black text-slate-700 dark:text-slate-200">${stats.sunnah.y}/${stats.sunnah.total}</span></div>
+          </div>
+        </div>
+      `;
+    } else {
     datesList.forEach(dateKey => {
       const dateDisplay = window.formatDate(dateKey);
       const isToday = dateKey === window.getLocalDateStr();
@@ -6744,6 +6880,7 @@ window.updateReportTab = function () {
         </div>
       `;
     });
+    }
 
     timelineHTML += `
         </div>
@@ -7672,6 +7809,50 @@ window.refreshPermitSurfaces = function () {
   window.updateDashboard?.();
 };
 
+window.getPermitDocument = function (permit) {
+  return permit?.surat_dokter || permit?.document || permit?.hasDocument || permit?.doctor_note || null;
+};
+
+window.getInclusiveDayCount = function (startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(`${startDate}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+  return Math.floor((end - start) / 86400000) + 1;
+};
+
+window.getSickPermitWarning = function (permit, dateKey = appState.date) {
+  if (!permit || permit.category !== "sakit" || !permit.start_date) return null;
+  const dayCount = window.getInclusiveDayCount(permit.start_date, dateKey);
+  if (dayCount >= 3 && !window.getPermitDocument(permit)) {
+    return {
+      type: "SickDocumentRequired",
+      message: "Sakit hari ke-3 wajib surat dokter",
+      dayCount,
+    };
+  }
+  return null;
+};
+
+window.getPermitRuntimeWarning = function (permit, dateKey = appState.date, slotId = window.getPermitSlotIdForView()) {
+  if (!permit) return null;
+  const category = String(permit.category || "").toLowerCase();
+  if (category === "sakit") return window.getSickPermitWarning(permit, dateKey);
+  const evaluated = window.evaluatePermitForSlot?.(permit, dateKey, slotId);
+  if ((category === "izin" || category === "pulang") && evaluated?.type === "Alpa") {
+    return {
+      type: "PermitOverdue",
+      message: "Melewati deadline kembali",
+    };
+  }
+  return null;
+};
+
+window.getEffectivePermitStatus = function (nis, dateKey = appState.date, slotId = window.getPermitSlotIdForView()) {
+  if (!nis || !dateKey || !slotId) return null;
+  return window.checkActivePermit?.(String(nis), dateKey, slotId) || null;
+};
+
 window.getPermitSlotIdForView = function () {
   return appState.activeAttendanceSlotId || appState.currentSlotId;
 };
@@ -7842,6 +8023,8 @@ window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) 
         }
       }
     }
+    const sickWarning = window.getSickPermitWarning?.(permit, currentDateStr);
+    if (sickWarning) return null;
     return {
       type: "Sakit",
       label: "S",
@@ -9626,13 +9809,19 @@ window.verifyLocation = function () {
 
 // 1. Request Izin GPS SAAT APLIKASI DIBUKA (Sekali saja)
 window.requestGPSPermissionOnStartup = async function () {
+  const gpsDebugLog = (...args) => {
+    if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {
+      console.log(...args);
+    }
+  };
+
   // Cek apakah sudah pernah minta izin GPS di session/page load ini
   const gpsPermissionRequestedKey = "gps_permission_requested_" + (APP_CONFIG?.appName?.replace(/\s+/g, "_").toLowerCase() || "syamsa_app");
 
   // Jika sudah pernah diminta izin GPS, skip
   // (Ini disimpan per page load, tidak di sessionStorage karena kita mau minta lagi saat buka ulang browser)
   if (localStorage.getItem(gpsPermissionRequestedKey)) {
-    console.log("[GPS] Izin GPS sudah pernah diminta sebelumnya, skip.");
+    gpsDebugLog("[GPS] Izin GPS sudah pernah diminta sebelumnya, skip.");
     return;
   }
 
@@ -9643,7 +9832,7 @@ window.requestGPSPermissionOnStartup = async function () {
 
   // Jika browser tidak support geolocation, skip
   if (!navigator.geolocation) {
-    console.log("[GPS] Browser tidak mendukung geolocation.");
+    console.warn("[GPS] Browser tidak mendukung geolocation.");
     return;
   }
 
@@ -9651,13 +9840,13 @@ window.requestGPSPermissionOnStartup = async function () {
   // Ini mencegah permintaan berulang di page load yang sama
   localStorage.setItem(gpsPermissionRequestedKey, "true");
 
-  console.log("[GPS] Meminta izin GPS saat startup...");
+  gpsDebugLog("[GPS] Meminta izin GPS saat startup...");
 
   // Minta lokasi secara diam-diam (tanpa toast)
   //maximumAge: Infinity berarti gunakan posisi terakhir yang diketahui browser jika ada
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      console.log("[GPS] Izin GPS diberikan saat startup, menyimpan cache.");
+      gpsDebugLog("[GPS] Izin GPS diberikan saat startup, menyimpan cache.");
 
       // Simpan ke cache agar tidak perlu minta lagi saat buka presensi
       const userLat = position.coords.latitude;
@@ -9699,7 +9888,7 @@ window.requestGPSPermissionOnStartup = async function () {
       }
     },
     (error) => {
-      console.log("[GPS] Gagal minta GPS saat startup:", error.message);
+      console.warn("[GPS] Gagal minta GPS saat startup:", error.message);
 
       // Jika ditolak, simpan flag agar tidak diminta lagi di session ini
       if (error.code === 1) {
@@ -10043,7 +10232,7 @@ window.setPermitTab = function (tab) {
 };
 
 // 3. Logic Simpan Data (Advanced)
-window.savePermitLogic = function () {
+window.savePermitLogic = async function () {
   if (window.isWaliMode()) {
     return window.showToast("Wali tidak memiliki izin untuk menyimpan izin langsung.", "error");
   }
@@ -10058,10 +10247,14 @@ window.savePermitLogic = function () {
   const reason = document.getElementById("permit-reason").value;
   const startDate = document.getElementById("permit-start-date").value;
   const startSession = document.getElementById("permit-start-session").value;
+  const todayStr = window.getLocalDateStr();
 
   if (!reason) return window.showToast("Isi alasannya dulu", "warning");
   if (!startDate)
     return window.showToast("Tanggal mulai wajib diisi", "warning");
+  if (currentPermitTab === "sakit" && startDate > todayStr) {
+    return window.showToast("Sakit tidak bisa direncanakan! Input untuk hari ini atau sebelumnya.", "warning");
+  }
 
   let permitData = {
     category: currentPermitTab, // sakit, izin, pulang
@@ -10074,12 +10267,31 @@ window.savePermitLogic = function () {
 
   // Tambahan Data per Kategori
   if (currentPermitTab === "sakit") {
-    // SAKIT: Open ended (end_date null)
-    permitData.location = document.querySelector(
-      'input[name="loc_sakit"]:checked',
-    )?.value || "Asrama";
-    permitData.end_date = null;
+    const endDateSick = document.getElementById("permit-end-date-sick")?.value || "";
+    const location = document.querySelector('input[name="loc_sakit"]:checked')?.value || "Asrama";
+    const diffDays = window.getInclusiveDayCount(startDate, endDateSick || startDate);
+    let suratDokterUrl = null;
+
+    if (diffDays > 2) {
+      const suratDokterFile = document.getElementById("permit-surat-dokter")?.files?.[0];
+      if (!suratDokterFile) {
+        return window.showToast("Sakit mulai hari ke-3 wajib upload surat dokter!", "warning");
+      }
+      try {
+        suratDokterUrl = window.fileToBase64
+          ? await window.fileToBase64(suratDokterFile)
+          : null;
+      } catch (e) {
+        return window.showToast("Gagal membaca surat dokter. Coba lagi.", "error");
+      }
+    }
+
+    permitData.location = location;
+    permitData.end_date = endDateSick || null;
+    permitData.end_session = null;
     permitData.status_label = "S";
+    permitData.requires_surat_dokter = diffDays > 2;
+    permitData.surat_dokter = suratDokterUrl;
   } else {
     // IZIN & PULANG: Punya Deadline
     const endDate = document.getElementById("permit-end-date").value;
@@ -10213,18 +10425,19 @@ window.markAsRecovered = function (id) {
 window.markAsReturned = function (id) {
   const permit = appState.permits.find((p) => p.id === id);
   if (permit) {
-    // Kalau pulang tepat waktu, kita set is_active false
-    // Agar sesi hari ini bisa diisi Hadir manual oleh Musyrif
+    const wasOverdue = Boolean(
+      window.getPermitRuntimeWarning?.(permit, appState.date, window.getPermitSlotIdForView())?.type === "PermitOverdue"
+    );
     permit.is_active = false;
+    permit.returned_at = new Date().toISOString();
+    permit.return_note = wasOverdue ? "Kembali setelah melewati deadline" : "Kembali tepat waktu";
+    permit.is_overdue = false;
 
     window.persistPermits();
     if (window.storageManager) {
       window.storageManager.savePermit(permit);
     }
-    window.showToast(
-      "Santri sudah kembali. Silakan presensi manual.",
-      "success",
-    );
+    window.showToast("Santri sudah kembali. Silakan presensi manual.", "success");
     window.refreshPermitSurfaces();
   }
 };
@@ -10243,17 +10456,10 @@ window.extendPermit = function (id) {
 
   permit.end_date = newDate;
 
-  // Poin 5: "mengabari jadi I Izin"
-  // Jika asalnya Pulang, kita ubah jadi Izin karena sudah lewat jatah pulang.
-  const wasPulang = permit.category === "pulang";
-  if (wasPulang) {
-    permit.category = "izin";
-    permit.status_label = "I";
-    permit.reason += " (Diperpanjang/Telat)";
-    window.showToast("Status diubah ke Izin (Diperpanjang)", "info");
-  } else {
-    window.showToast("Masa izin diperpanjang", "success");
-  }
+  permit.is_active = true;
+  permit.is_overdue = false;
+  permit.extended_at = new Date().toISOString();
+  window.showToast("Masa izin diperpanjang", "success");
 
   window.persistPermits();
   if (window.storageManager) {
@@ -10478,18 +10684,19 @@ window.collectPembinaanViolations = function (options = {}) {
     const dates = dateFilter ? [dateFilter] : Object.keys(source);
 
     dates.forEach((dateKey) => {
-      const dayData = source[dateKey];
-      if (!dayData) return;
+      const dayData = source[dateKey] || {};
 
       Object.values(SLOT_WAKTU).forEach((slot) => {
         const sData = dayData[slot.id]?.[id];
-        if (!sData?.status) return;
 
         const mainActId = window.getPembinaanMainActId(slot);
-        const status = sData.status[mainActId];
+        const status =
+          sData?.status?.[mainActId] ||
+          window.getEffectivePermitStatus?.(id, dateKey, slot.id)?.type ||
+          null;
         if (!window.isPembinaanViolationStatus(status)) return;
 
-        const isCoached = Boolean(sData.coaching?.done);
+        const isCoached = Boolean(sData?.coaching?.done);
         if (coachedOnly && !isCoached) return;
         if (!includeUncoached && !isCoached) return;
 
@@ -10503,8 +10710,8 @@ window.collectPembinaanViolations = function (options = {}) {
           activityId: mainActId,
           status,
           isCoached,
-          coachingInfo: sData.coaching || null,
-          record: sData,
+          coachingInfo: sData?.coaching || null,
+          record: sData || null,
         });
       });
     });
@@ -10958,7 +11165,10 @@ window.renderActivePermitsWidget = function () {
     const runtime = window.getPermitRuntimeState(p, currentDate, currentSlotId);
     let visualActive = runtime.active;
     const catSafe = (p.category || "").toLowerCase();
-    const runtimeType = runtime.evaluated?.type || p.category;
+    const warning = window.getPermitRuntimeWarning?.(p, currentDate, currentSlotId);
+    const runtimeType =
+      runtime.evaluated?.type ||
+      (warning?.type === "SickDocumentRequired" ? "Butuh Surat Dokter" : p.category);
     const runtimeCategory =
       runtimeType === "Alpa" ? "alpa" : (p.category || "").toLowerCase();
 
@@ -10975,6 +11185,7 @@ window.renderActivePermitsWidget = function () {
         isActive: visualActive,
         reason: p.reason,
         runtimeType,
+        warning,
       });
 
       // PENTING: Hanya block Manual Check jika permit ini MASIH AKTIF.
@@ -11664,7 +11875,7 @@ window.renderSchoolStatsWidget = function () {
   // Mencegah pembagian dengan 0 yang menghasilkan NaN%
   let presentPercent = 0;
   if (totalSiswa > 0) {
-    presentPercent = Math.round((stats.h / totalSiswa) * 100);
+    presentPercent = Math.round(((stats.h + stats.t) / totalSiswa) * 100);
     if (presentPercent > 100) presentPercent = 100; // Proteksi maksimal 100%
   }
 
