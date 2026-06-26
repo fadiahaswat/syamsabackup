@@ -561,6 +561,9 @@ window.syncRoleModeUI = function () {
       body.wali-mode .musyrif-only {
         display: none !important;
       }
+      body.wali-mode .non-wali-only {
+        display: none !important;
+      }
       body:not(.wali-mode) .wali-only {
         display: none !important;
       }
@@ -1164,6 +1167,15 @@ window.getWaliActivePermit = function (student = appState.waliSantri, dateKey = 
   });
 };
 
+window.getWaliHealthStatus = function (student = appState.waliSantri, dateKey = appState.date) {
+  const activePermit = window.getWaliActivePermit?.(student, dateKey);
+  const permitType = String(activePermit?.type || activePermit?.category || activePermit?.kategori || "").toLowerCase();
+  if (permitType.includes("sakit")) return "Sakit";
+
+  const todaySummary = window.getWaliAttendanceSummary?.(student, 1);
+  return todaySummary?.Sakit > 0 ? "Sakit" : "Sehat";
+};
+
 window.getWaliTahfizhSummary = function (student = appState.waliSantri) {
   const studentId = window.getWaliStudentId(student);
   const studentName = String(student?.nama || "").trim().toLowerCase();
@@ -1201,6 +1213,8 @@ window.updateWaliDashboardSummary = function () {
   const summary7 = window.getWaliAttendanceSummary?.(student, 7) || { total: 0, Hadir: 0, Ya: 0, Telat: 0 };
   const tahfizh = window.getWaliTahfizhSummary?.(student) || { total: 0, latestType: "-", latestJuz: "-" };
   const activePermit = window.getWaliActivePermit?.(student, appState.date);
+  const healthStatus = window.getWaliHealthStatus?.(student, appState.date) || "Sehat";
+  const isSick = healthStatus === "Sakit";
 
   const attendancePercent = summary7.total
     ? Math.round(((summary7.Hadir + summary7.Ya + summary7.Telat) / summary7.total) * 100)
@@ -1210,6 +1224,9 @@ window.updateWaliDashboardSummary = function () {
   const metaEl = document.getElementById("dashboard-wali-santri-meta");
   const attendanceEl = document.getElementById("dashboard-wali-attendance");
   const tahfizhEl = document.getElementById("dashboard-wali-tahfizh");
+  const healthIconEl = document.getElementById("dashboard-wali-health-icon");
+  const healthEl = document.getElementById("dashboard-wali-health");
+  const permitLabelEl = document.getElementById("dashboard-wali-permit-label");
   const permitEl = document.getElementById("dashboard-wali-permit");
   const statusEl = document.getElementById("dashboard-wali-status-badge");
 
@@ -1217,12 +1234,31 @@ window.updateWaliDashboardSummary = function () {
   if (metaEl) metaEl.textContent = `Kelas ${className}${nis ? ` - NIS ${nis}` : ""}`;
   if (attendanceEl) attendanceEl.textContent = summary7.total ? `${attendancePercent}%` : "Belum ada";
   if (tahfizhEl) tahfizhEl.textContent = tahfizh.total ? `${tahfizh.latestType} Juz ${tahfizh.latestJuz}` : "Belum ada";
-  if (permitEl) permitEl.textContent = activePermit ? "Izin aktif" : "Ajukan";
+  if (healthEl) {
+    healthEl.textContent = healthStatus;
+    healthEl.className = isSick
+      ? "max-w-full text-xs font-black text-amber-100 truncate"
+      : "max-w-full text-xs font-black text-emerald-100 truncate";
+  }
+  if (healthIconEl) {
+    healthIconEl.className = isSick
+      ? "w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 group-hover/item:bg-amber-500 group-hover/item:text-white transition-colors"
+      : "w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors";
+  }
+  if (permitLabelEl) permitLabelEl.textContent = "Izin";
+  if (permitEl) permitEl.textContent = activePermit ? "Izin aktif" : "Lihat / Ajukan";
   if (statusEl) {
     statusEl.textContent = activePermit ? "Sedang Izin" : "Aktif";
     statusEl.className = activePermit
-      ? "shrink-0 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-3 py-1 text-[10px] font-black text-blue-700 dark:text-blue-300"
-      : "shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-3 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-300";
+      ? "shrink-0 rounded-full bg-blue-500/15 border border-blue-400/20 px-3 py-1 text-[10px] font-black text-blue-200"
+      : "shrink-0 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-[10px] font-black text-palette-mint";
+  }
+};
+
+window.scrollToWaliPermit = function () {
+  const el = document.getElementById("dashboard-wali-permit-widget");
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 };
 

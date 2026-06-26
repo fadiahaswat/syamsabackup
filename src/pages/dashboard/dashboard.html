@@ -28,12 +28,6 @@
       </div>
     </div>
 
-    <!-- Offline/Online Indicator -->
-    <div id="connection-indicator" class="hidden sm:flex items-center gap-1.5 px-2.5 py-2 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm transition-all duration-300" role="status" aria-live="polite">
-      <span id="connection-dot" class="w-2 h-2 rounded-full bg-emerald-400 transition-colors duration-300"></span>
-      <span id="connection-text" class="text-[10px] font-bold text-slate-600 dark:text-slate-400">Online</span>
-    </div>
-
     <!-- Standalone Notification Bell Button -->
     <button onclick="window.switchTab('notifications')" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-500 dark:text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue" aria-label="Buka notifikasi" title="Notifikasi">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
@@ -76,32 +70,6 @@
           <div id="announcement-banner-container" class="musyrif-only hidden animate-slide-up mb-5">
             <!-- Rendered dynamically -->
           </div>
-
-          <section id="dashboard-wali-summary-card" class="wali-only bg-white/90 dark:bg-slate-900/90 rounded-2xl p-4 border border-slate-200/70 dark:border-slate-800 shadow-sm animate-slide-up">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Ringkasan Santri</p>
-                <h2 id="dashboard-wali-santri-name" class="mt-1 text-lg font-black text-slate-900 dark:text-white truncate">Santri</h2>
-                <p id="dashboard-wali-santri-meta" class="text-xs font-bold text-slate-500 dark:text-slate-400">Kelas -</p>
-              </div>
-              <span id="dashboard-wali-status-badge" class="shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-3 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-300">Aktif</span>
-            </div>
-
-            <div class="mt-4 grid grid-cols-3 gap-2">
-              <button onclick="window.switchTab('report')" class="rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 p-3 text-left active:scale-[0.98] transition-all">
-                <p class="text-[9px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Kehadiran</p>
-                <p id="dashboard-wali-attendance" class="mt-1 text-lg font-black text-slate-900 dark:text-white">0%</p>
-              </button>
-              <button onclick="window.switchTab('tahfizh')" class="rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 p-3 text-left active:scale-[0.98] transition-all">
-                <p class="text-[9px] font-black uppercase tracking-wide text-orange-600 dark:text-orange-300">Tahfizh</p>
-                <p id="dashboard-wali-tahfizh" class="mt-1 text-sm font-black text-orange-700 dark:text-orange-200 truncate">-</p>
-              </button>
-              <button onclick="window.openWaliPermitModal()" class="rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 p-3 text-left active:scale-[0.98] transition-all">
-                <p class="text-[9px] font-black uppercase tracking-wide text-blue-600 dark:text-blue-300">Perizinan</p>
-                <p id="dashboard-wali-permit" class="mt-1 text-sm font-black text-blue-700 dark:text-blue-200 truncate">Ajukan</p>
-              </button>
-            </div>
-          </section>
 
         <!-- Dashboard Grid Layout on Desktop -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 !mt-5">
@@ -261,8 +229,67 @@
 
             <!-- Active KBM Banner removed -->
 
+        <section id="dashboard-wali-summary-card" class="wali-only bg-slate-900 dark:bg-black rounded-[1.75rem] p-5 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden animate-slide-up delay-200ms">
+          <div class="absolute top-0 right-0 w-56 h-56 bg-palette-mint rounded-full blur-[90px] opacity-20 -mr-16 -mt-16 pointer-events-none"></div>
+          <div class="absolute bottom-0 left-0 w-44 h-44 bg-palette-blue rounded-full blur-[80px] opacity-10 -ml-12 -mb-12 pointer-events-none"></div>
+          <img src="assets/icons/icon.webp" class="absolute -right-10 -top-10 w-48 h-48 opacity-[0.06] pointer-events-none select-none z-0 rotate-[15deg]" alt="" />
+
+          <div class="relative z-10">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="px-2.5 py-1 rounded-full bg-white/10 border border-white/5 text-[10px] font-bold backdrop-blur-md uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-palette-mint"></span>
+                    Hari Ini
+                  </span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black tracking-tight leading-none">Pantauan Santri</h2>
+                <p class="mt-1 text-palette-mint text-xs font-bold">Pantau kehadiran, tahfizh, dan izin</p>
+              </div>
+
+              <span id="dashboard-wali-status-badge" class="shrink-0 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-[10px] font-black text-palette-mint">Aktif</span>
+            </div>
+
+            <div class="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-4"></div>
+
+            <div class="grid grid-cols-4 gap-1.5 sm:gap-3">
+              <button onclick="window.switchTab('report')" class="min-w-0 flex flex-col items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-palette-mint/20 hover:border-palette-mint/50 transition-all active:scale-95 group/item">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-palette-mint/20 flex items-center justify-center text-palette-mint group-hover/item:bg-palette-mint group-hover/item:text-slate-900 transition-colors">
+                  <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                </div>
+                <span class="max-w-full text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase truncate">7 Hari</span>
+                <span id="dashboard-wali-attendance" class="max-w-full text-[13px] sm:text-sm font-black text-white truncate">0%</span>
+              </button>
+
+              <button onclick="window.switchTab('tahfizh')" class="min-w-0 flex flex-col items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-orange-500/20 hover:border-orange-500/50 transition-all active:scale-95 group/item">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover/item:bg-orange-500 group-hover/item:text-white transition-colors">
+                  <i data-lucide="book-open-check" class="w-4 h-4"></i>
+                </div>
+                <span class="max-w-full text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase truncate">Tahfizh</span>
+                <span id="dashboard-wali-tahfizh" class="max-w-full text-[11px] sm:text-xs font-black text-orange-100 truncate">-</span>
+              </button>
+
+              <button onclick="window.switchTab('report')" class="min-w-0 flex flex-col items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all active:scale-95 group/item">
+                <div id="dashboard-wali-health-icon" class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover/item:bg-emerald-500 group-hover/item:text-white transition-colors">
+                  <i data-lucide="heart-pulse" class="w-4 h-4"></i>
+                </div>
+                <span class="max-w-full text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase truncate">Kesehatan</span>
+                <span id="dashboard-wali-health" class="max-w-full text-xs font-black text-emerald-100 truncate">Sehat</span>
+              </button>
+
+              <button onclick="window.scrollToWaliPermit()" class="min-w-0 flex flex-col items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-blue-500/20 hover:border-blue-500/50 transition-all active:scale-95 group/item">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover/item:bg-blue-500 group-hover/item:text-white transition-colors">
+                  <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                </div>
+                <span id="dashboard-wali-permit-label" class="max-w-full text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase truncate">Izin</span>
+                <span id="dashboard-wali-permit" class="max-w-full text-[11px] sm:text-xs font-black text-blue-100 truncate">Ajukan</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
         <!-- Main Action Card (Current Slot) Wrapper -->
-        <div id="dash-main-card-wrapper" class="relative z-30">
+        <div id="dash-main-card-wrapper" class="non-wali-only relative z-30">
           <div
             id="dash-main-card"
             class="bg-slate-900 dark:bg-black rounded-[1.75rem] p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative z-20 overflow-hidden group animate-slide-up delay-200ms"
@@ -594,7 +621,7 @@
         </div>
 
         <!-- WIDGET: Perizinan Wali (Hanya muncul di Wali Mode) -->
-        <div class="wali-only animate-slide-up lg:mb-6 lg:mt-4 w-full delay-250ms">
+        <div id="dashboard-wali-permit-widget" class="wali-only animate-slide-up lg:mb-6 lg:mt-4 w-full delay-250ms">
           <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-4 shadow-lg shadow-slate-200/50 dark:shadow-black/20 border border-white dark:border-slate-700/50 flex flex-col gap-4">
             
             <!-- Header Section -->
