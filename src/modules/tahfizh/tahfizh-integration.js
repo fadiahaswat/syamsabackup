@@ -1,6 +1,7 @@
 // File: tahfizh-integration.js
 // Integration layer for Tahfizh System with Presensi App
 // This file handles loading tahfizh app.js and adapting it to work with the new UI structure
+// Deprecated: jangan memuat aplikasi Tahfizh eksternal; alur aktif ada di tahfizh-manager.js.
 
 let tahfizhLoaded = false;
 let tahfizhAppInstance = null;
@@ -35,6 +36,11 @@ async function loadTahfizhDependencies() {
 
 // Initialize Tahfizh App
 window.initTahfizhFromModule = async function () {
+  console.warn("initTahfizhFromModule deprecated. Gunakan initTahfizhTab dari tahfizh-manager.js.");
+  if (window.initTahfizhTab) {
+    return window.initTahfizhTab();
+  }
+
   if (tahfizhLoaded) {
     console.log("Tahfizh sudah diinisialisasi");
     return;

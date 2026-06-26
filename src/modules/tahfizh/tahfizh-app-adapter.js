@@ -1,9 +1,10 @@
 // File: tahfizh-app-adapter.js
 // Bridge adapter to integrate tahfizh app.js with Presensi system
 // This file modifies the tahfizh app to work within the presensi container
+// Deprecated: alur aktif aplikasi memakai tahfizh-manager.js.
 
 // Global State and DOM objects for tahfizh (extracted from app.js)
-window.TahfizhState = {
+window.TahfizhState = window.TahfizhState || {
   allSetoran: [],
   verifiedSetoran: [],
   pendingSetoran: [],

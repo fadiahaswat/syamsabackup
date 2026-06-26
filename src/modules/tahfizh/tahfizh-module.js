@@ -1,10 +1,17 @@
 // File: tahfizh-module.js
 // Wrapper module untuk Tahfizh System sebagai bagian dari Presensi App
+// Deprecated: alur aktif aplikasi memakai tahfizh-manager.js yang dimuat langsung oleh index.html.
+// File ini dipertahankan sementara agar referensi lama tidak error, tetapi tidak lagi menginisialisasi UI terpisah.
 
 let tahfizhInitialized = false;
 let tahfizhAppState = null;
 
 window.initTahfizhModule = async function () {
+  console.warn("initTahfizhModule deprecated. Gunakan initTahfizhTab dari tahfizh-manager.js.");
+  if (window.initTahfizhTab) {
+    return window.initTahfizhTab();
+  }
+
   if (tahfizhInitialized) {
     console.log("Tahfizh sudah diinisialisasi");
     // Tampilkan tab tahfizh

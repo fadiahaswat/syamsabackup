@@ -433,7 +433,7 @@
               <i data-lucide="calendar-clock" class="w-5 h-5"></i>
             </div>
             <div class="min-w-0">
-              <h3 class="text-sm font-black text-slate-900 dark:text-white leading-tight">Rentang Perpulangan Libur Kenaikan Kelas</h3>
+              <h3 class="text-sm font-black text-slate-900 dark:text-white leading-tight">Rentang Perpulangan</h3>
               <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">Mulai pulang sampai batas balik pondok</p>
             </div>
             </div>
@@ -452,15 +452,49 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label class="block">
-              <span class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Mulai Perpulangan</span>
-              <input id="holiday-return-home-input" type="datetime-local" class="w-full rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10" />
-            </label>
-            <label class="block">
-              <span class="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Batas Balik Pondok</span>
-              <input id="holiday-return-pondok-input" type="datetime-local" class="w-full rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10" />
-            </label>
+          <div class="relative">
+            <i data-lucide="tag" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-palette-blue"></i>
+            <input id="holiday-name-input" type="text" value="Libur Kenaikan Kelas" placeholder="Nama libur" class="w-full h-11 pl-10 pr-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-800 dark:text-slate-100 outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10" />
+          </div>
+
+          <div class="relative rounded-2xl bg-slate-50/90 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/60 overflow-hidden">
+            <div class="absolute left-[1.68rem] top-9 bottom-9 w-px bg-gradient-to-b from-palette-blue via-slate-300 to-emerald-500 dark:via-slate-700"></div>
+            <div class="grid grid-cols-[68px_minmax(0,1fr)_78px] items-center gap-2 p-2.5 relative">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-7 h-7 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center text-palette-blue shrink-0">
+                  <i data-lucide="plane-takeoff" class="w-3.5 h-3.5"></i>
+                </span>
+                <span class="text-xs font-black text-slate-800 dark:text-white truncate">Pulang</span>
+              </div>
+              <button type="button" onclick="window.openHolidayPicker('holiday-return-home-date-input')" class="min-w-0 h-9 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 text-left text-xs font-black text-slate-700 dark:text-slate-200 active:scale-[0.98] transition-all truncate shadow-sm flex items-center gap-1.5">
+                <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                <span id="holiday-return-home-date-label" class="truncate">Pilih tanggal</span>
+              </button>
+              <button type="button" onclick="window.openHolidayPicker('holiday-return-home-time-input')" class="h-9 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 text-center text-xs font-black text-slate-700 dark:text-slate-200 active:scale-[0.98] transition-all truncate shadow-sm flex items-center justify-center gap-1">
+                <i data-lucide="clock-3" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                <span id="holiday-return-home-time-label" class="truncate">Jam</span>
+              </button>
+              <input id="holiday-return-home-date-input" type="date" onchange="window.renderHolidayCountdownManager()" class="absolute opacity-0 pointer-events-none w-px h-px" tabindex="-1" />
+              <input id="holiday-return-home-time-input" type="time" onchange="window.renderHolidayCountdownManager()" class="absolute opacity-0 pointer-events-none w-px h-px" tabindex="-1" />
+            </div>
+            <div class="grid grid-cols-[68px_minmax(0,1fr)_78px] items-center gap-2 p-2.5 pt-0 relative">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-300 shrink-0">
+                  <i data-lucide="plane-landing" class="w-3.5 h-3.5"></i>
+                </span>
+                <span class="text-xs font-black text-slate-800 dark:text-white truncate">Balik</span>
+              </div>
+              <button type="button" onclick="window.openHolidayPicker('holiday-return-pondok-date-input')" class="min-w-0 h-9 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 text-left text-xs font-black text-slate-700 dark:text-slate-200 active:scale-[0.98] transition-all truncate shadow-sm flex items-center gap-1.5">
+                <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                <span id="holiday-return-pondok-date-label" class="truncate">Pilih tanggal</span>
+              </button>
+              <button type="button" onclick="window.openHolidayPicker('holiday-return-pondok-time-input')" class="h-9 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 text-center text-xs font-black text-slate-700 dark:text-slate-200 active:scale-[0.98] transition-all truncate shadow-sm flex items-center justify-center gap-1">
+                <i data-lucide="clock-3" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                <span id="holiday-return-pondok-time-label" class="truncate">Jam</span>
+              </button>
+              <input id="holiday-return-pondok-date-input" type="date" onchange="window.renderHolidayCountdownManager()" class="absolute opacity-0 pointer-events-none w-px h-px" tabindex="-1" />
+              <input id="holiday-return-pondok-time-input" type="time" onchange="window.renderHolidayCountdownManager()" class="absolute opacity-0 pointer-events-none w-px h-px" tabindex="-1" />
+            </div>
           </div>
 
           <div class="flex gap-2">

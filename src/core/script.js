@@ -1075,6 +1075,12 @@ window.getWaliStudentId = function (student = appState.waliSantri) {
   return String(student?.nis || student?.id || "").trim();
 };
 
+window.getWaliStudentIds = function (student = appState.waliSantri) {
+  return [student?.nis, student?.id, student?.studentId, student?.NIS]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+};
+
 window.getWaliStudentClass = function (student = appState.waliSantri) {
   return String(student?.kelas || student?.rombel || appState.waliKelas || "").trim();
 };
@@ -1092,14 +1098,18 @@ window.getWaliActiveActivities = function (slot, dateKey) {
 
 window.getWaliTodayRows = function (student = appState.waliSantri, dateKey = appState.date) {
   const studentId = window.getWaliStudentId(student);
+  const studentIds = window.getWaliStudentIds(student);
   if (!studentId) return [];
 
   return Object.values(SLOT_WAKTU).map((slot) => {
     const isHoliday = window.isSlotHoliday?.(slot.id, dateKey);
     const slotData = appState.attendanceData?.[dateKey]?.[slot.id];
-    const studentData = slotData?.[studentId];
+    const matchedId = studentIds.find((id) => slotData?.[id]) || studentId;
+    const studentData = slotData?.[matchedId];
     const activities = isHoliday ? [] : window.getWaliActiveActivities(slot, dateKey);
-    const effectivePermit = window.getEffectivePermitStatus?.(studentId, dateKey, slot.id);
+    const effectivePermit = studentIds
+      .map((id) => window.getEffectivePermitStatus?.(id, dateKey, slot.id))
+      .find(Boolean);
     const statuses = activities.map((act) => {
       let status = studentData?.status?.[act.id] || null;
       if (!status && effectivePermit) {
@@ -1158,10 +1168,15 @@ window.getWaliAttendanceSummary = function (student = appState.waliSantri, days 
 };
 
 window.getWaliPermits = function (student = appState.waliSantri) {
-  const studentId = window.getWaliStudentId(student);
-  if (!studentId) return [];
+  const studentIds = window.getWaliStudentIds(student);
+  if (!studentIds.length) return [];
   return (appState.permits || [])
-    .filter((permit) => String(permit.nis || permit.studentId || "").trim() === studentId)
+    .filter((permit) => {
+      const permitIds = [permit.nis, permit.studentId, permit.santriId, permit.id_santri]
+        .map((value) => String(value || "").trim())
+        .filter(Boolean);
+      return permitIds.some((id) => studentIds.includes(id));
+    })
     .sort((a, b) => String(b.start_date || b.start || "").localeCompare(String(a.start_date || a.start || "")));
 };
 
@@ -1199,27 +1214,50 @@ window.getWaliHealthStatus = function (student = appState.waliSantri, dateKey = 
 window.getWaliTahfizhSummary = function (student = appState.waliSantri) {
   const studentId = window.getWaliStudentId(student);
   const studentName = String(student?.nama || "").trim().toLowerCase();
+  const dateKey = appState.date || window.getLocalDateStr?.() || new Date().toISOString().slice(0, 10);
   let entries = [];
   try {
-    entries = window.AppStorage.getJson("tahfizh_local_setoran", []);
+    entries = typeof window.getTahfizhSetoran === "function"
+      ? window.getTahfizhSetoran()
+      : window.AppStorage.getJson("tahfizh_local_setoran", []);
   } catch {
     entries = [];
   }
 
   const matched = entries
     .filter((entry) => {
-      const entryId = String(entry.nis || entry.NIS || entry.studentId || entry.santriId || "").trim();
+      const entryId = String(entry.nis || entry.NIS || entry.Nis || entry.studentId || entry.santriId || "").trim();
       const entryName = String(entry.nama || entry.Nama || entry.namaSantri || "").trim().toLowerCase();
       return (studentId && entryId === studentId) || (studentName && entryName === studentName);
     })
-    .sort((a, b) => String(b.tanggal || b.Tanggal || b.date || "").localeCompare(String(a.tanggal || a.Tanggal || a.date || "")));
+    .sort((a, b) => String(b.tanggal || b.Tanggal || b.date || b.createdAt || "").localeCompare(String(a.tanggal || a.Tanggal || a.date || a.createdAt || "")));
 
   const latest = matched[0];
+  const latestDate = latest?.tanggal || latest?.Tanggal || latest?.date || latest?.createdAt || null;
+  const latestDateKey = latestDate ? String(latestDate).slice(0, 10) : null;
+  const todaySetoran = matched.find((entry) => {
+    const entryDate = entry?.tanggal || entry?.Tanggal || entry?.date || entry?.createdAt || null;
+    return entryDate && String(entryDate).slice(0, 10) === dateKey;
+  });
+  const today = new Date(`${dateKey}T00:00:00`);
+  const lastDate = latestDateKey ? new Date(`${latestDateKey}T00:00:00`) : null;
+  const daysSinceLatest = lastDate && !Number.isNaN(lastDate.getTime())
+    ? Math.max(0, Math.floor((today - lastDate) / 86400000))
+    : null;
+  const dailyStatus = todaySetoran
+    ? "Sudah setoran"
+    : latestDateKey && daysSinceLatest !== null
+      ? `Terakhir ${daysSinceLatest} hari lalu`
+      : "Belum setoran";
+
   return {
     total: matched.length,
-    latestDate: latest?.tanggal || latest?.Tanggal || latest?.date || null,
+    latestDate,
     latestType: latest?.jenis || latest?.Jenis || latest?.type || "-",
     latestJuz: latest?.juz || latest?.Juz || "-",
+    todaySetoran: Boolean(todaySetoran),
+    daysSinceLatest,
+    dailyStatus,
   };
 };
 
@@ -1230,15 +1268,15 @@ window.updateWaliDashboardSummary = function () {
   const studentName = student?.nama || "Santri";
   const className = window.getWaliStudentClass?.(student) || appState.waliKelas || appState.selectedClass || "-";
   const nis = window.getWaliPrimaryId?.(student);
-  const summary7 = window.getWaliAttendanceSummary?.(student, 7) || { total: 0, Hadir: 0, Ya: 0, Telat: 0 };
-  const tahfizh = window.getWaliTahfizhSummary?.(student) || { total: 0, latestType: "-", latestJuz: "-" };
+  const summaryToday = window.getWaliAttendanceSummary?.(student, 1) || { total: 0, Hadir: 0, Ya: 0, Telat: 0 };
+  const tahfizh = window.getWaliTahfizhSummary?.(student) || { total: 0, latestType: "-", latestJuz: "-", dailyStatus: "Belum setoran" };
   const activePermit = window.getWaliActivePermit?.(student, appState.date);
   const permitWarnings = window.getWaliPermitWarnings?.(student, appState.date) || [];
   const healthStatus = window.getWaliHealthStatus?.(student, appState.date) || "Sehat";
   const isSick = healthStatus === "Sakit";
 
-  const attendancePercent = summary7.total
-    ? Math.round(((summary7.Hadir + summary7.Ya + summary7.Telat) / summary7.total) * 100)
+  const attendancePercent = summaryToday.total
+    ? Math.round(((summaryToday.Hadir + summaryToday.Ya + summaryToday.Telat) / summaryToday.total) * 100)
     : 0;
 
   const nameEl = document.getElementById("dashboard-wali-santri-name");
@@ -1253,8 +1291,8 @@ window.updateWaliDashboardSummary = function () {
 
   if (nameEl) nameEl.textContent = studentName;
   if (metaEl) metaEl.textContent = `Kelas ${className}${nis ? ` - NIS ${nis}` : ""}`;
-  if (attendanceEl) attendanceEl.textContent = summary7.total ? `${attendancePercent}%` : "Belum ada";
-  if (tahfizhEl) tahfizhEl.textContent = tahfizh.total ? `${tahfizh.latestType} Juz ${tahfizh.latestJuz}` : "Belum ada";
+  if (attendanceEl) attendanceEl.textContent = summaryToday.total ? `${attendancePercent}%` : "Belum ada";
+  if (tahfizhEl) tahfizhEl.textContent = tahfizh.dailyStatus || "Belum setoran";
   if (healthEl) {
     healthEl.textContent = healthStatus;
     healthEl.className = isSick
@@ -7807,6 +7845,10 @@ window.refreshPermitSurfaces = function () {
   window.filterPermitsTabList?.();
   window.renderAttendanceList?.();
   window.updateDashboard?.();
+  if (window.isWaliMode?.()) {
+    window.updateWaliDashboardSummary?.();
+    window.renderWaliView?.();
+  }
 };
 
 window.getPermitDocument = function (permit) {

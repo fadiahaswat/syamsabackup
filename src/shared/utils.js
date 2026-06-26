@@ -71,6 +71,60 @@
     return `${DAYS_ID[d.getDay()]}, ${d.getDate()} ${MONTHS_SHORT_ID[d.getMonth()]} ${d.getFullYear()}`;
   };
 
+  const TAHFIZH_SETORAN_KEY = "tahfizh_local_setoran";
+  const normalizeTahfizhSetoran = function (entry = {}) {
+    const rowNumber = entry.rowNumber || entry.RowNumber || entry.row_number || entry.id || Date.now();
+    const nis = String(entry.nis || entry.Nis || entry.NIS || entry.studentId || entry.santriId || "").trim();
+    const namaSantri = entry.namaSantri || entry.NamaSantri || entry.nama_santri || entry.nama || entry.Nama || "";
+    const tanggal = entry.tanggal || entry.Tanggal || entry.date || entry.timestamp || entry.localCreatedAt || new Date().toISOString();
+    const status = entry.status || entry.Status || "Verified";
+
+    return {
+      ...entry,
+      id: entry.id || `tahfizh_${nis || "unknown"}_${rowNumber}`,
+      rowNumber,
+      RowNumber: rowNumber,
+      nis,
+      Nis: nis,
+      santriId: entry.santriId || nis,
+      namaSantri,
+      NamaSantri: namaSantri,
+      kelas: entry.kelas || entry.className || "",
+      program: entry.program || "",
+      jenis: entry.jenis || entry.Jenis || entry.type || "Ziyadah",
+      juz: entry.juz || entry.Juz || "",
+      surat: entry.surat || entry.Surat || "",
+      halaman: entry.halaman || entry.Halaman || "",
+      kualitas: entry.kualitas || entry.Kualitas || "Lancar",
+      status,
+      Status: status,
+      tanggal,
+      Tanggal: tanggal,
+      source: entry.source || "local",
+      localCreatedAt: entry.localCreatedAt || entry.timestamp || new Date().toISOString(),
+    };
+  };
+
+  const getTahfizhSetoran = function () {
+    const raw = localStorage.getItem(TAHFIZH_SETORAN_KEY);
+    const list = safeJsonParse(raw, []);
+    return Array.isArray(list) ? list.map(normalizeTahfizhSetoran) : [];
+  };
+
+  const saveTahfizhSetoran = function (records) {
+    const list = Array.isArray(records) ? records.map(normalizeTahfizhSetoran) : [];
+    localStorage.setItem(TAHFIZH_SETORAN_KEY, JSON.stringify(list));
+    return list;
+  };
+
+  const addTahfizhSetoran = function (record) {
+    const list = getTahfizhSetoran();
+    const normalized = normalizeTahfizhSetoran(record);
+    list.unshift(normalized);
+    saveTahfizhSetoran(list);
+    return normalized;
+  };
+
   const getGrade = function (score) {
     const threshold = GRADE_THRESHOLDS.find((item) => score >= item.min);
     return threshold ? threshold.grade : "D";
@@ -113,6 +167,11 @@
     escapeForEventHandler,
     sanitizeHTML,
     safeJsonParse,
+    TAHFIZH_SETORAN_KEY,
+    normalizeTahfizhSetoran,
+    getTahfizhSetoran,
+    saveTahfizhSetoran,
+    addTahfizhSetoran,
     getLocalDateStr,
     formatDate,
     getGrade,
@@ -130,6 +189,11 @@
   window.escapeForEventHandler = window.escapeForEventHandler || escapeForEventHandler;
   window.sanitizeHTML = window.sanitizeHTML || sanitizeHTML;
   window.safeJsonParse = window.safeJsonParse || safeJsonParse;
+  window.TAHFIZH_SETORAN_KEY = window.TAHFIZH_SETORAN_KEY || TAHFIZH_SETORAN_KEY;
+  window.normalizeTahfizhSetoran = window.normalizeTahfizhSetoran || normalizeTahfizhSetoran;
+  window.getTahfizhSetoran = window.getTahfizhSetoran || getTahfizhSetoran;
+  window.saveTahfizhSetoran = window.saveTahfizhSetoran || saveTahfizhSetoran;
+  window.addTahfizhSetoran = window.addTahfizhSetoran || addTahfizhSetoran;
   window.getLocalDateStr = window.getLocalDateStr || getLocalDateStr;
   window.formatDate = window.formatDate || formatDate;
   window.getGrade = window.getGrade || getGrade;

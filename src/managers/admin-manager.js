@@ -143,10 +143,9 @@ window.loadGlobalTahfizh = async function () {
     let allSetoran = [];
 
     try {
-      const saved = localStorage.getItem('tahfizh_local_setoran');
-      if (saved) {
-        allSetoran = window.safeJsonParse(saved, []);
-      }
+      allSetoran = typeof window.getTahfizhSetoran === "function"
+        ? window.getTahfizhSetoran()
+        : window.safeJsonParse(localStorage.getItem('tahfizh_local_setoran'), []);
     } catch (e) {
       console.warn('[AdminManager] Error reading tahfizh from localStorage', e);
     }
@@ -156,7 +155,7 @@ window.loadGlobalTahfizh = async function () {
       id: `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`,
       musyrif: r.musyrif || '',
       nama_santri: r.namaSantri || '',
-      santrialias: r.santriId || r.nis || '',
+      santrialias: r.nis || r.santriId || '',
       kelas: r.kelas || '',
       program: r.program || '',
       jenis: r.jenis || '',
@@ -553,29 +552,46 @@ window.renderAdminTahfizhList = async function () {
     return;
   }
 
+  const safeTahfizhText = (value, fallback = "-") => {
+    const text = value === null || value === undefined || value === "" ? fallback : String(value);
+    return typeof window.sanitizeHTML === "function"
+      ? window.sanitizeHTML(text)
+      : text.replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[char]);
+  };
+
   filtered.slice(0, 100).forEach(r => {
     const qColor = r.kualitas === "Lancar" ? "bg-emerald-50 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400" :
                    r.kualitas === "Sedang" ? "bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400" :
                    "bg-red-50 text-red-500 dark:bg-red-950/40 dark:text-red-400";
 
+    const safeJuz = safeTahfizhText(r.juz);
+    const safeHalaman = safeTahfizhText(r.halaman);
+    const safeSurat = safeTahfizhText(r.surat);
+    const safeKualitas = safeTahfizhText(r.kualitas, "Lancar");
     const setoranDesc = r.jenis === "Ziyadah"
-      ? `<span class="text-orange-500">Ziyadah: Juz ${r.juz || '-'} (Hlm ${r.halaman || '-'})</span>`
-      : `<span class="text-indigo-500">Murojaah: Juz ${r.juz || '-'} (Surat ${r.surat || '-'})</span>`;
+      ? `<span class="text-orange-500">Ziyadah: Juz ${safeJuz} (Hlm ${safeHalaman})</span>`
+      : `<span class="text-indigo-500">Murojaah: Juz ${safeJuz} (Surat ${safeSurat})</span>`;
 
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
         <td class="p-3">
-          <div class="font-black text-slate-800 dark:text-white">${r.nama_santri || '-'}</div>
-          <div class="text-[9px] text-slate-400 font-mono">${r.santrialias || r.santri_id || '-'}</div>
+          <div class="font-black text-slate-800 dark:text-white">${safeTahfizhText(r.nama_santri)}</div>
+          <div class="text-[9px] text-slate-400 font-mono">${safeTahfizhText(r.santrialias || r.santri_id)}</div>
         </td>
-        <td class="p-3 text-slate-600 dark:text-slate-300">${r.kelas || "-"}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${r.program || "Sabaq"}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300">${safeTahfizhText(r.kelas)}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${safeTahfizhText(r.program, "Sabaq")}</td>
         <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${setoranDesc}</td>
         <td class="p-3 text-center">
-          <span class="px-2 py-0.5 rounded text-[10px] font-black ${qColor}">${r.kualitas || "Lancar"}</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-black ${qColor}">${safeKualitas}</span>
         </td>
-        <td class="p-3 text-slate-400 font-mono text-[10px]">${r.tanggal ? window.formatDate(r.tanggal) : "-"}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300">${r.musyrif || "-"}</td>
+        <td class="p-3 text-slate-400 font-mono text-[10px]">${safeTahfizhText(r.tanggal ? window.formatDate(r.tanggal) : "-")}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300">${safeTahfizhText(r.musyrif)}</td>
       </tr>
     `;
   });

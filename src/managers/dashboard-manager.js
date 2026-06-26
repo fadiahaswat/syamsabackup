@@ -2226,13 +2226,14 @@ window.updateCommandCenterStats = function () {
   // 3. Setoran Tahfizh Hari Ini
   let setoranCount = 0;
   try {
-    const localSetoran = localStorage.getItem('tahfizh_local_setoran');
-    if (localSetoran) {
-      const setoranList = JSON.parse(localSetoran);
+    const setoranList = typeof window.getTahfizhSetoran === "function"
+      ? window.getTahfizhSetoran()
+      : JSON.parse(localStorage.getItem('tahfizh_local_setoran') || "[]");
+    if (setoranList.length) {
       const filteredNisList = FILTERED_SANTRI.map(s => String(s.nis || s.id));
       setoranCount = setoranList.filter(s => {
         const sDate = s.tanggal || s.Tanggal || s.date || "";
-        const sNis = String(s.nis || s.Nis || s.studentId || s.RowNumber || "");
+        const sNis = String(s.nis || s.Nis || s.studentId || s.santriId || "");
         return sDate.includes(appState.date) && filteredNisList.includes(sNis);
       }).length;
     }
@@ -2391,8 +2392,9 @@ window.saveQuickSetoranEntry = function () {
   if (!student) return window.showToast("Santri tidak valid", "error");
 
   try {
-    let localSetoran = localStorage.getItem('tahfizh_local_setoran');
-    let list = localSetoran ? JSON.parse(localSetoran) : [];
+    let list = typeof window.getTahfizhSetoran === "function"
+      ? window.getTahfizhSetoran()
+      : JSON.parse(localStorage.getItem('tahfizh_local_setoran') || "[]");
     
     const newSetoran = {
       rowNumber: Date.now(),
@@ -2418,8 +2420,12 @@ window.saveQuickSetoranEntry = function () {
       localCreatedAt: new Date().toISOString()
     };
 
-    list.unshift(newSetoran);
-    localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+    if (typeof window.addTahfizhSetoran === "function") {
+      window.addTahfizhSetoran(newSetoran);
+    } else {
+      list.unshift(newSetoran);
+      localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+    }
 
     // Trigger notification to Wali
     if (typeof window.addNotification === "function") {
@@ -2727,11 +2733,10 @@ window.updateLeaderboardWidget = function () {
       score = totalSessi > 0 ? Math.round((hadirSessi / totalSessi) * 100) : 100;
     } else if (category === "tahfizh") {
       try {
-        const localSetoran = localStorage.getItem('tahfizh_local_setoran');
-        if (localSetoran) {
-          const setoranList = JSON.parse(localSetoran);
-          score = setoranList.filter(set => String(set.nis || set.Nis) === id).length;
-        }
+        const setoranList = typeof window.getTahfizhSetoran === "function"
+          ? window.getTahfizhSetoran()
+          : JSON.parse(localStorage.getItem('tahfizh_local_setoran') || "[]");
+        score = setoranList.filter(set => String(set.nis || set.Nis || set.santriId || set.studentId) === id).length;
       } catch (e) {
         score = 0;
       }
@@ -2841,10 +2846,11 @@ window.renderStudentTimeline = function (studentId) {
 
   // 2. Gather Tahfizh setoran
   try {
-    const localSetoran = localStorage.getItem('tahfizh_local_setoran');
-    if (localSetoran) {
-      const setList = JSON.parse(localSetoran);
-      setList.filter(s => String(s.nis || s.Nis) === String(studentId)).forEach(s => {
+    const setList = typeof window.getTahfizhSetoran === "function"
+      ? window.getTahfizhSetoran()
+      : JSON.parse(localStorage.getItem('tahfizh_local_setoran') || "[]");
+    if (setList.length) {
+      setList.filter(s => String(s.nis || s.Nis || s.santriId || s.studentId) === String(studentId)).forEach(s => {
         const sDate = s.tanggal || s.date || window.getLocalDateStr();
         events.push({
           date: sDate,

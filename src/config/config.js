@@ -125,6 +125,26 @@ window.APP_CONSTANTS = {
 };
 
 // ==========================================
+// TAHFIZH
+// ==========================================
+window.APP_TAHFIZH_CONFIG = {
+  // Ubah target/deadline Tahfizh dari sini tanpa menyentuh modul utama.
+  deadlineJuz30Score: "2026-01-03T23:59:59",
+  deadlineTahfizhTuntas: "2026-06-27T12:30:00",
+  perpulanganPeriods: [
+    {
+      name: "Perpulangan",
+      deadline: "2026-06-27T12:30:00",
+      required: [29, 30],
+      type: "mutqin",
+    },
+  ],
+
+  // Mode dummy hanya bisa aktif jika debug atau query `?debug=true`.
+  allowDummyMode: false,
+};
+
+// ==========================================
 // LOCAL STORAGE CONFIGURATION
 // ==========================================
 window.APP_STORAGE = {

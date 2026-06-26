@@ -56,6 +56,28 @@ const TahfizhConfig = {
 };
 TahfizhConfig.dummyModeKey = 'tahfizh_dummy_mode';
 
+function applyTahfizhRuntimeConfig() {
+    const runtimeConfig = window.APP_TAHFIZH_CONFIG || {};
+    if (runtimeConfig.deadlineJuz30Score) {
+        TahfizhConfig.deadlineJuz30Score = new Date(runtimeConfig.deadlineJuz30Score);
+    }
+    if (runtimeConfig.deadlineTahfizhTuntas) {
+        TahfizhConfig.deadlineTahfizhTuntas = new Date(runtimeConfig.deadlineTahfizhTuntas);
+    }
+    if (Array.isArray(runtimeConfig.perpulanganPeriods)) {
+        TahfizhConfig.perpulanganPeriods = runtimeConfig.perpulanganPeriods.map(period => ({
+            ...period,
+            deadline: new Date(period.deadline),
+        }));
+    }
+}
+
+function isTahfizhDummyModeAllowed() {
+    return Boolean(window.APP_TAHFIZH_CONFIG?.allowDummyMode)
+        || localStorage.getItem('DEBUG_LOGS') === 'true'
+        || location.search.includes('debug=true');
+}
+
 function getTahfizhRules() {
     return TahfizhConfig.rules || {};
 }
@@ -332,6 +354,7 @@ window.switchTahfizhSubTab = function(subtabName) {
 
 // Main entry point dari tab-manager
 async function initTahfizhTab() {
+    applyTahfizhRuntimeConfig();
     cacheTahfizhDOM();
     mountTahfizhHistoryOnHome();
     setupTahfizhEventListeners();
@@ -393,10 +416,17 @@ function syncSiswaFromMainApp() {
 }
 
 function isTahfizhDummyModeEnabled() {
-    return localStorage.getItem(TahfizhConfig.dummyModeKey) === 'true';
+    return isTahfizhDummyModeAllowed() && localStorage.getItem(TahfizhConfig.dummyModeKey) === 'true';
 }
 
 function setTahfizhDummyMode(enabled) {
+    if (enabled && !isTahfizhDummyModeAllowed()) {
+        localStorage.removeItem(TahfizhConfig.dummyModeKey);
+        TahfizhState.useDummyData = false;
+        if (window.showToast) window.showToast('Mode dummy hanya tersedia saat debug/demo aktif.', 'warning');
+        updateTahfizhDummyToggleUI();
+        return;
+    }
     localStorage.setItem(TahfizhConfig.dummyModeKey, enabled ? 'true' : 'false');
     TahfizhState.useDummyData = enabled;
     updateTahfizhDummyToggleUI();
@@ -491,11 +521,16 @@ async function reloadTahfizhData() {
     try {
         console.log("📥 Memuat data Tahfizh dari localStorage...");
         TahfizhState.useDummyData = isTahfizhDummyModeEnabled();
-        let localSetoran = localStorage.getItem('tahfizh_local_setoran');
+        let setoranList = typeof window.getTahfizhSetoran === 'function' ? window.getTahfizhSetoran() : null;
+        let localSetoran = setoranList ? JSON.stringify(setoranList) : localStorage.getItem('tahfizh_local_setoran');
         let localMetadata = localStorage.getItem('tahfizh_local_metadata');
 
         if (!localSetoran) {
-            localStorage.setItem('tahfizh_local_setoran', JSON.stringify([]));
+            if (typeof window.saveTahfizhSetoran === 'function') {
+                window.saveTahfizhSetoran([]);
+            } else {
+                localStorage.setItem('tahfizh_local_setoran', JSON.stringify([]));
+            }
             localSetoran = JSON.stringify([]);
         }
 
@@ -513,7 +548,7 @@ async function reloadTahfizhData() {
             }
         }
 
-        const parsedSetoran = parseTahfizhJSON(localSetoran, []);
+        const parsedSetoran = setoranList || parseTahfizhJSON(localSetoran, []);
         let parsedMetadata = parseTahfizhJSON(localMetadata, { refJuz: [], refSurat: [] });
         if (!Array.isArray(parsedMetadata.refJuz) || !Array.isArray(parsedMetadata.refSurat)) {
             parsedMetadata = { refJuz: [], refSurat: [] };
@@ -869,10 +904,10 @@ async function handleValidationAction(rowNumber, status) {
     if (window.showToast) window.showToast(`Memproses ${status === 'Verified' ? 'Persetujuan' : 'Penolakan'}...`, 'info');
 
     try {
-        let localSetoran = localStorage.getItem('tahfizh_local_setoran');
-        if (!localSetoran) throw new Error("Database setoran tidak ditemukan");
-
-        let list = JSON.parse(localSetoran);
+        let list = typeof window.getTahfizhSetoran === 'function'
+            ? window.getTahfizhSetoran()
+            : JSON.parse(localStorage.getItem('tahfizh_local_setoran') || '[]');
+        if (!Array.isArray(list)) throw new Error("Database setoran tidak ditemukan");
         const index = list.findIndex(s => (s.rowNumber || s.RowNumber) == rowNumber);
 
         if (index === -1) throw new Error("Data setoran tidak ditemukan");
@@ -2252,8 +2287,9 @@ async function handleTahfizhFormSubmit(e) {
     let failCount = 0;
 
     try {
-        let localSetoran = localStorage.getItem('tahfizh_local_setoran');
-        let list = localSetoran ? JSON.parse(localSetoran) : [];
+        let list = typeof window.getTahfizhSetoran === 'function'
+            ? window.getTahfizhSetoran()
+            : JSON.parse(localStorage.getItem('tahfizh_local_setoran') || '[]');
         
         let maxRow = list.reduce((max, s) => {
             const rowNum = Number(s.rowNumber || s.RowNumber || 0);
@@ -2276,7 +2312,11 @@ async function handleTahfizhFormSubmit(e) {
             successCount++;
         }
 
-        localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+        if (typeof window.saveTahfizhSetoran === 'function') {
+            window.saveTahfizhSetoran(list);
+        } else {
+            localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+        }
 
         if (successCount > 0) {
             const studentNis = String(baseData.santriId || activeSantri?.nis || activeSantri?.id || '').trim();
@@ -2371,16 +2411,20 @@ async function deleteTahfizhRowDirectly() {
     if (window.showToast) window.showToast("Menghapus data setoran...", "info");
 
     try {
-        let localSetoran = localStorage.getItem('tahfizh_local_setoran');
-        if (!localSetoran) throw new Error("Database setoran tidak ditemukan");
-        
-        let list = JSON.parse(localSetoran);
+        let list = typeof window.getTahfizhSetoran === 'function'
+            ? window.getTahfizhSetoran()
+            : JSON.parse(localStorage.getItem('tahfizh_local_setoran') || '[]');
+        if (!Array.isArray(list)) throw new Error("Database setoran tidak ditemukan");
         const index = list.findIndex(s => (s.rowNumber || s.RowNumber) == rowNumber);
         
         if (index === -1) throw new Error("Data setoran tidak ditemukan");
         
         list.splice(index, 1);
-        localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+        if (typeof window.saveTahfizhSetoran === 'function') {
+            window.saveTahfizhSetoran(list);
+        } else {
+            localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+        }
         
         if (window.showToast) window.showToast("Data setoran berhasil dihapus.", "success");
         await reloadTahfizhData();
