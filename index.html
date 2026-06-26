@@ -4225,6 +4225,32 @@
             <!-- Rendered dynamically -->
           </div>
 
+          <section id="dashboard-wali-summary-card" class="wali-only bg-white/90 dark:bg-slate-900/90 rounded-2xl p-4 border border-slate-200/70 dark:border-slate-800 shadow-sm animate-slide-up">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Ringkasan Santri</p>
+                <h2 id="dashboard-wali-santri-name" class="mt-1 text-lg font-black text-slate-900 dark:text-white truncate">Santri</h2>
+                <p id="dashboard-wali-santri-meta" class="text-xs font-bold text-slate-500 dark:text-slate-400">Kelas -</p>
+              </div>
+              <span id="dashboard-wali-status-badge" class="shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-3 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-300">Aktif</span>
+            </div>
+
+            <div class="mt-4 grid grid-cols-3 gap-2">
+              <button onclick="window.switchTab('report')" class="rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 p-3 text-left active:scale-[0.98] transition-all">
+                <p class="text-[9px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">Kehadiran</p>
+                <p id="dashboard-wali-attendance" class="mt-1 text-lg font-black text-slate-900 dark:text-white">0%</p>
+              </button>
+              <button onclick="window.switchTab('tahfizh')" class="rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 p-3 text-left active:scale-[0.98] transition-all">
+                <p class="text-[9px] font-black uppercase tracking-wide text-orange-600 dark:text-orange-300">Tahfizh</p>
+                <p id="dashboard-wali-tahfizh" class="mt-1 text-sm font-black text-orange-700 dark:text-orange-200 truncate">-</p>
+              </button>
+              <button onclick="window.openWaliPermitModal()" class="rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 p-3 text-left active:scale-[0.98] transition-all">
+                <p class="text-[9px] font-black uppercase tracking-wide text-blue-600 dark:text-blue-300">Perizinan</p>
+                <p id="dashboard-wali-permit" class="mt-1 text-sm font-black text-blue-700 dark:text-blue-200 truncate">Ajukan</p>
+              </button>
+            </div>
+          </section>
+
         <!-- Dashboard Grid Layout on Desktop -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 !mt-5">
           
@@ -7068,8 +7094,9 @@
         </div>
 
         <!-- Bulk Action Button -->
-        <button onclick="window.openBulkMenu()" class="w-12 h-12 flex items-center justify-center rounded-full bg-slate-900 dark:bg-black text-white hover:bg-slate-800 dark:hover:bg-slate-900 shadow-[0_10px_35px_rgba(0,0,0,0.12)] border border-white/5 active:scale-95 transition-all shrink-0" title="Menu Aksi Massal">
+        <button onclick="window.openBulkMenu()" class="h-12 px-4 flex items-center justify-center gap-2 rounded-full bg-slate-900 dark:bg-black text-white hover:bg-slate-800 dark:hover:bg-slate-900 shadow-[0_10px_35px_rgba(0,0,0,0.12)] border border-white/5 active:scale-95 transition-all shrink-0" aria-label="Buka aksi massal presensi" title="Aksi massal presensi">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layers w-4.5 h-4.5"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></svg>
+          <span class="text-xs font-black">Aksi</span>
         </button>
       </div>
     </section>
@@ -7308,13 +7335,14 @@
           <!-- Nama Wali -->
           <div>
             <label for="wali-permit-nama-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Nama Wali Santri</label>
-            <input type="text" id="wali-permit-nama-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Budi Santoso">
+            <input type="text" id="wali-permit-nama-wali" required autocomplete="name" class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Budi Santoso">
+            <p class="mt-1 text-[10px] font-semibold text-slate-400">Terisi otomatis dari akun Wali bila tersedia.</p>
           </div>
 
           <!-- Alamat Wali -->
           <div>
             <label for="wali-permit-alamat-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Alamat Wali</label>
-            <input type="text" id="wali-permit-alamat-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Yogyakarta">
+            <input type="text" id="wali-permit-alamat-wali" required autocomplete="street-address" class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Yogyakarta">
           </div>
 
           <!-- Nama & Kelas Santri (Readonly) -->
@@ -7341,7 +7369,7 @@
           <!-- Keperluan -->
           <div>
             <label for="wali-permit-reason" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Keperluan / Alasan</label>
-            <textarea id="wali-permit-reason" rows="3" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Tuliskan keperluan dengan jelas..."></textarea>
+            <textarea id="wali-permit-reason" rows="3" required autocomplete="off" class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Tuliskan keperluan dengan jelas..."></textarea>
           </div>
 
           <!-- Tanggal Izin -->
@@ -7365,7 +7393,7 @@
           <!-- Tempat Tujuan -->
           <div>
             <label for="wali-permit-destination" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Tempat Tujuan</label>
-            <input type="text" id="wali-permit-destination" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Lokasi yang dituju">
+            <input type="text" id="wali-permit-destination" required autocomplete="address-line1" class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Lokasi yang dituju">
           </div>
 
           <!-- Submit Button -->
@@ -7986,10 +8014,12 @@
               </p>
             </div>
           </div>
-          <button
-            onclick="window.closeModal('modal-bulk-actions')"
-            class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors"
-          >
+      <button
+        onclick="window.closeModal('modal-bulk-actions')"
+        class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors"
+        aria-label="Tutup aksi massal"
+        title="Tutup"
+      >
             <i data-lucide="x" class="w-5 h-5"></i>
           </button>
         </div>

@@ -1191,6 +1191,41 @@ window.getWaliTahfizhSummary = function (student = appState.waliSantri) {
   };
 };
 
+window.updateWaliDashboardSummary = function () {
+  if (!window.isWaliMode?.()) return;
+
+  const student = appState.waliSantri;
+  const studentName = student?.nama || "Santri";
+  const className = window.getWaliStudentClass?.(student) || appState.waliKelas || appState.selectedClass || "-";
+  const nis = window.getWaliPrimaryId?.(student);
+  const summary7 = window.getWaliAttendanceSummary?.(student, 7) || { total: 0, Hadir: 0, Ya: 0, Telat: 0 };
+  const tahfizh = window.getWaliTahfizhSummary?.(student) || { total: 0, latestType: "-", latestJuz: "-" };
+  const activePermit = window.getWaliActivePermit?.(student, appState.date);
+
+  const attendancePercent = summary7.total
+    ? Math.round(((summary7.Hadir + summary7.Ya + summary7.Telat) / summary7.total) * 100)
+    : 0;
+
+  const nameEl = document.getElementById("dashboard-wali-santri-name");
+  const metaEl = document.getElementById("dashboard-wali-santri-meta");
+  const attendanceEl = document.getElementById("dashboard-wali-attendance");
+  const tahfizhEl = document.getElementById("dashboard-wali-tahfizh");
+  const permitEl = document.getElementById("dashboard-wali-permit");
+  const statusEl = document.getElementById("dashboard-wali-status-badge");
+
+  if (nameEl) nameEl.textContent = studentName;
+  if (metaEl) metaEl.textContent = `Kelas ${className}${nis ? ` - NIS ${nis}` : ""}`;
+  if (attendanceEl) attendanceEl.textContent = summary7.total ? `${attendancePercent}%` : "Belum ada";
+  if (tahfizhEl) tahfizhEl.textContent = tahfizh.total ? `${tahfizh.latestType} Juz ${tahfizh.latestJuz}` : "Belum ada";
+  if (permitEl) permitEl.textContent = activePermit ? "Izin aktif" : "Ajukan";
+  if (statusEl) {
+    statusEl.textContent = activePermit ? "Sedang Izin" : "Aktif";
+    statusEl.className = activePermit
+      ? "shrink-0 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 px-3 py-1 text-[10px] font-black text-blue-700 dark:text-blue-300"
+      : "shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-3 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-300";
+  }
+};
+
 window.renderWaliView = function () {
   const view = document.getElementById("view-wali");
   const student = appState.waliSantri;
@@ -2117,6 +2152,7 @@ window.updateDashboard = function () {
   if (window.renderDashboardAnnouncementBanner) {
     window.renderDashboardAnnouncementBanner();
   }
+  window.updateWaliDashboardSummary?.();
 
   // 1. Greeting
   const h = new Date().getHours();
@@ -3322,6 +3358,7 @@ window.updateProfileInfo = function () {
       elWaliMusyrifWa.href = `https://wa.me/${hp}?text=${encodeURIComponent("Assalamualaikum Ustadz " + musyrifName + ", saya orang tua/wali dari " + santriName + " ingin menanyakan perkembangan anak kami...")}`;
     }
 
+    window.updateWaliDashboardSummary?.();
     if (window.lucide) lucide.createIcons();
     window.syncRoleModeUI();
     return;

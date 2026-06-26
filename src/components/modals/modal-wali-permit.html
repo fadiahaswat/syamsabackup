@@ -16,13 +16,14 @@
           <!-- Nama Wali -->
           <div>
             <label for="wali-permit-nama-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Nama Wali Santri</label>
-            <input type="text" id="wali-permit-nama-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Budi Santoso">
+            <input type="text" id="wali-permit-nama-wali" required autocomplete="name" class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Budi Santoso">
+            <p class="mt-1 text-[10px] font-semibold text-slate-400">Terisi otomatis dari akun Wali bila tersedia.</p>
           </div>
 
           <!-- Alamat Wali -->
           <div>
             <label for="wali-permit-alamat-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Alamat Wali</label>
-            <input type="text" id="wali-permit-alamat-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Yogyakarta">
+            <input type="text" id="wali-permit-alamat-wali" required autocomplete="street-address" class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Yogyakarta">
           </div>
 
           <!-- Nama & Kelas Santri (Readonly) -->
@@ -49,7 +50,7 @@
           <!-- Keperluan -->
           <div>
             <label for="wali-permit-reason" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Keperluan / Alasan</label>
-            <textarea id="wali-permit-reason" rows="3" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Tuliskan keperluan dengan jelas..."></textarea>
+            <textarea id="wali-permit-reason" rows="3" required autocomplete="off" class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Tuliskan keperluan dengan jelas..."></textarea>
           </div>
 
           <!-- Tanggal Izin -->
@@ -73,7 +74,7 @@
           <!-- Tempat Tujuan -->
           <div>
             <label for="wali-permit-destination" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Tempat Tujuan</label>
-            <input type="text" id="wali-permit-destination" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Lokasi yang dituju">
+            <input type="text" id="wali-permit-destination" required autocomplete="address-line1" class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Lokasi yang dituju">
           </div>
 
           <!-- Submit Button -->

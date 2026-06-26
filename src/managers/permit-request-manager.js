@@ -70,10 +70,14 @@
     const elNamaSiswa = document.getElementById("wali-permit-nama-santri");
     const elKelasSiswa = document.getElementById("wali-permit-kelas-santri");
     const elNamaWali = document.getElementById("wali-permit-nama-wali");
+    const elAlamatWali = document.getElementById("wali-permit-alamat-wali");
 
     if (elNamaSiswa) elNamaSiswa.value = siswa.nama || "";
     if (elKelasSiswa) elKelasSiswa.value = appState.waliKelas || siswa.kelas || "";
     if (elNamaWali) elNamaWali.value = appState.userProfile?.name?.replace("Wali ", "") || "";
+    if (elAlamatWali) {
+      elAlamatWali.value = siswa.alamat_wali || siswa.alamatWali || siswa.alamat_ortu || siswa.alamat || "";
+    }
 
     // Set Default Tanggal ke Hari Ini
     const elDate = document.getElementById("wali-permit-date");
