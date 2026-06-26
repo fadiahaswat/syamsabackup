@@ -1,0 +1,121 @@
+<div id="report-section" class="animate-fade-in space-y-4">
+          <div class="grid grid-cols-1 xl:grid-cols-[minmax(360px,1fr)_minmax(520px,1.1fr)] gap-3 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-3 backdrop-blur-xl">
+          <div class="bg-slate-100/80 dark:bg-slate-950/60 p-1 rounded-xl grid grid-cols-4 min-w-0">
+            <button
+              onclick="window.setReportMode('daily')"
+              class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg whitespace-nowrap active-mode transition-all"
+              data-mode="daily"
+            >
+              Hari Ini
+            </button>
+            <button
+              onclick="window.setReportMode('weekly')"
+              class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg text-slate-500 whitespace-nowrap transition-all"
+              data-mode="weekly"
+            >
+              Pekan
+            </button>
+            <button
+              onclick="window.setReportMode('monthly')"
+              class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg text-slate-500 whitespace-nowrap transition-all"
+              data-mode="monthly"
+            >
+              Bulan
+            </button>
+            <button
+              onclick="window.setReportMode('semester')"
+              class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg text-slate-500 whitespace-nowrap transition-all"
+              data-mode="semester"
+            >
+              Semester
+            </button>
+          </div>
+
+          <div class="report-action-bar min-w-0">
+            <div class="relative min-w-0 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700 flex items-center gap-2 h-11">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+              <button
+                id="report-date-range"
+                onclick="window.togglePeriodMenu('report')"
+                class="flex-1 text-center text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 truncate"
+                type="button"
+                >-</button
+              >
+              <div id="report-period-menu" class="hidden period-popover"></div>
+            </div>
+
+              <button
+                onclick="window.kirimLaporanWA()"
+                aria-label="Kirim WhatsApp"
+                title="Kirim WhatsApp"
+                class="musyrif-only h-11 w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-400 font-black text-[10px] flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-500/20 active:scale-95 transition-all"
+              >
+                <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
+              </button>
+              <button
+                onclick="window.exportToPDF()"
+                aria-label="Export PDF"
+                title="Export PDF"
+                class="musyrif-only h-11 w-full rounded-xl bg-blue-50 dark:bg-blue-500/10 text-palette-blue border border-blue-100 dark:border-blue-500/20 font-black text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-all"
+              >
+                <i data-lucide="file-down" class="w-4 h-4"></i>
+              </button>
+          </div>
+          </div>
+
+          <div
+            class="bg-white/90 dark:bg-slate-900/90 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 overflow-hidden backdrop-blur-xl"
+          >
+            <div
+              id="report-table-legend"
+              class="px-3 py-2.5 bg-white/80 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800"
+            ></div>
+            <div class="overflow-x-auto hide-scrollbar">
+              <table class="w-full text-left border-collapse min-w-[680px]">
+                <thead>
+                  <tr
+                    class="bg-slate-50 dark:bg-slate-950/80 text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 border-b border-slate-200/70 dark:border-slate-800"
+                  >
+                    <th class="p-3.5 font-black w-10 text-center" scope="col">
+                      No
+                    </th>
+                    <th class="p-3.5 font-black min-w-[160px]" scope="col">
+                      Nama Santri
+                    </th>
+                    <th class="p-3.5 font-black text-center" scope="col">
+                      Shalat
+                    </th>
+                    <th
+                      class="p-3.5 font-black text-center text-slate-600 dark:text-slate-300"
+                      scope="col"
+                    >
+                      Sekolah
+                    </th>
+                    <th class="p-3.5 font-black text-center" scope="col">
+                      KBM Asrama
+                    </th>
+                    <th class="p-3.5 font-black text-center" scope="col">
+                      Sunnah
+                    </th>
+                    <th
+                      class="p-3.5 font-black text-center text-slate-700 dark:text-slate-200"
+                      scope="col"
+                    >
+                      Nilai
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="daily-recap-tbody"
+                  class="text-xs divide-y divide-slate-100 dark:divide-slate-800"
+                ></tbody>
+              </table>
+            </div>
+            <div
+              class="p-3 bg-slate-50/80 dark:bg-slate-950/60 flex items-center justify-center gap-2 text-[10px] text-slate-400 font-medium border-t border-slate-100 dark:border-slate-800"
+            >
+              <i data-lucide="info" class="w-3 h-3"></i> Kalkulasi nilai
+              bergantung pada bobot kehadiran tiap sesi
+            </div>
+          </div>
+        </div>

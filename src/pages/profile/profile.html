@@ -1,0 +1,515 @@
+<div
+        id="tab-profile"
+        class="tab-content hidden flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-4 sm:p-6 space-y-5 pt-safe"
+      >
+        <div id="profile-hero-card-wrapper" class="relative z-30">
+        <div
+          id="profile-hero-card"
+          class="bg-slate-900 dark:bg-black p-5 sm:p-6 rounded-[1.75rem] text-center relative overflow-hidden border border-slate-800/60 shadow-2xl shadow-slate-900/20 backdrop-blur-xl group"
+        >
+          <div
+            class="absolute top-0 right-0 w-56 h-56 bg-palette-mint rounded-full blur-[90px] opacity-20 -mr-16 -mt-16 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
+          ></div>
+          <div class="absolute bottom-0 left-0 w-44 h-44 bg-palette-blue rounded-full blur-[80px] opacity-15 -ml-14 -mb-14 pointer-events-none"></div>
+          <img src="assets/icons/icon.webp" class="absolute -right-8 -top-8 w-44 h-44 opacity-[0.06] pointer-events-none select-none rotate-[15deg]" alt="" />
+
+          <div class="relative z-10">
+            <div
+              class="w-20 h-20 bg-white/10 rounded-full mx-auto mb-4 p-1 border border-white/10 shadow-lg shadow-black/20"
+            >
+              <div
+                id="profile-avatar"
+                class="w-full h-full bg-white rounded-full flex items-center justify-center text-slate-500 overflow-hidden"
+              >
+                <i data-lucide="user" class="w-10 h-10"></i>
+              </div>
+            </div>
+            <h2
+              id="profile-name"
+              class="text-xl font-black text-white mb-1 tracking-tight truncate"
+            >
+              ...
+            </h2>
+            <p
+              id="profile-role-tab"
+              class="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[10px] font-black text-palette-mint uppercase tracking-wider mb-4"
+            >
+              Administrator
+            </p>
+            <button
+              onclick="handleLogout()"
+              class="profile-compact-logout hidden h-9 w-9 items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white hover:bg-red-500/20 hover:text-red-100 active:scale-95 transition-all shrink-0"
+              title="Logout"
+            >
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Sync Button for PWA -->
+            <button
+              onclick="window.manualSync()"
+              id="pwa-sync-btn"
+              class="h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 active:scale-95 transition-all shrink-0"
+              title="Sinkronkan Data"
+            >
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="text-center rounded-xl bg-white/5 border border-white/10 p-3">
+                <div
+                  class="text-xl font-black text-white"
+                  id="profile-avg-attendance"
+                >
+                  0%
+                </div>
+                <p class="text-[9px] font-black text-slate-400 uppercase mt-0.5 tracking-wider">
+                  Rata-rata
+                </p>
+              </div>
+              <div class="text-center rounded-xl bg-white/5 border border-white/10 p-3">
+                <div
+                  class="text-xl font-black text-palette-mint"
+                  id="profile-days-count"
+                >
+                  0
+                </div>
+                <p class="text-[9px] font-black text-slate-400 uppercase mt-0.5 tracking-wider">
+                  Hari Aktif
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <!-- Left Column: Profile Card & Calendar -->
+          <div class="lg:col-span-5 space-y-5">
+          
+          <!-- Wali-Only Info Card & Contact Musyrif -->
+          <div class="wali-only bg-white dark:bg-slate-900 p-5 rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-black/20 flex flex-col gap-5">
+            <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-500/10 dark:to-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-500/20 shadow-sm shrink-0">
+                <i data-lucide="contact-2" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white leading-tight">Biodata &amp; Kontak</h3>
+                <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">Informasi lengkap santri &amp; wali</p>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Santri Section -->
+              <div class="space-y-2">
+                <span class="text-[8px] font-black uppercase tracking-widest text-slate-400 block">Detail Santri</span>
+                <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+                  <div>
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-tight">Nama Santri</span>
+                    <span id="wali-santri-nama" class="text-slate-800 dark:text-slate-200">-</span>
+                  </div>
+                  <div>
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-tight">NIS</span>
+                    <span id="wali-santri-nis" class="text-slate-800 dark:text-slate-200">-</span>
+                  </div>
+                  <div>
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-tight">Kelas</span>
+                    <span id="wali-santri-kelas" class="text-slate-800 dark:text-slate-200">-</span>
+                  </div>
+                  <div>
+                    <span class="block text-[8px] text-slate-400 uppercase tracking-tight">Kamar Asrama</span>
+                    <span id="wali-santri-asrama" class="text-slate-800 dark:text-slate-200">-</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Musyrif Section -->
+              <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                <span class="text-[8px] font-black uppercase tracking-widest text-slate-400 block">Musyrif Pembina</span>
+                <div class="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                  <div class="min-w-0">
+                    <span id="wali-musyrif-nama" class="block text-xs font-black text-slate-800 dark:text-white truncate">-</span>
+                    <span class="block text-[8px] font-bold text-slate-400 mt-0.5">Musyrif Asrama</span>
+                  </div>
+                  <a id="wali-musyrif-wa-btn" href="#" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[9px] flex items-center gap-1 transition-all active:scale-95">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i> Hubungi WA
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="timesheet-secret-trigger" class="musyrif-only flex items-center justify-between gap-2 p-1.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-sm select-none">
+            <div class="flex items-center gap-2 px-1 min-w-0">
+              <div class="w-8 h-8 rounded-xl bg-palette-blue/10 dark:bg-palette-blue/20 flex items-center justify-center text-palette-blue shrink-0">
+                <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
+              </div>
+              <div class="min-w-0">
+              <h3 class="text-sm font-black text-slate-800 dark:text-white tracking-tight truncate flex items-center gap-1.5">
+                Timesheet Input
+                <i id="ts-streak-title-flame" data-lucide="flame" class="hidden timesheet-streak-flame w-3.5 h-3.5"></i>
+              </h3>
+              <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 block truncate">Monitoring progres presensi harian</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="musyrif-only bg-white/80 dark:bg-slate-800/90 p-4 sm:p-5 rounded-[1.75rem] shadow-xl shadow-slate-200/50 dark:shadow-black/40 border border-white/60 dark:border-slate-700 font-sans backdrop-blur-xl"
+        >
+          <div class="flex items-center justify-between w-full mb-6 gap-3">
+            <button
+              onclick="window.goToToday()"
+              class="h-10 flex items-center justify-center px-4 text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-xl transition-all dark:text-blue-400 flex-shrink-0 shadow-sm"
+              title="Kembali ke Hari Ini"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-2"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>
+              Hari Ini
+            </button>
+
+            <div class="h-10 flex items-center bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl p-1 shadow-sm">
+              <button
+                onclick="window.changeTimesheetMonth(-1)"
+                class="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m15 18-6-6 6-6"></path></svg>
+              </button>
+
+              <div class="relative px-2 sm:px-4 flex items-center justify-center min-w-[120px] sm:min-w-[140px]">
+                <h4 id="timesheet-month-label" class="font-black text-xs uppercase tracking-widest text-slate-700 dark:text-slate-200 text-center whitespace-nowrap">Juni 2026</h4>
+                <input type="month" id="timesheet-month-picker" onchange="window.setTimesheetMonth(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+              </div>
+
+              <button
+                onclick="window.changeTimesheetMonth(1)"
+                class="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="m9 18 6-6-6-6"></path></svg>
+              </button>
+            </div>
+          </div>
+
+          <div id="timesheet-summary" class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-4">
+            <div class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-full border border-emerald-100 dark:border-emerald-500/20 shadow-sm transition-all hover:-translate-y-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-emerald-500"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg>
+              <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Selesai</span>
+              <span id="ts-complete-rate" class="text-xs font-black text-emerald-700 dark:text-emerald-300 ml-1">0%</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 rounded-full border border-amber-100 dark:border-amber-500/20 shadow-sm transition-all hover:-translate-y-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-amber-500"><circle cx="12" cy="14" r="8"></circle><line x1="12" x2="15" y1="14" y2="11"></line></svg>
+              <span class="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Speed</span>
+              <span id="ts-fill-speed" class="text-xs font-black text-amber-700 dark:text-amber-300 ml-1">-</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 rounded-full border border-blue-100 dark:border-blue-500/20 shadow-sm transition-all hover:-translate-y-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-blue-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span class="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Tepat</span>
+              <span id="ts-time-compliance" class="text-xs font-black text-blue-700 dark:text-blue-300 ml-1">0%</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 dark:bg-orange-500/10 rounded-full border border-orange-100 dark:border-orange-500/20 shadow-sm transition-all hover:-translate-y-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-orange-500"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+              <span class="text-[10px] font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Streak</span>
+              <span id="ts-streak-count" class="text-xs font-black text-orange-700 dark:text-orange-300 ml-1">0</span>
+            </div>
+
+            <button id="ts-streak-test-toggle" type="button" onclick="window.toggleTimesheetStreakTestMode()" class="hidden items-center gap-1.5 px-2.5 py-1 bg-slate-50 dark:bg-slate-800/60 rounded-full border border-slate-200 dark:border-slate-700/60 shadow-sm transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400" title="Mode testing">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+              Test
+            </button>
+          </div>
+
+          <div class="bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700/50 p-3 shadow-inner">
+            <div class="grid grid-cols-7 gap-2 text-center mb-3">
+              <div class="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide">Sen</div>
+              <div class="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide">Sel</div>
+              <div class="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide">Rab</div>
+              <div class="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide">Kam</div>
+              <div class="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide">Jum</div>
+              <div class="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide">Sab</div>
+              <div class="text-[10px] sm:text-xs font-black text-rose-400 dark:text-rose-500 uppercase tracking-wide">Ahd</div>
+            </div>
+
+            <div id="timesheet-calendar" class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center"></div>
+          </div>
+        </div>
+
+      </div> <!-- Close Left Column -->
+
+      <!-- Right Column: Pembinaan & Permits & Settings -->
+      <div class="lg:col-span-7 space-y-5">
+        <div class="flex flex-col gap-6">
+          <div
+            id="pembinaan-section"
+            class="bg-white dark:bg-slate-900 rounded-[1.75rem] p-4 border border-slate-100 dark:border-slate-800 shadow-sm relative"
+          >
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div class="flex items-center gap-3">
+                <div class="flex items-center justify-center w-9 h-9 bg-red-50 dark:bg-red-500/10 rounded-xl text-red-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18v-6a5 5 0 1 1 10 0v6"></path><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"></path><path d="M21 12h1"></path><path d="M18.5 4.5 18 5"></path><path d="M2 12h1"></path><path d="M12 2v1"></path><path d="m4.929 4.929.707.707"></path><path d="M12 12v6"></path></svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">Zona Pembinaan</h3>
+                  <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Monitoring Kedisiplinan Santri</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 px-2.5 py-1 bg-rose-50 dark:bg-rose-500/10 rounded-full border border-rose-100 dark:border-rose-500/20">
+                <span class="relative flex h-1.5 w-1.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span><span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span></span>
+                <span class="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Live</span>
+              </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-3 gap-2 mb-4">
+              <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 border border-slate-100 dark:border-slate-700/50 relative overflow-hidden">
+                <div class="absolute inset-y-0 left-0 w-0.5 bg-amber-400 rounded-full"></div>
+                <div class="text-amber-500 bg-amber-100 dark:bg-amber-500/10 p-1.5 rounded-lg shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg>
+                </div>
+                <div class="min-w-0">
+                  <div id="count-level-1" class="text-xl font-extrabold text-slate-950 dark:text-white leading-none">0</div>
+                  <div class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-0.5 truncate">Bimbingan</div>
+                </div>
+              </div>
+              <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 border border-slate-100 dark:border-slate-700/50 relative overflow-hidden">
+                <div class="absolute inset-y-0 left-0 w-0.5 bg-orange-500 rounded-full"></div>
+                <div class="text-orange-600 bg-orange-100 dark:bg-orange-500/10 p-1.5 rounded-lg shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+                </div>
+                <div class="min-w-0">
+                  <div id="count-level-2" class="text-xl font-extrabold text-slate-950 dark:text-white leading-none">0</div>
+                  <div class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-0.5 truncate">Pamong</div>
+                </div>
+              </div>
+              <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 flex items-center gap-2.5 border border-slate-100 dark:border-slate-700/50 relative overflow-hidden">
+                <div class="absolute inset-y-0 left-0 w-0.5 bg-red-600 rounded-full"></div>
+                <div class="text-red-600 bg-red-100 dark:bg-red-500/10 p-1.5 rounded-lg shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg>
+                </div>
+                <div class="min-w-0">
+                  <div id="count-level-3" class="text-xl font-extrabold text-slate-950 dark:text-white leading-none">0</div>
+                  <div class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-0.5 truncate">Direktur</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Feed -->
+            <div class="mb-4">
+              <div class="flex justify-between items-center mb-2.5">
+                <h4 class="text-[10px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Feed Pelanggaran</h4>
+                <button class="text-[10px] font-bold text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M2 5h20"></path><path d="M6 12h12"></path><path d="M9 19h6"></path></svg>Filter
+                </button>
+              </div>
+              <div id="pembinaan-full-list" class="space-y-2 max-h-[260px] overflow-y-auto">
+                <div class="py-6 text-center">
+                  <p class="text-xs text-slate-400 italic">Tidak ada data pelanggaran aktif</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Parameter Bar -->
+            <div class="border-t border-slate-100 dark:border-slate-800 pt-3">
+              <div class="relative h-2 bg-slate-100 dark:bg-slate-800 rounded-full mb-2 overflow-hidden flex">
+                <div class="h-full w-[25%] bg-emerald-400 rounded-l-full"></div>
+                <div class="h-full w-[25%] bg-amber-400"></div>
+                <div class="h-full w-[25%] bg-orange-400"></div>
+                <div class="h-full w-[25%] bg-rose-500 rounded-r-full"></div>
+              </div>
+              <div class="grid grid-cols-4 text-center">
+                <div><div class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Bimbingan</div><div class="text-[8px] text-slate-400">1–10</div></div>
+                <div><div class="text-[9px] font-bold text-amber-600 dark:text-amber-400">SP 1</div><div class="text-[8px] text-slate-400">11–20</div></div>
+                <div><div class="text-[9px] font-bold text-orange-600 dark:text-orange-400">SP 2</div><div class="text-[8px] text-slate-400">21–30</div></div>
+                <div><div class="text-[9px] font-bold text-rose-600 dark:text-rose-400">SP 3/T</div><div class="text-[8px] text-slate-400">&gt;31</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white/80 dark:bg-slate-800/80 rounded-[1.75rem] p-4 md:p-5 shadow-lg shadow-slate-200/40 dark:shadow-black/20 border border-white/60 dark:border-slate-700/50 backdrop-blur-xl relative overflow-hidden"
+          >
+            <div class="absolute top-0 right-0 w-44 h-44 bg-palette-blue/10 rounded-full blur-[60px] pointer-events-none"></div>
+            <div class="relative z-10 flex items-center justify-between mb-5">
+              <div class="flex items-center gap-3">
+                <div
+                  class="flex items-center justify-center w-10 h-10 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-xl"
+                >
+                  <i data-lucide="archive" class="w-5 h-5 text-palette-blue"></i>
+                </div>
+                <div>
+                  <h3
+                    class="text-base font-black text-slate-900 dark:text-white leading-tight"
+                  >
+                    Arsip Perizinan
+                  </h3>
+                  <p class="text-[11px] font-bold text-slate-500">
+                    Database riwayat keluar masuk
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative z-10 flex flex-col sm:flex-row gap-3 mb-4">
+              <div class="relative flex-grow group">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i
+                    data-lucide="search"
+                    class="w-4 h-4 text-slate-400 group-focus-within:text-palette-blue transition-colors"
+                  ></i>
+                </div>
+                <input
+                  type="text"
+                  id="hist-search"
+                  onkeyup="window.renderPermitHistory()"
+                  placeholder="Cari santri..."
+                  class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-palette-blue/10 focus:border-palette-blue text-sm font-bold text-slate-700 dark:text-slate-200 transition-all outline-none"
+                />
+              </div>
+
+              <div class="relative min-w-[140px]">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i
+                    data-lucide="filter"
+                    class="w-3.5 h-3.5 text-palette-blue"
+                  ></i>
+                </div>
+                <select
+                  id="hist-filter-cat"
+                  onchange="window.renderPermitHistory()"
+                  class="w-full pl-9 pr-8 py-3 appearance-none rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-palette-blue dark:text-blue-300 text-xs font-black outline-none focus:ring-4 focus:ring-palette-blue/10 cursor-pointer"
+                >
+                  <option value="all">Semua Data</option>
+                  <option value="sakit">Sakit</option>
+                  <option value="izin">Izin</option>
+                  <option value="pulang">Pulang</option>
+                </select>
+                <div
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"
+                >
+                  <i
+                    data-lucide="chevron-down"
+                    class="w-3.5 h-3.5 text-palette-blue"
+                  ></i>
+                </div>
+              </div>
+            </div>
+
+            <div
+              id="permit-history-list"
+              class="relative z-10 space-y-3 max-h-[420px] overflow-y-auto custom-scrollbar pr-0.5"
+            >
+              <div
+                class="flex flex-col items-center justify-center py-10 text-slate-400 opacity-50"
+              >
+                <i
+                  data-lucide="folder-open"
+                  class="w-10 h-10 mb-2 stroke-1"
+                ></i>
+                <p class="text-xs">Menunggu data dimuat...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="musyrif-only bg-white/80 dark:bg-slate-800/80 rounded-[1.75rem] p-3 shadow-lg shadow-slate-200/40 dark:shadow-black/20 border border-white/60 dark:border-slate-700/50 space-y-2 backdrop-blur-xl">
+          <p
+            class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-1"
+          >
+            Manajemen Data
+          </p>
+
+          <button
+            onclick="backupData()"
+            class="w-full p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-xl flex items-center justify-between font-black text-slate-700 dark:text-white text-sm active:scale-[0.99] transition-all"
+          >
+            <span class="flex items-center gap-3"
+              ><i data-lucide="download" class="w-4 h-4 text-blue-500"></i>
+              Backup JSON</span
+            >
+          </button>
+          <button
+            onclick="restoreData()"
+            class="w-full p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-xl flex items-center justify-between font-black text-slate-700 dark:text-white text-sm active:scale-[0.99] transition-all"
+          >
+            <span class="flex items-center gap-3"
+              ><i data-lucide="upload" class="w-4 h-4 text-purple-500"></i>
+              Restore JSON</span
+            >
+          </button>
+          <button
+            onclick="handleClearData()"
+            class="w-full p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl flex items-center justify-between font-black text-red-600 dark:text-red-300 text-sm active:scale-[0.99] transition-all"
+          >
+            <span class="flex items-center gap-3"
+              ><i data-lucide="trash-2" class="w-4 h-4"></i> Reset Data Hari
+              Ini</span
+            >
+          </button>
+        </div>
+
+        <div class="bg-white/80 dark:bg-slate-800/80 rounded-[1.75rem] p-3 shadow-lg shadow-slate-200/40 dark:shadow-black/20 border border-white/60 dark:border-slate-700/50 space-y-2 backdrop-blur-xl">
+          <p
+            class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-1"
+          >
+            Sistem
+          </p>
+
+          <button
+            onclick="toggleDarkMode()"
+            class="w-full p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-xl flex items-center justify-between font-black text-slate-700 dark:text-white text-sm transition-all"
+          >
+            <span class="flex items-center gap-3"
+              ><i data-lucide="moon" class="w-4 h-4 text-indigo-500"></i> Mode
+              Gelap</span
+            >
+            <div
+              class="w-10 h-6 bg-slate-200 dark:bg-emerald-500 rounded-full relative transition-colors"
+            >
+              <div
+                class="absolute top-1 left-1 dark:left-5 w-4 h-4 bg-white rounded-full transition-all shadow-sm"
+              ></div>
+            </div>
+          </button>
+          <button
+            onclick="toggleNotifications()"
+            class="w-full p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-xl flex items-center justify-between font-black text-slate-700 dark:text-white text-sm transition-all"
+          >
+            <span class="flex items-center gap-3"
+              ><i data-lucide="bell" class="w-4 h-4 text-amber-500"></i>
+              Notifikasi</span
+            >
+            <div
+              id="btn-notifications"
+              class="w-10 h-6 bg-slate-200 rounded-full relative transition-colors"
+            >
+              <div
+                class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm"
+              ></div>
+            </div>
+          </button>
+          <button
+            onclick="window.openNotificationSettingsModal?.()"
+            class="w-full p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-xl flex items-center justify-between font-black text-slate-700 dark:text-white text-sm transition-all active:scale-[0.98]"
+          >
+            <span class="flex items-center gap-3"
+              ><i data-lucide="settings-2" class="w-4 h-4 text-slate-400"></i>
+              Pengaturan Notifikasi</span
+            >
+            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+          </button>
+        </div>
+
+        <button
+          onclick="handleLogout()"
+          class="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 font-black text-[10px] uppercase tracking-widest hover:text-red-500 transition-colors mt-3 mb-8"
+        >
+          Keluar Aplikasi
+        </button>
+        </div> <!-- Close flex flex-col gap-6 inside Right Column -->
+      </div> <!-- Close Right Column -->
+    </div>

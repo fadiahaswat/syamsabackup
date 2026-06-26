@@ -1,0 +1,35 @@
+<div id="modal-stat-detail" class="fixed inset-0 z-[110] hidden">
+  <div
+    class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+    onclick="window.closeModal('modal-stat-detail')"
+  ></div>
+
+  <div
+    class="absolute bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full max-w-md bg-white dark:bg-slate-900 rounded-t-[1.75rem] sm:rounded-[1.75rem] p-6 shadow-2xl animate-slide-up border border-white/10 max-h-[85vh] flex flex-col"
+  >
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h3
+          id="stat-detail-title"
+          class="text-xl font-black text-slate-800 dark:text-white"
+        >
+          Detail ...
+        </h3>
+        <p id="stat-detail-subtitle" class="text-xs text-slate-500 mt-1">
+          Daftar santri berdasarkan status
+        </p>
+      </div>
+      <button
+        onclick="window.closeModal('modal-stat-detail')"
+        class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors"
+      >
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div
+      id="stat-detail-list"
+      class="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3 pb-6"
+    ></div>
+  </div>
+</div>

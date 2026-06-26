@@ -1,0 +1,50 @@
+<div
+              id="location-status-card"
+              class="hidden animate-slide-up delay-120ms"
+            >
+              <div onclick="window.handleLocationCardClick()" class="flex items-center justify-between gap-3 px-3 py-2 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] w-full max-w-full transition-all select-none cursor-pointer">
+                
+                <!-- Kiri: Status GPS -->
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <!-- Ikon GPS -->
+                  <div id="loc-icon-bg" class="w-6 h-6 shrink-0 rounded-full bg-palette-blue/10 dark:bg-palette-blue/20 flex items-center justify-center text-palette-blue dark:text-palette-cyan transition-colors duration-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="loc-icon"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  </div>
+
+                  <!-- State 1: Loading -->
+                  <div id="loc-loading" class="hidden items-center gap-1.5 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-palette-blue animate-pulse"></span>
+                    <span>Mencari GPS...</span>
+                  </div>
+
+                  <!-- State 2: Error -->
+                  <div id="loc-error" class="hidden flex-col items-start gap-1 text-[11px] sm:text-xs">
+                    <!-- Pesan error di-inject via JS -->
+                  </div>
+
+                  <!-- State 3: Details (No Marquee, Maximized) -->
+                  <div id="loc-details" class="flex items-center min-w-0 text-[11px] sm:text-xs flex-1 overflow-hidden">
+                    <div class="loc-marquee-container min-w-0">
+                      <span id="loc-nearest-name" class="font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Masjid Jami' Mu'allimin</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Kanan: Status Label, Jarak, & Tombol Refresh -->
+                <div class="flex items-center gap-2.5 shrink-0 ml-auto">
+                  <div id="loc-status-wrapper" class="flex items-center gap-1.5">
+                    <span id="loc-badge" class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-palette-mint/10 text-slate-800 dark:text-palette-mint border border-palette-mint/30 shrink-0">Aman</span>
+                    <span id="loc-distance" class="font-black text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs shrink-0">31m</span>
+                  </div>
+                  <button id="loc-asrama-btn" onclick="event.stopPropagation(); window.openAsramaPage()" class="hidden h-7 items-center gap-1 px-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 border border-rose-100 dark:border-rose-500/20 text-[9px] font-black uppercase tracking-wide transition-all active:scale-95 shrink-0">
+                    <i data-lucide="navigation" class="w-3 h-3"></i>
+                    <span>Ke Asrama</span>
+                  </button>
+                  
+                  <!-- Tombol Refresh -->
+                  <button onclick="window.updateLocationStatus()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-palette-blue dark:hover:text-palette-cyan hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-slate-200/30 dark:border-slate-700/30 transition-all active:scale-90 shrink-0" aria-label="Perbarui lokasi GPS" title="Perbarui lokasi GPS">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </div>

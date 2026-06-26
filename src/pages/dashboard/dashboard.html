@@ -1,0 +1,751 @@
+<div
+        id="main-content"
+        class="tab-content flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-6 pt-safe"
+      >
+        <div id="dashboard-slot-bg-illustration" aria-hidden="true">
+          <i data-lucide="school"></i>
+        </div>
+        <div class="max-w-7xl mx-auto w-full space-y-6">
+          <!-- Header -->
+<header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 mt-3 sm:mt-4 w-full delay-100ms">
+  
+  <div class="flex items-center h-11 gap-3 min-w-0 self-center pl-3 sm:pl-5">
+    <img
+      src="assets/branding/Primary Logo.webp"
+      alt="Syamsa"
+      class="syamsa-header-logo"
+    />
+  </div>
+
+  <div class="header-actions-flex-container flex items-center gap-2 sm:gap-3 shrink-0 self-center">
+    
+    <!-- Clock (desktop only) -->
+    <div class="hidden sm:flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-palette-blue"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+      <div class="flex items-baseline gap-0.5 tabular-nums">
+        <p id="dash-clock" class="text-sm font-black text-slate-700 dark:text-slate-200 leading-none">21:27</p>
+        <p id="dash-clock-sec" class="text-[10px] font-bold text-slate-400 leading-none">24</p>
+      </div>
+    </div>
+
+    <!-- Offline/Online Indicator -->
+    <div id="connection-indicator" class="hidden sm:flex items-center gap-1.5 px-2.5 py-2 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm transition-all duration-300" role="status" aria-live="polite">
+      <span id="connection-dot" class="w-2 h-2 rounded-full bg-emerald-400 transition-colors duration-300"></span>
+      <span id="connection-text" class="text-[10px] font-bold text-slate-600 dark:text-slate-400">Online</span>
+    </div>
+
+    <!-- Standalone Notification Bell Button -->
+    <button onclick="window.switchTab('notifications')" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-500 dark:text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue" aria-label="Buka notifikasi" title="Notifikasi">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
+      <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" aria-hidden="true"></span>
+    </button>
+
+    <!-- Standalone Profile Button -->
+    <button onclick="switchTab('profile')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue active:scale-95 transition-all duration-300" aria-label="Buka profil" title="Profil">
+      <div class="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-30 group-hover:opacity-60 transition-opacity duration-300"></div>
+      <div id="header-avatar" class="relative w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-black text-xs shadow-md z-10 transition-transform group-hover:scale-105">
+        AA
+      </div>
+    </button>
+
+    <span id="header-user-name" class="hidden">Andi</span>
+    <span id="profile-role" class="hidden">2 A</span>
+
+  </div>
+
+</header>
+
+          <!-- Cloud-Only Offline Banner -->
+          <div id="cloud-only-offline-banner" class="hidden fixed top-16 left-4 right-4 z-50 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-3 rounded-xl shadow-lg animate-slide-up">
+            <div class="flex items-center justify-between max-w-3xl mx-auto">
+              <div class="flex items-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"/>
+                </svg>
+                <span class="text-sm font-medium">⚠️ Mode Offline — Data hanya dapat dilihat, tidak dapat disimpan</span>
+              </div>
+              <button onclick="document.getElementById('cloud-only-offline-banner').classList.add('hidden')" class="text-white/80 hover:text-white transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Announcement Banner (Musyrif Only) -->
+          <div id="announcement-banner-container" class="musyrif-only hidden animate-slide-up mb-5">
+            <!-- Rendered dynamically -->
+          </div>
+
+        <!-- Dashboard Grid Layout on Desktop -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 !mt-5">
+          
+          <!-- LEFT COLUMN: Sesi Utama & Jadwal -->
+          <div class="lg:col-span-7 lg:space-y-6 max-lg:contents">
+
+            <section id="dashboard-greeting-panel" class="animate-slide-up delay-100ms text-white pl-3 sm:pl-5">
+              <div class="max-w-[240px] sm:max-w-sm overflow-hidden mb-1">
+                <span id="dash-title-sub-greeting" class="text-sm sm:text-base font-normal text-white/75 leading-tight transition-opacity duration-500 block whitespace-nowrap font-rubik">
+                  مساء الخير
+                </span>
+              </div>
+
+              <h1 id="dash-title-greeting" class="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight pb-0.5 mb-2 truncate">
+                <span class="text-white">
+                  Ustadz Andi Aqillah!
+                </span>
+              </h1>
+
+              <div id="header-prayer-countdown" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/20 border border-white/25 text-white text-[9px] w-fit shadow-sm backdrop-blur-sm">
+                <span class="countdown-label opacity-80 font-bold uppercase tracking-widest text-[8px]">Ke Syuruq</span>
+                <span class="countdown-time font-black tracking-wider">07:07:35</span>
+              </div>
+            </section>
+
+            <!-- COUNTDOWN WIDGET: Libur Akhir Tahun -->
+            <div id="countdown-libur-widget" class="hidden animate-slide-up delay-150ms">
+              <div class="bg-white dark:bg-slate-800 rounded-2xl p-3 shadow-lg border border-slate-200/60 dark:border-slate-700/50">
+                <div class="flex items-center justify-between gap-2.5">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background-color: rgba(12, 129, 228, 0.08); color: var(--color-brand-blue); border: 1px solid rgba(12, 129, 228, 0.2);">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    </div>
+                    <div class="flex flex-col gap-1 min-w-0">
+                      <p class="text-[10px] sm:text-[11px] font-extrabold text-slate-750 dark:text-slate-200 tracking-tight leading-none whitespace-nowrap">Menuju Libur Akhir Tahun</p>
+                      <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold whitespace-nowrap" style="background-color: rgba(12, 129, 228, 0.08); color: var(--color-brand-blue); border: 1px solid rgba(12, 129, 228, 0.2);">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-85"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                          27 Juni 2026
+                        </span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold whitespace-nowrap" style="background-color: rgba(12, 129, 228, 0.08); color: var(--color-brand-blue); border: 1px solid rgba(12, 129, 228, 0.2);">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-85"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                          12:30 WIB
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-900/55 px-2 py-1 rounded-xl border border-slate-100 dark:border-slate-800/60 shrink-0">
+                    <div class="flex flex-col items-center min-w-[24px]">
+                      <span id="countdown-days" class="tabular-nums text-slate-800 dark:text-slate-100 font-extrabold text-xs sm:text-sm">00</span>
+                      <span class="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight -mt-0.5">hari</span>
+                    </div>
+                    <div class="flex flex-col items-center justify-center">
+                      <span class="text-slate-300 dark:text-slate-700 font-bold text-xs sm:text-sm">:</span>
+                      <span class="text-[7px] opacity-0 select-none">:</span>
+                    </div>
+                    <div class="flex flex-col items-center min-w-[24px]">
+                      <span id="countdown-hours" class="tabular-nums text-slate-800 dark:text-slate-100 font-extrabold text-xs sm:text-sm">00</span>
+                      <span class="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight -mt-0.5">jam</span>
+                    </div>
+                    <div class="flex flex-col items-center justify-center">
+                      <span class="text-slate-300 dark:text-slate-700 font-bold text-xs sm:text-sm">:</span>
+                      <span class="text-[7px] opacity-0 select-none">:</span>
+                    </div>
+                    <div class="flex flex-col items-center min-w-[24px]">
+                      <span id="countdown-minutes" class="tabular-nums text-slate-800 dark:text-slate-100 font-extrabold text-xs sm:text-sm">00</span>
+                      <span class="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight -mt-0.5">menit</span>
+                    </div>
+                    <div class="flex flex-col items-center justify-center">
+                      <span class="text-slate-300 dark:text-slate-700 font-bold text-xs sm:text-sm">:</span>
+                      <span class="text-[7px] opacity-0 select-none">:</span>
+                    </div>
+                    <div class="flex flex-col items-center min-w-[24px]">
+                      <span id="countdown-seconds" class="tabular-nums text-blue-600 dark:text-blue-400 font-black text-xs sm:text-sm">00</span>
+                      <span class="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight -mt-0.5">detik</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- WIDGET: Persetujuan Izin Pending (Hanya muncul untuk Musyrif jika ada pending) -->
+            <div id="musyrif-approval-widget" class="hidden musyrif-only animate-slide-up delay-120ms">
+              <div onclick="window.openMusyrifApprovalModal()" class="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 shadow-md w-full transition-all duration-300 hover:shadow-lg hover:border-amber-500/40 select-none cursor-pointer active:scale-98">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-8 h-8 shrink-0 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  </div>
+                  <div>
+                    <h3 id="approval-pending-count" class="text-xs sm:text-sm font-black text-amber-800 dark:text-amber-400 leading-tight">
+                      0 Pengajuan Pending
+                    </h3>
+                    <p class="text-[9px] sm:text-[10px] font-medium text-amber-600 dark:text-amber-500/80 mt-0.5">
+                      Ada permohonan izin dari orang tua yang memerlukan persetujuan.
+                    </p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span id="approval-pending-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white animate-pulse">0</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- GPS Location Status Banner (Compact) -->
+            <div
+              id="location-status-card"
+              class="hidden animate-slide-up delay-120ms"
+            >
+              <div onclick="window.handleLocationCardClick()" class="flex items-center justify-between gap-3 px-3 py-2 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-800/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] w-full max-w-full transition-all select-none cursor-pointer">
+                
+                <!-- Kiri: Status GPS -->
+                <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                  <!-- Ikon GPS -->
+                  <div id="loc-icon-bg" class="w-6 h-6 shrink-0 rounded-full bg-palette-blue/10 dark:bg-palette-blue/20 flex items-center justify-center text-palette-blue dark:text-palette-cyan transition-colors duration-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="loc-icon"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                  </div>
+
+                  <!-- State 1: Loading -->
+                  <div id="loc-loading" class="hidden items-center gap-1.5 text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-palette-blue animate-pulse"></span>
+                    <span>Mencari GPS...</span>
+                  </div>
+
+                  <!-- State 2: Error -->
+                  <div id="loc-error" class="hidden flex-col items-start gap-1 text-[11px] sm:text-xs">
+                    <!-- Pesan error di-inject via JS -->
+                  </div>
+
+                  <!-- State 3: Details (No Marquee, Maximized) -->
+                  <div id="loc-details" class="flex items-center min-w-0 text-[11px] sm:text-xs flex-1 overflow-hidden">
+                    <div class="loc-marquee-container min-w-0">
+                      <span id="loc-nearest-name" class="font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Masjid Jami' Mu'allimin</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Kanan: Status Label, Jarak, & Tombol Refresh -->
+                <div class="flex items-center gap-2.5 shrink-0 ml-auto">
+                  <div id="loc-status-wrapper" class="flex items-center gap-1.5">
+                    <span id="loc-badge" class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-palette-mint/10 text-slate-800 dark:text-palette-mint border border-palette-mint/30 shrink-0">Aman</span>
+                    <span id="loc-distance" class="font-black text-slate-500 dark:text-slate-400 text-[10px] sm:text-xs shrink-0">31m</span>
+                  </div>
+                  <button id="loc-asrama-btn" onclick="event.stopPropagation(); window.openAsramaPage()" class="hidden h-7 items-center gap-1 px-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-300 border border-rose-100 dark:border-rose-500/20 text-[9px] font-black uppercase tracking-wide transition-all active:scale-95 shrink-0">
+                    <i data-lucide="navigation" class="w-3 h-3"></i>
+                    <span>Ke Asrama</span>
+                  </button>
+                  
+                  <!-- Tombol Refresh -->
+                  <button onclick="window.updateLocationStatus()" class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-palette-blue dark:hover:text-palette-cyan hover:bg-slate-100 dark:hover:bg-slate-700/50 border border-slate-200/30 dark:border-slate-700/30 transition-all active:scale-90 shrink-0" aria-label="Perbarui lokasi GPS" title="Perbarui lokasi GPS">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active KBM Banner removed -->
+
+        <!-- Main Action Card (Current Slot) Wrapper -->
+        <div id="dash-main-card-wrapper" class="relative z-30">
+          <div
+            id="dash-main-card"
+            class="bg-slate-900 dark:bg-black rounded-[1.75rem] p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative z-20 overflow-hidden group animate-slide-up delay-200ms"
+          >
+          <div
+            class="absolute top-0 right-0 w-64 h-64 bg-palette-mint rounded-full blur-[100px] opacity-20 -mr-16 -mt-16 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
+          ></div>
+          <div
+            class="absolute bottom-0 left-0 w-48 h-48 bg-palette-blue rounded-full blur-[90px] opacity-10 -ml-10 -mb-10 pointer-events-none"
+          ></div>
+          
+          <!-- Premium background logo decoration -->
+          <img src="assets/icons/icon.webp" class="absolute -right-10 -top-10 w-60 h-60 opacity-[0.06] dark:opacity-[0.03] pointer-events-none select-none z-0 rotate-[15deg] transition-all duration-700 group-hover:rotate-[25deg] group-hover:scale-105" alt="" />
+
+          <div class="relative z-10 flex flex-col h-full">
+            <div id="dash-main-card-header-row" class="flex justify-between items-start mb-6">
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <span
+                    class="px-2.5 py-1 rounded-full bg-white/10 border border-white/5 text-[10px] font-bold backdrop-blur-md uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <span
+                      id="dash-card-badge-dot"
+                      class="w-1.5 h-1.5 rounded-full bg-palette-mint animate-pulse"
+                    ></span>
+                    <span id="dash-card-badge-text">Saat Ini</span>
+                  </span>
+                </div>
+                <h2
+                  id="dash-card-title"
+                  class="text-3xl sm:text-4xl font-black tracking-tight leading-none mb-1"
+                >
+                  ...
+                </h2>
+                <div
+                  id="dash-card-time"
+                  class="text-palette-mint text-sm font-bold flex items-center gap-1.5 opacity-90"
+                >
+                  <i data-lucide="clock" class="w-3.5 h-3.5"></i> --:--
+                </div>
+              </div>
+
+              <button
+                onclick="window.openAttendance()"
+                class="w-14 h-14 rounded-2xl bg-white text-slate-900 flex items-center justify-center shadow-lg shadow-white/10 hover:scale-110 hover:rotate-3 active:scale-95 transition-all duration-300 group/btn"
+              >
+                <i
+                  data-lucide="arrow-right"
+                  class="w-6 h-6 group-hover/btn:-rotate-45 transition-transform duration-300"
+                ></i>
+              </button>
+            </div>
+
+            <div id="dash-main-card-body" class="transition-all duration-300">
+              <div
+                class="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-4"
+              ></div>
+
+              <div>
+                <p
+                  class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center sm:text-left"
+                >
+                  Akses Cepat
+                </p>
+
+                <div id="quick-access-grid" class="grid grid-cols-5 gap-2 sm:gap-3">
+                  <button
+                    onclick="window.quickOpen('shubuh')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-palette-mint/20 hover:border-palette-mint/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-palette-mint/20 flex items-center justify-center text-palette-mint group-hover/item:bg-palette-mint group-hover/item:text-slate-900 transition-colors"
+                    >
+                      <i data-lucide="sunrise" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-palette-mint"
+                      >Shubuh</span
+                    >
+                  </button>
+
+                  <button
+                    id="quick-access-sekolah"
+                    onclick="window.quickOpen('sekolah')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-cyan-500/20 hover:border-cyan-500/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover/item:bg-cyan-500 group-hover/item:text-white transition-colors"
+                    >
+                      <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-cyan-200"
+                      >Sekolah</span
+                    >
+                  </button>
+
+                  <button
+                    onclick="window.quickOpen('ashar')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-orange-500/20 hover:border-orange-500/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover/item:bg-orange-500 group-hover/item:text-white transition-colors"
+                    >
+                      <i data-lucide="sun" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-orange-200"
+                      >Ashar</span
+                    >
+                  </button>
+
+                  <button
+                    onclick="window.quickOpen('maghrib')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover/item:bg-indigo-500 group-hover/item:text-white transition-colors"
+                    >
+                      <i data-lucide="sunset" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-indigo-200"
+                      >Maghrib</span
+                    >
+                  </button>
+
+                  <button
+                    onclick="window.quickOpen('isya')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-blue-500/20 hover:border-blue-500/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover/item:bg-blue-500 group-hover/item:text-white transition-colors"
+                    >
+                      <i data-lucide="moon" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-blue-200"
+                      >Isya</span
+                    >
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        <!-- All Slots List (Jadwal Lengkap) -->
+        <div class="animate-slide-up pb-safe space-y-3 delay-500ms">
+          <div class="flex flex-col gap-2 p-3 sm:p-4 rounded-[1.75rem] bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-sm w-full">
+            <!-- Weekly Calendar Row -->
+            <div id="weekly-calendar-bar" class="w-full transition-all duration-300">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+
+          <div id="dash-other-slots" class="grid grid-cols-2 gap-3 sm:gap-4 w-full auto-rows-max">
+            <!-- Slot Items injected by JS -->
+          </div>
+        </div>
+           <!-- Salat Standalone Card (Directly below Bento Schedules / Jadwal Lengkap) -->
+        <div id="salat-standalone-card" class="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 lg:mt-4 transition-all duration-300 animate-slide-up delay-550ms">
+          
+          <!-- Header: Title & Location (Left), Hijri & Gregorian Date (Right) -->
+          <div class="flex items-center justify-between gap-2 mb-4 px-1.5">
+            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+              <h4 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                <svg class="w-4 h-4 text-palette-blue shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                Jadwal Shalat
+              </h4>
+              <span id="salat-location-subtitle" class="text-[9px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 border-l border-slate-200 dark:border-slate-700 pl-1.5 leading-none truncate">Wirobrajan Yogyakarta</span>
+            </div>
+            <div class="flex items-center gap-2.5 shrink-0">
+              <div class="flex flex-col items-end text-right">
+                <span id="widget-hijri-date" class="whitespace-nowrap text-[10px] sm:text-xs font-black text-palette-blue dark:text-palette-mint leading-none"></span>
+                <span id="widget-masehi-date" class="whitespace-nowrap text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-none"></span>
+              </div>
+              
+              <!-- Qibla Button inside Widget (Right of dates) -->
+              <button onclick="window.openQiblaPage()" class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-palette-blue/10 dark:bg-slate-700/50 dark:hover:bg-palette-blue/20 hover:text-palette-blue transition-all active:scale-95 border border-slate-200/50 dark:border-slate-700/50" title="Kompas Kiblat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-compass animate-spin-slow"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                <span class="hidden xs:inline">Kiblat</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Salat Grid (5 Columns on Mobile, 6 Columns on Desktop to show Syuruq) -->
+          <div id="salat-hijri-widget" class="w-full relative group">
+            <div class="grid grid-cols-5 lg:grid-cols-6 gap-1 sm:gap-2 relative">
+              
+              <div id="prayer-Subuh" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Subuh</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Syuruq" class="hidden lg:flex group/card flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Syuruq</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Dzuhur" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Dzuhur</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Ashar" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Ashar</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Maghrib" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10V2"/><path d="m4.93 10.93 1.41-1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41-1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Maghrib</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Isya" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 3v4"/><path d="M21 5h-4"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Isya</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+            </div>
+
+            <!-- Sunnah Fasting Reminder Banner -->
+            <div id="widget-fasting-reminder" class="hidden mt-3 px-2.5 py-1 rounded-xl bg-palette-mint/10 dark:bg-palette-mint/20 text-slate-800 dark:text-palette-mint border border-palette-mint/20 text-[9px] font-black items-center gap-1.5 select-none animate-pulse"></div>
+
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- RIGHT COLUMN: GPS, Stats, Pembinaan, and Graphs -->
+      <div class="lg:col-span-5 lg:space-y-6 max-lg:contents">
+
+        <!-- Salat widget has been moved to accordion under hero card -->
+
+
+
+        <div class="musyrif-only animate-slide-up lg:mb-6 lg:mt-4 w-full delay-250ms">
+          <!-- Container Utama -->
+          <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-2.5 sm:p-3 shadow-lg shadow-slate-200/50 dark:shadow-black/20 border border-white dark:border-slate-700/50 flex flex-col gap-2.5">
+
+            <!-- Header Section -->
+            <div class="flex items-center justify-between gap-3 px-1.5 pt-1.5 mb-1.5">
+              <div class="flex items-center gap-3">
+                <!-- Ikon Header -->
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/80 dark:from-indigo-500/10 dark:to-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-100 dark:border-indigo-500/20 shadow-sm shrink-0 transition-transform duration-300 hover:scale-105">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white leading-tight tracking-tight">
+                    Manajemen Perizinan
+                  </h3>
+                  <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                    Input izin harian &amp; perpulangan
+                  </p>
+                </div>
+              </div>
+              
+              <!-- Badge Kanan -->
+              <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/50 dark:border-indigo-900/50 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 shadow-sm shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                <span>Active Track</span>
+              </div>
+            </div>
+
+            <!-- Top Section: 3-Column Bento Grid Input -->
+            <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
+              
+              <!-- 1. Input Sakit (Kuning/Amber) -->
+              <button onclick="window.openPermitModal('daily'); window.setPermitTab('sakit');" class="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-all active:scale-90 group" aria-label="Input izin sakit">
+                <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-amber-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M12 7v4"/></svg>
+                </div>
+                <span class="text-[9px] sm:text-[10px] font-bold text-amber-700 dark:text-amber-400">Sakit</span>
+              </button>
+
+              <!-- 2. Input Izin (Biru/Blue) -->
+              <button onclick="window.openPermitModal('daily'); window.setPermitTab('izin');" class="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all active:scale-90 group" aria-label="Input izin">
+                <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-blue-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                </div>
+                <span class="text-[9px] sm:text-[10px] font-bold text-blue-700 dark:text-blue-400">Izin</span>
+              </button>
+
+              <!-- 3. Input Pulang (Ungu/Purple) -->
+              <button onclick="window.openPermitModal('pulang')" class="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-2.5 rounded-2xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-all active:scale-90 group" aria-label="Input izin pulang">
+                <div class="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 text-purple-500 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"></path><path d="M15 6v6"></path><path d="M2 12h19.6"></path><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"></path><circle cx="7" cy="18" r="2"></circle><path d="M9 18h5"></path><circle cx="16" cy="18" r="2"></circle></svg>
+                </div>
+                <span class="text-[9px] sm:text-[10px] font-bold text-purple-700 dark:text-purple-400">Pulang</span>
+              </button>
+
+            </div>
+
+            <!-- Bottom Section: Daftar Perizinan Aktif -->
+            <div class="bg-slate-50/80 dark:bg-slate-900/40 rounded-2xl p-2.5 sm:p-3 border border-slate-100 dark:border-slate-700/50">
+              
+              <!-- Header List -->
+              <div class="flex justify-between items-center mb-2 px-1">
+                <h4 class="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  Status Aktif
+                </h4>
+                
+                <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+                  <span id="active-permit-count" class="text-[9px] font-black text-slate-700 dark:text-slate-200">0</span>
+                  <span class="text-[8px] font-bold text-slate-400">Santri</span>
+                </div>
+              </div>
+
+              <!-- Area List -->
+              <div id="dashboard-active-permits-list" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                <!-- Data dynamically rendered here by JS -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- WIDGET: Perizinan Wali (Hanya muncul di Wali Mode) -->
+        <div class="wali-only animate-slide-up lg:mb-6 lg:mt-4 w-full delay-250ms">
+          <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-4 shadow-lg shadow-slate-200/50 dark:shadow-black/20 border border-white dark:border-slate-700/50 flex flex-col gap-4">
+            
+            <!-- Header Section -->
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/80 dark:from-blue-500/10 dark:to-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 shadow-sm shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 12 2 2 4-4"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white leading-tight tracking-tight">
+                    Pengajuan Izin Harian
+                  </h3>
+                  <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                    Kirim permohonan izin ke Musyrif
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tombol Pengajuan -->
+            <button onclick="window.openWaliPermitModal()" class="w-full py-3 px-4 rounded-2xl bg-palette-blue hover:bg-palette-deep text-white text-xs font-black shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2" aria-label="Ajukan izin baru">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              <span>Ajukan Izin Baru</span>
+            </button>
+
+            <!-- Riwayat Pengajuan Izin -->
+            <div class="mt-2">
+              <h4 class="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 px-1">
+                Riwayat Pengajuan Izin
+              </h4>
+              <div id="wali-permit-history-list" class="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                <!-- Diisi dinamis oleh JS -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="dashboard-pembinaan-card" class="hidden lg:mb-6 animate-slide-up w-full delay-250ms musyrif-only">
+          <!-- Container Kartu -->
+          <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-3.5 sm:p-4 border border-red-100/50 dark:border-slate-700/50 shadow-lg shadow-red-500/5 relative overflow-hidden group">
+
+            <!-- Ambient Red Glow -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-red-400/10 dark:bg-red-500/10 rounded-full blur-[40px] pointer-events-none transition-opacity duration-500"></div>
+
+            <!-- Header Section -->
+            <div class="flex justify-between items-center mb-3 relative z-10">
+              <div class="flex items-center gap-3">
+                <!-- Ikon Header -->
+                <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 flex items-center justify-center border border-red-100 dark:border-red-500/20 shadow-sm shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-octagon"><path d="M12 16h.01"/><path d="M12 8v4"/><path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688a2 2 0 0 1 8.688 2z"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-800 dark:text-white leading-tight tracking-tight flex items-center gap-1.5">
+                    Pelanggaran Hari Ini
+                  </h3>
+                  <p class="text-[10px] sm:text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                    Akumulasi poin & Alpa
+                  </p>
+                </div>
+              </div>
+
+              <!-- Badge Jumlah Kasus -->
+              <span id="pembinaan-count-badge" class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold whitespace-nowrap">0 Kasus</span>
+            </div>
+
+            <!-- Content Section: Dynamic List or Empty State -->
+            <div id="dashboard-pembinaan-list" class="relative z-10 w-full">
+              <!-- Empty State dynamically loaded here -->
+            </div>
+
+            <!-- Action Button (Sleek Bottom Bar) -->
+            <button onclick="window.switchTab('profile'); window.scrollToPembinaan();" class="relative z-10 w-full mt-3 py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-700 flex items-center justify-between text-[10px] sm:text-[11px] font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-700 transition-all active:scale-95 group/btn">
+              <span>Lihat Manajemen Pembinaan</span>
+              <div class="w-6 h-6 rounded-md bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400 group-hover/btn:text-red-500 group-hover/btn:border-red-200 dark:group-hover/btn:border-red-500/30 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right group-hover/btn:translate-x-0.5 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </div>
+            </button>
+
+          </div>
+        </div>
+
+
+<div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl rounded-2xl p-4 sm:p-5 border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/40 dark:shadow-black/20 relative overflow-hidden animate-slide-up lg:mb-4 group/main delay-300ms">
+  
+  <!-- Ambient Background Glow -->
+  <div class="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-emerald-400/10 via-blue-400/5 to-transparent rounded-bl-full pointer-events-none transition-opacity duration-700"></div>
+
+  <div class="relative z-10 flex flex-col gap-4">
+    
+    <!-- Top Header & Range Selection Tabs -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-3.5">
+      
+      <!-- Titlle & Main Insight -->
+      <div class="flex flex-col gap-0.5">
+        <p class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-2 text-emerald-500"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+          Statistik Presensi
+        </p>
+        <div class="flex items-center gap-2.5 mt-0.5">
+          <h3 id="stats-current-percentage" class="font-black text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-500 dark:from-white dark:to-slate-400 leading-none tracking-tight">
+            99.4% <span class="text-lg sm:text-xl font-bold text-slate-400 dark:text-slate-500">Hadir</span>
+          </h3>
+          <span id="stats-comparison-badge" class="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20 shadow-sm shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+            0.6% vs pekan lalu
+          </span>
+        </div>
+      </div>
+      
+      <!-- Range Selector Tabs (iOS Style Segmented Control) -->
+      <div class="flex p-0.5 bg-slate-100/80 dark:bg-slate-900/60 backdrop-blur-sm rounded-lg border border-slate-200/50 dark:border-slate-800 shadow-inner shrink-0 w-full md:w-auto" role="group" aria-label="Pilih rentang statistik">
+        <button id="stats-range-weekly" onclick="window.changeStatsRange('weekly')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-slate-200/50 dark:border-slate-700/50" aria-label="Statistik mingguan">
+          Pekanan
+        </button>
+        <button id="stats-range-monthly" onclick="window.changeStatsRange('monthly')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent" aria-label="Statistik bulanan">
+          Bulanan
+        </button>
+        <button id="stats-range-semester" onclick="window.changeStatsRange('semester')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent" aria-label="Statistik semester">
+          Semester
+        </button>
+      </div>
+    </div>
+
+    <!-- Legends Row -->
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/20 p-1.5 sm:px-2.5 rounded-lg border border-slate-100 dark:border-slate-800/80">
+      <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]"></span><span>Hadir</span></div>
+      <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]"></span><span>Tidak Hadir</span></div>
+    </div>
+
+    <!-- The Line Chart Canvas -->
+    <div class="relative w-full h-36 sm:h-44">
+      <canvas id="weekly-chart" class="w-full h-full" width="505" height="336"></canvas>
+    </div>
+
+    <!-- Bottom: 2 Quick Stats (Interactive Bento Mini-Grid) -->
+    <div class="grid grid-cols-2 gap-2.5 mt-0">
+      
+      <!-- 1. Hadir -->
+      <button onclick="window.showStatDetails('Hadir')" class="relative flex flex-col justify-between overflow-hidden bg-slate-50 dark:bg-slate-800/40 rounded-xl p-2.5 sm:p-3 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:bg-blue-50/80 dark:hover:bg-blue-500/10 hover:border-blue-200 dark:hover:border-blue-500/30 transition-all duration-300 group text-left active:scale-95">
+        <div class="flex items-start justify-between mb-2">
+          <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm group-hover:scale-110 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div>
+          <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Hadir</span>
+          <div class="flex items-end gap-1">
+            <div id="stat-hadir" class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">0%</div>
+            <span class="text-[9px] font-semibold text-slate-400 mb-0.5">Rasio</span>
+          </div>
+        </div>
+      </button>
+
+      <!-- 2. Tidak Hadir -->
+      <button onclick="window.showStatDetails('Tidak Hadir')" class="relative flex flex-col justify-between overflow-hidden bg-slate-50 dark:bg-slate-800/40 rounded-xl p-2.5 sm:p-3 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:bg-rose-50/80 dark:hover:bg-rose-500/10 hover:border-rose-200 dark:hover:border-rose-500/30 transition-all duration-300 group text-left active:scale-95">
+        <div class="flex items-start justify-between mb-2">
+          <div class="w-7 h-7 rounded-lg bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm group-hover:scale-110 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-rose-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div>
+          <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Tidak Hadir</span>
+          <div class="flex items-end gap-1">
+            <div id="stat-tidak-hadir" class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">0%</div>
+            <span class="text-[9px] font-semibold text-slate-400 mb-0.5">Rasio</span>
+          </div>
+        </div>
+      </button>
+
+    </div>
+  </div>
+</div>
+
+      </div> <!-- Close Right Column -->
+    </div> <!-- Close Dashboard Grid Wrapper -->
+        </div> <!-- Close max-w-7xl wrapper -->
+  </div>

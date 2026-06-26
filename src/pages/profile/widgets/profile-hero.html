@@ -1,0 +1,79 @@
+<div id="profile-hero-card-wrapper" class="relative z-30">
+        <div
+          id="profile-hero-card"
+          class="bg-slate-900 dark:bg-black p-5 sm:p-6 rounded-[1.75rem] text-center relative overflow-hidden border border-slate-800/60 shadow-2xl shadow-slate-900/20 backdrop-blur-xl group"
+        >
+          <div
+            class="absolute top-0 right-0 w-56 h-56 bg-palette-mint rounded-full blur-[90px] opacity-20 -mr-16 -mt-16 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
+          ></div>
+          <div class="absolute bottom-0 left-0 w-44 h-44 bg-palette-blue rounded-full blur-[80px] opacity-15 -ml-14 -mb-14 pointer-events-none"></div>
+          <img src="assets/icons/icon.webp" class="absolute -right-8 -top-8 w-44 h-44 opacity-[0.06] pointer-events-none select-none rotate-[15deg]" alt="" />
+
+          <div class="relative z-10">
+            <div
+              class="w-20 h-20 bg-white/10 rounded-full mx-auto mb-4 p-1 border border-white/10 shadow-lg shadow-black/20"
+            >
+              <div
+                id="profile-avatar"
+                class="w-full h-full bg-white rounded-full flex items-center justify-center text-slate-500 overflow-hidden"
+              >
+                <i data-lucide="user" class="w-10 h-10"></i>
+              </div>
+            </div>
+            <h2
+              id="profile-name"
+              class="text-xl font-black text-white mb-1 tracking-tight truncate"
+            >
+              ...
+            </h2>
+            <p
+              id="profile-role-tab"
+              class="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[10px] font-black text-palette-mint uppercase tracking-wider mb-4"
+            >
+              Administrator
+            </p>
+            <button
+              onclick="handleLogout()"
+              class="profile-compact-logout hidden h-9 w-9 items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white hover:bg-red-500/20 hover:text-red-100 active:scale-95 transition-all shrink-0"
+              title="Logout"
+            >
+              <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Sync Button for PWA -->
+            <button
+              onclick="window.manualSync()"
+              id="pwa-sync-btn"
+              class="h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 active:scale-95 transition-all shrink-0"
+              title="Sinkronkan Data"
+            >
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="text-center rounded-xl bg-white/5 border border-white/10 p-3">
+                <div
+                  class="text-xl font-black text-white"
+                  id="profile-avg-attendance"
+                >
+                  0%
+                </div>
+                <p class="text-[9px] font-black text-slate-400 uppercase mt-0.5 tracking-wider">
+                  Rata-rata
+                </p>
+              </div>
+              <div class="text-center rounded-xl bg-white/5 border border-white/10 p-3">
+                <div
+                  class="text-xl font-black text-palette-mint"
+                  id="profile-days-count"
+                >
+                  0
+                </div>
+                <p class="text-[9px] font-black text-slate-400 uppercase mt-0.5 tracking-wider">
+                  Hari Aktif
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>

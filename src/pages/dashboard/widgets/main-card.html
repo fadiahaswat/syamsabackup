@@ -1,0 +1,148 @@
+<div id="dash-main-card-wrapper" class="relative z-30">
+          <div
+            id="dash-main-card"
+            class="bg-slate-900 dark:bg-black rounded-[1.75rem] p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative z-20 overflow-hidden group animate-slide-up delay-200ms"
+          >
+          <div
+            class="absolute top-0 right-0 w-64 h-64 bg-palette-mint rounded-full blur-[100px] opacity-20 -mr-16 -mt-16 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"
+          ></div>
+          <div
+            class="absolute bottom-0 left-0 w-48 h-48 bg-palette-blue rounded-full blur-[90px] opacity-10 -ml-10 -mb-10 pointer-events-none"
+          ></div>
+          
+          <!-- Premium background logo decoration -->
+          <img src="assets/icons/icon.webp" class="absolute -right-10 -top-10 w-60 h-60 opacity-[0.06] dark:opacity-[0.03] pointer-events-none select-none z-0 rotate-[15deg] transition-all duration-700 group-hover:rotate-[25deg] group-hover:scale-105" alt="" />
+
+          <div class="relative z-10 flex flex-col h-full">
+            <div id="dash-main-card-header-row" class="flex justify-between items-start mb-6">
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <span
+                    class="px-2.5 py-1 rounded-full bg-white/10 border border-white/5 text-[10px] font-bold backdrop-blur-md uppercase tracking-wider flex items-center gap-1.5"
+                  >
+                    <span
+                      id="dash-card-badge-dot"
+                      class="w-1.5 h-1.5 rounded-full bg-palette-mint animate-pulse"
+                    ></span>
+                    <span id="dash-card-badge-text">Saat Ini</span>
+                  </span>
+                </div>
+                <h2
+                  id="dash-card-title"
+                  class="text-3xl sm:text-4xl font-black tracking-tight leading-none mb-1"
+                >
+                  ...
+                </h2>
+                <div
+                  id="dash-card-time"
+                  class="text-palette-mint text-sm font-bold flex items-center gap-1.5 opacity-90"
+                >
+                  <i data-lucide="clock" class="w-3.5 h-3.5"></i> --:--
+                </div>
+              </div>
+
+              <button
+                onclick="window.openAttendance()"
+                class="w-14 h-14 rounded-2xl bg-white text-slate-900 flex items-center justify-center shadow-lg shadow-white/10 hover:scale-110 hover:rotate-3 active:scale-95 transition-all duration-300 group/btn"
+              >
+                <i
+                  data-lucide="arrow-right"
+                  class="w-6 h-6 group-hover/btn:-rotate-45 transition-transform duration-300"
+                ></i>
+              </button>
+            </div>
+
+            <div id="dash-main-card-body" class="transition-all duration-300">
+              <div
+                class="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-4"
+              ></div>
+
+              <div>
+                <p
+                  class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center sm:text-left"
+                >
+                  Akses Cepat
+                </p>
+
+                <div id="quick-access-grid" class="grid grid-cols-5 gap-2 sm:gap-3">
+                  <button
+                    onclick="window.quickOpen('shubuh')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-palette-mint/20 hover:border-palette-mint/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-palette-mint/20 flex items-center justify-center text-palette-mint group-hover/item:bg-palette-mint group-hover/item:text-slate-900 transition-colors"
+                    >
+                      <i data-lucide="sunrise" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-palette-mint"
+                      >Shubuh</span
+                    >
+                  </button>
+
+                  <button
+                    id="quick-access-sekolah"
+                    onclick="window.quickOpen('sekolah')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-cyan-500/20 hover:border-cyan-500/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover/item:bg-cyan-500 group-hover/item:text-white transition-colors"
+                    >
+                      <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-cyan-200"
+                      >Sekolah</span
+                    >
+                  </button>
+
+                  <button
+                    onclick="window.quickOpen('ashar')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-orange-500/20 hover:border-orange-500/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-400 group-hover/item:bg-orange-500 group-hover/item:text-white transition-colors"
+                    >
+                      <i data-lucide="sun" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-orange-200"
+                      >Ashar</span
+                    >
+                  </button>
+
+                  <button
+                    onclick="window.quickOpen('maghrib')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-indigo-500/20 hover:border-indigo-500/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover/item:bg-indigo-500 group-hover/item:text-white transition-colors"
+                    >
+                      <i data-lucide="sunset" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-indigo-200"
+                      >Maghrib</span
+                    >
+                  </button>
+
+                  <button
+                    onclick="window.quickOpen('isya')"
+                    class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-blue-500/20 hover:border-blue-500/50 transition-all active:scale-95 group/item"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover/item:bg-blue-500 group-hover/item:text-white transition-colors"
+                    >
+                      <i data-lucide="moon" class="w-4 h-4"></i>
+                    </div>
+                    <span
+                      class="text-[10px] font-bold text-slate-300 group-hover/item:text-blue-200"
+                      >Isya</span
+                    >
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>

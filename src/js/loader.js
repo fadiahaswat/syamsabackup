@@ -135,7 +135,19 @@ const ComponentLoader = {
       ['tpl-slot-item', 'slot-item'],
       ['tpl-slot-item-wide', 'slot-item-wide'],
       ['tpl-santri-row', 'santri-row'],
-      ['tpl-activity-btn', 'activity-btn']
+      ['tpl-activity-btn', 'activity-btn'],
+      ['tahfizh-tpl-jadwal-perpulangan', 'tahfizh/jadwal-perpulangan'],
+      ['tahfizh-tpl-accordion-item', 'tahfizh/accordion-item'],
+      ['tahfizh-tpl-peringkat-section', 'tahfizh/peringkat-section'],
+      ['tahfizh-tpl-peringkat-item', 'tahfizh/peringkat-item'],
+      ['tahfizh-tpl-tahfizh-section', 'tahfizh/tahfizh-section'],
+      ['tahfizh-tpl-tahfizh-content', 'tahfizh/tahfizh-content'],
+      ['tahfizh-history-row-template', 'tahfizh/history-row'],
+      ['tahfizh-rekap-content-template', 'tahfizh/rekap-content'],
+      ['tahfizh-tpl-rekap-row', 'tahfizh/rekap-row'],
+      ['tahfizh-tpl-juz-block', 'tahfizh/juz-block'],
+      ['tahfizh-analisis-prompt-template', 'tahfizh/analisis-prompt'],
+      ['tahfizh-analisis-dashboard-template', 'tahfizh/analisis-dashboard']
     ];
 
     await Promise.all(templates.map(([id, name]) => this.ensureTemplate(id, name)));
@@ -184,6 +196,104 @@ const ComponentLoader = {
   },
 
   /**
+   * Ensure an auth page exists in the DOM, loading it from src/pages/auth when missing.
+   * @param {string} viewId - DOM view id
+   * @param {string} pageName - File name without .html
+   */
+  async ensureAuthPage(viewId, pageName) {
+    if (document.getElementById(viewId)) return document.getElementById(viewId);
+
+    const html = await this.loadPage(pageName, 'auth');
+    if (!html) return null;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    if (window.lucide) lucide.createIcons();
+    return document.getElementById(viewId);
+  },
+
+  /**
+   * Prepare extracted auth pages for the gradual migration.
+   */
+  async ensureAuthPages() {
+    await Promise.all([
+      this.ensureAuthPage('view-onboarding', 'onboarding'),
+      this.ensureAuthPage('view-login', 'login')
+    ]);
+  },
+
+  /**
+   * Ensure a standalone view page exists in the DOM.
+   * @param {string} viewId - DOM view id
+   * @param {string} pageName - File name without .html
+   * @param {string} section - Folder under src/pages
+   */
+  async ensureStandalonePage(viewId, pageName, section) {
+    if (document.getElementById(viewId)) return document.getElementById(viewId);
+
+    const html = await this.loadPage(pageName, section);
+    if (!html) return null;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+    if (window.lucide) lucide.createIcons();
+    return document.getElementById(viewId);
+  },
+
+  /**
+   * Prepare standalone pages for the gradual migration.
+   */
+  async ensureStandalonePages() {
+    await Promise.all([
+      this.ensureStandalonePage('view-attendance', 'attendance', 'attendance'),
+      this.ensureStandalonePage('view-qibla', 'qibla', 'qibla')
+    ]);
+  },
+
+  /**
+   * Ensure a main app tab/page exists inside #view-main.
+   * @param {string} pageId - DOM page id
+   * @param {string} pageName - File name without .html
+   * @param {string} section - Folder under src/pages
+   */
+  async ensureAppPage(pageId, pageName, section) {
+    if (document.getElementById(pageId)) return document.getElementById(pageId);
+
+    const viewMain = document.getElementById('view-main');
+    if (!viewMain) {
+      console.warn('[ComponentLoader] #view-main not found');
+      return null;
+    }
+
+    const html = await this.loadPage(pageName, section);
+    if (!html) return null;
+
+    const bottomNav = document.getElementById('bottom-nav');
+    if (bottomNav?.parentElement === viewMain) {
+      bottomNav.insertAdjacentHTML('beforebegin', html);
+    } else {
+      viewMain.insertAdjacentHTML('beforeend', html);
+    }
+
+    if (window.lucide) lucide.createIcons();
+    return document.getElementById(pageId);
+  },
+
+  /**
+   * Prepare extracted main app pages for the gradual migration.
+   */
+  async ensureAppPages() {
+    const pages = [
+      ['main-content', 'dashboard', 'dashboard'],
+      ['tab-notifications', 'notifications', 'notifications'],
+      ['tab-report', 'report', 'report'],
+      ['tab-profile', 'profile', 'profile'],
+      ['tab-tahfizh', 'tahfizh', 'tahfizh'],
+      ['tab-admin', 'admin', 'admin']
+    ];
+
+    await Promise.all(pages.map(([id, name, section]) => this.ensureAppPage(id, name, section)));
+  },
+
+  /**
    * Ensure a modal component exists in the DOM, loading it from src/components/modals when missing.
    * @param {string} modalId - DOM modal id
    * @param {string} modalName - File name without .html
@@ -206,7 +316,20 @@ const ComponentLoader = {
     const modals = [
       ['modal-rekap', 'modal-rekap'],
       ['modal-activity', 'modal-activity'],
-      ['modal-confirm', 'modal-confirm']
+      ['modal-confirm', 'modal-confirm'],
+      ['modal-bulk-actions', 'modal-bulk-actions'],
+      ['modal-stat-detail', 'modal-stat-detail'],
+      ['modal-edit-permit', 'modal-edit-permit'],
+      ['modal-input-pembinaan', 'modal-pembinaan'],
+      ['modal-gps-guide', 'modal-gps-guide'],
+      ['bento-detail-modal', 'modal-bento-detail'],
+      ['modal-wali-permit', 'modal-wali-permit'],
+      ['modal-musyrif-approval', 'modal-musyrif-approval'],
+      ['modal-exit-ticket', 'modal-exit-ticket'],
+      ['modal-edit-wali-permit', 'modal-edit-wali-permit'],
+      ['modal-delete-wali-permit', 'modal-delete-wali-permit'],
+      ['modal-permit', 'modal-permit'],
+      ['modal-notification-settings', 'modal-notification-settings']
     ];
 
     await Promise.all(modals.map(([id, name]) => this.ensureModal(id, name)));
@@ -219,10 +342,73 @@ const ComponentLoader = {
     const critical = [
       `${this.layoutsPath}/header.html`,
       `${this.layoutsPath}/bottom-nav.html`,
-      `${this.layoutsPath}/sidebar-desktop.html`
+      `${this.layoutsPath}/sidebar-desktop.html`,
+      `${this.pagesPath}/auth/onboarding.html`,
+      `${this.pagesPath}/auth/login.html`,
+      `${this.pagesPath}/attendance/attendance.html`,
+      `${this.pagesPath}/qibla/qibla.html`,
+      `${this.pagesPath}/dashboard/dashboard.html`,
+      `${this.pagesPath}/dashboard/widgets/greeting.html`,
+      `${this.pagesPath}/dashboard/widgets/countdown-widget.html`,
+      `${this.pagesPath}/dashboard/widgets/location-card.html`,
+      `${this.pagesPath}/dashboard/widgets/main-card.html`,
+      `${this.pagesPath}/dashboard/widgets/prayer-widget.html`,
+      `${this.pagesPath}/dashboard/widgets/pembinaan-widget.html`,
+      `${this.pagesPath}/dashboard/widgets/weekly-calendar.html`,
+      `${this.pagesPath}/dashboard/widgets/other-slots.html`,
+      `${this.pagesPath}/notifications/notifications.html`,
+      `${this.pagesPath}/report/report.html`,
+      `${this.pagesPath}/report/report-section.html`,
+      `${this.pagesPath}/report/analysis.html`,
+      `${this.pagesPath}/profile/profile.html`,
+      `${this.pagesPath}/profile/widgets/profile-hero.html`,
+      `${this.pagesPath}/profile/widgets/timesheet.html`,
+      `${this.pagesPath}/profile/widgets/pembinaan.html`,
+      `${this.pagesPath}/profile/widgets/permit-archive.html`,
+      `${this.pagesPath}/tahfizh/tahfizh.html`,
+      `${this.pagesPath}/admin/admin.html`,
+      `${this.pagesPath}/admin/subtabs/operations.html`,
+      `${this.pagesPath}/admin/subtabs/hr.html`,
+      `${this.pagesPath}/admin/subtabs/tahfizh.html`,
+      `${this.pagesPath}/admin/subtabs/permits.html`,
+      `${this.pagesPath}/admin/subtabs/broadcast.html`,
+      `${this.pagesPath}/admin/subtabs/logs.html`,
+      `${this.pagesPath}/tahfizh/pages/beranda.html`,
+      `${this.pagesPath}/tahfizh/pages/form.html`,
+      `${this.pagesPath}/tahfizh/pages/analisis.html`,
+      `${this.pagesPath}/tahfizh/pages/riwayat.html`,
+      `${this.pagesPath}/tahfizh/pages/rekap.html`,
+      `${this.templatesPath}/tahfizh/jadwal-perpulangan.html`,
+      `${this.templatesPath}/tahfizh/accordion-item.html`,
+      `${this.templatesPath}/tahfizh/peringkat-section.html`,
+      `${this.templatesPath}/tahfizh/peringkat-item.html`,
+      `${this.templatesPath}/tahfizh/tahfizh-section.html`,
+      `${this.templatesPath}/tahfizh/tahfizh-content.html`,
+      `${this.templatesPath}/tahfizh/history-row.html`,
+      `${this.templatesPath}/tahfizh/rekap-content.html`,
+      `${this.templatesPath}/tahfizh/rekap-row.html`,
+      `${this.templatesPath}/tahfizh/juz-block.html`,
+      `${this.templatesPath}/tahfizh/analisis-prompt.html`,
+      `${this.templatesPath}/tahfizh/analisis-dashboard.html`,
+      `${this.basePath}/modals/modal-rekap.html`,
+      `${this.basePath}/modals/modal-activity.html`,
+      `${this.basePath}/modals/modal-confirm.html`,
+      `${this.basePath}/modals/modal-bulk-actions.html`,
+      `${this.basePath}/modals/modal-stat-detail.html`,
+      `${this.basePath}/modals/modal-edit-permit.html`,
+      `${this.basePath}/modals/modal-pembinaan.html`,
+      `${this.basePath}/modals/modal-gps-guide.html`,
+      `${this.basePath}/modals/modal-bento-detail.html`,
+      `${this.basePath}/modals/modal-wali-permit.html`,
+      `${this.basePath}/modals/modal-musyrif-approval.html`,
+      `${this.basePath}/modals/modal-exit-ticket.html`,
+      `${this.basePath}/modals/modal-edit-wali-permit.html`,
+      `${this.basePath}/modals/modal-delete-wali-permit.html`,
+      `${this.basePath}/modals/modal-permit.html`,
+      `${this.basePath}/modals/modal-notification-settings.html`
     ];
 
-    await Promise.all(critical.map(path => this.load(path)));
+    await Promise.all(critical.map(path => this.load(path).catch(() => '')));
   },
 
   /**

@@ -1,0 +1,24 @@
+<div id="modal-notification-settings" class="fixed inset-0 z-[120] hidden">
+      <div class="modal-backdrop absolute inset-0 bg-slate-950/70 backdrop-blur-md" onclick="document.getElementById('modal-notification-settings').classList.add('hidden')"></div>
+      <div class="absolute inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-lg sm:max-h-[85vh] bg-white dark:bg-slate-900 rounded-[1.75rem] shadow-2xl overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+            </div>
+            <div>
+              <h2 class="text-base font-black text-slate-900 dark:text-white">Pengaturan Notifikasi</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Aktifkan notifikasi yang Anda butuhkan</p>
+            </div>
+          </div>
+          <button onclick="document.getElementById('modal-notification-settings').classList.add('hidden')" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <!-- Content -->
+        <div id="notification-settings-content" class="flex-1 overflow-y-auto p-5">
+          <!-- Diisi oleh JavaScript -->
+        </div>
+      </div>
+    </div>

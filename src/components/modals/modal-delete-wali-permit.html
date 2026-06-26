@@ -1,0 +1,35 @@
+<div id="modal-delete-wali-permit" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[1.75rem] p-6 animate-slide-up border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex flex-col items-center text-center">
+          <div class="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-rose-600 dark:text-rose-400"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+          </div>
+          <h3 class="text-lg font-black text-slate-800 dark:text-white mb-2">Batalkan Pengajuan Izin?</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Pengajuan izin berikut akan dihapus secara permanen:</p>
+
+          <div class="w-full p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 text-left mb-6">
+            <p class="text-xs font-bold text-slate-800 dark:text-white mb-1">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider">Santri:</span>
+              <span id="delete-permit-nama">-</span>
+            </p>
+            <p class="text-xs text-slate-600 dark:text-slate-300 mb-1">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider">Alasan:</span>
+              <span id="delete-permit-reason">-</span>
+            </p>
+            <p class="text-xs text-slate-600 dark:text-slate-300">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider">Tanggal:</span>
+              <span id="delete-permit-date">-</span>
+            </p>
+          </div>
+
+          <div class="flex w-full gap-3">
+            <button onclick="window.closeDeleteWaliPermitModal()" class="flex-1 py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all active:scale-95">
+              Kembali
+            </button>
+            <button onclick="window.executeDeleteWaliPermit()" class="flex-1 py-3 px-4 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
+              Ya, Batalkan
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>

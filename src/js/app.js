@@ -38,6 +38,9 @@
   function start() {
     window.ComponentLoader?.preloadCritical?.();
     window.ComponentLoader?.ensureCriticalLayouts?.();
+    window.ComponentLoader?.ensureAuthPages?.();
+    window.ComponentLoader?.ensureStandalonePages?.();
+    window.ComponentLoader?.ensureAppPages?.();
     window.ComponentLoader?.ensureCriticalTemplates?.();
     window.ComponentLoader?.ensureCriticalModals?.();
     bridgeLegacyNavigation();

@@ -1,0 +1,115 @@
+<section
+      id="view-onboarding"
+      class="fixed inset-0 z-[60] flex flex-col items-center justify-center overflow-hidden hidden bg-slate-50/60 dark:bg-slate-950/80 backdrop-blur-[24px]"
+    >
+      <!-- Onboarding Full Screen Container -->
+      <div
+        class="w-full h-full max-w-md p-6 sm:p-10 relative overflow-hidden flex flex-col justify-between z-10 transition-all duration-300 scale-95 opacity-0"
+        id="onboarding-card"
+      >
+        <!-- Background light blur inside card -->
+        <div class="absolute -top-10 -right-10 w-40 h-40 bg-palette-blue/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+        <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-palette-cyan/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+
+        <!-- Upper Row: Skip button -->
+        <div class="flex justify-end mb-4 relative z-10 shrink-0">
+          <button
+            onclick="window.closeOnboarding()"
+            class="px-4 py-2 rounded-full text-xs font-black text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100/50 dark:bg-slate-800/40 backdrop-blur-sm transition-all active:scale-95 flex items-center gap-1"
+            aria-label="Lewati onboarding"
+          >
+            <span>Lewati</span>
+            <i data-lucide="chevrons-right" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <!-- Slider Wrapper -->
+        <div class="flex-1 overflow-hidden relative z-10 w-full mb-6 rounded-3xl select-none">
+          <div class="onboarding-slider" id="onboarding-slider">
+            <!-- Slide 1: Welcome -->
+            <div class="onboarding-slide flex flex-col items-center justify-center text-center p-4">
+              <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-palette-blue mb-6 onboarding-icon-float border border-blue-100/40 dark:border-blue-500/10 shadow-sm">
+                <i data-lucide="home" class="w-10 h-10 sm:w-12 sm:h-12"></i>
+              </div>
+              <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug mb-4">
+                Selamat Datang di Syamsa
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-[280px] sm:max-w-[320px] mx-auto">
+                Sistem perizinan dan monitoring asrama santri yang terintegrasi dan mudah digunakan.
+              </p>
+            </div>
+
+            <!-- Slide 2: Wali -->
+            <div class="onboarding-slide flex flex-col items-center justify-center text-center p-4">
+              <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-cyan-50 dark:bg-cyan-900/20 flex items-center justify-center text-palette-cyan mb-6 onboarding-icon-float border border-cyan-100/40 dark:border-cyan-500/10 shadow-sm">
+                <i data-lucide="calendar" class="w-10 h-10 sm:w-12 sm:h-12"></i>
+              </div>
+              <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug mb-4">
+                Ajukan Perizinan Praktis
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-[280px] sm:max-w-[320px] mx-auto">
+                Wali santri dapat mengajukan izin pulang/sakit secara online dan memantau status persetujuannya secara langsung.
+              </p>
+            </div>
+
+            <!-- Slide 3: Musyrif -->
+            <div class="onboarding-slide flex flex-col items-center justify-center text-center p-4">
+              <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-500 mb-6 onboarding-icon-float border border-emerald-100/40 dark:border-emerald-500/10 shadow-sm">
+                <i data-lucide="clipboard-list" class="w-10 h-10 sm:w-12 sm:h-12"></i>
+              </div>
+              <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug mb-4">
+                Kelola Asrama Lebih Efisien
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-[280px] sm:max-w-[320px] mx-auto">
+                Musyrif dapat menyetujui izin keluar/pulang, mengelola kehadiran harian santri, dan memantau perkembangan asrama.
+              </p>
+            </div>
+
+            <!-- Slide 4: Real-time Notification -->
+            <div class="onboarding-slide flex flex-col items-center justify-center text-center p-4">
+              <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-500 mb-6 onboarding-icon-float border border-amber-100/40 dark:border-amber-500/10 shadow-sm">
+                <i data-lucide="bell" class="w-10 h-10 sm:w-12 sm:h-12"></i>
+              </div>
+              <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug mb-4">
+                Notifikasi Instan & Real-time
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-[280px] sm:max-w-[320px] mx-auto">
+                Dapatkan pemberitahuan real-time mengenai status santri. Cepat, aman, dan dapat diakses kapan saja.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lower Row: Navigation & Indicators -->
+        <div class="flex items-center justify-between mt-auto pt-6 relative z-10 shrink-0">
+          <!-- Dot Indicators -->
+          <div class="flex items-center gap-2" id="onboarding-dots">
+            <div class="onboarding-dot active" onclick="window.setOnboardingSlide(0)" aria-label="Slide 1"></div>
+            <div class="onboarding-dot" onclick="window.setOnboardingSlide(1)" aria-label="Slide 2"></div>
+            <div class="onboarding-dot" onclick="window.setOnboardingSlide(2)" aria-label="Slide 3"></div>
+            <div class="onboarding-dot" onclick="window.setOnboardingSlide(3)" aria-label="Slide 4"></div>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex items-center gap-2.5">
+            <button
+              id="onboarding-btn-prev"
+              onclick="window.prevOnboardingSlide()"
+              class="w-12 h-12 rounded-2xl bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/20 dark:border-slate-800/30 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-all active:scale-90 opacity-40 pointer-events-none"
+              aria-label="Slide sebelumnya"
+            >
+              <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </button>
+            <button
+              id="onboarding-btn-next"
+              onclick="window.nextOnboardingSlide()"
+              class="px-6 h-12 rounded-2xl bg-palette-blue text-white text-xs font-black shadow-lg shadow-blue-500/20 hover:bg-palette-deep transition-all flex items-center gap-2 active:scale-95"
+              aria-label="Lanjutkan"
+            >
+              <span id="onboarding-btn-text">Lanjut</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5" id="onboarding-btn-icon"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>

@@ -1,0 +1,72 @@
+<div id="salat-standalone-card" class="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/60 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 lg:mt-4 transition-all duration-300 animate-slide-up delay-550ms">
+          
+          <!-- Header: Title & Location (Left), Hijri & Gregorian Date (Right) -->
+          <div class="flex items-center justify-between gap-2 mb-4 px-1.5">
+            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+              <h4 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                <svg class="w-4 h-4 text-palette-blue shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                Jadwal Shalat
+              </h4>
+              <span id="salat-location-subtitle" class="text-[9px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 border-l border-slate-200 dark:border-slate-700 pl-1.5 leading-none truncate">Wirobrajan Yogyakarta</span>
+            </div>
+            <div class="flex items-center gap-2.5 shrink-0">
+              <div class="flex flex-col items-end text-right">
+                <span id="widget-hijri-date" class="whitespace-nowrap text-[10px] sm:text-xs font-black text-palette-blue dark:text-palette-mint leading-none"></span>
+                <span id="widget-masehi-date" class="whitespace-nowrap text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1 leading-none"></span>
+              </div>
+              
+              <!-- Qibla Button inside Widget (Right of dates) -->
+              <button onclick="window.openQiblaPage()" class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-palette-blue/10 dark:bg-slate-700/50 dark:hover:bg-palette-blue/20 hover:text-palette-blue transition-all active:scale-95 border border-slate-200/50 dark:border-slate-700/50" title="Kompas Kiblat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-compass animate-spin-slow"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                <span class="hidden xs:inline">Kiblat</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Salat Grid (5 Columns on Mobile, 6 Columns on Desktop to show Syuruq) -->
+          <div id="salat-hijri-widget" class="w-full relative group">
+            <div class="grid grid-cols-5 lg:grid-cols-6 gap-1 sm:gap-2 relative">
+              
+              <div id="prayer-Subuh" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="m8 6 4-4 4 4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Subuh</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Syuruq" class="hidden lg:flex group/card flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Syuruq</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Dzuhur" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Dzuhur</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Ashar" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Ashar</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Maghrib" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10V2"/><path d="m4.93 10.93 1.41-1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41-1.41"/><path d="M22 22H2"/><path d="m16 6-4 4-4-4"/><path d="M16 18a4 4 0 0 0-8 0"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Maghrib</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+              <div id="prayer-Isya" class="group/card flex flex-col items-center justify-center py-2 px-0.5 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-900/60 transition-all duration-300 hover:shadow-sm relative overflow-hidden">
+                <svg class="w-2.5 h-2.5 mb-1.5 text-slate-400 dark:text-slate-500 group-hover/card:text-palette-blue transition-colors duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 3v4"/><path d="M21 5h-4"/></svg>
+                <span class="block text-[8px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">Isya</span>
+                <span class="prayer-time text-[10px] font-black text-slate-700 dark:text-slate-200">--:--</span>
+              </div>
+
+            </div>
+
+            <!-- Sunnah Fasting Reminder Banner -->
+            <div id="widget-fasting-reminder" class="hidden mt-3 px-2.5 py-1 rounded-xl bg-palette-mint/10 dark:bg-palette-mint/20 text-slate-800 dark:text-palette-mint border border-palette-mint/20 text-[9px] font-black items-center gap-1.5 select-none animate-pulse"></div>
+
+          </div>
+        </div>

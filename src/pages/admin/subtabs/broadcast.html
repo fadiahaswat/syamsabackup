@@ -1,0 +1,30 @@
+<div id="admin-subtab-broadcast" class="admin-subtab-content hidden space-y-4">
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+                <i data-lucide="megaphone" class="w-4 h-4 text-teal-500"></i> Kirim Broadcast Pengumuman
+              </h2>
+              <p class="text-xs text-slate-400 font-bold mb-4">Buat pengumuman global yang akan langsung muncul di bagian atas dashboard Musyrif.</p>
+              
+              <form id="admin-broadcast-form" onsubmit="window.handleAdminBroadcastSubmit(event)" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-black text-slate-500 mb-1">Judul Pengumuman</label>
+                  <input type="text" id="admin-broadcast-title" required placeholder="Contoh: Jadwal Piket Shalat Shubuh Baru" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-black text-slate-500 mb-1">Isi Pengumuman</label>
+                  <textarea id="admin-broadcast-content" required rows="4" placeholder="Tulis rincian pengumuman di sini..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500"></textarea>
+                </div>
+                <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-black text-xs py-3.5 shadow-md shadow-teal-500/10 active:scale-[0.98] transition-all">
+                  Kirim Pengumuman
+                </button>
+              </form>
+            </div>
+
+            <!-- Recent broadcasts -->
+            <div class="rounded-3xl border border-slate-100 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-5 shadow-sm">
+              <h3 class="text-xs font-black text-slate-800 dark:text-white mb-3">Pengumuman Terbaru</h3>
+              <div id="admin-recent-broadcasts" class="space-y-3">
+                <p class="text-xs text-slate-400 font-bold">Memuat pengumuman...</p>
+              </div>
+            </div>
+          </div>

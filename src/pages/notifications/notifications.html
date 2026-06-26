@@ -1,0 +1,109 @@
+<div
+        id="tab-notifications"
+        class="tab-content hidden min-h-screen pb-40 p-6 pt-safe animate-fade-in overflow-y-auto hide-scrollbar"
+      >
+        <div class="max-w-7xl mx-auto w-full space-y-5">
+          <header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 mt-3 sm:mt-4 w-full delay-100ms">
+            <div class="flex items-center gap-3 min-w-0">
+              <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 active:scale-95 transition-all duration-300">
+                <div class="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-25 group-hover:opacity-50 transition-opacity duration-300"></div>
+                <div class="relative w-11 h-11 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
+                  <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </div>
+              </button>
+
+              <div class="flex flex-col justify-center min-w-0">
+                <h1 class="text-sm sm:text-base font-black text-slate-800 dark:text-white leading-tight truncate">Notifikasi</h1>
+                <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">Riwayat pemberitahuan terbaru</p>
+              </div>
+            </div>
+            <button onclick="window.markAllNotificationsAsRead(event)" class="px-3.5 py-2 rounded-full text-[10px] font-black text-white bg-palette-blue hover:bg-palette-deep transition-all shadow-md active:scale-95">
+              Tandai semua dibaca
+            </button>
+          </header>
+
+          <!-- Tab: Notifications Stats & Filter Row -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 animate-slide-up delay-150ms mt-6">
+            <!-- Stat Card: Total -->
+            <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-4 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div id="notif-stat-total" class="text-lg font-black text-slate-800 dark:text-white leading-none">0</div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 truncate">Total Notifikasi</div>
+              </div>
+            </div>
+            
+            <!-- Stat Card: Unread -->
+            <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-4 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                <i data-lucide="mail" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div id="notif-stat-unread" class="text-lg font-black text-slate-800 dark:text-white leading-none">0</div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 truncate">Belum Dibaca</div>
+              </div>
+            </div>
+            
+            <!-- Stat Card: Attendance -->
+            <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-4 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div id="notif-stat-attendance" class="text-lg font-black text-slate-800 dark:text-white leading-none">0</div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 truncate">Presensi</div>
+              </div>
+            </div>
+
+            <!-- Stat Card: Permit -->
+            <div class="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/60 rounded-3xl p-4 flex items-center gap-3">
+              <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div id="notif-stat-permit" class="text-lg font-black text-slate-800 dark:text-white leading-none">0</div>
+                <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 truncate">Perizinan</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter Chips Bar -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar scroll-smooth animate-slide-up delay-200ms mt-4">
+            <button onclick="window.filterNotifications('all')" id="notif-filter-all" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-palette-blue text-white shadow-sm hover:scale-[1.02] active:scale-95 shrink-0">
+              Semua
+            </button>
+            <button onclick="window.filterNotifications('attendance')" id="notif-filter-attendance" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
+              Kehadiran
+            </button>
+            <button onclick="window.filterNotifications('permit')" id="notif-filter-permit" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
+              Perizinan
+            </button>
+            <button onclick="window.filterNotifications('tahfizh')" id="notif-filter-tahfizh" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
+              Tahfizh
+            </button>
+            <button onclick="window.filterNotifications('system')" id="notif-filter-system" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
+              Sistem
+            </button>
+          </div>
+
+          <div class="mt-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-sm p-2 sm:p-4 overflow-hidden">
+            <div id="tab-notification-list" class="divide-y divide-slate-100 dark:divide-slate-800/50 animate-slide-up delay-250ms">
+              <!-- Empty State: Memuat -->
+              <div id="notif-loading-state" class="p-8 text-center text-slate-400 dark:text-slate-500">
+                <i data-lucide="loader-2" class="w-8 h-8 mx-auto mb-2 opacity-50 animate-spin"></i>
+                <p class="text-xs font-semibold">Memuat notifikasi...</p>
+              </div>
+              <!-- Empty State: Tidak Ada Notifikasi -->
+              <div id="notif-empty-state" class="hidden p-8 text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
+                  <span class="text-3xl">✨</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tidak Ada Notifikasi</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Semua berjalan lancar. Tidak ada pemberitahuan baru saat ini.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>

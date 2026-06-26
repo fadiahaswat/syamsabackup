@@ -1,0 +1,85 @@
+<div id="modal-wali-permit" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[1.75rem] p-6 animate-slide-up border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="text-xl font-black text-slate-800 dark:text-white">
+              Formulir Izin Harian
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Isi detail permohonan izin untuk santri.</p>
+          </div>
+          <button onclick="window.closeModal('modal-wali-permit')" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <form id="wali-permit-form" onsubmit="window.submitWaliPermit(event)" class="flex-1 overflow-y-auto pr-1 pb-4 hide-scrollbar space-y-4">
+          <!-- Nama Wali -->
+          <div>
+            <label for="wali-permit-nama-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Nama Wali Santri</label>
+            <input type="text" id="wali-permit-nama-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Budi Santoso">
+          </div>
+
+          <!-- Alamat Wali -->
+          <div>
+            <label for="wali-permit-alamat-wali" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Alamat Wali</label>
+            <input type="text" id="wali-permit-alamat-wali" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Contoh: Yogyakarta">
+          </div>
+
+          <!-- Nama & Kelas Santri (Readonly) -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="wali-permit-nama-santri" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Nama Santri</label>
+              <input type="text" id="wali-permit-nama-santri" readonly class="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 cursor-not-allowed outline-none">
+            </div>
+            <div>
+              <label for="wali-permit-kelas-santri" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Kelas</label>
+              <input type="text" id="wali-permit-kelas-santri" readonly class="w-full px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500 cursor-not-allowed outline-none">
+            </div>
+          </div>
+
+          <!-- Kategori Izin (Dropdown) -->
+          <div>
+            <label for="wali-permit-category" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Kategori Izin</label>
+            <select id="wali-permit-category" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none">
+              <option value="pulang">Izin Lainnya (Keluarga, dll.) - Status: Pulang</option>
+              <option value="sakit">Sakit / Periksa Kesehatan - Status: Sakit</option>
+            </select>
+          </div>
+
+          <!-- Keperluan -->
+          <div>
+            <label for="wali-permit-reason" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Keperluan / Alasan</label>
+            <textarea id="wali-permit-reason" rows="3" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Tuliskan keperluan dengan jelas..."></textarea>
+          </div>
+
+          <!-- Tanggal Izin -->
+          <div>
+            <label for="wali-permit-date" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Tanggal Izin/Keluar</label>
+            <input type="date" id="wali-permit-date" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none">
+          </div>
+
+          <!-- Waktu Izin -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="wali-permit-start-time" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Jam Keluar</label>
+              <select id="wali-permit-start-time" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none"></select>
+            </div>
+            <div>
+              <label for="wali-permit-end-time" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Jam Kembali</label>
+              <select id="wali-permit-end-time" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none"></select>
+            </div>
+          </div>
+
+          <!-- Tempat Tujuan -->
+          <div>
+            <label for="wali-permit-destination" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 pl-1">Tempat Tujuan</label>
+            <input type="text" id="wali-permit-destination" required class="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 transition-all outline-none" placeholder="Lokasi yang dituju">
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="w-full py-4 mt-2 rounded-2xl bg-palette-blue hover:bg-palette-deep text-white text-xs font-black shadow-lg hover:shadow-xl active:scale-95 transition-all duration-300">
+            Kirim Permohonan Izin
+          </button>
+        </form>
+      </div>
+    </div>

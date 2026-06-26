@@ -1,0 +1,33 @@
+<section id="tahfizh-page-form" class="tahfizh-page-content hidden">
+            <form id="tahfizh-setoranForm" class="max-w-3xl tahfizh-card rounded-2xl overflow-hidden">
+              <div class="p-4 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-xl tahfizh-soft-icon flex items-center justify-center shadow-sm shrink-0">
+                    <i data-lucide="square-pen" class="w-5 h-5"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm font-black text-slate-800 dark:text-white leading-tight">Input Setoran</h3>
+                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">Tersimpan langsung di perangkat</p>
+                  </div>
+                </div>
+                  <button type="button" onclick="window.switchTahfizhSubTab('beranda')" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 flex items-center justify-center active:scale-95 transition-all" title="Kembali">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="p-4 space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><label for="tahfizh-tanggal" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Waktu</label><div class="flex gap-2 mt-1"><input id="tahfizh-tanggal" type="datetime-local" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><button id="tahfizh-nowBtn" type="button" class="h-12 px-3 rounded-xl bg-orange-500 text-white font-black text-xs shadow-sm shadow-orange-500/20 active:scale-95 transition-all">Kini</button></div><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div><label for="tahfizh-musyrif" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Musyrif</label><select id="tahfizh-musyrif" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div><label for="tahfizh-namaSantri" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Santri</label><select id="tahfizh-namaSantri" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div><label for="tahfizh-kelas" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Kelas</label><input id="tahfizh-kelas" readonly class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/70 p-3 text-sm font-bold"><input id="tahfizh-santriId" type="hidden"><input id="tahfizh-program" type="hidden"></div>
+                <div><label for="tahfizh-jenis" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Jenis</label><select id="tahfizh-jenis" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div><label for="tahfizh-juz" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Juz</label><select id="tahfizh-juz" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+              </div>
+              <div id="tahfizh-halaman-container" class="hidden"><label for="tahfizh-halaman" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Halaman</label><input id="tahfizh-halaman" type="number" step="0.5" min="0" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+              <div id="tahfizh-surat-container" class="hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50 p-4"><p class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 mb-2">Pilih Surat</p><div id="tahfizh-surat-checklist-area" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto"></div><p class="form-error hidden text-xs font-bold text-red-500 mt-2"></p></div>
+              <button id="tahfizh-submit-button" type="submit" class="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-400 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-orange-500/20 active:scale-95 transition-all"><i id="tahfizh-submit-button-icon" data-lucide="save" class="w-4 h-4"></i><span id="tahfizh-submit-button-text">Simpan Setoran</span><span id="tahfizh-submit-spinner" class="hidden w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></span></button>
+              </div>
+            </form>
+          </section>

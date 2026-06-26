@@ -1,0 +1,102 @@
+<div id="modal-exit-ticket" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
+      <div class="bg-white dark:bg-slate-950 w-full max-w-md rounded-[1.75rem] p-6 animate-slide-up border border-slate-200/10 dark:border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+        
+        <div class="flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-xs font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Tiket Keluar Aktif</span>
+          </div>
+          <button onclick="window.closeModal('modal-exit-ticket')" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Scrollable Ticket Container -->
+        <div class="flex-1 overflow-y-auto pr-1 pb-4 hide-scrollbar">
+          
+          <!-- Ticket Premium Card design -->
+          <div class="bg-gradient-to-br from-slate-50 via-slate-100/80 to-white dark:from-slate-800 dark:via-slate-800/80 dark:to-slate-900 rounded-3xl p-6 text-slate-800 dark:text-slate-200 shadow-xl relative overflow-hidden border border-slate-200 dark:border-slate-700/50 flex flex-col gap-6">
+            
+            <!-- Glow effect background -->
+            <div class="absolute top-0 right-0 w-36 h-36 bg-emerald-500/5 rounded-full blur-[40px] pointer-events-none"></div>
+            
+            <!-- Logo Header -->
+            <div class="flex justify-between items-start z-10">
+              <div>
+                <h3 class="text-lg font-black tracking-tight text-slate-900 dark:text-white leading-none">ASRAMA 1</h3>
+                <span class="text-[7.5px] font-bold text-slate-500 dark:text-slate-400 tracking-wider uppercase mt-1 block">Abu Bakar Ash-Shiddiq</span>
+              </div>
+              <img src="assets/branding/Primary Logo.webp" class="h-6 w-auto opacity-90" alt="Logo" />
+            </div>
+
+            <!-- Student Profile -->
+            <div class="flex items-center gap-3 bg-slate-200/50 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-200/30 dark:border-slate-850/30 z-10">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-extrabold text-sm shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div class="min-w-0">
+                <h4 id="ticket-student-name" class="text-sm font-black text-slate-950 dark:text-white truncate">Nama Santri</h4>
+                <div class="flex gap-2 text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                  <span id="ticket-student-nis">NIS: -</span>
+                  <span id="ticket-student-class">Kelas: -</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ticket Info details -->
+            <div class="space-y-4 text-xs z-10">
+              <div>
+                <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Masa Berlaku Izin</span>
+                <p id="ticket-valid-time" class="font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 px-3 py-2 rounded-xl">Senin, 22 Juni 2026 pukul 08:00 - 17:00 WIB</p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Penjemput / Wali</span>
+                  <p id="ticket-wali-name" class="font-black text-slate-900 dark:text-white">Nama Wali</p>
+                  <p id="ticket-wali-address" class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">Alamat Wali</p>
+                </div>
+                <div>
+                  <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Tempat Tujuan</span>
+                  <p id="ticket-destination" class="font-black text-slate-900 dark:text-white truncate font-semibold">Tempat Tujuan</p>
+                </div>
+              </div>
+
+              <div>
+                <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">Keperluan / Alasan</span>
+                <p id="ticket-reason" class="text-slate-700 dark:text-slate-300 font-medium leading-relaxed italic">"Keperluan"</p>
+              </div>
+            </div>
+
+            <!-- Approval Verification (Musyrif Seal) -->
+            <div class="flex justify-between items-center bg-slate-200/40 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-800/50 p-3 rounded-2xl z-10 relative">
+              <div>
+                <span class="text-[8px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-0.5">Diverifikasi Oleh</span>
+                <p id="ticket-approver" class="font-black text-slate-900 dark:text-white">Ustadz Andi</p>
+                <span id="ticket-approved-time" class="text-[8px] font-bold text-slate-500 dark:text-slate-400 block mt-0.5">Waktu</span>
+              </div>
+              
+              <!-- Digital Seal (Stamp) -->
+              <img src="approved.png" class="w-14 h-14 object-contain rotate-[12deg] shrink-0" alt="Approved Stamp" />
+            </div>
+
+            <!-- Barcode Decoration -->
+            <div class="flex flex-col items-center justify-center bg-white rounded-2xl p-3 z-10 shadow-inner">
+              <svg id="ticket-barcode-svg" class="w-full h-16" viewBox="0 0 300 65"></svg>
+            </div>
+
+          </div>
+
+          <!-- Satpam Info Card -->
+          <div class="mt-4 p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-900/30 text-amber-800 dark:text-amber-300 flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+            <div class="text-xs">
+              <p class="font-bold mb-0.5">Perhatian untuk Wali / Satpam:</p>
+              <p class="leading-relaxed opacity-90">Tunjukkan tiket digital ini saat melewati gerbang pos satpam asrama. Tiket ini sah karena disahkan secara digital oleh Musyrif kelas.</p>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>

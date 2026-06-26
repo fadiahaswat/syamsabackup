@@ -1,0 +1,245 @@
+<section
+      id="view-login"
+      class="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-slate-50/60 dark:bg-slate-950/80 backdrop-blur-[24px] hidden"
+    >
+      <!-- Login Full Screen Container -->
+      <div
+        class="w-full h-full max-w-md mx-auto p-8 sm:p-10 relative overflow-hidden flex flex-col justify-between z-10 transition-all duration-300 bg-transparent rounded-none border-none shadow-none scale-100 opacity-100"
+        id="login-card"
+      >
+        <!-- Background light blur inside card -->
+        <div class="absolute -top-10 -right-10 w-40 h-40 bg-palette-blue/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+        <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-palette-cyan/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+
+        <!-- Upper Row: Logo & Welcome -->
+        <div class="text-center relative z-10 shrink-0 mt-8 sm:mt-12">
+          <!-- Brand Blue/Cyan Rounded Square Logo -->
+          <div class="flex justify-center mb-6">
+            <div
+              id="login-logo-icon"
+              onclick="handleLogoClick()"
+              class="relative w-16 h-16 rounded-[1.35rem] bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/25 active:scale-95 transition-transform duration-300 cursor-pointer select-none"
+            >
+              <!-- Blue glowing aura -->
+              <div class="absolute inset-0 rounded-[1.35rem] bg-blue-500 blur-md opacity-30"></div>
+              <img src="assets/icons/icon.webp" class="relative w-10 h-10 object-contain z-10 filter brightness-0 invert" alt="Syamsa Icon" />
+            </div>
+          </div>
+          
+          <h2 class="text-3xl sm:text-[2.25rem] font-black text-syamsa-foreground dark:text-white tracking-tight leading-none mb-1">
+            Welcome<br>to Syamsa
+          </h2>
+          
+          <p
+            id="login-mode-badge"
+            role="status"
+            aria-live="polite"
+            class="hidden mt-3 mx-auto w-fit items-center justify-center gap-2 px-3 py-1 rounded-full bg-amber-100/70 text-amber-800 border border-amber-200/50 text-[10px] font-black uppercase tracking-wider animate-pulse"
+          >
+            Testing Mode
+          </p>
+        </div>
+        <div class="flex-grow flex flex-col justify-center w-full relative z-10 py-4">
+          
+          <!-- Supergraphic Syamsa & Tagline Image (Visible only when in selection view) -->
+          <div id="login-doodles-container" class="relative w-full py-4 flex flex-col items-center justify-center overflow-hidden min-h-[100px] transition-all duration-300">
+            <!-- Supergraphic Syamsa Layer -->
+            <div class="absolute inset-0 w-full h-full opacity-[0.8] dark:opacity-[0.4] pointer-events-none select-none overflow-hidden">
+              <div class="supergraphic-layer"></div>
+              <div class="supergraphic-mark !w-32 !h-32 !right-[-5%] !top-[-5%]"></div>
+              <div class="supergraphic-band !w-28 !h-12 !left-[-5%] !bottom-[-5%]"></div>
+            </div>
+            
+            <div class="relative z-10 flex justify-center w-full mt-2">
+              <img src="tagline.webp" class="h-4 sm:h-[18px] w-auto object-contain brightness-0 opacity-70 dark:brightness-0 dark:invert dark:opacity-60 transition-all duration-300" alt="Syamsa Tagline" />
+            </div>
+          </div>
+          
+          <!-- Login Selection View -->
+          <div id="login-selection-view" class="space-y-4 animate-fade-in w-full">
+            <!-- Continue with Google (Musyrif) -->
+            <button
+              onclick="handleMusyrifLogin()"
+              class="w-full py-3.5 px-6 rounded-2xl bg-palette-blue hover:bg-palette-deep text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+            >
+              <!-- Google Icon SVG (Clean & Simple) -->
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Masuk sebagai Musyrif</span>
+            </button>
+
+            <!-- Sign in as Wali / Student -->
+            <button
+              onclick="handleWaliLogin()"
+              class="w-full py-3.5 px-6 rounded-2xl bg-syamsa-foreground hover:bg-[#061020] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-3 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+            >
+              <i data-lucide="user" class="w-4 h-4 text-white"></i>
+              <span>Masuk sebagai Wali</span>
+            </button>
+            <!-- WhatsApp Help Link -->
+            <div class="text-center pt-2">
+              <a
+                href="https://wa.me/6285339213109"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-palette-blue dark:text-slate-400 dark:hover:text-palette-blue transition-colors"
+              >
+                <i data-lucide="help-circle" class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500"></i>
+                <span>Butuh bantuan? Hubungi Admin</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Form Login Musyrif Inline -->
+          <div id="login-musyrif-view" class="hidden space-y-4 animate-fade-in w-full">
+            <div class="text-center mb-2">
+              <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Pilih Kelas Musyrif</h4>
+              <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1">Pilih kelas Anda untuk melanjutkan verifikasi</p>
+            </div>
+
+            <div class="space-y-3">
+              <div class="relative group">
+                <select
+                  id="musyrif-kelas"
+                  class="w-full py-3 px-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-syamsa-foreground dark:text-white appearance-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all cursor-pointer text-center text-xs"
+                >
+                  <option value="" disabled selected>Pilih Kelas</option>
+                </select>
+                <i data-lucide="chevron-down" class="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+              </div>
+
+              <!-- Testing credentials -->
+              <div id="musyrif-testing-creds" class="hidden space-y-2">
+                <input
+                  type="text"
+                  id="musyrif-username"
+                  placeholder="Username Testing"
+                  class="w-full py-3 px-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-syamsa-foreground dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
+                />
+                <input
+                  type="password"
+                  id="musyrif-password"
+                  placeholder="Password Testing"
+                  class="w-full py-3 px-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-syamsa-foreground dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2 pt-2">
+              <button
+                onclick="handleMusyrifSubmit()"
+                class="w-full py-3.5 rounded-2xl bg-syamsa-foreground hover:bg-[#061020] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+              >
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                <span>Lanjutkan</span>
+              </button>
+
+              <button
+                onclick="window.cancelMusyrifLogin()"
+                class="w-full py-3.5 rounded-2xl bg-transparent border border-slate-200 dark:border-slate-800 text-syamsa-muted-foreground font-black text-xs uppercase tracking-wider hover:bg-syamsa-muted/50 dark:hover:bg-slate-800/40 transition-all active:scale-[0.98]"
+                type="button"
+              >
+                Kembali
+              </button>
+            </div>
+          </div>
+
+          <!-- Form Login Wali/Santri Inline -->
+          <div id="login-wali-view" class="hidden space-y-4 animate-fade-in w-full">
+            <div class="text-center mb-2">
+              <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Verifikasi NIS Santri</h4>
+              <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1">Masukkan Nomor Induk Santri (NIS)</p>
+            </div>
+
+            <div class="space-y-3">
+              <input
+                type="text"
+                id="wali-nis"
+                placeholder="NIS Santri"
+                oninput="window.onWaliNisInput(this.value)"
+                class="w-full py-3 px-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-syamsa-foreground dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
+              />
+
+              <!-- Suggestion info, hidden initially -->
+              <div
+                id="wali-suggestion-info"
+                class="hidden p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-2 animate-fade-in"
+              >
+                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-black">✓</span>
+                <span class="truncate">NIS Terdaftar: <span id="wali-suggested-name" class="font-extrabold text-syamsa-foreground dark:text-emerald-300"></span></span>
+              </div>
+
+              <!-- Password and Submit Section, hidden initially -->
+              <div id="wali-password-section" class="hidden space-y-3 pt-1 animate-fade-in">
+                <input
+                  type="password"
+                  id="wali-password"
+                  placeholder="Password NIS"
+                  class="w-full py-3 px-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-syamsa-foreground dark:text-white focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all text-center text-xs"
+                />
+
+                <button
+                  onclick="handleWaliSubmit()"
+                  class="w-full py-3.5 rounded-2xl bg-syamsa-foreground hover:bg-[#061020] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md hover:scale-[1.01] active:scale-95 transition-all"
+                >
+                  <i data-lucide="log-in" class="w-4 h-4"></i>
+                  <span>Masuk</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button
+                onclick="window.cancelWaliLogin()"
+                class="w-full py-3.5 rounded-2xl bg-transparent border border-slate-200 dark:border-slate-800 text-syamsa-muted-foreground font-black text-xs uppercase tracking-wider hover:bg-syamsa-muted/50 dark:hover:bg-slate-800/40 transition-all active:scale-[0.98]"
+                type="button"
+              >
+                Kembali
+              </button>
+            </div>
+          </div>
+
+          <!-- Form Login Google Inline -->
+          <div id="login-google-view" class="hidden space-y-4 animate-fade-in w-full">
+            <div class="text-center mb-2">
+              <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Verifikasi Akun</h4>
+              <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1 leading-relaxed">
+                Silakan login dengan Google untuk memverifikasi bahwa Anda adalah Musyrif kelas
+                <span id="lbl-google-class" class="font-black text-palette-blue dark:text-blue-400">...</span>
+              </p>
+            </div>
+
+            <div id="google-btn-container" class="flex justify-center h-12 py-1"></div>
+
+            <div class="pt-2">
+              <button
+                onclick="window.cancelGoogleAuth()"
+                class="w-full py-3.5 rounded-2xl bg-transparent border border-slate-200 dark:border-slate-800 text-syamsa-muted-foreground font-black text-xs uppercase tracking-wider hover:bg-syamsa-muted/50 dark:hover:bg-slate-800/40 transition-all active:scale-[0.98]"
+                type="button"
+              >
+                Kembali
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Lower Row: Institutional Logos & Testing Info -->
+        <div class="mt-auto pt-8 pb-4 relative z-10 shrink-0 w-full">
+          <div class="flex items-center justify-center gap-6 sm:gap-8 opacity-50 dark:opacity-40" aria-label="Logo lembaga">
+            <img src="assets/branding/Logo%20PP%20Muhammadiyah.webp" class="h-[20px] w-auto object-contain" alt="PP Muhammadiyah" />
+            <img src="assets/branding/Logo%20Mu%27allimin.webp" class="h-[22px] w-auto object-contain" alt="Mu'allimin" />
+            <img src="assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp" class="h-[18px] w-auto object-contain" alt="Sekolah Pemimpin Bangsa" />
+          </div>
+
+          <div id="testing-mode-info" class="hidden mt-4">
+            <p class="text-[10px] text-amber-500 font-bold text-center uppercase tracking-wider">
+              ⚡ Mode Testing - Klik logo 5x untuk bypass
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>

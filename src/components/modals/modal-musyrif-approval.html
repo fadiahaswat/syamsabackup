@@ -1,0 +1,19 @@
+<div id="modal-musyrif-approval" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all">
+      <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-[1.75rem] p-6 animate-slide-up border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="text-xl font-black text-slate-800 dark:text-white">
+              Persetujuan Izin Santri
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Daftar permohonan izin yang menunggu keputusan.</p>
+          </div>
+          <button onclick="window.closeModal('modal-musyrif-approval')" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <div id="musyrif-approval-list" class="flex-1 overflow-y-auto pr-1 pb-4 hide-scrollbar space-y-4">
+          <!-- Diisi dinamis oleh JS -->
+        </div>
+      </div>
+    </div>

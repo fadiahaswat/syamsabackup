@@ -1,0 +1,36 @@
+<div
+  id="modal-bulk-actions"
+  class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md hidden flex items-end sm:items-center justify-center p-4 transition-all"
+>
+  <div
+    class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[1.75rem] p-6 animate-slide-up border border-white/10 shadow-2xl"
+  >
+    <div class="flex justify-between items-center mb-6">
+      <div class="flex items-center gap-3">
+        <div
+          class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center"
+        >
+          <i data-lucide="zap" class="w-5 h-5 text-slate-500"></i>
+        </div>
+        <div>
+          <h3
+            class="text-lg font-black text-slate-800 dark:text-white leading-none"
+          >
+            Aksi Massal
+          </h3>
+          <p class="text-xs text-slate-500 mt-1">
+            Isi presensi dengan cepat
+          </p>
+        </div>
+      </div>
+      <button
+        onclick="window.closeModal('modal-bulk-actions')"
+        class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors"
+      >
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div id="bulk-actions-content" class="space-y-4"></div>
+  </div>
+</div>

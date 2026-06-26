@@ -1,0 +1,111 @@
+<section
+      id="view-qibla"
+      class="qibla-finder fixed inset-0 z-[60] hidden flex-col overflow-hidden pt-safe"
+      data-qibla-state="searching"
+    >
+      <div class="relative min-h-full flex flex-col px-5 sm:px-8 py-4 sm:py-6 overflow-hidden">
+        <div class="absolute inset-0 pointer-events-none">
+          <div class="absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-white/80 to-transparent dark:from-slate-900/60"></div>
+          <div class="absolute left-1/2 top-[42%] h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-slate-200/50 dark:border-slate-800/60"></div>
+          <div class="absolute left-1/2 top-[42%] h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-slate-200/70 dark:border-slate-800/80"></div>
+        </div>
+        
+        <header class="relative z-10 flex items-center justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Kompas Penunjuk</p>
+            <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+              Arah Kiblat
+            </h3>
+          </div>
+          <button
+            onclick="window.closeQiblaPage()"
+            class="w-10 h-10 rounded-full bg-white/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-300 flex items-center justify-center hover:bg-white dark:hover:bg-slate-800 transition-colors border border-slate-200/70 dark:border-slate-800 shadow-sm backdrop-blur-xl shrink-0"
+            title="Kembali"
+          >
+            <i data-lucide="arrow-left" class="w-4.5 h-4.5"></i>
+          </button>
+        </header>
+
+        <!-- Warning GPS Nonaktif (Premium Alert) -->
+        <div id="qibla-gps-warning" class="hidden relative z-10 mt-3 flex items-center justify-between gap-3 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 text-amber-800 dark:text-amber-300 animate-fade-in">
+          <div class="flex items-center gap-2 min-w-0">
+            <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 text-amber-500"></i>
+            <span class="text-[10px] sm:text-xs font-semibold leading-normal">
+              Akurasi terbatas (lokasi perkiraan). Aktifkan GPS untuk arah kompas yang presisi.
+            </span>
+          </div>
+          <button onclick="window.openGpsGuideModal()" class="shrink-0 px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all active:scale-95">
+            Aktifkan
+          </button>
+        </div>
+
+        <!-- State 1: GPS Loading -->
+        <div id="qibla-loading" class="flex flex-1 flex-col items-center justify-center py-16 gap-3 relative z-10">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Mendapatkan Koordinat GPS...</p>
+        </div>
+
+        <!-- State 2: Content (Compass & Angle Info) -->
+        <div id="qibla-content-wrapper" class="hidden flex-1 flex-col items-center justify-center gap-7 relative z-10 py-8">
+          
+          <!-- Haptic Alignment Indicator -->
+          <div id="qibla-alignment-indicator" class="px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-wider bg-white/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 border border-slate-200/70 dark:border-slate-800 shadow-sm backdrop-blur-xl transition-all duration-300">
+            PUTAR PONSEL ANDA
+          </div>
+
+          <!-- Compass Dial Widget -->
+          <div class="relative w-[min(78vw,340px)] h-[min(78vw,340px)] rounded-full border border-slate-200/80 dark:border-slate-800 shadow-[inset_0_0_60px_rgba(148,163,184,0.16)] flex items-center justify-center bg-white/45 dark:bg-slate-900/35 backdrop-blur-sm">
+            <!-- Compass Dial (rotates inverse of heading) -->
+            <div id="qibla-compass-dial" class="absolute inset-4 rounded-full border border-dashed border-slate-300/80 dark:border-slate-700/80 transition-transform duration-100 flex items-center justify-center">
+              <span class="absolute top-2 text-xs font-extrabold text-red-500">U</span>
+              <span class="absolute right-2 text-xs font-extrabold text-slate-400">T</span>
+              <span class="absolute bottom-2 text-xs font-extrabold text-slate-400">S</span>
+              <span class="absolute left-2 text-xs font-extrabold text-slate-400">B</span>
+            </div>
+
+            <!-- Qibla Needle Arrow (rotates relative to Kaaba bearing) -->
+            <div id="qibla-needle" class="absolute w-10 h-[58%] transition-transform duration-100 flex flex-col items-center justify-between text-slate-400 dark:text-slate-600">
+              <!-- Top pointer -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 -mt-2 drop-shadow-sm"><polygon points="12,2 22,22 12,17 2,22"></polygon></svg>
+              <!-- Center Kaaba Icon -->
+              <div class="w-9 h-9 rounded-full bg-slate-900 dark:bg-black text-white flex items-center justify-center font-black text-[9px] border-2 border-current shadow-lg shrink-0 z-20">K</div>
+              <!-- Bottom counterbalance -->
+              <div class="w-1.5 h-14 bg-current rounded-full"></div>
+            </div>
+          </div>
+
+          <!-- iOS Permission Trigger Button -->
+          <button id="qibla-sensor-permission-btn" onclick="window.requestQiblaSensorPermission()" class="hidden px-4 py-2 bg-palette-blue hover:bg-palette-deep text-white rounded-xl text-xs font-black shadow-md hover:scale-105 active:scale-95 transition-all select-none uppercase tracking-wider">
+            Aktifkan Kompas
+          </button>
+
+          <!-- Tombol Buka Presensi (muncul saat di dalam radius) -->
+          <button id="qibla-presensi-btn" onclick="window.openPresensiFromAsrama()" class="hidden px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm font-black shadow-lg shadow-emerald-500/30 hover:scale-105 active:scale-95 transition-all select-none uppercase tracking-wider">
+            <span class="flex items-center gap-2">
+              <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+              Buka Presensi
+            </span>
+          </button>
+
+          <!-- Info Details Container -->
+          <div class="grid grid-cols-3 gap-2 sm:gap-3 w-full max-w-lg text-center">
+            <div class="rounded-2xl bg-white/75 dark:bg-slate-900/75 p-3 border border-slate-200/70 dark:border-slate-800 shadow-sm backdrop-blur-xl">
+              <p id="qibla-angle-label" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Sudut Kiblat</p>
+              <p id="qibla-angle-txt" class="text-sm font-black text-slate-800 dark:text-white">--</p>
+            </div>
+            <div class="rounded-2xl bg-white/75 dark:bg-slate-900/75 p-3 border border-slate-200/70 dark:border-slate-800 shadow-sm backdrop-blur-xl">
+              <p id="qibla-distance-label" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Jarak Ke Makkah</p>
+              <p id="qibla-distance-txt" class="text-sm font-black text-slate-800 dark:text-white">--</p>
+            </div>
+            <div class="rounded-2xl bg-white/75 dark:bg-slate-900/75 p-3 border border-slate-200/70 dark:border-slate-800 shadow-sm backdrop-blur-xl">
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Arah Hadap HP</p>
+              <p id="qibla-current-heading-txt" class="text-xs font-black text-emerald-500 dark:text-emerald-400">0° U</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
