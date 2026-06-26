@@ -340,7 +340,7 @@ class StorageManagerV2 {
    */
   savePermit(permit) {
     if (typeof appState === 'undefined') {
-      appState.permits = [];
+      return permit;
     }
 
     const permits = appState.permits || [];

@@ -8,6 +8,7 @@
 
 (function() {
   const STORAGE_KEY = 'permit_requests';
+  const PERMITS_STORAGE_KEY = 'musyrif_permits_db';
 
   // MEDIUM FIX: Use shared constants instead of duplicating
   const DAYS = window.SHARED_CONSTANTS?.DAYS_INDO || ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -25,6 +26,94 @@
     const month = MONTHS[date.getMonth()];
     const year = date.getFullYear();
     return `${day}, ${dateNum} ${month} ${year}`;
+  }
+
+  function normalizeValue(value) {
+    return String(value || "").trim().replace(/\s+/g, "").toLowerCase();
+  }
+
+  function getStudentId(student) {
+    return String(student?.nis || student?.id || "").trim();
+  }
+
+  function getPermitStudentId(permit) {
+    return String(permit?.nis || permit?.studentId || "").trim();
+  }
+
+  function getPermitStudent(permit) {
+    const nis = getPermitStudentId(permit);
+    if (!nis) return null;
+    if (typeof window.findWaliSantriByNis === "function") {
+      const found = window.findWaliSantriByNis(nis);
+      if (found) return found;
+    }
+    const master = window.MASTER_SANTRI || (typeof MASTER_SANTRI !== "undefined" ? MASTER_SANTRI : []);
+    return Array.isArray(master)
+      ? master.find(s => String(s.nis || s.id) === nis) || null
+      : null;
+  }
+
+  function getPermitClass(permit) {
+    const student = getPermitStudent(permit);
+    return String(permit?.kelas || student?.kelas || student?.rombel || "").trim();
+  }
+
+  function isAdminContext() {
+    const profileRole = String(appState?.userProfile?.role || "").toLowerCase();
+    const selectedClass = String(appState?.selectedClass || "").toLowerCase();
+    return profileRole.includes("admin") || selectedClass.includes("admin");
+  }
+
+  function isPermitOwnedByCurrentWali(permit) {
+    const waliStudentId = getStudentId(appState?.waliSantri);
+    return Boolean(waliStudentId) && getPermitStudentId(permit) === waliStudentId;
+  }
+
+  function isPermitInSelectedMusyrifClass(permit) {
+    if (isAdminContext()) return true;
+    const selectedClass = appState?.selectedClass;
+    if (!selectedClass) return false;
+
+    const permitClass = getPermitClass(permit);
+    if (permitClass && normalizeValue(permitClass) === normalizeValue(selectedClass)) return true;
+
+    const classNisList = typeof FILTERED_SANTRI !== "undefined" && Array.isArray(FILTERED_SANTRI)
+      ? FILTERED_SANTRI.map(s => String(s.nis || s.id))
+      : [];
+    return classNisList.includes(getPermitStudentId(permit));
+  }
+
+  function dedupePermits(permits) {
+    const byId = new Map();
+    (Array.isArray(permits) ? permits : []).forEach(permit => {
+      if (!permit?.id) return;
+      byId.set(String(permit.id), { ...(byId.get(String(permit.id)) || {}), ...permit });
+    });
+    return Array.from(byId.values());
+  }
+
+  function persistPermitList(permits) {
+    const deduped = dedupePermits(permits);
+    appState.permits = deduped;
+    if (window.storageManager?.savePermits) {
+      window.storageManager.savePermits(deduped);
+    } else {
+      localStorage.setItem(PERMITS_STORAGE_KEY, JSON.stringify(deduped));
+    }
+    return deduped;
+  }
+
+  function persistSinglePermit(permit) {
+    const existing = Array.isArray(appState.permits) ? appState.permits : [];
+    const next = [...existing.filter(p => String(p?.id) !== String(permit.id)), permit];
+    return persistPermitList(next).find(p => String(p.id) === String(permit.id)) || permit;
+  }
+
+  function notifyUser(recipientType, recipientId, title, body, type = "permit", deepLink = "") {
+    const notify = window.addNotification || window.addLocalNotification;
+    if (typeof notify === "function") {
+      notify(recipientType, recipientId, title, body, type, deepLink);
+    }
   }
 
   // Helper: Get all permit requests from localStorage
@@ -163,27 +252,18 @@
       location: destination,
       status: 'pending',
       timestamp: new Date().toISOString(),
-      status_label: category === 'sakit' ? 'S' : 'P'
+      status_label: category === 'sakit' ? 'S' : 'P',
+      requested_by: 'wali',
+      audit_trail: [
+        {
+          action: "Diajukan wali",
+          by: namaWali || appState.userProfile?.name || "Wali Santri",
+          time: new Date().toISOString()
+        }
+      ]
     };
 
-    // Save via storage manager
-    if (window.storageManager) {
-      window.storageManager.savePermit(requestData);
-    }
-
-    // Also add to appState.permits
-    if (!appState.permits) appState.permits = [];
-    appState.permits.push(requestData);
-
-    // Save directly to localStorage
-    try {
-      const existingPermits = JSON.parse(localStorage.getItem('musyrif_permits_db') || '[]');
-      existingPermits.push(requestData);
-      localStorage.setItem('musyrif_permits_db', JSON.stringify(existingPermits));
-      console.log("[PermitRequest] Saved to localStorage, total permits:", existingPermits.length);
-    } catch (e) {
-      console.warn("[PermitRequest] Error saving to localStorage:", e);
-    }
+    persistSinglePermit(requestData);
 
     // Trigger notification to Musyrif of the class
     let musyrifEmail = "";
@@ -221,20 +301,19 @@
 
     console.log("[PermitRequest Debug] Final resolved musyrifEmail:", musyrifEmail);
 
-    if (typeof window.addLocalNotification === "function") {
-      window.addLocalNotification(
-        "musyrif",
-        musyrifEmail,
-        "Pengajuan Izin Baru 📝",
-        `Wali dari ${siswa.nama} mengajukan izin ${category} (${reason}) pada tanggal ${date}.`,
-        "permit",
-        `tab=home&action=verify&id=${requestId}`
-      );
-    }
+    notifyUser(
+      "musyrif",
+      musyrifEmail,
+      "Pengajuan Izin Baru",
+      `Wali dari ${siswa.nama} mengajukan izin ${category} (${reason}) pada tanggal ${date}.`,
+      "permit",
+      `tab=home&action=verify&id=${requestId}`
+    );
 
     window.showToast("Permohonan izin berhasil disimpan!", "success");
     window.closeModal("modal-wali-permit");
     window.loadWaliPermitHistory();
+    window.refreshPermitSurfaces?.();
   };
 
   /**
@@ -437,6 +516,10 @@
       return window.showToast("Data pengajuan tidak ditemukan.", "error");
     }
 
+    if (!isPermitOwnedByCurrentWali(permit)) {
+      return window.showToast("Anda tidak dapat mengedit pengajuan santri lain.", "error");
+    }
+
     if (permit.status !== 'pending') {
       return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat diedit.", "warning");
     }
@@ -492,6 +575,11 @@
 
     const permit = permits[permitIndex];
 
+    if (!isPermitOwnedByCurrentWali(permit)) {
+      window.editingPermitId = null;
+      return window.showToast("Anda tidak dapat mengedit pengajuan santri lain.", "error");
+    }
+
     if (permit.status !== 'pending') {
       return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat diedit.", "warning");
     }
@@ -528,15 +616,14 @@
     permit.updated_at = new Date().toISOString();
     permit.status_label = category === 'sakit' ? 'S' : 'P';
 
-    if (window.storageManager) {
-      window.storageManager.savePermit(permit);
-    }
+    persistSinglePermit(permit);
 
     window.editingPermitId = null;
 
     window.showToast("Pengajuan izin berhasil diperbarui!", "success");
     window.closeModal("modal-edit-wali-permit");
     window.loadWaliPermitHistory();
+    window.refreshPermitSurfaces?.();
   };
 
   /**
@@ -548,6 +635,10 @@
 
     if (!permit) {
       return window.showToast("Data pengajuan tidak ditemukan.", "error");
+    }
+
+    if (!isPermitOwnedByCurrentWali(permit)) {
+      return window.showToast("Anda tidak dapat membatalkan pengajuan santri lain.", "error");
     }
 
     if (permit.status !== 'pending') {
@@ -579,16 +670,22 @@
 
     const permit = permits[permitIndex];
 
+    if (!isPermitOwnedByCurrentWali(permit)) {
+      window.deletingPermitId = null;
+      window.closeModal("modal-delete-wali-permit");
+      return window.showToast("Anda tidak dapat membatalkan pengajuan santri lain.", "error");
+    }
+
     if (permit.status !== 'pending') {
       window.closeModal("modal-delete-wali-permit");
       return window.showToast("Hanya pengajuan dengan status 'Menunggu' yang dapat dibatalkan.", "warning");
     }
 
-    permits.splice(permitIndex, 1);
-    appState.permits = permits;
-
-    if (window.storageManager) {
-      window.storageManager.savePermits(appState.permits);
+    appState.permits = permits.filter(p => String(p?.id) !== String(requestId));
+    if (window.storageManager?.deletePermit) {
+      window.storageManager.deletePermit(requestId);
+    } else {
+      persistPermitList(appState.permits);
     }
 
     window.deletingPermitId = null;
@@ -596,6 +693,7 @@
     window.showToast("Pengajuan izin berhasil dibatalkan.", "success");
     window.closeModal("modal-delete-wali-permit");
     window.loadWaliPermitHistory();
+    window.refreshPermitSurfaces?.();
   };
 
   /**
@@ -643,7 +741,7 @@
 
     console.log("[PermitRequestManager] loadMusyrifRequests called for class:", kelas);
 
-    let permits = appState.permits || [];
+    let permits = dedupePermits(appState.permits || []);
     console.log("[PermitRequestManager] Permits from appState:", permits.length);
 
     // Also try to load from localStorage directly for fresh data
@@ -657,12 +755,7 @@
 
         if (parsedArray.length > 0) {
           console.log("[PermitRequestManager] Permits from localStorage:", parsedArray.length);
-          const existingIds = new Set(permits.map(p => p.id));
-          parsedArray.forEach(p => {
-            if (p && !existingIds.has(p.id)) {
-              permits.push(p);
-            }
-          });
+          permits = dedupePermits([...permits, ...parsedArray]);
           appState.permits = permits;
         }
       }
@@ -671,16 +764,15 @@
     }
 
     currentPendingRequests = permits.filter(r =>
-      r && r.status === "pending"
+      r && r.status === "pending" && isPermitInSelectedMusyrifClass(r)
     );
 
     console.log("[PermitRequestManager] Pending requests:", currentPendingRequests.length);
 
     currentPendingRequests.forEach(req => {
-      if (!req.nama && window.findWaliSantriByNis) {
-        const studentInfo = window.findWaliSantriByNis(req.nis);
-        req.nama = studentInfo?.nama || "Santri";
-      }
+      const studentInfo = getPermitStudent(req);
+      if (!req.nama) req.nama = studentInfo?.nama || "Santri";
+      if (!req.kelas) req.kelas = studentInfo?.kelas || studentInfo?.rombel || appState.selectedClass || "";
     });
 
     renderMusyrifApprovalWidget(currentPendingRequests.length);
@@ -809,60 +901,59 @@
     const permit = appState.permits[permitIndex];
     const musyrifName = appState.userProfile?.name || "Musyrif";
 
+    if (!isPermitInSelectedMusyrifClass(permit)) {
+      return window.showToast("Pengajuan ini bukan dari kelas binaan Anda.", "error");
+    }
+
+    if (permit.status !== "pending") {
+      return window.showToast("Pengajuan ini sudah diproses.", "warning");
+    }
+
     if (action === "approve") {
-      permit.status = 'approved';
+      permit.status = "approved";
       permit.approvedBy = musyrifName;
       permit.approvedAt = new Date().toISOString();
       permit.is_active = true;
+      if (!permit.audit_trail) permit.audit_trail = [];
+      permit.audit_trail.push({ action: "Disetujui", by: musyrifName, time: new Date().toISOString() });
+      persistSinglePermit(permit);
 
-      if (window.storageManager) {
-        window.storageManager.savePermit(permit);
-      }
-
-      if (typeof window.addLocalNotification === "function") {
-        window.addLocalNotification(
-          "wali",
-          permit.nis,
-          "Status Izin Disetujui 📝",
-          `Pengajuan izin untuk ${permit.nama} (${permit.category}) telah disetujui oleh Musyrif.`,
-          "permit",
-          "tab=home"
-        );
-      }
+      notifyUser(
+        "wali",
+        permit.nis,
+        "Status Izin Disetujui",
+        `Pengajuan izin untuk ${permit.nama} (${permit.category}) telah disetujui oleh Musyrif.`,
+        "permit",
+        "tab=home"
+      );
 
       window.showToast("Izin berhasil disetujui!", "success");
     } else if (action === "reject") {
-      permit.status = 'rejected';
+      permit.status = "rejected";
       permit.rejectedBy = musyrifName;
       permit.rejectedAt = new Date().toISOString();
       permit.is_active = false;
+      if (!permit.audit_trail) permit.audit_trail = [];
+      permit.audit_trail.push({ action: "Ditolak", by: musyrifName, time: new Date().toISOString() });
+      persistSinglePermit(permit);
 
-      if (window.storageManager) {
-        window.storageManager.savePermit(permit);
-      }
-
-      if (typeof window.addLocalNotification === "function") {
-        window.addLocalNotification(
-          "wali",
-          permit.nis,
-          "Status Izin Ditolak 📝",
-          `Pengajuan izin untuk ${permit.nama} (${permit.category}) ditolak oleh Musyrif.`,
-          "permit",
-          "tab=home"
-        );
-      }
+      notifyUser(
+        "wali",
+        permit.nis,
+        "Status Izin Ditolak",
+        `Pengajuan izin untuk ${permit.nama} (${permit.category}) ditolak oleh Musyrif.`,
+        "permit",
+        "tab=home"
+      );
 
       window.showToast("Pengajuan izin ditolak.", "info");
     }
 
-    if (window.refreshPermitSurfaces) {
-      window.refreshPermitSurfaces();
-    }
+    window.refreshPermitSurfaces?.();
 
     currentPendingRequests = currentPendingRequests.filter(r => String(r.id) !== String(requestId));
     window.updateMusyrifApprovalModalList();
   };
-
   window.loadMusyrifRequests = loadMusyrifRequests;
 
 })();

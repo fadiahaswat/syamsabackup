@@ -1,0 +1,213 @@
+<!-- ============================================
+     PROFILE HERO CARD - Redesigned
+     ============================================
+
+     Fitur:
+     - Avatar dengan status online
+     - Info profile lengkap (nama, role, ID)
+     - Statistik utama (kehadiran, hari aktif, streak)
+     - Status kehadiran hari ini
+     - Jam & tanggal sekarang
+     - Quick actions (logout, sync)
+     - Progress indicator
+
+     ============================================ -->
+
+<div id="profile-hero-card-wrapper" class="relative z-30">
+  <div id="profile-hero-card" class="bg-slate-900/95 dark:bg-black/95 p-5 sm:p-6 rounded-[1.75rem] text-center relative overflow-hidden border border-slate-800/60 shadow-2xl shadow-slate-900/20 backdrop-blur-xl group">
+
+    <!-- Background decorative elements -->
+    <div class="absolute top-0 right-0 w-56 h-56 bg-emerald-500/20 rounded-full blur-[90px] opacity-30 -mr-16 -mt-16 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none"></div>
+    <div class="absolute bottom-0 left-0 w-44 h-44 bg-blue-500/15 rounded-full blur-[80px] -ml-14 -mb-14 pointer-events-none"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-palette-mint/10 rounded-full blur-[60px] -mt-8 pointer-events-none"></div>
+    <img src="assets/icons/icon.webp" class="absolute -right-8 -top-8 w-44 h-44 opacity-[0.06] pointer-events-none select-none rotate-[15deg]" alt="">
+
+    <div class="relative z-10 space-y-4">
+
+      <!-- Header: Avatar + Info -->
+      <div class="flex items-center gap-3 text-left">
+
+        <!-- Avatar with status indicator -->
+        <div class="relative shrink-0">
+          <div class="w-16 h-16 bg-white/10 rounded-2xl p-1 border border-white/10 shadow-lg shadow-black/20">
+            <div id="profile-avatar" class="w-full h-full bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl flex items-center justify-center text-slate-400 overflow-hidden">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="user" aria-hidden="true" class="lucide lucide-user w-8 h-8">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+          </div>
+          <!-- Online status dot -->
+          <div id="profile-online-indicator" class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full border-2 border-slate-900 shadow-lg shadow-emerald-500/50"></div>
+        </div>
+
+        <!-- Name & Role -->
+        <div class="flex-1 min-w-0">
+          <h2 id="profile-name" class="text-base sm:text-lg font-black text-white truncate leading-tight">Andi Aqillah Fadia Haswat</h2>
+          <p class="text-[10px] font-mono text-slate-500 uppercase tracking-wider mt-0.5">NIP: 2024-00891</p>
+          <p id="profile-role-tab" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[9px] font-black text-emerald-400 uppercase tracking-wider mt-1.5">
+            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+            Musyrif 2 A
+          </p>
+        </div>
+      </div>
+
+      <!-- Greeting & Time -->
+      <div class="bg-white/5 rounded-xl border border-white/10 p-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <p id="profile-greeting" class="text-xs font-semibold text-slate-300">Selamat Pagi</p>
+            <p id="profile-current-date" class="text-[10px] text-slate-500 mt-0.5">Kamis, 26 Juni 2026</p>
+          </div>
+          <div class="text-right">
+            <p id="profile-current-time" class="text-lg font-black text-white tabular-nums">06:30</p>
+            <p class="text-[9px] text-slate-500 uppercase tracking-wider">WIB</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-3 gap-2">
+        <!-- Attendance Rate -->
+        <div class="text-center rounded-xl bg-white/5 border border-white/10 p-2.5 relative overflow-hidden group/stat">
+          <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
+          <div class="relative">
+            <div class="text-lg font-black text-white" id="profile-avg-attendance">100%</div>
+            <div class="flex items-center justify-center gap-1 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Kehadiran</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Days -->
+        <div class="text-center rounded-xl bg-white/5 border border-white/10 p-2.5 relative overflow-hidden group/stat">
+          <div class="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
+          <div class="relative">
+            <div class="text-lg font-black text-blue-400" id="profile-days-count">4</div>
+            <div class="flex items-center justify-center gap-1 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Hari Aktif</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Check-in Status -->
+        <div class="text-center rounded-xl bg-white/5 border border-white/10 p-2.5 relative overflow-hidden group/stat">
+          <div class="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent opacity-0 group-hover/stat:opacity-100 transition-opacity"></div>
+          <div class="relative">
+            <div class="text-lg font-black" id="profile-checkin-status">
+              <span class="text-amber-400">&#10003;</span>
+            </div>
+            <div class="flex items-center justify-center gap-1 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Check-in</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions Row -->
+      <div class="flex items-center gap-2">
+
+        <!-- Sync Button -->
+        <button onclick="window.manualSync()" id="pwa-sync-btn" class="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 active:scale-[0.98] transition-all text-xs font-semibold">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="refresh-cw" aria-hidden="true" class="lucide lucide-refresh-cw w-4 h-4">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+            <path d="M21 3v5h-5"></path>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+            <path d="M8 16H3v5"></path>
+          </svg>
+          <span>Sinkron</span>
+        </button>
+
+        <!-- Profile Button -->
+        <button onclick="navigateToProfile()" class="h-10 px-4 rounded-xl bg-white/10 border border-white/20 text-white hover:bg-white/15 active:scale-[0.98] transition-all text-xs font-semibold flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Pengaturan</span>
+        </button>
+
+        <!-- Logout Button -->
+        <button onclick="handleLogout()" class="profile-compact-logout hidden h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 hover:bg-red-500/25 hover:text-red-300 active:scale-[0.98] transition-all shrink-0" title="Keluar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="log-out" aria-hidden="true" class="lucide lucide-log-out w-4 h-4">
+            <path d="m16 17 5-5-5-5"></path>
+            <path d="M21 12H9"></path>
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Bottom hint -->
+      <div class="flex items-center justify-center gap-2 pt-1">
+        <div class="w-1.5 h-1.5 rounded-full bg-slate-600"></div>
+        <p class="text-[9px] text-slate-600">Data tersimpan offline</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     JAVASCRIPT FUNCTIONS
+     ============================================ -->
+
+<script>
+// Update greeting based on time
+function updateGreeting() {
+  const hour = new Date().getHours();
+  let greeting = 'Selamat Malam';
+
+  if (hour >= 5 && hour < 12) {
+    greeting = 'Selamat Pagi';
+  } else if (hour >= 12 && hour < 15) {
+    greeting = 'Selamat Siang';
+  } else if (hour >= 15 && hour < 18) {
+    greeting = 'Selamat Sore';
+  }
+
+  const el = document.getElementById('profile-greeting');
+  if (el) el.textContent = greeting;
+}
+
+// Update current time
+function updateCurrentTime() {
+  const now = new Date();
+
+  // Time
+  const timeEl = document.getElementById('profile-current-time');
+  if (timeEl) {
+    timeEl.textContent = now.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  }
+
+  // Date
+  const dateEl = document.getElementById('profile-current-date');
+  if (dateEl) {
+    dateEl.textContent = now.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+}
+
+// Initialize
+updateGreeting();
+updateCurrentTime();
+
+// Update time every minute
+setInterval(updateCurrentTime, 60000);
+setInterval(updateGreeting, 60000);
+
+// Navigation function (placeholder)
+function navigateToProfile() {
+  // Replace with actual navigation
+  console.log('Navigate to profile settings');
+  // window.location.href = '/profile';
+  // or your router: router.navigate('/profile');
+}
+</script>

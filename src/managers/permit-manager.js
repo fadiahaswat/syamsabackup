@@ -1573,7 +1573,22 @@ window.approvePermit = function(id) {
   const idx = appState.permits.findIndex(p => p.id === id);
   if (idx !== -1) {
     const permit = appState.permits[idx];
+    const isAdmin = String(appState?.userProfile?.role || "").toLowerCase().includes("admin") ||
+      String(appState?.selectedClass || "").toLowerCase().includes("admin");
+    const classNisList = typeof FILTERED_SANTRI !== "undefined" && Array.isArray(FILTERED_SANTRI)
+      ? FILTERED_SANTRI.map(s => String(s.nis || s.id))
+      : [];
+    if (!isAdmin && !classNisList.includes(String(permit.nis || permit.studentId))) {
+      return window.showToast("Pengajuan ini bukan dari kelas binaan Anda.", "error");
+    }
+    if (permit.status !== "pending") {
+      return window.showToast("Pengajuan ini sudah diproses.", "warning");
+    }
+
     permit.status = "approved";
+    permit.is_active = true;
+    permit.approvedBy = window.getCurrentActorName ? window.getCurrentActorName() : "Musyrif";
+    permit.approvedAt = new Date().toISOString();
     if (!permit.audit_trail) permit.audit_trail = [];
     permit.audit_trail.push({
       action: "Disetujui",
@@ -1587,7 +1602,7 @@ window.approvePermit = function(id) {
       window.addNotification(
         "wali",
         permit.nis,
-        "Status Izin Disetujui 📝",
+        "Status Izin Disetujui",
         `Pengajuan izin untuk ${permit.nama} (${permit.category}) telah disetujui oleh Musyrif.`,
         "permit",
         "tab=home"
@@ -1603,7 +1618,22 @@ window.rejectPermit = function(id) {
   const idx = appState.permits.findIndex(p => p.id === id);
   if (idx !== -1) {
     const permit = appState.permits[idx];
+    const isAdmin = String(appState?.userProfile?.role || "").toLowerCase().includes("admin") ||
+      String(appState?.selectedClass || "").toLowerCase().includes("admin");
+    const classNisList = typeof FILTERED_SANTRI !== "undefined" && Array.isArray(FILTERED_SANTRI)
+      ? FILTERED_SANTRI.map(s => String(s.nis || s.id))
+      : [];
+    if (!isAdmin && !classNisList.includes(String(permit.nis || permit.studentId))) {
+      return window.showToast("Pengajuan ini bukan dari kelas binaan Anda.", "error");
+    }
+    if (permit.status !== "pending") {
+      return window.showToast("Pengajuan ini sudah diproses.", "warning");
+    }
+
     permit.status = "rejected";
+    permit.is_active = false;
+    permit.rejectedBy = window.getCurrentActorName ? window.getCurrentActorName() : "Musyrif";
+    permit.rejectedAt = new Date().toISOString();
     if (!permit.audit_trail) permit.audit_trail = [];
     permit.audit_trail.push({
       action: "Ditolak",
@@ -1617,7 +1647,7 @@ window.rejectPermit = function(id) {
       window.addNotification(
         "wali",
         permit.nis,
-        "Status Izin Ditolak 📝",
+        "Status Izin Ditolak",
         `Pengajuan izin untuk ${permit.nama} (${permit.category}) ditolak oleh Musyrif.`,
         "permit",
         "tab=home"
@@ -1637,7 +1667,11 @@ window.deletePermitsTabItem = function(id) {
     "Batal",
     () => {
   appState.permits = appState.permits.filter(p => p.id !== id);
-  window.persistPermits();
+  if (window.storageManager?.deletePermit) {
+    window.storageManager.deletePermit(id);
+  } else {
+    window.persistPermits();
+  }
   window.showToast("Data izin berhasil dihapus", "info");
   window.refreshPermitSurfaces();
     },
