@@ -338,14 +338,7 @@ window.initBottomNavScroll = function () {
       const isAtBottom = maxScrollTop - scrollTop <= 20;
 
       clearTimeout(shrinkTimer);
-      if (!isAtTop && !isAtBottom) {
-        bottomNav.classList.add("nav-expanded");
-      } else {
-        bottomNav.classList.remove("nav-expanded");
-      }
-      shrinkTimer = setTimeout(() => {
-        bottomNav.classList.remove("nav-expanded");
-      }, 900);
+      bottomNav.classList.remove("nav-expanded", "nav-shrunk");
 
       setStickyHero("dash-main-card", "dash-main-card-wrapper", container.id === "main-content" && scrollTop > 80);
       setStickyHero("tahfizh-hero-card", "tahfizh-hero-card-wrapper", container.id === "tab-tahfizh" && scrollTop > 80);
@@ -5824,19 +5817,10 @@ window.switchTab = function (tabName) {
     }
   });
 
-  // 4.5. Update Bottom Nav Expansion State for new tab
+  // 4.5. Keep Bottom Nav stable for thumb reachability
   const bottomNav = document.getElementById("bottom-nav") || document.querySelector("#view-main > nav");
   if (bottomNav) {
-    const activeTab = tabName === "home" ? document.getElementById("main-content") : document.getElementById(`tab-${tabName}`);
-    const maxScrollTop = activeTab ? Math.max(0, activeTab.scrollHeight - activeTab.clientHeight) : 0;
-    const isAtTop = !activeTab || activeTab.scrollTop <= 20;
-    const isAtBottom = activeTab ? maxScrollTop - activeTab.scrollTop <= 20 : true;
-    if (!isAtTop && !isAtBottom) {
-      bottomNav.classList.add("nav-expanded");
-      setTimeout(() => bottomNav.classList.remove("nav-expanded"), 900);
-    } else {
-      bottomNav.classList.remove("nav-expanded");
-    }
+    bottomNav.classList.remove("nav-expanded", "nav-shrunk");
   }
 
   // 5. Jalankan Logika Spesifik per Tab

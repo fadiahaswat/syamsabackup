@@ -460,6 +460,17 @@
           </p>
 
           <button
+            onclick="window.switchTab('admin')"
+            class="admin-only w-full p-3 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl flex items-center justify-between font-black text-indigo-700 dark:text-indigo-300 text-sm transition-all active:scale-[0.98]"
+          >
+            <span class="flex items-center gap-3"
+              ><i data-lucide="shield-check" class="w-4 h-4"></i>
+              Dashboard Admin</span
+            >
+            <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-300"></i>
+          </button>
+
+          <button
             onclick="toggleDarkMode()"
             class="w-full p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-xl flex items-center justify-between font-black text-slate-700 dark:text-white text-sm transition-all"
           >
