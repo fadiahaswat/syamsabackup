@@ -658,6 +658,7 @@ window.getCurrentDashboardSlotId = function (dateKey = appState.date) {
   const current = window.determineCurrentSlot
     ? window.determineCurrentSlot()
     : appState.currentSlotId;
+  if (current === "sekolah") return current;
   if (!window.isSlotHoliday(current, dateKey)) return current;
 
   const order = ["shubuh", "sekolah", "ashar", "maghrib", "isya"];

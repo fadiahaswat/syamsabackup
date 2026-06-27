@@ -83,10 +83,6 @@
     overflow-wrap: anywhere;
   }
 
-  #quick-access-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  }
-
   #quick-access-grid button {
     min-width: 0;
     padding-left: 0.25rem !important;

@@ -3221,7 +3221,7 @@ window.renderSlotList = function () {
   const isToday = appState.date === window.getLocalDateStr();
   const fragment = document.createDocumentFragment();
 
-  // Custom ordering: Shubuh & Ashar side-by-side, Sekolah below, Maghrib & Isya side-by-side
+  // Custom ordering: Shubuh & Ashar, Sekolah full-width, Maghrib & Isya.
   const renderOrder = ["shubuh", "ashar", "sekolah", "maghrib", "isya"];
   const isWali = window.isWaliMode?.();
   const waliRowsById = isWali
@@ -3243,9 +3243,6 @@ window.renderSlotList = function () {
   renderOrder.forEach((slotId) => {
     const s = SLOT_WAKTU[slotId];
     if (!s) return;
-    if (s.id === "sekolah" && window.isSlotHoliday(s.id, appState.date)) {
-      return;
-    }
 
     const activeTpl = (s.id === "sekolah" && tplWide) ? tplWide : tpl;
     const clone = activeTpl.content.cloneNode(true);
@@ -10614,11 +10611,27 @@ window.updateQuickAccessButtons = function () {
   if (!schoolButton) return;
 
   const isSchoolHoliday = window.isSlotHoliday("sekolah", appState.date);
-  schoolButton.classList.toggle("hidden", isSchoolHoliday);
+  schoolButton.classList.remove("hidden");
+  schoolButton.classList.toggle("opacity-60", isSchoolHoliday);
+  schoolButton.classList.toggle("grayscale", isSchoolHoliday);
+  schoolButton.classList.toggle("cursor-not-allowed", isSchoolHoliday);
+  schoolButton.classList.toggle("hover:bg-cyan-500/20", !isSchoolHoliday);
+  schoolButton.classList.toggle("hover:border-cyan-500/50", !isSchoolHoliday);
+  schoolButton.setAttribute("aria-disabled", String(isSchoolHoliday));
+
+  const schoolIcon = schoolButton.querySelector("i");
+  if (schoolIcon) {
+    schoolIcon.setAttribute("data-lucide", isSchoolHoliday ? "calendar-x" : "graduation-cap");
+  }
+
+  const schoolLabel = schoolButton.querySelector("span");
+  if (schoolLabel) {
+    schoolLabel.textContent = isSchoolHoliday ? "Libur" : "Sekolah";
+  }
 
   if (quickGrid) {
-    quickGrid.classList.toggle("grid-cols-5", !isSchoolHoliday);
-    quickGrid.classList.toggle("grid-cols-4", isSchoolHoliday);
+    quickGrid.classList.remove("grid-cols-2", "grid-cols-3", "grid-cols-4", "grid-cols-5", "sm:grid-cols-4", "sm:grid-cols-5");
+    quickGrid.classList.add("grid-cols-5");
   }
 };
 

@@ -41,9 +41,15 @@ window.updateDashboard = function () {
       appState.currentSlotId,
       appState.date,
     );
+    const isHoliday = window.isSlotHoliday(appState.currentSlotId, appState.date);
     const timeEl = document.getElementById("dash-card-time");
 
-    if (access.locked && access.reason === "wait") {
+    if (isHoliday) {
+      timeEl.innerHTML = `<i data-lucide="calendar-x" class="w-3 h-3"></i> Libur hari ini`;
+      mainCard.classList.add("opacity-80", "grayscale");
+      mainCard.onclick = () =>
+        window.showToast(`Kegiatan ${slot.label} libur pada hari ini.`, "info");
+    } else if (access.locked && access.reason === "wait") {
       timeEl.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i> Belum Masuk Waktu`;
       mainCard.classList.add("opacity-80", "grayscale");
       mainCard.onclick = () =>
@@ -305,9 +311,6 @@ window.renderSlotList = function () {
   const fragment = document.createDocumentFragment();
 
   Object.values(SLOT_WAKTU).forEach((s) => {
-    if (s.id === "sekolah" && window.isSlotHoliday(s.id, appState.date)) {
-      return;
-    }
     const clone = tpl.content.cloneNode(true);
     const item = clone.querySelector(".slot-item");
     const access = window.isSlotAccessible(s.id, appState.date);
@@ -876,15 +879,27 @@ window.updateQuickAccessButtons = function () {
   if (!schoolButton) return;
 
   const isSchoolHoliday = window.isSlotHoliday("sekolah", appState.date);
-  schoolButton.classList.toggle("hidden", isSchoolHoliday);
+  schoolButton.classList.remove("hidden");
+  schoolButton.classList.toggle("opacity-60", isSchoolHoliday);
+  schoolButton.classList.toggle("grayscale", isSchoolHoliday);
+  schoolButton.classList.toggle("cursor-not-allowed", isSchoolHoliday);
+  schoolButton.classList.toggle("hover:bg-cyan-500/20", !isSchoolHoliday);
+  schoolButton.classList.toggle("hover:border-cyan-500/50", !isSchoolHoliday);
+  schoolButton.setAttribute("aria-disabled", String(isSchoolHoliday));
+
+  const schoolIcon = schoolButton.querySelector("i");
+  if (schoolIcon) {
+    schoolIcon.setAttribute("data-lucide", isSchoolHoliday ? "calendar-x" : "graduation-cap");
+  }
+
+  const schoolLabel = schoolButton.querySelector("span");
+  if (schoolLabel) {
+    schoolLabel.textContent = isSchoolHoliday ? "Libur" : "Sekolah";
+  }
 
   if (quickGrid) {
     quickGrid.classList.remove("grid-cols-2", "grid-cols-3", "grid-cols-4", "grid-cols-5", "sm:grid-cols-4", "sm:grid-cols-5");
-    if (!isSchoolHoliday) {
-      quickGrid.classList.add("grid-cols-3", "sm:grid-cols-5");
-    } else {
-      quickGrid.classList.add("grid-cols-2", "sm:grid-cols-4");
-    }
+    quickGrid.classList.add("grid-cols-5");
   }
 };
 

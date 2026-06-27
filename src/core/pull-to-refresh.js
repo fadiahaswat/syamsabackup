@@ -117,21 +117,37 @@
       const arrowWrapper = indicator.querySelector(".ptr-arrow-wrapper");
       const spinner = indicator.querySelector(".ptr-spinner");
 
+      let startX = 0;
       let startY = 0;
       let currentY = 0;
       let isDragging = false;
       let hasVibrated = false;
       let isRefreshing = false;
+      let thresholdReachedAt = 0;
 
-      const threshold = 65; // px tarikan untuk refresh
+      const threshold = 92; // px tarikan teredam untuk refresh
+      const readyHoldMs = 260; // harus ditahan sebentar di atas threshold
+      const edgeActivationPx = 96; // hanya gesture dari area atas kontainer
+      const horizontalCancelRatio = 1.15;
 
       container.addEventListener("touchstart", (e) => {
         // Hanya izinkan jika scroll bar berada paling atas dan tidak sedang refresh
         if (container.scrollTop > 0 || isRefreshing) return;
+        if (e.touches.length !== 1) return;
 
-        startY = e.touches[0].clientY;
+        const target = e.target;
+        if (target.closest?.("input, textarea, select, button, a, [role='button']")) return;
+
+        const containerTop = container.getBoundingClientRect().top;
+        const touch = e.touches[0];
+        if (touch.clientY > containerTop + edgeActivationPx) return;
+
+        startX = touch.clientX;
+        startY = touch.clientY;
+        currentY = startY;
         isDragging = true;
         hasVibrated = false;
+        thresholdReachedAt = 0;
 
         // Reset transisi indikator saat mulai diseret agar responsif
         indicator.style.transition = "none";
@@ -140,32 +156,51 @@
       container.addEventListener("touchmove", (e) => {
         if (!isDragging || isRefreshing) return;
 
+        if (e.touches.length !== 1) {
+          cancelDrag();
+          return;
+        }
+
         currentY = e.touches[0].clientY;
         const deltaY = currentY - startY;
+        const deltaX = e.touches[0].clientX - startX;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY) * horizontalCancelRatio) {
+          cancelDrag();
+          return;
+        }
+
+        if (deltaY <= 0) {
+          cancelDrag();
+          return;
+        }
 
         // Jika menyeret ke bawah
-        if (deltaY > 0) {
-          // Cegah perilaku scroll browser bawaan (misal browser reload/pull-down bounce)
-          if (e.cancelable) e.preventDefault();
+        // Cegah perilaku scroll browser bawaan (misal browser reload/pull-down bounce)
+        if (e.cancelable) e.preventDefault();
 
-          container.classList.add("ptr-dragging");
+        container.classList.add("ptr-dragging");
 
-          // Terapkan hambatan (elastic damping)
-          const pullDistance = Math.min(deltaY * 0.45, 120);
+        // Terapkan hambatan (elastic damping)
+        const pullDistance = Math.min(deltaY * 0.42, 130);
 
-          // Update visual indikator
-          // Transform dari translate(-50%, -80px) scale(0.3) ke translate(-50%, Xpx) scale(1)
-          const scale = Math.min(0.3 + (pullDistance / threshold) * 0.7, 1);
-          const translateY = -80 + pullDistance;
-          indicator.style.transform = `translate(-50%, ${translateY}px) scale(${scale})`;
-          indicator.style.opacity = Math.min(pullDistance / 30, 1).toString();
+        // Update visual indikator
+        // Transform dari translate(-50%, -80px) scale(0.3) ke translate(-50%, Xpx) scale(1)
+        const scale = Math.min(0.3 + (pullDistance / threshold) * 0.7, 1);
+        const translateY = -80 + pullDistance;
+        indicator.style.transform = `translate(-50%, ${translateY}px) scale(${scale})`;
+        indicator.style.opacity = Math.min(pullDistance / 34, 1).toString();
 
-          // Putar panah seiring ditarik
-          const rotation = pullDistance * 3.5;
-          arrowWrapper.style.transform = `rotate(${rotation}deg)`;
+        // Putar panah seiring ditarik
+        const rotation = pullDistance * 3.5;
+        arrowWrapper.style.transform = `rotate(${rotation}deg)`;
 
-          // Haptic feedback saat mencapai threshold
-          if (pullDistance >= threshold && !hasVibrated) {
+        if (pullDistance >= threshold) {
+          if (!thresholdReachedAt) thresholdReachedAt = Date.now();
+          const isReady = Date.now() - thresholdReachedAt >= readyHoldMs;
+
+          // Haptic feedback saat mencapai kondisi siap refresh
+          if (isReady && !hasVibrated) {
             try {
               if (navigator.vibrate) {
                 navigator.vibrate(15); // Getar singkat 15ms
@@ -175,11 +210,12 @@
             }
             hasVibrated = true;
             arrowWrapper.style.color = "#22c55e"; // Ubah jadi hijau saat siap lepas
-          } else if (pullDistance < threshold && hasVibrated) {
-            hasVibrated = false;
-            // Kembalikan ke warna bawaan
-            arrowWrapper.style.color = "";
           }
+        } else {
+          thresholdReachedAt = 0;
+          hasVibrated = false;
+          // Kembalikan ke warna bawaan
+          arrowWrapper.style.color = "";
         }
       }, { passive: false });
 
@@ -192,9 +228,10 @@
         indicator.style.transition = "";
 
         const deltaY = currentY - startY;
-        const pullDistance = Math.min(deltaY * 0.45, 120);
+        const pullDistance = Math.min(deltaY * 0.42, 130);
+        const heldPastThreshold = thresholdReachedAt && Date.now() - thresholdReachedAt >= readyHoldMs;
 
-        if (pullDistance >= threshold && !isRefreshing) {
+        if (pullDistance >= threshold && heldPastThreshold && !isRefreshing) {
           // Masuk ke Mode Refreshing
           isRefreshing = true;
 
@@ -225,6 +262,20 @@
           resetIndicator();
         }
       });
+
+      container.addEventListener("touchcancel", () => {
+        cancelDrag();
+      }, { passive: true });
+
+      const cancelDrag = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        thresholdReachedAt = 0;
+        hasVibrated = false;
+        container.classList.remove("ptr-dragging");
+        indicator.style.transition = "";
+        resetIndicator();
+      };
 
       const resetIndicator = () => {
         indicator.style.transform = "translate(-50%, -80px) scale(0.3)";
