@@ -81,6 +81,16 @@ window.updateMetaThemeColor = function () {
   });
 };
 
+window.restoreRouteAfterAuth = function (fallbackTab = "home") {
+  const route = window.location.hash.slice(1);
+  const knownRoutes = window.AppRouter?.routes || {};
+  const targetTab = knownRoutes[route] ? route : fallbackTab;
+
+  if (targetTab && typeof window.switchTab === "function") {
+    window.switchTab(targetTab);
+  }
+};
+
 window.initApp = async function () {
   const loadingEl = document.getElementById("view-loading");
   try {
@@ -197,6 +207,7 @@ window.initApp = async function () {
           // Initialize Storage Manager for Wali restore
           const musyrifId = `class_${foundKelas}`;
           window.initStorage?.(musyrifId);
+          window.restoreRouteAfterAuth("home");
         } else if (authData.kelas?.toLowerCase() === "admin musyrif" || authData.isAdmin) {
           appState.selectedClass = authData.kelas;
           appState.userProfile = authData.profile;
@@ -220,6 +231,7 @@ window.initApp = async function () {
           // Initialize Storage Manager
           const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
           window.initStorage?.(musyrifId);
+          window.restoreRouteAfterAuth("admin");
         } else if (authData.kelas) {
           // Tetap ijinkan login walaupun offline / MASTER_KELAS tidak ter-load sempurna
           appState.selectedClass = authData.kelas;
@@ -246,6 +258,7 @@ window.initApp = async function () {
           // Initialize Storage Manager
           const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
           window.initStorage?.(musyrifId);
+          window.restoreRouteAfterAuth("home");
 
           // Request GPS Permission SEKALI saat login berhasil
           if (GEO_CONFIG.useGeofencing) {
