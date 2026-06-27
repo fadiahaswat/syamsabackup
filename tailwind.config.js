@@ -2,10 +2,10 @@
 module.exports = {
   content: [
     "./index.html",
-    "./*.js",
-    "./core/**/*.js",
-    "./managers/**/*.js",
-    "./tahfizh/**/*.js",
+    "./*.{js,html}",
+    "./src/**/*.{html,js}",
+    "./server/**/*.{html,js}",
+    "./lib/**/*.{html,js}",
   ],
   safelist: [
     "ring-emerald-500",

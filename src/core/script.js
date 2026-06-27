@@ -11185,6 +11185,8 @@ window.renderKBMBanner = function () {
 window.renderActivePermitsWidget = function () {
   const container = document.getElementById("dashboard-active-permits-list");
   const badgeCount = document.getElementById("active-permit-count");
+  const trackSummary = document.getElementById("permit-track-summary");
+  const trackSummaryText = document.getElementById("permit-track-summary-text");
 
   if (!container) return;
   container.innerHTML = "";
@@ -11280,8 +11282,16 @@ window.renderActivePermitsWidget = function () {
   }
 
   // Update Badge & Sorting
-  if (badgeCount)
-    badgeCount.textContent = combinedList.filter((i) => i.isActive).length;
+  const activeCount = combinedList.filter((i) => i.isActive).length;
+  if (badgeCount) badgeCount.textContent = activeCount;
+  if (trackSummaryText) trackSummaryText.textContent = activeCount ? `${activeCount} Aktif` : "Aman";
+  if (trackSummary) {
+    trackSummary.className = activeCount
+      ? "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-100/50 dark:border-amber-900/50 text-[9px] font-bold text-amber-600 dark:text-amber-400 shadow-sm shrink-0"
+      : "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100/50 dark:border-emerald-900/50 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm shrink-0";
+    const icon = trackSummary.querySelector("[data-lucide]");
+    if (icon) icon.setAttribute("data-lucide", activeCount ? "clock-alert" : "shield-check");
+  }
   combinedList.sort((a, b) =>
     a.isActive === b.isActive ? 0 : a.isActive ? -1 : 1,
   );
@@ -11289,6 +11299,7 @@ window.renderActivePermitsWidget = function () {
   // Render HTML
   if (combinedList.length === 0) {
     container.innerHTML = `<div class="text-center py-6 text-slate-400 text-[10px] font-bold">Semua santri lengkap / Hadir</div>`;
+    if (window.lucide) window.lucide.createIcons();
     return;
   }
 
@@ -11314,10 +11325,15 @@ window.renderActivePermitsWidget = function () {
       colorClass = "bg-purple-50 text-purple-500 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20";
       textLabelColorClass = "text-purple-600 dark:text-purple-400";
       iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"></path><path d="M15 6v6"></path><path d="M2 12h19.6"></path><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"></path><circle cx="7" cy="18" r="2"></circle><path d="M9 18h5"></path><circle cx="16" cy="18" r="2"></circle></svg>`;
+    } else if (cat === "alpa") {
+      colorClass = "bg-rose-50 text-rose-500 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20";
+      textLabelColorClass = "text-rose-600 dark:text-rose-400";
+      displayCategory = "Alpa";
+      iconSVG = `<i data-lucide="triangle-alert" class="w-4 h-4"></i>`;
     } else {
       colorClass = "bg-rose-50 text-rose-500 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20";
       textLabelColorClass = "text-rose-600 dark:text-rose-400";
-      iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`;
+      iconSVG = `<i data-lucide="circle-alert" class="w-4 h-4"></i>`;
     }
 
     if (!item.isActive) {

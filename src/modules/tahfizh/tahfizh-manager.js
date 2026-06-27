@@ -274,17 +274,9 @@ function cacheTahfizhDOM() {
         dummyToggle: 'tahfizh-dummy-toggle',
 
         // -- Statistik Beranda --
-        statsSantriAktif: 'tahfizh-stats-santri-aktif',
-        statsSantriTuntas: 'tahfizh-stats-santri-tuntas',
-        statsSantriBelumTuntas: 'tahfizh-stats-santri-belum-tuntas',
-
-        // -- Visual Progress --
-        mutqinJuz29ProgressContainer: 'tahfizh-mutqin-juz29-progress-container',
-        mutqinJuz30ProgressContainer: 'tahfizh-mutqin-juz30-progress-container',
-        mutqinJuz30Circle: 'tahfizh-mutqin-juz30-circle',
-        mutqinJuz29Circle: 'tahfizh-mutqin-juz29-circle',
-        mutqinJuz30Details: 'tahfizh-mutqin-juz30-details',
-        mutqinJuz29Details: 'tahfizh-mutqin-juz29-details',
+        homeOverview: 'tahfizh-home-overview',
+        focusSummary: 'tahfizh-focus-summary',
+        recentActivity: 'tahfizh-recent-activity',
 
         // -- Sections Lain --
         peringkatSection: 'tahfizh-peringkat-section',
@@ -356,7 +348,6 @@ window.switchTahfizhSubTab = function(subtabName) {
 async function initTahfizhTab() {
     applyTahfizhRuntimeConfig();
     cacheTahfizhDOM();
-    mountTahfizhHistoryOnHome();
     setupTahfizhEventListeners();
     setupAdditionalInputListeners();
     
@@ -372,17 +363,6 @@ async function initTahfizhTab() {
     }
 
     window.syncRoleModeUI?.();
-}
-
-function mountTahfizhHistoryOnHome() {
-    const homePage = document.getElementById('tahfizh-page-beranda');
-    const historyPage = document.getElementById('tahfizh-page-riwayat');
-    if (!homePage || !historyPage || historyPage.dataset.mountedHome === 'true') return;
-
-    historyPage.dataset.mountedHome = 'true';
-    historyPage.classList.remove('tahfizh-page-content', 'hidden');
-    historyPage.classList.add('space-y-3');
-    homePage.appendChild(historyPage);
 }
 
 // Sinkronisasi data kelas & santri dari master data presensi
@@ -839,15 +819,13 @@ function renderTahfizhBeranda() {
     const totalSantri = TahfizhState.rawSantriList.length;
     const tuntasCount = TahfizhState.santriData.filter(s => s.isTuntas).length;
 
-    document.querySelectorAll('#tahfizh-stats-santri-aktif').forEach(el => {
-        el.textContent = `${activeSantriIds.size} / ${totalSantri}`;
-    });
-    document.querySelectorAll('#tahfizh-stats-santri-tuntas').forEach(el => {
-        el.textContent = tuntasCount;
-    });
-    document.querySelectorAll('#tahfizh-stats-santri-belum-tuntas').forEach(el => {
-        el.textContent = totalSantri - tuntasCount;
-    });
+    document.querySelectorAll('[data-tahfizh-stat="aktif"]').forEach(el => { el.textContent = `${activeSantriIds.size} / ${totalSantri}`; });
+    document.querySelectorAll('[data-tahfizh-stat="tuntas"]').forEach(el => { el.textContent = tuntasCount; });
+    document.querySelectorAll('[data-tahfizh-stat="proses"]').forEach(el => { el.textContent = Math.max(0, totalSantri - tuntasCount); });
+
+    renderTahfizhHomeOverview(activeSantriIds.size, totalSantri, tuntasCount);
+    renderTahfizhFocusSummary();
+    renderTahfizhRecentActivity();
 
     // Validasi Inbox (Setoran Masuk)
     renderTahfizhValidationInbox();
@@ -863,6 +841,104 @@ function renderTahfizhBeranda() {
 
     // Detail Tuntas Juz
     renderTahfizhJuzTuntasTracking();
+}
+
+function renderTahfizhHomeOverview(activeCount, totalSantri, tuntasCount) {
+    if (!TDOM.homeOverview) return;
+
+    const pendingCount = TahfizhState.pendingSetoran.length;
+    const totalPages = TahfizhState.santriData.reduce((sum, s) => sum + (Number(s.totalPages) || 0), 0);
+    const completionPct = totalSantri > 0 ? Math.round((tuntasCount / totalSantri) * 100) : 0;
+    const cards = [
+        { icon: 'activity', label: 'Santri Aktif Setor', value: `${activeCount}/${totalSantri}`, tone: 'text-blue-600 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10' },
+        { icon: 'badge-check', label: 'Tuntas Target', value: `${completionPct}%`, tone: 'text-emerald-600 bg-emerald-50 dark:text-emerald-300 dark:bg-emerald-500/10' },
+        { icon: 'book-open', label: 'Total Halaman', value: totalPages.toFixed(1), tone: 'text-orange-600 bg-orange-50 dark:text-orange-300 dark:bg-orange-500/10' },
+        { icon: 'inbox', label: 'Menunggu Validasi', value: pendingCount, tone: 'text-amber-600 bg-amber-50 dark:text-amber-300 dark:bg-amber-500/10' }
+    ];
+
+    TDOM.homeOverview.innerHTML = cards.map(card => `
+        <div class="tahfizh-card rounded-2xl p-3">
+            <div class="flex items-center justify-between gap-2">
+                <span class="flex h-9 w-9 items-center justify-center rounded-xl ${card.tone}">
+                    <i data-lucide="${card.icon}" class="h-4 w-4"></i>
+                </span>
+                <span class="text-right text-lg font-bold tabular-nums text-slate-900 dark:text-white">${card.value}</span>
+            </div>
+            <p class="mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">${card.label}</p>
+        </div>
+    `).join('');
+}
+
+function renderTahfizhFocusSummary() {
+    if (!TDOM.focusSummary) return;
+
+    const targets = getTahfizhTargetDefinitions().slice(0, 3);
+    const rows = targets.map(target => {
+        const total = TahfizhState.santriData.length;
+        const tuntas = TahfizhState.santriData.filter(s => isTahfizhTargetMet(s, target)).length;
+        const pct = total > 0 ? Math.round((tuntas / total) * 100) : 0;
+        return `
+            <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+                <div class="mb-2 flex items-center justify-between gap-2">
+                    <p class="truncate text-xs font-bold text-slate-800 dark:text-white">${window.sanitizeHTML(target.label)}</p>
+                    <span class="text-xs font-bold text-orange-600 dark:text-orange-400">${pct}%</span>
+                </div>
+                <div class="h-2 overflow-hidden rounded-full bg-white shadow-inner dark:bg-slate-800">
+                    <div class="h-full rounded-full bg-orange-500" style="width:${pct}%"></div>
+                </div>
+                <p class="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">${tuntas} dari ${total} santri memenuhi target.</p>
+            </div>
+        `;
+    }).join('');
+
+    TDOM.focusSummary.innerHTML = `
+        <div class="mb-3 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Fokus Pekan Ini</h3>
+                <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">Target utama yang perlu dipantau.</p>
+            </div>
+            <i data-lucide="crosshair" class="h-5 w-5 shrink-0 text-orange-500"></i>
+        </div>
+        <div class="space-y-2">${rows || '<p class="rounded-2xl border border-dashed border-slate-200 p-4 text-center text-xs font-medium text-slate-500 dark:border-slate-800 dark:text-slate-400">Belum ada target.</p>'}</div>
+    `;
+}
+
+function renderTahfizhRecentActivity() {
+    if (!TDOM.recentActivity) return;
+
+    const recent = [...TahfizhState.allSetoran]
+        .sort((a, b) => new Date(b.createdAt || b.tanggal || 0) - new Date(a.createdAt || a.tanggal || 0))
+        .slice(0, 5);
+
+    const rows = recent.map(item => {
+        const date = new Date(item.createdAt || item.tanggal || Date.now());
+        const unit = item.halaman ? `${item.halaman} hlm` : (item.surat || '');
+        return `
+            <li class="flex items-start gap-2 rounded-2xl border border-slate-100 bg-slate-50/80 p-2.5 dark:border-slate-800 dark:bg-slate-950/40">
+                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 dark:bg-orange-500/10">
+                    <i data-lucide="book-marked" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-xs font-bold text-slate-800 dark:text-white">${window.sanitizeHTML(item.namaSantri || '-')}</p>
+                    <p class="mt-0.5 truncate text-xs font-medium text-slate-500 dark:text-slate-400">${window.sanitizeHTML(item.jenis || 'Setoran')} - ${window.sanitizeHTML(getTahfizhJuzLabel(item.juz || '-'))}${unit ? ` - ${window.sanitizeHTML(unit)}` : ''}</p>
+                    <p class="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">${Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                </div>
+            </li>
+        `;
+    }).join('');
+
+    TDOM.recentActivity.innerHTML = `
+        <div class="mb-3 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Aktivitas Terkini</h3>
+                <p class="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">Setoran terbaru perangkat ini.</p>
+            </div>
+            <button onclick="window.switchTahfizhSubTab('riwayat')" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-all hover:bg-orange-50 hover:text-orange-600 active:scale-95 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-orange-500/10" title="Buka riwayat">
+                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+            </button>
+        </div>
+        <ul class="space-y-2">${rows || '<li class="rounded-2xl border border-dashed border-slate-200 p-4 text-center text-xs font-medium text-slate-500 dark:border-slate-800 dark:text-slate-400">Belum ada setoran terbaru.</li>'}</ul>
+    `;
 }
 
 function renderTahfizhValidationInbox() {
@@ -1057,7 +1133,14 @@ function renderTahfizhJadwalPerpulangan() {
         TahfizhState.countdownInterval = setInterval(updateCountdown, 1000);
         updateCountdown();
     } else if (cont) {
-        cont.innerHTML = '<div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 text-center font-bold text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 shadow-sm">Semua jadwal perpulangan telah selesai.</div>';
+        cont.innerHTML = `
+            <div class="tahfizh-empty-state rounded-2xl border border-dashed border-slate-200 bg-white/85 p-5 text-center shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/70">
+                <div class="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    <i data-lucide="calendar-check-2" class="h-5 w-5"></i>
+                </div>
+                <p class="text-sm font-black text-slate-700 dark:text-slate-200">Semua jadwal perpulangan selesai</p>
+                <p class="mt-1 text-xs font-bold text-slate-400 dark:text-slate-500">Tidak ada target perpulangan aktif yang perlu ditindaklanjuti saat ini.</p>
+            </div>`;
         const headerCountdownEl = document.getElementById('tahfizh-header-countdown');
         if (headerCountdownEl) {
             headerCountdownEl.classList.add('hidden');
@@ -1066,40 +1149,6 @@ function renderTahfizhJadwalPerpulangan() {
     }
     
     if (window.lucide) window.lucide.createIcons();
-}
-
-function renderTahfizhProgressCircles() {
-    const createCircle = (container, circleEl, detailsEl, list, colorClass, checkFn) => {
-        if (!container || !circleEl || !detailsEl) return;
-        if (list.length > 0) {
-            container.classList.remove('hidden');
-            const tuntasCount = list.filter(checkFn).length;
-            const pct = Math.round((tuntasCount / list.length) * 100);
-            const radius = 39, circumference = 2 * Math.PI * radius;
-            const offset = circumference - (pct / 100) * circumference;
-
-            circleEl.innerHTML = `
-                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    <circle class="text-slate-100 dark:text-slate-700/60" stroke-width="8" stroke="currentColor" fill="transparent" r="${radius}" cx="50" cy="50" />
-                    <circle class="progress-ring-circle ${colorClass} transition-all duration-1000 ease-out" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="${radius}" cx="50" cy="50" style="stroke-dasharray:${circumference};stroke-dashoffset:${circumference};" />
-                </svg>
-                <span class="absolute inset-0 flex items-center justify-center text-[11px] font-black ${colorClass}">${pct}%</span>`;
-            
-            setTimeout(() => {
-                const circle = circleEl.querySelector('.progress-ring-circle');
-                if (circle) circle.style.strokeDashoffset = offset;
-            }, 100);
-            detailsEl.textContent = `${tuntasCount} dari ${list.length}`;
-        } else {
-            container.classList.add('hidden');
-        }
-    };
-
-    const santri = TahfizhState.santriData;
-
-    const focusJuz = getTahfizhRules().progressFocusJuz || getTuntasRequiredMutqinJuz();
-    createCircle(TDOM.mutqinJuz30ProgressContainer, TDOM.mutqinJuz30Circle, TDOM.mutqinJuz30Details, santri, 'text-green-500', s => hasMutqinJuz(s, focusJuz[0]));
-    createCircle(TDOM.mutqinJuz29ProgressContainer, TDOM.mutqinJuz29Circle, TDOM.mutqinJuz29Details, santri, 'text-amber-500', s => hasMutqinJuz(s, focusJuz[1]));
 }
 
 function renderTahfizhTuntasAccordion() {
@@ -1134,21 +1183,25 @@ function renderTahfizhTuntasAccordion() {
         card.dataset.progressCard = 'true';
         card.innerHTML = `
             <div class="flex items-start gap-4 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div class="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full bg-orange-50 dark:bg-orange-500/10 border-4 border-orange-100 dark:border-orange-500/20">
-                    <span class="text-xl font-black leading-none text-orange-600 dark:text-orange-400">${percentage}%</span>
-                    <span class="text-[8px] font-bold uppercase text-orange-500/80">Progres</span>
+                <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full p-1 shadow-inner" style="${ringStyle}">
+                    <div class="flex h-full w-full flex-col items-center justify-center rounded-full bg-white dark:bg-slate-950">
+                        <span class="text-xl font-black leading-none text-orange-600 dark:text-orange-400">${percentage}%</span>
+                        <span class="text-[8px] font-black uppercase text-orange-500/80">Progres</span>
+                    </div>
                 </div>
 
                 <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between gap-2 mb-1">
+                    <div class="flex items-start justify-between gap-2 mb-1">
                         <h4 class="text-lg font-bold text-slate-950 dark:text-white truncate flex items-center gap-2">
                             <i data-lucide="bar-chart-3" class="w-4 h-4 text-orange-500"></i>
                             ${window.sanitizeHTML(groupName)}
                         </h4>
-                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">${totalCount} Santri</span>
+                        <span class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                            <i data-lucide="users" class="h-3 w-3"></i>${totalCount}
+                        </span>
                     </div>
 
-                    <div class="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs font-medium text-slate-600 dark:text-slate-300">
+                    <div class="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs font-bold text-slate-600 dark:text-slate-300">
                         <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>${tuntasCount} Tuntas</span>
                         <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>${belumCount} Proses</span>
                         <span class="flex items-center gap-1 text-slate-500 dark:text-slate-400"><i data-lucide="book-open-check" class="w-3 h-3"></i>${totalSetoran} Setor</span>
@@ -1162,7 +1215,7 @@ function renderTahfizhTuntasAccordion() {
                     <span class="text-orange-600 dark:text-orange-400">${avgNilai}%</span>
                 </div>
                 <div class="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner">
-                    <div class="h-full rounded-full bg-orange-500" style="width:${avgNilai}%"></div>
+                    <div class="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400" style="width:${avgNilai}%"></div>
                 </div>
             </div>
 
@@ -1199,7 +1252,7 @@ function renderTahfizhLeaderboard() {
 }
 
 function renderTahfizhPeringkatContent() {
-    const contentContainer = document.getElementById('peringkat-content');
+    const contentContainer = TDOM.peringkatSection?.querySelector('[data-tahfizh-peringkat-content], #peringkat-content');
     if (!contentContainer || !TDOM.tplPeringkatItem) return;
 
     const list = TahfizhState.santriData;
@@ -1269,7 +1322,7 @@ function renderTahfizhJuzTuntasTracking() {
     const tabsContainer = TDOM.tahfizhTuntasTrackingSection.querySelector('.tahfizh-target-tabs');
     if (tabsContainer) {
         tabsContainer.innerHTML = targets.map((target, index) => `
-            <button class="tahfizh-tab shrink-0 px-3 py-1.5 text-xs font-bold rounded-lg ${index === 0 ? '' : 'text-slate-500'}" data-target="${target.id}">
+            <button class="tahfizh-tab shrink-0 rounded-xl px-3 py-2 text-[11px] font-black transition-all ${index === 0 ? '' : 'text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-800'}" data-target="${target.id}">
                 ${window.sanitizeHTML(target.label)}
             </button>
         `).join('');
@@ -1280,12 +1333,12 @@ function renderTahfizhJuzTuntasTracking() {
     renderTahfizhJuzContent(firstTarget);
     const tab = TDOM.tahfizhTuntasTrackingSection.querySelector(`[data-target="${firstTarget}"]`);
     if (tab) {
-        tab.className = "tahfizh-tab px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-orange-600 shadow-sm border border-orange-100/30";
+        tab.className = "tahfizh-tab shrink-0 rounded-xl px-3 py-2 text-[11px] font-black transition-all bg-white text-orange-600 shadow-sm border border-orange-100/70 dark:bg-slate-800 dark:text-orange-300 dark:border-orange-500/20";
     }
 }
 
 function renderTahfizhJuzContent(targetKey, searchTerm = '') {
-    const contentContainer = document.getElementById('tahfizh-content');
+    const contentContainer = TDOM.tahfizhTuntasTrackingSection?.querySelector('[data-tahfizh-target-content], #tahfizh-content');
     if (!contentContainer || !TDOM.tplTahfizhContent) return;
 
     const target = getTahfizhTargetDefinitions().find(item => String(item.id) === String(targetKey));
@@ -1323,28 +1376,37 @@ function renderTahfizhJuzContent(targetKey, searchTerm = '') {
     const renderTargetList = (list, emptyText, done) => {
         if (list.length === 0) {
             return `
-                <li class="list-none rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-4 text-center text-xs font-bold text-slate-400">
-                    ${emptyText}
+                <li class="list-none rounded-2xl border border-dashed border-slate-200 bg-white/70 p-5 text-center text-xs font-bold text-slate-400 dark:border-slate-800 dark:bg-slate-900/50">
+                    <i data-lucide="${done ? 'sparkles' : 'circle-check'}" class="mx-auto mb-2 h-5 w-5 text-slate-300"></i>
+                    <span>${emptyText}</span>
                 </li>`;
         }
         return list.map(s => {
             const avatarClass = done
-                ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'
-                : 'bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-500/20';
+                ? 'bg-emerald-500 text-white border-emerald-400'
+                : 'bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-500/20';
             const statusClass = done
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-orange-600 dark:text-orange-400';
+            const metricClass = done
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20'
+                : 'bg-white text-orange-700 border-orange-100 dark:bg-slate-900/70 dark:text-orange-300 dark:border-orange-500/20';
+            const progressText = done ? 'Memenuhi target' : `${s.setoranCount || 0} setoran tercatat`;
             return `
-                <li class="flex items-center gap-3 py-3 px-2 rounded-xl border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-black ${avatarClass}">
+                <li class="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/90 p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/80">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border text-xs font-black ${avatarClass}">
                         ${window.sanitizeHTML(getInitials(s.nama))}
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center justify-between gap-2">
-                            <p class="truncate text-sm font-semibold text-slate-800 dark:text-white">${window.sanitizeHTML(s.nama)}</p>
-                            <span class="shrink-0 text-[10px] font-black uppercase ${statusClass}">${done ? 'Tuntas' : 'Belum'}</span>
+                            <p class="truncate text-sm font-black text-slate-800 dark:text-white">${window.sanitizeHTML(s.nama)}</p>
+                            <span class="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-black uppercase ${done ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300'}">${done ? 'Tuntas' : 'Belum'}</span>
                         </div>
-                        <p class="mt-0.5 text-[10px] font-bold text-slate-400">Kelas ${window.sanitizeHTML(s.kelas || '-')} • ${s.setoranCount || 0} setoran</p>
+                        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                            <span class="rounded-full border px-2 py-0.5 text-[9px] font-black ${metricClass}">Kelas ${window.sanitizeHTML(s.kelas || '-')}</span>
+                            <span class="rounded-full border px-2 py-0.5 text-[9px] font-black ${metricClass}">${s.setoranCount || 0} setoran</span>
+                            <span class="text-[9px] font-bold ${statusClass}">${progressText}</span>
+                        </div>
                     </div>
                 </li>`;
         }).join('');
@@ -1354,7 +1416,7 @@ function renderTahfizhJuzContent(targetKey, searchTerm = '') {
     const clone = TDOM.tplTahfizhContent.content.cloneNode(true);
     setElementText(clone, '.text-progress-label', targetLabel);
     setElementText(clone, '.text-percentage', `${percentage}%`);
-    setElementText(clone, '.target-summary', `${tuntasCount} dari ${totalCount} santri sudah memenuhi target`);
+    setElementText(clone, '.target-summary', `${tuntasCount} dari ${totalCount} santri sudah memenuhi target. ${totalCount - tuntasCount} santri masuk prioritas pendampingan.`);
 
     const bar = clone.querySelector('.progress-bar');
     if (bar) bar.style.width = `${percentage}%`;
@@ -1369,8 +1431,9 @@ function renderTahfizhJuzContent(targetKey, searchTerm = '') {
         searchInput.value = searchTerm;
     }
 
-    setElementText(clone, '.count-tuntas', tuntasList.length);
-    setElementText(clone, '.count-belum', belumTuntasList.length);
+    clone.querySelectorAll('.count-tuntas').forEach(el => { el.textContent = tuntasList.length; });
+    clone.querySelectorAll('.count-belum').forEach(el => { el.textContent = belumTuntasList.length; });
+    clone.querySelectorAll('.count-total').forEach(el => { el.textContent = totalCount; });
 
     const listTuntasEl = clone.querySelector('.list-tuntas');
     if (listTuntasEl) listTuntasEl.innerHTML = renderTargetList(tuntasList, 'Belum ada santri yang memenuhi target ini.', true);
@@ -1768,7 +1831,7 @@ function renderTahfizhSantriRaporDashboard(santriId) {
     const dash = TDOM.analisisDashboardTemplate.content.cloneNode(true);
 
     setElementText(dash, '[data-name]', s.nama);
-    setElementHTML(dash, '[data-kelas-text]', `<span>🏫</span> Kelas ${s.kelas}`);
+    setElementHTML(dash, '[data-kelas-text]', `<i data-lucide="school" class="inline h-3 w-3 align-[-2px]"></i> Kelas ${window.sanitizeHTML(s.kelas)}`);
     const programText = dash.querySelector('[data-program-text]');
     if (programText) programText.remove();
 
@@ -1776,7 +1839,7 @@ function renderTahfizhSantriRaporDashboard(santriId) {
     const statusBadge = dash.querySelector('[data-status-badge]');
     if (statusBadge) {
         statusBadge.textContent = s.isTuntas ? 'Tuntas' : 'Proses';
-        statusBadge.className = `text-xs font-bold px-3 py-1 rounded-md border shadow-sm ${s.isTuntas ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/50' : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-900/50'}`;
+        statusBadge.className = `inline-flex h-7 items-center justify-center rounded-lg border px-3 py-1 text-xs font-black shadow-sm ${s.isTuntas ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/50' : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-900/50'}`;
     }
 
     // Perpulangan badge
@@ -1784,7 +1847,7 @@ function renderTahfizhSantriRaporDashboard(santriId) {
     if (perpulanganBadge) {
         perpulanganBadge.textContent = s.statusPerpulangan;
         const bolehPulangLabel = getTahfizhLabels().bolehPulang;
-        perpulanganBadge.className = `text-xs font-bold px-3 py-1 rounded-md border shadow-sm ${s.statusPerpulangan === bolehPulangLabel ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/50' : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/50'}`;
+        perpulanganBadge.className = `inline-flex h-7 items-center justify-center rounded-lg border px-3 py-1 text-xs font-black shadow-sm ${s.statusPerpulangan === bolehPulangLabel ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/50' : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/50'}`;
     }
 
     setElementText(dash, '[data-nilai]', s.nilaiTampil);
@@ -2473,9 +2536,9 @@ function handleTahfizhDelegatedClicks(e) {
     if (juzTab) {
         const target = juzTab.dataset.target;
         juzTab.parentElement.querySelectorAll('.tahfizh-tab').forEach(b => {
-            b.className = "tahfizh-tab px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 dark:text-slate-400";
+            b.className = "tahfizh-tab shrink-0 rounded-xl px-3 py-2 text-[11px] font-black transition-all text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-800";
         });
-        juzTab.className = "tahfizh-tab px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-orange-600 shadow-sm border border-orange-100/30";
+        juzTab.className = "tahfizh-tab shrink-0 rounded-xl px-3 py-2 text-[11px] font-black transition-all bg-white text-orange-600 shadow-sm border border-orange-100/70 dark:bg-slate-800 dark:text-orange-300 dark:border-orange-500/20";
         renderTahfizhJuzContent(target);
         return;
     }

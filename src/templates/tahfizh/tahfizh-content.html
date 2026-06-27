@@ -1,1 +1,81 @@
-<div class="space-y-4"><div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/40 p-3"><div class="flex items-center gap-3"><div class="target-ring flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full bg-orange-50 dark:bg-orange-500/10 border-4 border-orange-100 dark:border-orange-500/20"><span class="text-percentage text-xl font-black leading-none text-orange-600 dark:text-orange-400">0%</span><span class="text-[8px] font-bold uppercase text-orange-500/80">Target</span></div><div class="min-w-0 flex-1"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="text-progress-label truncate text-sm font-black text-slate-900 dark:text-white"></p><p class="target-summary mt-1 text-[10px] font-bold text-slate-400"></p></div><i data-lucide="flag" class="w-4 h-4 shrink-0 text-orange-500"></i></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner"><div class="progress-bar h-full rounded-full bg-orange-500"></div></div></div></div></div><div class="relative"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input class="tahfizh-search w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 pl-9 pr-3 text-xs font-bold" placeholder="Cari nama..."></div><div class="grid grid-cols-1 gap-3 text-xs"><div><div class="mb-2 flex items-center justify-between"><p class="font-black text-emerald-600">Tuntas (<span class="count-tuntas">0</span>)</p><span class="text-[9px] font-bold text-slate-400">Sudah memenuhi target</span></div><ul class="list-tuntas space-y-0 max-h-[220px] overflow-y-auto pr-1"></ul></div><div><div class="mb-2 flex items-center justify-between"><p class="font-black text-orange-600">Belum (<span class="count-belum">0</span>)</p><span class="text-[9px] font-bold text-slate-400">Perlu ditindaklanjuti</span></div><ul class="list-belum space-y-0 max-h-[220px] overflow-y-auto pr-1"></ul></div></div></div>
+<div class="space-y-4">
+  <section class="rounded-2xl border border-orange-100/80 bg-gradient-to-br from-orange-50 via-white to-white p-3 shadow-sm dark:border-orange-500/20 dark:from-orange-950/20 dark:via-slate-950/40 dark:to-slate-950/40 sm:p-4">
+    <div class="flex items-start gap-3">
+      <div class="target-ring flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border border-white/80 bg-white text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <span class="text-percentage text-2xl font-black leading-none text-orange-600 dark:text-orange-400">0%</span>
+        <span class="text-[8px] font-black uppercase tracking-wider text-orange-500/80">Tuntas</span>
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-progress-label text-base font-black leading-tight text-slate-900 dark:text-white"></p>
+            <p class="target-summary mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400"></p>
+          </div>
+          <span class="shrink-0 rounded-xl bg-orange-500 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white">Target</span>
+        </div>
+        <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-white/80 shadow-inner dark:bg-slate-800">
+          <div class="progress-bar h-full rounded-full bg-orange-500"></div>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-2">
+          <div class="rounded-xl bg-white/80 px-2 py-2 text-center dark:bg-slate-900/70">
+            <p class="count-tuntas text-sm font-black text-emerald-600 dark:text-emerald-400">0</p>
+            <p class="text-[8px] font-black uppercase text-slate-400">Tuntas</p>
+          </div>
+          <div class="rounded-xl bg-white/80 px-2 py-2 text-center dark:bg-slate-900/70">
+            <p class="count-belum text-sm font-black text-orange-600 dark:text-orange-400">0</p>
+            <p class="text-[8px] font-black uppercase text-slate-400">Belum</p>
+          </div>
+          <div class="rounded-xl bg-white/80 px-2 py-2 text-center dark:bg-slate-900/70">
+            <p class="count-total text-sm font-black text-slate-800 dark:text-white">0</p>
+            <p class="text-[8px] font-black uppercase text-slate-400">Santri</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-100 bg-white/90 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/40 sm:p-4">
+    <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="min-w-0">
+        <h4 class="text-sm font-black text-slate-900 dark:text-white">Daftar Santri</h4>
+        <p class="mt-0.5 text-[10px] font-bold text-slate-400">Pisahkan yang sudah tuntas dan yang perlu pendampingan.</p>
+      </div>
+      <div class="relative sm:w-64">
+        <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+        <input class="tahfizh-search h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-9 pr-3 text-xs font-bold outline-none transition-all focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-slate-800 dark:bg-slate-900" placeholder="Cari nama santri...">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+    <div class="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+      <div class="mb-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-500 text-white">
+            <i data-lucide="check-check" class="h-4 w-4"></i>
+          </span>
+          <div>
+            <p class="text-xs font-black text-emerald-700 dark:text-emerald-300">Tuntas (<span class="count-tuntas">0</span>)</p>
+            <p class="text-[9px] font-bold text-emerald-600/70 dark:text-emerald-300/70">Sudah memenuhi target</p>
+          </div>
+        </div>
+      </div>
+        <ul class="list-tuntas max-h-[300px] space-y-2 overflow-y-auto pr-1"></ul>
+      </div>
+
+      <div class="rounded-2xl border border-orange-100 bg-orange-50/40 p-3 dark:border-orange-500/20 dark:bg-orange-500/5">
+      <div class="mb-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-500 text-white">
+            <i data-lucide="list-checks" class="h-4 w-4"></i>
+          </span>
+          <div>
+            <p class="text-xs font-black text-orange-700 dark:text-orange-300">Belum (<span class="count-belum">0</span>)</p>
+            <p class="text-[9px] font-bold text-orange-600/70 dark:text-orange-300/70">Prioritas pendampingan</p>
+          </div>
+        </div>
+      </div>
+        <ul class="list-belum max-h-[300px] space-y-2 overflow-y-auto pr-1"></ul>
+      </div>
+    </div>
+  </section>
+</div>

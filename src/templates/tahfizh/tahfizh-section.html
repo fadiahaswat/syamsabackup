@@ -1,1 +1,17 @@
-<div><div class="flex flex-wrap items-center justify-between gap-2 mb-4"><div><h3 class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Target Juz</h3><p class="text-[10px] font-bold text-slate-400">Pantau target dinamis per santri</p></div><div class="tahfizh-target-tabs flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-center hide-scrollbar"></div></div><div id="tahfizh-content"></div></div>
+<div class="space-y-4">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="min-w-0">
+      <div class="flex items-center gap-2">
+        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-orange-500 dark:bg-orange-500/10">
+          <i data-lucide="goal" class="h-4 w-4"></i>
+        </span>
+        <div class="min-w-0">
+          <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">Target Juz</h3>
+          <p class="text-[10px] font-bold text-slate-400">Pilih target, lihat progres, lalu tindak lanjuti santri yang belum tuntas.</p>
+        </div>
+      </div>
+    </div>
+    <div class="tahfizh-target-tabs flex max-w-full gap-1 overflow-x-auto rounded-2xl bg-slate-100/80 p-1 text-center dark:bg-slate-900/70 hide-scrollbar"></div>
+  </div>
+  <div data-tahfizh-target-content></div>
+</div>

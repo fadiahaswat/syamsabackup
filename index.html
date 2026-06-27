@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="id" class="scroll-smooth bg-syamsa-background dark:bg-[#0f172a]">
   <head>
     <meta charset="UTF-8" />
@@ -2596,7 +2596,7 @@
         color: #ffffff;
         background: linear-gradient(135deg, #fb923c 0%, #f59e0b 100%) !important;
         border: 1px solid rgba(255, 237, 213, 0.75);
-        border-radius: 1rem;
+        border-radius: 9999px;
         box-shadow: 0 12px 28px -18px rgba(249, 115, 22, 0.85);
       }
       .tahfizh-header-icon-glow i,
@@ -2612,16 +2612,14 @@
         border-color: rgba(251, 146, 60, 0.35);
       }
       .tahfizh-card {
-        background: rgba(255, 255, 255, 0.86);
-        border: 1px solid rgba(226, 232, 240, 0.72);
-        box-shadow: 0 12px 32px -28px rgba(15, 23, 42, 0.55);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        box-shadow: 0 8px 24px -22px rgba(15, 23, 42, 0.45);
       }
       .dark .tahfizh-card {
-        background: rgba(15, 23, 42, 0.86);
-        border-color: rgba(30, 41, 59, 0.86);
-        box-shadow: 0 14px 34px -26px rgba(0, 0, 0, 0.65);
+        background: rgba(15, 23, 42, 0.94);
+        border-color: rgba(51, 65, 85, 0.82);
+        box-shadow: 0 10px 28px -24px rgba(0, 0, 0, 0.62);
       }
       .tahfizh-soft-icon {
         background: rgba(255, 247, 237, 0.92);
@@ -2649,14 +2647,10 @@
       }
 
       .tahfizh-page-header {
-        background-image:
-          radial-gradient(circle at 12% 20%, rgba(251, 146, 60, 0.12), transparent 34%),
-          linear-gradient(135deg, rgba(255,255,255,0.72), rgba(255,247,237,0.42));
+        background-image: none;
       }
       .dark .tahfizh-page-header {
-        background-image:
-          radial-gradient(circle at 12% 20%, rgba(251, 146, 60, 0.13), transparent 34%),
-          linear-gradient(135deg, rgba(15,23,42,0.84), rgba(30,41,59,0.48));
+        background-image: none;
       }
       .tahfizh-lang-ar,
       .tahfizh-lang-id {
@@ -3370,7 +3364,7 @@
 
         #tab-report .overflow-x-auto,
         #tab-tahfizh .overflow-x-auto {
-          border-radius: 1rem;
+          border-radius: 9999px;
         }
 
         #desktop-sidebar .sidebar-nav-list {
@@ -3385,7 +3379,7 @@
           min-height: 2.875rem;
           justify-content: flex-start;
           padding: 0.75rem 0.875rem !important;
-          border-radius: 1rem;
+          border-radius: 9999px;
           overflow: visible;
           transform: none !important;
           opacity: 1 !important;
@@ -3415,7 +3409,7 @@
         }
 
         #desktop-sidebar > div:last-child > div {
-          border-radius: 1rem;
+          border-radius: 9999px;
           border: 1px solid rgba(226, 232, 240, 0.72);
         }
 
@@ -3437,8 +3431,6 @@
 
         #tab-tahfizh .tahfizh-page-header {
           margin-top: 0 !important;
-          padding: 1rem 1.125rem !important;
-          border-radius: 1.25rem !important;
         }
 
         #tab-tahfizh .tahfizh-lang-rotator {
@@ -3468,10 +3460,7 @@
         }
 
         #tahfizh-page-beranda {
-          display: grid;
-          grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
-          gap: 1rem;
-          align-items: start;
+          display: block;
         }
 
         #tahfizh-page-beranda.hidden {
@@ -3552,15 +3541,7 @@
         }
 
         #tahfizh-page-beranda > .grid {
-          display: contents;
-        }
-
-        #tahfizh-page-beranda > .grid > .tahfizh-card {
-          grid-column: 1;
-        }
-
-        #tahfizh-page-beranda > .grid > .space-y-3 {
-          grid-column: 2;
+          display: grid;
         }
 
         #tahfizh-page-riwayat {
@@ -3747,8 +3728,7 @@
         }
 
         #tahfizh-page-beranda {
-          grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
-          gap: 1.25rem;
+          display: block;
         }
 
         #tab-profile > .grid.lg\:grid-cols-12 {
@@ -4106,7 +4086,7 @@
                 id="wali-suggestion-info"
                 class="hidden p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-2 animate-fade-in"
               >
-                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-black">✓</span>
+                <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-black">?</span>
                 <span class="truncate">NIS Terdaftar: <span id="wali-suggested-name" class="font-extrabold text-syamsa-foreground dark:text-emerald-300"></span></span>
               </div>
 
@@ -4841,9 +4821,9 @@
               </div>
               
               <!-- Badge Kanan -->
-              <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100/50 dark:border-indigo-900/50 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 shadow-sm shrink-0">
-                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-                <span>Active Track</span>
+              <div id="permit-track-summary" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100/50 dark:border-emerald-900/50 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm shrink-0">
+                <i data-lucide="shield-check" class="w-3 h-3"></i>
+                <span id="permit-track-summary-text">Aman</span>
               </div>
             </div>
 
@@ -5247,7 +5227,7 @@
             </div>
           </div>
 
-          <div class="musyrif-only flex p-1 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl w-auto shrink-0">
+          <div class="musyrif-only flex p-1 bg-white/85 dark:bg-slate-900/80 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl w-auto shrink-0">
           <button
             id="report-view-btn"
             onclick="window.switchReportView('report')"
@@ -6577,11 +6557,11 @@
         class="tab-content hidden min-h-screen pb-40 p-6 pt-safe animate-fade-in overflow-y-auto hide-scrollbar"
       >
         <div class="max-w-7xl mx-auto w-full space-y-5">
-          <header class="tahfizh-page-header flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 mt-3 sm:mt-4 w-full rounded-[1.75rem] bg-white/65 dark:bg-slate-900/55 backdrop-blur-xl border border-white/70 dark:border-slate-800/70 shadow-sm p-3 delay-100ms">
+          <header class="tahfizh-page-header flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 mt-3 sm:mt-4 w-full delay-100ms">
             <div class="flex items-center gap-3 min-w-0">
               <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 active:scale-95 transition-all duration-300" aria-label="Kembali ke Dashboard" title="Kembali ke Dashboard">
-                <div class="absolute inset-1 rounded-full bg-orange-300 blur-md opacity-20 group-hover:opacity-35 transition-opacity duration-300"></div>
-                <div class="tahfizh-header-icon-glow relative w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white shadow-sm z-10 transition-transform group-hover:scale-105">
+                <div class="absolute inset-0 rounded-full bg-orange-300 blur-md opacity-25 group-hover:opacity-50 transition-opacity duration-300"></div>
+                <div class="tahfizh-header-icon-glow relative w-11 h-11 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
                   <i data-lucide="book-open-check" class="w-5 h-5"></i>
                 </div>
               </button>
@@ -6589,7 +6569,7 @@
               <div class="flex flex-col justify-center min-w-0">
                 <div class="tahfizh-lang-rotator max-w-[190px] sm:max-w-[260px] overflow-hidden h-[16px] sm:h-[18px] mb-0 relative">
                   <span class="tahfizh-lang-ar absolute inset-0 text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none whitespace-nowrap font-rubik">
-                    Mutabaah al-Hifzh
+                    Mutaba'ah al-Hifzh
                   </span>
                   <span class="tahfizh-lang-id absolute inset-0 text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none whitespace-nowrap font-rubik">Monitoring Hafalan</span>
                 </div>
@@ -6605,137 +6585,121 @@
               </div>
             </div>
             <div class="tahfizh-header-summary musyrif-only shrink-0 flex items-center gap-2">
-              <button onclick="window.switchTahfizhSubTab('analisis')" class="h-10 w-10 rounded-2xl bg-white/80 dark:bg-slate-950/50 border border-orange-100/80 dark:border-orange-500/15 text-orange-500 dark:text-orange-300 flex items-center justify-center shadow-sm active:scale-95 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-all" title="Analisis Tahfizh">
+              <button onclick="window.switchTahfizhSubTab('analisis')" class="h-10 w-10 rounded-full bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 text-orange-500 dark:text-orange-300 flex items-center justify-center shadow-sm active:scale-95 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-all" title="Analisis Tahfizh" aria-label="Analisis Tahfizh">
                 <i data-lucide="user-search" class="w-4 h-4"></i>
               </button>
-              <button onclick="window.switchTahfizhSubTab('rekap')" class="h-10 w-10 rounded-2xl bg-orange-500 text-white border border-orange-400 flex items-center justify-center shadow-sm shadow-orange-500/20 active:scale-95 hover:bg-orange-600 transition-all" title="Riwayat Tahfizh">
+              <button onclick="window.switchTahfizhSubTab('riwayat')" class="h-10 w-10 rounded-full bg-orange-500 text-white border border-orange-400 flex items-center justify-center shadow-sm shadow-orange-500/20 active:scale-95 hover:bg-orange-600 transition-all" title="Riwayat Tahfizh" aria-label="Riwayat Tahfizh">
                 <i data-lucide="file-text" class="w-4 h-4"></i>
               </button>
             </div>
           </header>
 
-          <div class="musyrif-only animate-slide-up tahfizh-card rounded-2xl p-1 delay-120ms">
-            <div class="grid grid-cols-3 gap-1">
-              <button onclick="window.switchTahfizhSubTab('beranda')" data-subtab="beranda" class="tahfizh-sub-nav-btn active h-10 px-2 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-black active:scale-[0.98]"><i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i><span>Beranda</span></button>
-              <button onclick="window.switchTahfizhSubTab('analisis')" data-subtab="analisis" class="tahfizh-sub-nav-btn h-10 px-2 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-black active:scale-[0.98]"><i data-lucide="user-search" class="w-4 h-4 shrink-0"></i><span>Analisis</span></button>
-              <button onclick="window.switchTahfizhSubTab('rekap')" data-subtab="rekap" class="tahfizh-sub-nav-btn h-10 px-2 flex items-center justify-center gap-1.5 rounded-xl text-[11px] font-black active:scale-[0.98]"><i data-lucide="file-text" class="w-4 h-4 shrink-0"></i><span>Riwayat</span></button>
+          <div class="musyrif-only flex p-1 bg-white/85 dark:bg-slate-900/80 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl w-full sm:w-auto shrink-0 animate-slide-up delay-120ms">
+            <div class="grid grid-cols-3 gap-1 w-full sm:w-auto">
+              <button onclick="window.switchTahfizhSubTab('beranda')" data-subtab="beranda" class="tahfizh-sub-nav-btn active h-10 px-3 sm:px-4 flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]" aria-label="Buka beranda Tahfizh"><i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i><span>Beranda</span></button>
+              <button onclick="window.switchTahfizhSubTab('analisis')" data-subtab="analisis" class="tahfizh-sub-nav-btn h-10 px-3 sm:px-4 flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]" aria-label="Buka analisis santri"><i data-lucide="user-search" class="w-4 h-4 shrink-0"></i><span>Analisis</span></button>
+              <button onclick="window.switchTahfizhSubTab('riwayat')" data-subtab="riwayat" class="tahfizh-sub-nav-btn h-10 px-3 sm:px-4 flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]" aria-label="Buka riwayat setoran"><i data-lucide="file-text" class="w-4 h-4 shrink-0"></i><span>Riwayat</span></button>
             </div>
           </div>
 
-          <section id="tahfizh-page-beranda" class="tahfizh-page-content space-y-3">
-            <div id="tahfizh-hero-card-wrapper" class="relative z-30">
-            <div id="tahfizh-hero-card" class="bg-slate-900 dark:bg-black rounded-[1.75rem] p-5 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative z-20 overflow-hidden group animate-slide-up flex items-center delay-120ms">
-              <!-- Gradient orbs (desktop only) -->
-              <div class="absolute top-0 right-0 w-64 h-64 bg-orange-500 rounded-full blur-[100px] opacity-20 -mr-16 -mt-16 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none hidden sm:block"></div>
-              <div class="absolute bottom-0 left-0 w-48 h-48 bg-amber-500 rounded-full blur-[90px] opacity-10 -ml-10 -mb-10 pointer-events-none hidden sm:block"></div>
-              <img src="assets/icons/icon.webp" class="absolute -right-10 -top-10 w-56 h-56 sm:w-60 sm:h-60 opacity-[0.07] dark:opacity-[0.035] pointer-events-none select-none z-0 rotate-[15deg] transition-all duration-700 group-hover:rotate-[25deg] group-hover:scale-105" alt="" />
-
-              <!-- Mobile layout (compact) -->
-              <div class="tahfizh-hero-mobile relative z-10 flex flex-col sm:flex-col gap-4 w-full sm:hidden">
-                <div class="flex items-center justify-between gap-4 w-full">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <div class="tahfizh-hero-logo w-10 h-10 rounded-2xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/25 ring-1 ring-white/10">
-                      <i data-lucide="book-open-check" class="w-5 h-5"></i>
-                    </div>
-                    <div class="min-w-0">
-                      <h2 class="text-base font-black tracking-tight leading-tight">Input Setoran Tahfizh</h2>
-                      <p class="text-[10px] font-bold text-slate-400 mt-0.5">Catat setoran hafalan</p>
-                    </div>
-                  </div>
-                  <button onclick="window.switchTahfizhSubTab('form')" class="tahfizh-hero-action w-10 h-10 rounded-full bg-white text-orange-500 flex items-center justify-center shadow-sm shadow-black/10 hover:scale-105 active:scale-95 transition-all duration-300 shrink-0 ring-1 ring-white/20" title="Input setoran">
-                    <i data-lucide="plus" class="w-5 h-5"></i>
-                  </button>
-                </div>
-                <div class="tahfizh-hero-stats grid grid-cols-3 gap-2">
-                  <div class="tahfizh-stat-pill rounded-xl bg-white/10 border border-white/10 px-2.5 py-1.5 min-w-0">
-                    <div class="flex items-center gap-1 text-slate-300 mb-0.5">
-                      <i data-lucide="users" class="w-3 h-3"></i>
-                      <span class="text-[7px] font-black uppercase tracking-wider">Aktif</span>
-                    </div>
-                    <p id="tahfizh-stats-santri-aktif" class="text-sm font-black text-white leading-none truncate">0</p>
-                  </div>
-                  <div class="tahfizh-stat-pill rounded-xl bg-orange-400/15 border border-orange-300/20 px-2.5 py-1.5 min-w-0">
-                    <div class="flex items-center gap-1 text-orange-200 mb-0.5">
-                      <i data-lucide="badge-check" class="w-3 h-3"></i>
-                      <span class="text-[7px] font-black uppercase tracking-wider">Tuntas</span>
-                    </div>
-                    <p id="tahfizh-stats-santri-tuntas" class="text-sm font-black text-white leading-none truncate">0</p>
-                  </div>
-                  <div class="tahfizh-stat-pill rounded-xl bg-amber-400/15 border border-amber-300/20 px-2.5 py-1.5 min-w-0">
-                    <div class="flex items-center gap-1 text-amber-200 mb-0.5">
-                      <i data-lucide="timer" class="w-3 h-3"></i>
-                      <span class="text-[7px] font-black uppercase tracking-wider">Proses</span>
-                    </div>
-                    <p id="tahfizh-stats-santri-belum-tuntas" class="text-sm font-black text-white leading-none truncate">0</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Desktop layout (expanded) -->
-              <div class="tahfizh-hero-desktop relative z-10 hidden sm:grid h-full w-full">
-                <div class="tahfizh-hero-copy min-w-0">
-                  <div class="tahfizh-hero-logo w-11 h-11 rounded-2xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-orange-500/25 ring-1 ring-white/10 mb-4">
-                    <i data-lucide="book-open-check" class="w-5 h-5"></i>
-                  </div>
-                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/20 border border-orange-400/20 text-[10px] font-bold text-orange-300 backdrop-blur-md uppercase tracking-wider mb-3">
-                    <span class="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse"></span>
-                    Tahfizh
-                  </span>
-                  <h2 class="text-2xl font-black tracking-tight leading-tight mb-1">Input Setoran Tahfizh</h2>
-                  <p class="text-xs font-bold text-slate-400 max-w-md">Catat ziyadah, murajaah, atau mutqin dari kelas aktif.</p>
-                </div>
-
-                <button onclick="window.switchTahfizhSubTab('form')" class="tahfizh-hero-action w-12 h-12 rounded-2xl bg-white text-orange-500 flex items-center justify-center shadow-lg shadow-white/10 hover:scale-110 hover:rotate-3 active:scale-95 transition-all duration-300 group/btn shrink-0" title="Input setoran">
-                  <i data-lucide="plus" class="w-5 h-5 group-hover/btn:-rotate-45 transition-transform duration-300"></i>
-                </button>
-
-                <div class="tahfizh-hero-stats grid grid-cols-3 gap-2">
-                  <div class="tahfizh-stat-pill rounded-2xl bg-white/10 border border-white/10 px-3 py-2 min-w-0">
-                    <div class="flex items-center gap-1.5 text-slate-300 mb-1">
-                      <i data-lucide="users" class="w-3.5 h-3.5"></i>
-                      <span class="text-[8px] font-black uppercase tracking-widest">Aktif</span>
-                    </div>
-                    <p id="tahfizh-stats-santri-aktif" class="text-base font-black text-white leading-none truncate">0</p>
-                  </div>
-                  <div class="tahfizh-stat-pill rounded-2xl bg-orange-400/15 border border-orange-300/20 px-3 py-2 min-w-0">
-                    <div class="flex items-center gap-1.5 text-orange-200 mb-1">
-                      <i data-lucide="badge-check" class="w-3.5 h-3.5"></i>
-                      <span class="text-[8px] font-black uppercase tracking-widest">Tuntas</span>
-                    </div>
-                    <p id="tahfizh-stats-santri-tuntas" class="text-base font-black text-white leading-none truncate">0</p>
-                  </div>
-                  <div class="tahfizh-stat-pill rounded-2xl bg-amber-400/15 border border-amber-300/20 px-3 py-2 min-w-0">
-                    <div class="flex items-center gap-1.5 text-amber-200 mb-1">
-                      <i data-lucide="timer" class="w-3.5 h-3.5"></i>
-                      <span class="text-[8px] font-black uppercase tracking-widest">Proses</span>
-                    </div>
-                    <p id="tahfizh-stats-santri-belum-tuntas" class="text-base font-black text-white leading-none truncate">0</p>
-                  </div>
-                </div>
-              </div>
+          <section id="tahfizh-page-beranda" class="tahfizh-page-content space-y-4">
+  <div id="tahfizh-hero-card-wrapper" class="relative z-30">
+    <div id="tahfizh-hero-card" class="tahfizh-home-hero relative overflow-hidden rounded-2xl bg-slate-950 p-4 text-white shadow-lg shadow-slate-950/20 animate-slide-up delay-120ms">
+      <img src="assets/icons/icon.webp" class="absolute -right-10 -top-12 h-48 w-48 rotate-[14deg] select-none opacity-[0.06] pointer-events-none sm:h-64 sm:w-64" alt="" />
+      <div class="relative z-10 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <div class="min-w-0">
+          <div class="mb-3 flex items-center gap-3">
+            <div class="tahfizh-hero-logo flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-sm shadow-orange-500/25 ring-1 ring-white/10">
+              <i data-lucide="book-open-check" class="h-5 w-5"></i>
             </div>
+            <div class="min-w-0">
+              <span class="inline-flex items-center gap-1.5 rounded-lg border border-orange-300/20 bg-orange-400/15 px-2.5 py-1 text-xs font-semibold text-orange-100">
+                <span class="h-1.5 w-1.5 rounded-full bg-orange-300"></span>
+                Beranda Tahfizh
+              </span>
+              <h2 class="mt-1 truncate text-xl font-black leading-tight tracking-tight sm:text-2xl">Pantau Hafalan Kelas</h2>
             </div>
+          </div>
+          <p class="max-w-2xl text-xs font-bold leading-relaxed text-slate-300 sm:text-sm">
+            Ringkasan capaian mutqin, target perpulangan, aktivitas setoran, dan santri prioritas dalam satu halaman kerja.
+          </p>
+        </div>
 
-            <div id="tahfizh-jadwal-perpulangan-section"></div>
+        <div class="grid grid-cols-[1fr_auto] gap-2 sm:flex sm:items-center">
+          <button onclick="window.switchTahfizhSubTab('analisis')" class="tahfizh-hero-secondary flex h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-3 text-xs font-semibold text-white transition-all hover:bg-white/15 active:scale-95" title="Analisis santri" aria-label="Buka analisis santri">
+            <i data-lucide="user-search" class="h-4 w-4"></i>
+            <span class="hidden sm:inline">Analisis</span>
+          </button>
+          <button onclick="window.switchTahfizhSubTab('form')" class="tahfizh-hero-action flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-4 text-xs font-black text-orange-600 shadow-sm transition-all hover:scale-[1.03] active:scale-95" title="Input setoran" aria-label="Input setoran hafalan">
+            <i data-lucide="plus" class="h-4 w-4"></i>
+            <span>Input</span>
+          </button>
+        </div>
+      </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] gap-3">
-              <div class="rounded-2xl p-3 sm:p-4 tahfizh-card">
-                <div class="flex items-center justify-between gap-3 mb-3">
-                  <div class="min-w-0">
-                    <h3 class="text-sm font-black text-slate-900 dark:text-white">Progress & Target</h3>
-                    <p class="text-[10px] font-bold text-slate-400 mt-0.5">Ringkasan kelas dan target hafalan dalam satu panel</p>
-                  </div>
-                  <span class="shrink-0 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">Tahfizh</span>
-                </div>
-                <div id="tahfizh-tuntas-tracking-accordion" class="space-y-3"></div>
-                <div class="my-4 border-t border-slate-100 dark:border-slate-800"></div>
-                <div id="tahfizh-tuntas-tracking-section"></div>
-              </div>
-              <div class="space-y-3">
-                <div id="tahfizh-peringkat-section" class="rounded-2xl p-3 sm:p-4 tahfizh-card"></div>
-              </div>
-            </div>
-          </section>
+      <div class="relative z-10 mt-4 grid grid-cols-3 gap-2">
+        <div class="tahfizh-stat-pill rounded-2xl border border-white/10 bg-white/10 p-3">
+          <div class="mb-1 flex items-center gap-1.5 text-slate-300">
+            <i data-lucide="users" class="h-3.5 w-3.5"></i>
+            <span class="text-xs font-semibold">Aktif</span>
+          </div>
+          <p data-tahfizh-stat="aktif" class="truncate text-base font-bold leading-none text-white">0</p>
+        </div>
+        <div class="tahfizh-stat-pill rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-3">
+          <div class="mb-1 flex items-center gap-1.5 text-emerald-200">
+            <i data-lucide="badge-check" class="h-3.5 w-3.5"></i>
+            <span class="text-xs font-semibold">Tuntas</span>
+          </div>
+          <p data-tahfizh-stat="tuntas" class="truncate text-base font-bold leading-none text-white">0</p>
+        </div>
+        <div class="tahfizh-stat-pill rounded-2xl border border-amber-300/20 bg-amber-400/10 p-3">
+          <div class="mb-1 flex items-center gap-1.5 text-amber-200">
+            <i data-lucide="timer" class="h-3.5 w-3.5"></i>
+            <span class="text-xs font-semibold">Proses</span>
+          </div>
+          <p data-tahfizh-stat="proses" class="truncate text-base font-bold leading-none text-white">0</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tahfizh-home-overview" class="grid grid-cols-2 gap-2 lg:grid-cols-4"></div>
+
+  <div id="tahfizh-jadwal-perpulangan-section"></div>
+
+  <div class="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+    <div class="space-y-3">
+      <section class="tahfizh-card rounded-2xl p-3 sm:p-4">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="text-sm font-black text-slate-900 dark:text-white">Progress Kelas</h3>
+            <p class="mt-0.5 text-[10px] font-bold text-slate-400">Capaian tuntas, proses, dan volume setoran kelas aktif.</p>
+          </div>
+          <span class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-orange-100 bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-600 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-400"><span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span>Live</span>
+        </div>
+        <div id="tahfizh-tuntas-tracking-accordion" class="space-y-3"></div>
+      </section>
+
+      <section class="tahfizh-card rounded-2xl p-3 sm:p-4">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h3 class="text-sm font-black text-slate-900 dark:text-white">Target Prioritas</h3>
+            <p class="mt-0.5 text-[10px] font-bold text-slate-400">Pilih target dan lihat santri yang sudah tuntas atau perlu pendampingan.</p>
+          </div>
+          <i data-lucide="goal" class="h-5 w-5 shrink-0 text-orange-500"></i>
+        </div>
+        <div id="tahfizh-tuntas-tracking-section"></div>
+      </section>
+    </div>
+
+    <aside class="space-y-3">
+      <div id="tahfizh-focus-summary" class="tahfizh-card rounded-2xl p-3 sm:p-4"></div>
+      <div id="tahfizh-peringkat-section" class="tahfizh-card rounded-2xl p-3 sm:p-4"></div>
+      <div id="tahfizh-recent-activity" class="tahfizh-card rounded-2xl p-3 sm:p-4"></div>
+    </aside>
+  </div>
+</section>
+
 
           <section id="tahfizh-page-form" class="tahfizh-page-content hidden">
             <form id="tahfizh-setoranForm" class="max-w-3xl tahfizh-card rounded-2xl overflow-hidden">
@@ -6825,10 +6789,108 @@
 
         <template id="tahfizh-tpl-jadwal-perpulangan"><div id="tahfizh-jadwal-content-container"></div></template>
         <template id="tahfizh-tpl-accordion-item"><div class="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-slate-50/80 dark:bg-slate-900/40"><div class="accordion-header"><button class="accordion-button w-full p-3.5 flex items-center justify-between text-left hover:bg-white/70 dark:hover:bg-slate-800/50 transition-all"><div><p class="data-group-name font-black text-sm text-slate-800 dark:text-white"></p><p class="text-[10px] font-bold text-slate-400"><span id="badge-tuntas-val">0</span> tuntas, <span id="badge-belum-val">0</span> belum</p></div><div class="flex items-center gap-3"><span class="data-percentage-text text-sm font-black text-orange-500"></span><i data-lucide="chevron-down" class="accordion-chevron w-4 h-4 text-slate-400 transition-transform"></i></div></button></div><div class="accordion-panel max-h-0 overflow-hidden transition-all"><div class="p-4 pt-0 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs"><div><p class="label-tuntas font-black text-emerald-600 mb-1"></p><ul class="list-tuntas list-disc pl-5 text-slate-500"></ul></div><div><p class="label-belum font-black text-orange-600 mb-1"></p><ul class="list-belum list-disc pl-5 text-slate-500"></ul></div><div class="sm:col-span-2 h-2 bg-white dark:bg-slate-800 rounded-full overflow-hidden border border-slate-100 dark:border-slate-700"><div class="data-progress-bar h-full bg-orange-500"></div></div></div></div></div></template>
-        <template id="tahfizh-tpl-peringkat-section"><div><div class="flex flex-wrap items-center justify-between gap-2 mb-4"><h3 class="text-sm font-black text-slate-900 dark:text-white">Peringkat</h3></div><div id="peringkat-content"></div></div></template>
+        <template id="tahfizh-tpl-peringkat-section"><div><div class="flex flex-wrap items-center justify-between gap-2 mb-4"><h3 class="text-sm font-black text-slate-900 dark:text-white">Peringkat</h3></div><div data-tahfizh-peringkat-content></div></div></template>
         <template id="tahfizh-tpl-peringkat-item"><li class="flex items-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2"><span class="medal-bg"></span><div class="min-w-0 flex-1"><p class="item-nama font-black text-[11px] text-slate-800 dark:text-white truncate"></p><p class="item-kelas text-[9px] font-bold text-slate-400"></p></div><div class="text-right"><p class="item-score font-black text-xs text-slate-800 dark:text-white"></p><p class="item-unit text-[9px] font-bold text-slate-400"></p></div></li></template>
-        <template id="tahfizh-tpl-tahfizh-section"><div><div class="flex flex-wrap items-center justify-between gap-2 mb-4"><div><h3 class="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Target Juz</h3><p class="text-[10px] font-bold text-slate-400">Pantau target dinamis per santri</p></div><div class="tahfizh-target-tabs flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 dark:bg-slate-800 p-1 text-center hide-scrollbar"></div></div><div id="tahfizh-content"></div></div></template>
-        <template id="tahfizh-tpl-tahfizh-content"><div class="space-y-4"><div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/40 p-3"><div class="flex items-center gap-3"><div class="target-ring flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full bg-orange-50 dark:bg-orange-500/10 border-4 border-orange-100 dark:border-orange-500/20"><span class="text-percentage text-xl font-black leading-none text-orange-600 dark:text-orange-400">0%</span><span class="text-[8px] font-bold uppercase text-orange-500/80">Target</span></div><div class="min-w-0 flex-1"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><p class="text-progress-label truncate text-sm font-black text-slate-900 dark:text-white"></p><p class="target-summary mt-1 text-[10px] font-bold text-slate-400"></p></div><i data-lucide="flag" class="w-4 h-4 shrink-0 text-orange-500"></i></div><div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner"><div class="progress-bar h-full rounded-full bg-orange-500"></div></div></div></div></div><div class="relative"><i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i><input class="tahfizh-search w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-3 pl-9 pr-3 text-xs font-bold" placeholder="Cari nama..."></div><div class="grid grid-cols-1 gap-3 text-xs"><div><div class="mb-2 flex items-center justify-between"><p class="font-black text-emerald-600">Tuntas (<span class="count-tuntas">0</span>)</p><span class="text-[9px] font-bold text-slate-400">Sudah memenuhi target</span></div><ul class="list-tuntas space-y-0 max-h-[220px] overflow-y-auto pr-1"></ul></div><div><div class="mb-2 flex items-center justify-between"><p class="font-black text-orange-600">Belum (<span class="count-belum">0</span>)</p><span class="text-[9px] font-bold text-slate-400">Perlu ditindaklanjuti</span></div><ul class="list-belum space-y-0 max-h-[220px] overflow-y-auto pr-1"></ul></div></div></div></template>
+        <template id="tahfizh-tpl-tahfizh-section"><div class="space-y-4">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="min-w-0">
+      <div class="flex items-center gap-2">
+        <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-50 text-orange-500 dark:bg-orange-500/10">
+          <i data-lucide="goal" class="h-4 w-4"></i>
+        </span>
+        <div class="min-w-0">
+          <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">Target Juz</h3>
+          <p class="text-[10px] font-bold text-slate-400">Pilih target, lihat progres, lalu tindak lanjuti santri yang belum tuntas.</p>
+        </div>
+      </div>
+    </div>
+    <div class="tahfizh-target-tabs flex max-w-full gap-1 overflow-x-auto rounded-2xl bg-slate-100/80 p-1 text-center dark:bg-slate-900/70 hide-scrollbar"></div>
+  </div>
+  <div data-tahfizh-target-content></div>
+</div>
+</template>
+        <template id="tahfizh-tpl-tahfizh-content"><div class="space-y-4">
+  <section class="rounded-2xl border border-orange-100/80 bg-gradient-to-br from-orange-50 via-white to-white p-3 shadow-sm dark:border-orange-500/20 dark:from-orange-950/20 dark:via-slate-950/40 dark:to-slate-950/40 sm:p-4">
+    <div class="flex items-start gap-3">
+      <div class="target-ring flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl border border-white/80 bg-white text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <span class="text-percentage text-2xl font-black leading-none text-orange-600 dark:text-orange-400">0%</span>
+        <span class="text-[8px] font-black uppercase tracking-wider text-orange-500/80">Tuntas</span>
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-progress-label text-base font-black leading-tight text-slate-900 dark:text-white"></p>
+            <p class="target-summary mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400"></p>
+          </div>
+          <span class="shrink-0 rounded-xl bg-orange-500 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white">Target</span>
+        </div>
+        <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-white/80 shadow-inner dark:bg-slate-800">
+          <div class="progress-bar h-full rounded-full bg-orange-500"></div>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-2">
+          <div class="rounded-xl bg-white/80 px-2 py-2 text-center dark:bg-slate-900/70">
+            <p class="count-tuntas text-sm font-black text-emerald-600 dark:text-emerald-400">0</p>
+            <p class="text-[8px] font-black uppercase text-slate-400">Tuntas</p>
+          </div>
+          <div class="rounded-xl bg-white/80 px-2 py-2 text-center dark:bg-slate-900/70">
+            <p class="count-belum text-sm font-black text-orange-600 dark:text-orange-400">0</p>
+            <p class="text-[8px] font-black uppercase text-slate-400">Belum</p>
+          </div>
+          <div class="rounded-xl bg-white/80 px-2 py-2 text-center dark:bg-slate-900/70">
+            <p class="count-total text-sm font-black text-slate-800 dark:text-white">0</p>
+            <p class="text-[8px] font-black uppercase text-slate-400">Santri</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-100 bg-white/90 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/40 sm:p-4">
+    <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="min-w-0">
+        <h4 class="text-sm font-black text-slate-900 dark:text-white">Daftar Santri</h4>
+        <p class="mt-0.5 text-[10px] font-bold text-slate-400">Pisahkan yang sudah tuntas dan yang perlu pendampingan.</p>
+      </div>
+      <div class="relative sm:w-64">
+        <i data-lucide="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
+        <input class="tahfizh-search h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-9 pr-3 text-xs font-bold outline-none transition-all focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-slate-800 dark:bg-slate-900" placeholder="Cari nama santri...">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+    <div class="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+      <div class="mb-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-emerald-500 text-white">
+            <i data-lucide="check-check" class="h-4 w-4"></i>
+          </span>
+          <div>
+            <p class="text-xs font-black text-emerald-700 dark:text-emerald-300">Tuntas (<span class="count-tuntas">0</span>)</p>
+            <p class="text-[9px] font-bold text-emerald-600/70 dark:text-emerald-300/70">Sudah memenuhi target</p>
+          </div>
+        </div>
+      </div>
+        <ul class="list-tuntas max-h-[300px] space-y-2 overflow-y-auto pr-1"></ul>
+      </div>
+
+      <div class="rounded-2xl border border-orange-100 bg-orange-50/40 p-3 dark:border-orange-500/20 dark:bg-orange-500/5">
+      <div class="mb-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="flex h-7 w-7 items-center justify-center rounded-xl bg-orange-500 text-white">
+            <i data-lucide="list-checks" class="h-4 w-4"></i>
+          </span>
+          <div>
+            <p class="text-xs font-black text-orange-700 dark:text-orange-300">Belum (<span class="count-belum">0</span>)</p>
+            <p class="text-[9px] font-bold text-orange-600/70 dark:text-orange-300/70">Prioritas pendampingan</p>
+          </div>
+        </div>
+      </div>
+        <ul class="list-belum max-h-[300px] space-y-2 overflow-y-auto pr-1"></ul>
+      </div>
+    </div>
+  </section>
+</div>
+</template>
         <template id="tahfizh-history-row-template"><tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors"><td class="p-3.5"><div class="flex items-center gap-2"><span class="data-program-icon"></span><span class="data-kelas-icon"></span><div><p class="data-nama font-black text-xs text-slate-800 dark:text-white"></p></div></div></td><td class="p-3.5"><p class="data-jenis font-black text-xs text-slate-800 dark:text-white"></p><p class="text-[10px] font-bold text-slate-400"><span class="data-juz-text"></span> - <span class="data-unit"></span></p></td><td class="data-tanggal p-3.5 text-[10px] font-bold text-slate-500"></td><td class="p-3.5 text-right"><button class="delete-btn rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 p-2 active:scale-95 transition-all" aria-label="Hapus riwayat setoran" title="Hapus"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr></template>
         <template id="tahfizh-rekap-content-template"><div class="rekap-tab-content bg-white/90 dark:bg-slate-900/90 rounded-2xl shadow-sm border border-slate-200/70 dark:border-slate-800 overflow-hidden backdrop-blur-xl"><div class="p-4 flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800"><div class="min-w-0"><div class="flex items-center gap-2 min-w-0"><span class="w-9 h-9 rounded-xl bg-orange-50 dark:bg-orange-500/10 text-orange-500 border border-orange-100 dark:border-orange-500/20 flex items-center justify-center shrink-0"><i data-lucide="file-text" class="w-4 h-4"></i></span><div class="min-w-0"><h3 class="data-title font-black text-sm text-slate-800 dark:text-white truncate"></h3><p class="data-musyrif text-[10px] font-bold text-slate-400 truncate"></p></div></div><p class="data-timestamp text-[9px] font-bold text-slate-400 mt-2 ml-11"></p></div><button class="export-pdf-btn h-10 w-10 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[10px] font-black shadow-sm shadow-orange-500/20 active:scale-95 transition-all flex items-center justify-center">PDF</button></div><div class="overflow-x-auto hide-scrollbar"><table class="w-full text-left border-collapse min-w-[680px]"><thead><tr class="bg-slate-50 dark:bg-slate-950/80 text-[10px] uppercase tracking-widest text-slate-500 dark:text-slate-400 border-b border-slate-200/70 dark:border-slate-800"><th class="p-3.5 font-black col-no sortable" data-sort="nama">No</th><th class="p-3.5 font-black sortable" data-sort="nama">Nama</th><th class="p-3.5 font-black sortable" data-sort="nilai">Nilai</th><th class="p-3.5 font-black sortable" data-sort="ziyadah">Ziyadah</th><th class="p-3.5 font-black sortable" data-sort="keterangan">Status</th></tr></thead><tbody class="data-table-body text-xs divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div></div></template>
         <template id="tahfizh-tpl-rekap-row"><tr class="border-t border-slate-100 dark:border-slate-800"><td class="col-no p-3 text-xs font-bold text-slate-400"></td><td class="p-3"><button class="detail-santri-text text-left font-black text-sm text-slate-800 dark:text-white"></button></td><td class="col-nilai p-3 font-black"></td><td class="col-ziyadah p-3 font-bold"></td><td class="col-status p-3"></td></tr></template>
@@ -7476,7 +7538,7 @@
             </div>
             <div class="rounded-2xl bg-white/75 dark:bg-slate-900/75 p-3 border border-slate-200/70 dark:border-slate-800 shadow-sm backdrop-blur-xl">
               <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Arah Hadap HP</p>
-              <p id="qibla-current-heading-txt" class="text-xs font-black text-emerald-500 dark:text-emerald-400">0° U</p>
+              <p id="qibla-current-heading-txt" class="text-xs font-black text-emerald-500 dark:text-emerald-400">0� U</p>
             </div>
           </div>
 
@@ -8483,7 +8545,7 @@
                 id="bina-detail"
                 class="text-[10px] text-slate-500 dark:text-slate-400"
               >
-                Shubuh • 20 Okt 2025
+                Shubuh � 20 Okt 2025
               </p>
             </div>
           </div>
@@ -8603,7 +8665,7 @@
           <div id="gps-tab-content-android" class="gps-tab-content space-y-3 text-xs text-slate-700 dark:text-slate-300">
             <div class="flex gap-2.5 items-start">
               <span class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black shrink-0">1</span>
-              <p class="leading-relaxed">Ketuk ikon <b>gembok / pengaturan situs</b> (ðŸ”’) di sebelah kiri alamat website (URL) di bagian atas browser Anda.</p>
+              <p class="leading-relaxed">Ketuk ikon <b>gembok / pengaturan situs</b> (🔒) di sebelah kiri alamat website (URL) di bagian atas browser Anda.</p>
             </div>
             <div class="flex gap-2.5 items-start">
               <span class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black shrink-0">2</span>
@@ -8647,7 +8709,7 @@
           <div id="gps-tab-content-pc" class="gps-tab-content hidden space-y-3 text-xs text-slate-700 dark:text-slate-300">
             <div class="flex gap-2.5 items-start">
               <span class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black shrink-0">1</span>
-              <p class="leading-relaxed">Klik ikon <b>gembok</b> (ðŸ”’) yang ada di sebelah kiri alamat URL website pada browser Anda.</p>
+              <p class="leading-relaxed">Klik ikon <b>gembok</b> (🔒) yang ada di sebelah kiri alamat URL website pada browser Anda.</p>
             </div>
             <div class="flex gap-2.5 items-start">
               <span class="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-black shrink-0">2</span>
@@ -8915,6 +8977,7 @@
 
   </body>
 </html>
+
 
 
 
