@@ -60,6 +60,50 @@ class FileUploadManager {
   }
 
   /**
+   * Compress image file using HTML5 canvas
+   */
+  compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.6) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions keeping aspect ratio
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Export as JPEG with given quality
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  }
+
+  /**
    * Save document to localStorage
    */
   async saveDocumentLocally(documentId, base64Data, metadata = {}) {
@@ -141,12 +185,16 @@ class FileUploadManager {
     const timestamp = Date.now();
     const documentId = `${userId}_${permitId}_${timestamp}`;
 
-    // Convert to base64 for local storage
+    // Convert to base64 for local storage (Compress if it is an image)
     let localUrl = null;
     try {
-      localUrl = await this.fileToBase64(file);
+      if (file.type.startsWith('image/')) {
+        localUrl = await this.compressImage(file);
+      } else {
+        localUrl = await this.fileToBase64(file);
+      }
     } catch (base64Error) {
-      console.error('[FileUpload] Base64 conversion failed:', base64Error);
+      console.error('[FileUpload] File processing failed:', base64Error);
       return {
         success: false,
         errors: ['Gagal mengkonversi file'],

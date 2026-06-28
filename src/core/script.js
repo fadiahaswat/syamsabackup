@@ -173,14 +173,8 @@ window.initApp = async function () {
         if (!loginTime || Date.now() - loginTime > LOGIN_MAX_AGE) {
           throw new Error("Sesi login kadaluarsa");
         }
-        if (
-          authData?.profile?.authProvider === "testing" &&
-          window.getAuthMode &&
-          window.getAuthMode() !== "testing"
-        ) {
-          throw new Error(
-            "Sesi testing dinonaktifkan karena aplikasi berjalan di mode production.",
-          );
+        if (authData?.profile?.authProvider === "testing") {
+          throw new Error("Sesi testing tidak lagi didukung.");
         }
         if (authData?.profile?.authProvider === "wali") {
           const foundSantri = window.findWaliSantriByNis(authData.waliNis);
@@ -405,17 +399,7 @@ let loginIconClickTimeout = null;
 window.googleBypassActive = false;
 
 window.handleLogoClick = function () {
-  loginIconClickCount++;
-  clearTimeout(loginIconClickTimeout);
-
-  if (loginIconClickCount >= 5) {
-    loginIconClickCount = 0;
-    window.toggleGoogleBypassMode();
-  } else {
-    loginIconClickTimeout = setTimeout(() => {
-      loginIconClickCount = 0;
-    }, 3000);
-  }
+  // bypass disabled
 };
 
 // Superadmin logo click handler
@@ -503,31 +487,15 @@ window.handleSuperadminLogin = async function () {
 };
 
 window.toggleGoogleBypassMode = function () {
-  window.googleBypassActive = !window.googleBypassActive;
-
-  const testingModeInfo = document.getElementById("testing-mode-info");
-  if (testingModeInfo) {
-    if (window.googleBypassActive) {
-      testingModeInfo.classList.remove("hidden");
-      window.showToast("⚡ Mode Bypass Aktif - Login tanpa Google!", "success");
-    } else {
-      const isTestingMode = window.getAuthMode() === "testing";
-      testingModeInfo.classList.toggle("hidden", !isTestingMode);
-      window.showToast("Mode Bypass dinonaktifkan.", "info");
-    }
-  }
+  // bypass disabled
 };
 
 window.getAuthMode = function () {
-  const mode = String(window.APP_AUTH?.loginMode || "production").toLowerCase();
-  const allowTestingMode = window.APP_AUTH?.allowTestingMode === true;
-  return mode === "testing" && allowTestingMode ? "testing" : "production";
+  return "production";
 };
 
 window.getTestingAccounts = function () {
-  return Array.isArray(window.APP_AUTH?.testingAccounts)
-    ? window.APP_AUTH.testingAccounts
-    : [];
+  return [];
 };
 
 window.getProfileDisplayName = function (profile) {
@@ -746,10 +714,8 @@ window.handleMusyrifLogin = function () {
     if (doodles) doodles.classList.add("hidden");
     musyrifView.classList.remove("hidden");
 
-    // Show/hide testing fields based on mode
-    const isTestingMode = window.getAuthMode() === "testing";
     const testingCreds = document.getElementById("musyrif-testing-creds");
-    if (testingCreds) testingCreds.classList.toggle("hidden", !isTestingMode);
+    if (testingCreds) testingCreds.classList.add("hidden");
   } else {
     window.showToast("Tampilan login musyrif tidak ditemukan.", "error");
   }
@@ -770,76 +736,7 @@ window.handleMusyrifSubmit = async function () {
 
   if (!kelas) return window.showToast("Pilih kelas terlebih dahulu.", "warning");
 
-  // Testing mode login
-  if (authMode === "testing" || window.googleBypassActive) {
-    try {
-      const username = String(
-        document.getElementById("musyrif-username")?.value || "",
-      ).trim().toLowerCase();
-      const password = String(
-        document.getElementById("musyrif-password")?.value || "",
-      );
-
-      // Bypass mode - no credentials needed
-      if (window.googleBypassActive) {
-        const classInfo = MASTER_KELAS[kelas];
-        if (!classInfo) return window.showToast("Kelas tidak valid.", "error");
-
-        const profileName = String(classInfo.musyrif || "Musyrif").trim();
-        const profile = {
-          name: profileName,
-          given_name: profileName.split(/\s+/)[0] || "Musyrif",
-          email: classInfo.email || "musyrif@testing.local",
-          authProvider: "bypass",
-        };
-
-        if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
-        window.startAuthenticatedSession(kelas, profile);
-        window.showToast("Login bypass berhasil!", "success");
-        return;
-      }
-
-      // Regular testing mode
-      if (!username || !password) {
-        return window.showToast("Isi username & password testing.", "warning");
-      }
-
-      const accounts = window.getTestingAccounts();
-      const account = accounts.find((acc) => {
-        if (!acc) return false;
-        const accUser = String(acc.username || "").trim().toLowerCase();
-        const accKelas = String(acc.kelas || "").trim();
-        return accUser === username && accKelas === kelas;
-      });
-
-      if (!account || !account.passwordHash) {
-        return window.showToast("Akun testing tidak ditemukan.", "error");
-      }
-
-      const inputHash = await window.sha256Hex(password);
-      if (inputHash !== String(account.passwordHash).toLowerCase().trim()) {
-        return window.showToast("Password testing salah.", "error");
-      }
-
-      const profileName = String(
-        MASTER_KELAS[kelas]?.musyrif || username || "Musyrif",
-      ).trim();
-      const profile = {
-        name: profileName,
-        given_name: profileName.split(/\s+/)[0] || "Musyrif",
-        email: account.email || `${username}@testing.local`,
-        authProvider: "testing",
-      };
-
-      if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
-      window.startAuthenticatedSession(kelas, profile);
-      window.showToast("Login Testing Berhasil!", "success");
-      return;
-    } catch (err) {
-      console.error("Testing login error:", err);
-      return window.showToast("Gagal memproses login.", "error");
-    }
-  }
+  // Mode testing dihapus. Selalu gunakan login Google.
 
   // Production mode - Google OAuth
   appState.tempClass = kelas;

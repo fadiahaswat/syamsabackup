@@ -68,27 +68,9 @@ window.APP_LOCATION = {
 // ==========================================
 window.APP_AUTH = {
   // 'production' = PIN + Google OAuth
-  // 'testing' = PIN + username/password lokal (tanpa Google)
   loginMode: "production",
   allowTestingMode: false,
-
-  // Akun khusus pengujian (password hash SHA-256 hex) — hanya untuk non-produksi
-  // Contoh generate hash: echo -n "password-anda" | shasum -a 256
-  // Catatan: kelas harus sesuai kelas yang valid di data-kelas
-  testingAccounts: [
-    {
-      username: "tester-musyrif",
-      kelas: "XI-A",
-      passwordHash:
-        "b822f1cd2dcfc685b47e83e3980289fd5d8e3ff3a82def24d7d1d68bb272eb32",
-    },
-    {
-      username: "tester-admin",
-      kelas: "Admin Musyrif",
-      passwordHash:
-        "b822f1cd2dcfc685b47e83e3980289fd5d8e3ff3a82def24d7d1d68bb272eb32",
-    },
-  ],
+  testingAccounts: []
 };
 
 // ==========================================

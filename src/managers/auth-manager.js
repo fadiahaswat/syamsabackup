@@ -58,11 +58,7 @@ window.forceSWUpdate = async function() {
 // ==========================================
 
 window.getAuthMode = function () {
-  const override = localStorage.getItem("override_login_mode");
-  if (override === "testing" || override === "production") {
-    return override;
-  }
-  return String(window.APP_AUTH?.loginMode || "production").toLowerCase();
+  return "production";
 };
 
 window.getProfileDisplayName = function (profile) {
@@ -71,65 +67,23 @@ window.getProfileDisplayName = function (profile) {
 };
 
 window.applyLoginModeUI = function () {
-  const mode = window.getAuthMode();
-  const isTestingMode = mode === "testing";
-
   const testingFields = document.getElementById("testing-credentials");
   const modeBadge = document.getElementById("login-mode-badge");
   const submitText = document.getElementById("login-submit-text");
 
-  // Selalu sembunyikan testing fields karena user tidak butuh username & password testing lagi
   if (testingFields) testingFields.classList.add("hidden");
-
-  if (modeBadge) {
-    modeBadge.classList.toggle("hidden", !isTestingMode);
-    modeBadge.classList.toggle("inline-flex", isTestingMode);
-    modeBadge.innerHTML = '🧪 Mode Testing (Direct) — Klik untuk Production';
-    modeBadge.style.cursor = "pointer";
-
-    if (!modeBadge.dataset.hasListener) {
-      modeBadge.dataset.hasListener = "true";
-      modeBadge.addEventListener("click", () => {
-        localStorage.setItem("override_login_mode", "production");
-        window.applyLoginModeUI();
-        window.showToast("Mode diubah ke Production (Google OAuth)", "info");
-      });
-    }
-  }
-
+  if (modeBadge) modeBadge.classList.add("hidden");
   if (submitText) {
-    submitText.textContent = isTestingMode
-      ? "Masuk Dashboard (Testing Direct)"
-      : "Masuk Dashboard";
+    submitText.textContent = "Masuk Dashboard";
   }
 };
 
 window.toggleLoginMode = function () {
-  const currentMode = window.getAuthMode();
-  const nextMode = currentMode === "production" ? "testing" : "production";
-  localStorage.setItem("override_login_mode", nextMode);
-  window.applyLoginModeUI();
-  window.showToast(
-    `Mode diubah ke: ${nextMode === "testing" ? "Testing (Direct)" : "Production (Google OAuth)"}`,
-    "info"
-  );
+  // Mode testing dihapus secara permanen
 };
 
-let devTapCount = 0;
-let devTapTimeout;
 window.handleDevTap = function () {
-  devTapCount++;
-  clearTimeout(devTapTimeout);
-
-  if (devTapCount >= 5) {
-    devTapCount = 0;
-    window.toggleLoginMode();
-    return;
-  }
-
-  devTapTimeout = setTimeout(() => {
-    devTapCount = 0;
-  }, 2000); // Reset count jika tidak ada klik dalam 2 detik
+  // Fitur dev tap dinonaktifkan
 };
 
 window.startAuthenticatedSession = async function (targetClass, profile) {
@@ -186,22 +140,6 @@ window.handleLogin = async function () {
 
   if (!MASTER_KELAS[kelas]) {
     return window.showToast("Kelas tidak valid.", "error");
-  }
-
-  const mode = window.getAuthMode();
-  if (mode === "testing") {
-    // Mode Testing: Login langsung tanpa Google OAuth / Password
-    const profileName = String(MASTER_KELAS[kelas].musyrif || "Musyrif").trim();
-    const profile = {
-      name: profileName,
-      given_name: profileName.split(/\s+/)[0] || "Musyrif",
-      email: MASTER_KELAS[kelas].email || `${kelas.toLowerCase()}@musyrif.local`,
-      authProvider: "testing",
-    };
-
-    window.startAuthenticatedSession(kelas, profile);
-    window.showToast("Login Berhasil (Testing Mode)!", "success");
-    return;
   }
 
   // Mode Production: Wajib Google OAuth
