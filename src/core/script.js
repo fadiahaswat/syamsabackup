@@ -556,7 +556,6 @@ window.syncRoleModeUI = function () {
       body.wali-mode .report-action-bar {
         grid-template-columns: minmax(0, 1fr) !important;
       }
-      body.admin-mode .musyrif-only,
       body.admin-mode .wali-only {
         display: none !important;
       }
@@ -1816,9 +1815,9 @@ window.renderWaliGrowthPage = function () {
         </div>
       </div>
       <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">
-        <h2 class="text-sm font-black text-slate-900 dark:text-white">Pembinaan & Karakter</h2>
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Pendampingan & Karakter</h2>
         <div class="mt-3 space-y-2">
-          ${violations.length ? violations.map((item) => `<div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-xs font-black text-slate-800 dark:text-white">${item.slotLabel} - ${window.formatDate(item.date)}</p><p class="mt-1 text-[10px] font-bold text-slate-500">${item.isCoached ? `Sudah dibina: ${window.sanitizeHTML(item.coachingInfo?.action || "-")}` : "Menunggu tindak lanjut pembinaan"}</p></div>`).join("") : `<p class="rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs font-bold text-slate-400">Belum ada catatan pelanggaran.</p>`}
+          ${violations.length ? violations.map((item) => `<div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 p-3"><p class="text-xs font-black text-slate-800 dark:text-white">${item.slotLabel} - ${window.formatDate(item.date)}</p><p class="mt-1 text-[10px] font-bold text-slate-500">${item.isCoached ? `Pendampingan selesai: ${window.sanitizeHTML(item.coachingInfo?.action || "-")}` : "Perlu pendampingan (hubungi musyrif)"}</p></div>`).join("") : `<p class="rounded-2xl border border-dashed border-slate-200 p-5 text-center text-xs font-bold text-slate-400">Kondisi santri terpantau baik & tertib.</p>`}
         </div>
       </div>
       <div class="rounded-[1.5rem] bg-white/90 dark:bg-slate-900/90 border border-slate-100 dark:border-slate-800 p-4">

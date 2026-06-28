@@ -62,7 +62,8 @@
   function isAdminContext() {
     const profileRole = String(appState?.userProfile?.role || "").toLowerCase();
     const selectedClass = String(appState?.selectedClass || "").toLowerCase();
-    return profileRole.includes("admin") || selectedClass.includes("admin");
+    return profileRole.includes("admin") || selectedClass.includes("admin") ||
+           appState?.adminMode === true || appState?.superadminMode === true;
   }
 
   function isPermitOwnedByCurrentWali(permit) {
@@ -804,7 +805,7 @@
     const elCount = document.getElementById("approval-pending-count");
     const elBadge = document.getElementById("approval-pending-badge");
 
-    if (elCount) elCount.textContent = `${count} Pengajuan Pending`;
+    if (elCount) elCount.textContent = `${count} Pengajuan Menunggu Persetujuan`;
     if (elBadge) elBadge.textContent = count;
 
     if (count > 0 && window.showToast) {

@@ -3,13 +3,20 @@
   --color-brand: #0C81E4;
   --color-brand-hover: #0C4E8C;
   --color-brand-ring: rgba(12, 129, 228, 0.15);
-  --surface: rgba(255, 255, 255, 0.86);
-  --surface-strong: #ffffff;
+  
+  /* Permukaan Kaca Baru (iOS Light Materials) */
+  --surface: rgba(255, 255, 255, 0.60);        /* Regular Material */
+  --surface-strong: rgba(255, 255, 255, 0.78); /* Thick Material */
   --surface-muted: #F1F5F9;
-  --surface-subtle: rgba(248, 250, 252, 0.78);
-  --border-soft: rgba(148, 163, 184, 0.22);
-  --shadow-card: 0 14px 40px -24px rgba(15, 23, 42, 0.28);
-  --shadow-card-hover: 0 18px 46px -26px rgba(12, 78, 140, 0.32);
+  --surface-subtle: rgba(255, 255, 255, 0.40); /* Thin Material */
+  --border-soft: rgba(255, 255, 255, 0.45);    /* Fine translucent border */
+  
+  /* Shadow dengan Inset Bevel (Pantulan Cahaya Atas) */
+  --shadow-card: 0 12px 32px -12px rgba(15, 23, 42, 0.08), 
+                 inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  --shadow-card-hover: 0 18px 40px -10px rgba(12, 78, 140, 0.14), 
+                       inset 0 1px 0 rgba(255, 255, 255, 0.60);
+  
   --radius-chip: 0.5rem;
   --radius-card: 1.5rem;
   --radius-panel: 1.5rem;
@@ -38,13 +45,18 @@
 }
 
 html.dark {
-  --surface: rgba(15, 23, 42, 0.86);
-  --surface-strong: #0f172a;
+  /* Permukaan Kaca Baru (iOS Dark Materials) */
+  --surface: rgba(15, 23, 42, 0.55);
+  --surface-strong: rgba(15, 23, 42, 0.75);
   --surface-muted: rgba(30, 41, 59, 0.58);
-  --surface-subtle: rgba(15, 23, 42, 0.62);
-  --border-soft: rgba(148, 163, 184, 0.18);
-  --shadow-card: 0 18px 46px -28px rgba(0, 0, 0, 0.8);
-  --shadow-card-hover: 0 22px 54px -30px rgba(17, 196, 212, 0.22);
+  --surface-subtle: rgba(15, 23, 42, 0.35);
+  --border-soft: rgba(255, 255, 255, 0.08);
+  
+  /* Shadow dengan Inset Bevel Gelap */
+  --shadow-card: 0 16px 40px -16px rgba(0, 0, 0, 0.45), 
+                 inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --shadow-card-hover: 0 22px 48px -12px rgba(17, 196, 212, 0.18), 
+                       inset 0 1px 0 rgba(255, 255, 255, 0.20);
 }
 
 html {

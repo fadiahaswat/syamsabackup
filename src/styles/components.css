@@ -235,29 +235,196 @@ input[placeholder*="Cari"] {
   box-shadow: var(--shadow-card-hover) !important;
 }
 
-/* Glassmorphism */
-.glass-card {
-  background: var(--surface);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-card);
+/* Glassmorphism - Premium iOS Materials */
+.glass-card,
+.surface-card,
+.surface-panel,
+.operational-card,
+.stat-card,
+.data-card {
+  background: var(--surface) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: var(--shadow-card) !important;
 }
-.dark .glass-card {
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-card);
+
+.dark .glass-card,
+.dark .surface-card,
+.dark .surface-panel,
+.dark .operational-card,
+.dark .stat-card,
+.dark .data-card {
+  background: var(--surface) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: var(--shadow-card) !important;
 }
 
 .glass-nav {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--surface-strong) !important;
+  backdrop-filter: blur(28px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(170%) !important;
+  border-top: 1px solid var(--border-soft) !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03) !important;
 }
 .dark .glass-nav {
-  background: rgba(15, 23, 42, 0.85);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--surface-strong) !important;
+  border-top: 1px solid var(--border-soft) !important;
+}
+
+/* Segmented Control - iOS Segment Slider Style */
+.segmented-control {
+  background: rgba(148, 163, 184, 0.12) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  padding: 2px !important;
+  border: 1px solid rgba(148, 163, 184, 0.08) !important;
+  border-radius: var(--radius-control) !important;
+  display: flex !important;
+  gap: 2px !important;
+}
+
+.segmented-control button {
+  border-radius: calc(var(--radius-control) - 2px) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.segmented-control button.active {
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  color: var(--color-syamsa-foreground) !important;
+}
+
+.dark .segmented-control button.active {
+  background: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  color: #ffffff !important;
+}
+
+/* Modals & Dialogs (Thick Glass Material) */
+[id^="modal-"] > div:not(.absolute),
+#bento-modal-content {
+  background: var(--surface-strong) !important;
+  backdrop-filter: blur(28px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: 0 24px 70px -16px rgba(0, 0, 0, 0.35), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Specific main cards overrides (if using tailwind styling in HTML) */
+#weekly-calendar-card,
+#salat-standalone-card,
+#att-summary-widget,
+#countdown-libur-widget > div {
+  background-color: var(--surface) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Bottom Floating Navigation (iOS Tab Bar Style) */
+#bottom-nav > div {
+  background: var(--surface-strong) !important;
+  backdrop-filter: blur(28px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(170%) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: 0 14px 40px -10px rgba(15, 23, 42, 0.12), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+.dark #bottom-nav > div {
+  box-shadow: 0 18px 46px -12px rgba(0, 0, 0, 0.5), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Target utility cards directly: bg-white or bg-white/60 or bg-white/80 or bg-white/90 with large rounded borders */
+.bg-white[class*="rounded-[1."],
+.bg-white[class*="rounded-[2."],
+.bg-white[class*="rounded-3xl"],
+.bg-white\/60[class*="rounded-[1."],
+.bg-white\/60[class*="rounded-[2."],
+.bg-white\/60[class*="rounded-3xl"],
+.bg-white\/80[class*="rounded-[1."],
+.bg-white\/80[class*="rounded-[2."],
+.bg-white\/80[class*="rounded-3xl"],
+.bg-white\/90[class*="rounded-[1."],
+.bg-white\/90[class*="rounded-[2."],
+.bg-white\/90[class*="rounded-3xl"],
+.rekap-tab-content {
+  background-color: var(--surface) !important;
+  backdrop-filter: blur(24px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  border-color: var(--border-soft) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.dark .dark\:bg-slate-800[class*="rounded-[1."],
+.dark .dark\:bg-slate-800[class*="rounded-[2."],
+.dark .dark\:bg-slate-800[class*="rounded-3xl"],
+.dark .dark\:bg-slate-800\/60[class*="rounded-[1."],
+.dark .dark\:bg-slate-800\/60[class*="rounded-[2."],
+.dark .dark\:bg-slate-800\/60[class*="rounded-3xl"],
+.dark .dark\:bg-slate-800\/80[class*="rounded-[1."],
+.dark .dark\:bg-slate-800\/80[class*="rounded-[2."],
+.dark .dark\:bg-slate-800\/80[class*="rounded-3xl"],
+.dark .dark\:bg-slate-900\/90[class*="rounded-[1."],
+.dark .dark\:bg-slate-900\/90[class*="rounded-[2."],
+.dark .dark\:bg-slate-900\/90[class*="rounded-3xl"],
+.dark .dark\:bg-slate-950\/40[class*="rounded-[1."],
+.dark .dark\:bg-slate-950\/40[class*="rounded-[2."],
+.dark .dark\:bg-slate-950\/40[class*="rounded-3xl"],
+.dark .rekap-tab-content {
+  background-color: var(--surface) !important;
+  backdrop-filter: blur(24px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  border-color: var(--border-soft) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Tahfizh Page specific card components (e.g. Orange brand box & Accordion items) */
+.tahfizh-home-hero,
+#tahfizh-hero-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.45)) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+[class*="bg-gradient-to-br"][class*="from-orange-50"][class*="rounded-"] {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(255, 255, 255, 0.55)) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.dark [class*="bg-gradient-to-br"][class*="dark:from-orange-950/20"][class*="rounded-"] {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.05), rgba(15, 23, 42, 0.55)) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Accordion items & sub-navigation sliders inside Tahfizh */
+[class*="bg-slate-50/80"][class*="dark:bg-slate-900/40"][class*="rounded-"],
+.tahfizh-page-content [class*="bg-slate-50/80"][class*="dark:bg-slate-900/40"] {
+  background-color: var(--surface-subtle) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid var(--border-soft) !important;
+}
+
+.tahfizh-target-tabs {
+  background: rgba(148, 163, 184, 0.12) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(148, 163, 184, 0.08) !important;
 }
 
 /* --- Background Animation --- */

@@ -46,11 +46,8 @@
 
 .page-container > header {
   margin-top: 0.75rem !important;
-  margin-left: 0.75rem !important;
-  margin-right: 0.75rem !important;
-  width: auto !important;
-  max-width: calc(100% - 1.5rem) !important;
 }
+
 
 @media (min-width: 640px) {
   .page-container > header {
@@ -94,21 +91,7 @@
     row-gap: 1rem !important;
   }
 
-  #main-content > .page-container > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
-    width: auto !important;
-    max-width: calc(100% - 1.5rem) !important;
-    margin-left: 0.75rem !important;
-    margin-right: 0.75rem !important;
-  }
-
-  #tab-report > .page-container > :not(header),
-  #tab-tahfizh > .page-container > :not(header),
-  #tab-profile > :not(style) {
-    width: auto !important;
-    max-width: calc(100% - 1.5rem) !important;
-    margin-left: 0.75rem !important;
-    margin-right: 0.75rem !important;
-  }
+  /* Unified container paddings handle screen edge spacing */
 
   #main-content header {
     align-items: flex-start !important;
@@ -190,25 +173,7 @@
     --page-padding-x: 0.75rem;
   }
 
-  .page-container > header {
-    margin-left: 0.5rem !important;
-    margin-right: 0.5rem !important;
-    max-width: calc(100% - 1rem) !important;
-  }
-
-  #main-content > .page-container > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
-    max-width: calc(100% - 1rem) !important;
-    margin-left: 0.5rem !important;
-    margin-right: 0.5rem !important;
-  }
-
-  #tab-report > .page-container > :not(header),
-  #tab-tahfizh > .page-container > :not(header),
-  #tab-profile > :not(style) {
-    max-width: calc(100% - 1rem) !important;
-    margin-left: 0.5rem !important;
-    margin-right: 0.5rem !important;
-  }
+  /* Unified container paddings handle screen edge spacing */
 
   #header-avatar {
     width: 2.35rem !important;
@@ -324,27 +289,7 @@
     --page-padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
   }
 
-  .page-container > header {
-    margin-left: 1rem !important;
-    margin-right: 1rem !important;
-    max-width: calc(100% - 2rem) !important;
-  }
-
-  #main-content > .page-container > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
-    width: auto !important;
-    max-width: calc(100% - 2rem) !important;
-    margin-left: 1rem !important;
-    margin-right: 1rem !important;
-  }
-
-  #tab-report > .page-container > :not(header),
-  #tab-tahfizh > .page-container > :not(header),
-  #tab-profile > :not(style) {
-    width: auto !important;
-    max-width: calc(100% - 2rem) !important;
-    margin-left: 1rem !important;
-    margin-right: 1rem !important;
-  }
+  /* Unified container paddings handle screen edge spacing */
 
   #view-main > nav {
     max-width: 34rem !important;

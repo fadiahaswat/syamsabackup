@@ -972,3 +972,10 @@ window.logActivityAudit = async function (action, target, description) {
     console.error('[AuditLog] Error saving to localStorage:', e);
   }
 };
+
+window.openAdminBroadcast = function () {
+  window.switchTab('admin');
+  if (typeof window.switchAdminSubTab === 'function') {
+    window.switchAdminSubTab('broadcast');
+  }
+};

@@ -1572,7 +1572,8 @@ window.approvePermit = function(id) {
   if (idx !== -1) {
     const permit = appState.permits[idx];
     const isAdmin = String(appState?.userProfile?.role || "").toLowerCase().includes("admin") ||
-      String(appState?.selectedClass || "").toLowerCase().includes("admin");
+      String(appState?.selectedClass || "").toLowerCase().includes("admin") ||
+      appState?.adminMode === true || appState?.superadminMode === true;
     const classNisList = typeof FILTERED_SANTRI !== "undefined" && Array.isArray(FILTERED_SANTRI)
       ? FILTERED_SANTRI.map(s => String(s.nis || s.id))
       : [];
@@ -1617,7 +1618,8 @@ window.rejectPermit = function(id) {
   if (idx !== -1) {
     const permit = appState.permits[idx];
     const isAdmin = String(appState?.userProfile?.role || "").toLowerCase().includes("admin") ||
-      String(appState?.selectedClass || "").toLowerCase().includes("admin");
+      String(appState?.selectedClass || "").toLowerCase().includes("admin") ||
+      appState?.adminMode === true || appState?.superadminMode === true;
     const classNisList = typeof FILTERED_SANTRI !== "undefined" && Array.isArray(FILTERED_SANTRI)
       ? FILTERED_SANTRI.map(s => String(s.nis || s.id))
       : [];

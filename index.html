@@ -68,13 +68,20 @@
         --color-brand: #0C81E4; /* Vibrant Blue */
         --color-brand-hover: #0C4E8C; /* Deep Blue */
         --color-brand-ring: rgba(12, 129, 228, 0.15);
-        --surface: rgba(255, 255, 255, 0.86);
-        --surface-strong: #ffffff;
+        
+        /* Permukaan Kaca Baru (iOS Light Materials) */
+        --surface: rgba(255, 255, 255, 0.60);        /* Regular Material */
+        --surface-strong: rgba(255, 255, 255, 0.78); /* Thick Material */
         --surface-muted: #F1F5F9;
-        --surface-subtle: rgba(248, 250, 252, 0.78);
-        --border-soft: rgba(148, 163, 184, 0.22);
-        --shadow-card: 0 14px 40px -24px rgba(15, 23, 42, 0.28);
-        --shadow-card-hover: 0 18px 46px -26px rgba(12, 78, 140, 0.32);
+        --surface-subtle: rgba(255, 255, 255, 0.40); /* Thin Material */
+        --border-soft: rgba(255, 255, 255, 0.45);    /* Fine translucent border */
+        
+        /* Shadow dengan Inset Bevel (Pantulan Cahaya Atas) */
+        --shadow-card: 0 12px 32px -12px rgba(15, 23, 42, 0.08), 
+                       inset 0 1px 0 rgba(255, 255, 255, 0.45);
+        --shadow-card-hover: 0 18px 40px -10px rgba(12, 78, 140, 0.14), 
+                       inset 0 1px 0 rgba(255, 255, 255, 0.60);
+        
         --radius-chip: 0.5rem;
         --radius-card: 1.5rem;
         --radius-panel: 1.5rem;
@@ -113,13 +120,18 @@
       }
 
       html.dark {
-        --surface: rgba(15, 23, 42, 0.86);
-        --surface-strong: #0f172a;
+        /* Permukaan Kaca Baru (iOS Dark Materials) */
+        --surface: rgba(15, 23, 42, 0.55);
+        --surface-strong: rgba(15, 23, 42, 0.75);
         --surface-muted: rgba(30, 41, 59, 0.58);
-        --surface-subtle: rgba(15, 23, 42, 0.62);
-        --border-soft: rgba(148, 163, 184, 0.18);
-        --shadow-card: 0 18px 46px -28px rgba(0, 0, 0, 0.8);
-        --shadow-card-hover: 0 22px 54px -30px rgba(17, 196, 212, 0.22);
+        --surface-subtle: rgba(15, 23, 42, 0.35);
+        --border-soft: rgba(255, 255, 255, 0.08);
+        
+        /* Shadow dengan Inset Bevel Gelap */
+        --shadow-card: 0 16px 40px -16px rgba(0, 0, 0, 0.45), 
+                       inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        --shadow-card-hover: 0 22px 48px -12px rgba(17, 196, 212, 0.18), 
+                       inset 0 1px 0 rgba(255, 255, 255, 0.20);
       }
 
       /* ===== ACCESSIBILITY IMPROVEMENTS ===== */
@@ -2283,29 +2295,196 @@
         top: env(safe-area-inset-top);
       }
 
-      /* --- Glassmorphism --- */
-      .glass-card {
-        background: var(--surface);
-        backdrop-filter: blur(16px) saturate(180%);
-        -webkit-backdrop-filter: blur(16px) saturate(180%);
-        border: 1px solid var(--border-soft);
-        box-shadow: var(--shadow-card);
+      /* --- Glassmorphism - Premium iOS Materials --- */
+      .glass-card,
+      .surface-card,
+      .surface-panel,
+      .operational-card,
+      .stat-card,
+      .data-card {
+        background: var(--surface) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+        border: 1px solid var(--border-soft) !important;
+        box-shadow: var(--shadow-card) !important;
       }
-      .dark .glass-card {
-        background: var(--surface);
-        border: 1px solid var(--border-soft);
-        box-shadow: var(--shadow-card);
+
+      .dark .glass-card,
+      .dark .surface-card,
+      .dark .surface-panel,
+      .dark .operational-card,
+      .dark .stat-card,
+      .dark .data-card {
+        background: var(--surface) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+        border: 1px solid var(--border-soft) !important;
+        box-shadow: var(--shadow-card) !important;
       }
 
       .glass-nav {
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        background: var(--surface-strong) !important;
+        backdrop-filter: blur(28px) saturate(170%) !important;
+        -webkit-backdrop-filter: blur(28px) saturate(170%) !important;
+        border-top: 1px solid var(--border-soft) !important;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03) !important;
       }
       .dark .glass-nav {
-        background: rgba(15, 23, 42, 0.85);
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        background: var(--surface-strong) !important;
+        border-top: 1px solid var(--border-soft) !important;
+      }
+
+      /* Segmented Control - iOS Segment Slider Style */
+      .segmented-control {
+        background: rgba(148, 163, 184, 0.12) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        padding: 2px !important;
+        border: 1px solid rgba(148, 163, 184, 0.08) !important;
+        border-radius: var(--radius-control) !important;
+        display: flex !important;
+        gap: 2px !important;
+      }
+
+      .segmented-control button {
+        border-radius: calc(var(--radius-control) - 2px) !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      }
+
+      .segmented-control button.active {
+        background: #ffffff !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+        color: var(--color-syamsa-foreground) !important;
+      }
+
+      .dark .segmented-control button.active {
+        background: rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+        color: #ffffff !important;
+      }
+
+      /* Modals & Dialogs (Thick Glass Material) */
+      [id^="modal-"] > div:not(.absolute),
+      #bento-modal-content {
+        background: var(--surface-strong) !important;
+        backdrop-filter: blur(28px) saturate(160%) !important;
+        -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+        border: 1px solid var(--border-soft) !important;
+        box-shadow: 0 24px 70px -16px rgba(0, 0, 0, 0.35), 
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+      }
+
+      /* Specific main cards overrides */
+      #weekly-calendar-card,
+      #salat-standalone-card,
+      #att-summary-widget,
+      #countdown-libur-widget > div {
+        background-color: var(--surface) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+        border: 1px solid var(--border-soft) !important;
+        box-shadow: var(--shadow-card) !important;
+      }
+
+      /* Bottom Floating Navigation (iOS Tab Bar Style) */
+      #bottom-nav > div {
+        background: var(--surface-strong) !important;
+        backdrop-filter: blur(28px) saturate(170%) !important;
+        -webkit-backdrop-filter: blur(28px) saturate(170%) !important;
+        border: 1px solid var(--border-soft) !important;
+        box-shadow: 0 14px 40px -10px rgba(15, 23, 42, 0.12), 
+                    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+      }
+
+      .dark #bottom-nav > div {
+        box-shadow: 0 18px 46px -12px rgba(0, 0, 0, 0.5), 
+                    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+      }
+
+      /* Target utility cards directly: bg-white or bg-white/60 or bg-white/80 or bg-white/90 with large rounded borders */
+      .bg-white[class*="rounded-[1."],
+      .bg-white[class*="rounded-[2."],
+      .bg-white[class*="rounded-3xl"],
+      .bg-white\/60[class*="rounded-[1."],
+      .bg-white\/60[class*="rounded-[2."],
+      .bg-white\/60[class*="rounded-3xl"],
+      .bg-white\/80[class*="rounded-[1."],
+      .bg-white\/80[class*="rounded-[2."],
+      .bg-white\/80[class*="rounded-3xl"],
+      .bg-white\/90[class*="rounded-[1."],
+      .bg-white\/90[class*="rounded-[2."],
+      .bg-white\/90[class*="rounded-3xl"],
+      .rekap-tab-content {
+        background-color: var(--surface) !important;
+        backdrop-filter: blur(24px) saturate(190%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+        border-color: var(--border-soft) !important;
+        box-shadow: var(--shadow-card) !important;
+      }
+
+      .dark .dark\:bg-slate-800[class*="rounded-[1."],
+      .dark .dark\:bg-slate-800[class*="rounded-[2."],
+      .dark .dark\:bg-slate-800[class*="rounded-3xl"],
+      .dark .dark\:bg-slate-800\/60[class*="rounded-[1."],
+      .dark .dark\:bg-slate-800\/60[class*="rounded-[2."],
+      .dark .dark\:bg-slate-800\/60[class*="rounded-3xl"],
+      .dark .dark\:bg-slate-800\/80[class*="rounded-[1."],
+      .dark .dark\:bg-slate-800\/80[class*="rounded-[2."],
+      .dark .dark\:bg-slate-800\/80[class*="rounded-3xl"],
+      .dark .dark\:bg-slate-900\/90[class*="rounded-[1."],
+      .dark .dark\:bg-slate-900\/90[class*="rounded-[2."],
+      .dark .dark\:bg-slate-900\/90[class*="rounded-3xl"],
+      .dark .dark\:bg-slate-950\/40[class*="rounded-[1."],
+      .dark .dark\:bg-slate-950\/40[class*="rounded-[2."],
+      .dark .dark\:bg-slate-950\/40[class*="rounded-3xl"],
+      .dark .rekap-tab-content {
+        background-color: var(--surface) !important;
+        backdrop-filter: blur(24px) saturate(190%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+        border-color: var(--border-soft) !important;
+        box-shadow: var(--shadow-card) !important;
+      }
+
+      /* Tahfizh Page specific card components (e.g. Orange brand box & Accordion items) */
+      .tahfizh-home-hero,
+      #tahfizh-hero-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.45)) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+        border: 1px solid var(--border-soft) !important;
+        box-shadow: var(--shadow-card) !important;
+      }
+
+      [class*="bg-gradient-to-br"][class*="from-orange-50"][class*="rounded-"] {
+        background: linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(255, 255, 255, 0.55)) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+        border: 1px solid var(--border-soft) !important;
+        box-shadow: var(--shadow-card) !important;
+      }
+
+      .dark [class*="bg-gradient-to-br"][class*="dark:from-orange-950/20"][class*="rounded-"] {
+        background: linear-gradient(135deg, rgba(249, 115, 22, 0.05), rgba(15, 23, 42, 0.55)) !important;
+        backdrop-filter: blur(24px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+        border: 1px solid var(--border-soft) !important;
+        box-shadow: var(--shadow-card) !important;
+      }
+
+      /* Accordion items & sub-navigation sliders inside Tahfizh */
+      [class*="bg-slate-50/80"][class*="dark:bg-slate-900/40"][class*="rounded-"],
+      .tahfizh-page-content [class*="bg-slate-50/80"][class*="dark:bg-slate-900/40"] {
+        background-color: var(--surface-subtle) !important;
+        backdrop-filter: blur(16px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+        border: 1px solid var(--border-soft) !important;
+      }
+
+      .tahfizh-target-tabs {
+        background: rgba(148, 163, 184, 0.12) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(148, 163, 184, 0.08) !important;
       }
 
       /* --- Background Animation --- */
@@ -2383,33 +2562,33 @@
       .blob {
         position: absolute;
         border-radius: 50%;
-        filter: blur(80px);
-        opacity: 0.34;
-        animation: blob 10s infinite alternate;
+        filter: blur(85px) saturate(180%);
+        opacity: 0.38;
+        animation: blob 12s infinite alternate;
         will-change: transform;
       }
       .blob-1 {
-        top: -10%;
-        right: -20%;
-        width: 350px;
-        height: 350px;
+        top: -15%;
+        right: -25%;
+        width: 450px;
+        height: 450px;
         background: #4FE7AF; /* Mint Green */
       }
       .blob-2 {
-        bottom: -10%;
-        left: -20%;
-        width: 350px;
-        height: 350px;
+        bottom: -15%;
+        left: -25%;
+        width: 450px;
+        height: 450px;
         background: #0C81E4; /* Vibrant Blue */
-        animation-delay: -5s;
+        animation-delay: -6s;
       }
       .dark .blob-1 {
         background: #0C4E8C; /* Deep Blue */
-        opacity: 0.16;
+        opacity: 0.22;
       }
       .dark .blob-2 {
         background: #11C4D4; /* Turquoise Cyan */
-        opacity: 0.14;
+        opacity: 0.20;
       }
       @media (min-width: 640px) {
         .blob-1, .blob-2 {
@@ -4247,7 +4426,7 @@
             <div class="text-center mb-2">
               <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Verifikasi Akun</h4>
               <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1 leading-relaxed">
-                Silakan login dengan Google untuk memverifikasi bahwa Anda adalah Musyrif kelas
+                Silakan masuk dengan Google untuk memverifikasi bahwa Anda adalah Musyrif kelas
                 <span id="lbl-google-class" class="font-black text-palette-blue dark:text-blue-400">...</span>
               </p>
             </div>
@@ -4541,7 +4720,7 @@
                   </div>
                   <div>
                     <h3 id="approval-pending-count" class="text-xs sm:text-sm font-black text-amber-800 dark:text-amber-400 leading-tight">
-                      0 Pengajuan Pending
+                      0 Pengajuan Menunggu Persetujuan
                     </h3>
                     <p class="text-[9px] sm:text-[10px] font-medium text-amber-600 dark:text-amber-500/80 mt-0.5">
                       Ada permohonan izin dari orang tua yang memerlukan persetujuan.
@@ -7317,7 +7496,7 @@
             <button
               onclick="window.switchTab('admin')"
               data-target="admin"
-              class="nav-btn admin-only hidden group relative items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+              class="nav-btn admin-only group relative items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
               aria-label="Pengelolaan"
             >
               <div
@@ -7979,9 +8158,9 @@
         <div class="flex justify-between items-center mb-4">
           <div>
             <h3 class="text-xl font-black text-slate-800 dark:text-white">
-              Edit Permohonan Izin
+              Ubah Permohonan Izin
             </h3>
-            <p id="edit-wali-permit-info" class="text-xs text-slate-500 mt-1">Mengedit pengajuan izin...</p>
+            <p id="edit-wali-permit-info" class="text-xs text-slate-500 mt-1">Mengubah pengajuan izin...</p>
           </div>
           <button onclick="window.closeEditWaliPermitModal()" class="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -8518,7 +8697,7 @@
       >
         <div class="flex justify-between items-center mb-6">
           <h3 class="text-lg font-black text-slate-800 dark:text-white">
-            Edit Data Izin
+            Ubah Data Izin
           </h3>
           <button
             onclick="window.closeModal('modal-edit-permit')"
