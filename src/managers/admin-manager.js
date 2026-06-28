@@ -698,26 +698,32 @@ window.renderAdminPermits = async function () {
       statusClass = "bg-blue-50 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400";
     }
 
+    // Safe ID for event handlers - escape backticks and $
+    const safePermitId = String(p.id || p.nis || '').replace(/[`$\\]/g, '\\$&');
     const actions = (statusLower === "pending")
       ? `<div class="flex items-center justify-center gap-1">
-          <button onclick="window.approveOrRejectPermit('${p.id || p.nis}', true)" class="px-2 py-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
-          <button onclick="window.approveOrRejectPermit('${p.id || p.nis}', false)" class="px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600 text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
+          <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="px-2 py-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
+          <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600 text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
          </div>`
       : `<span class="text-slate-400 text-[10px]">-</span>`;
+
+    // Sanitize user-provided fields to prevent XSS
+    const safeStudentName = window.sanitizeHTML(p.studentName || 'Santri');
+    const safeReason = window.sanitizeHTML(p.keperluan || p.reason || '-');
 
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
         <td class="p-3">
-          <div class="font-black text-slate-800 dark:text-white">${p.studentName || 'Santri'}</div>
-          <div class="text-[9px] text-slate-400 font-mono">${p.nis || '-'}</div>
+          <div class="font-black text-slate-800 dark:text-white">${safeStudentName}</div>
+          <div class="text-[9px] text-slate-400 font-mono">${window.sanitizeHTML(p.nis || '-')}</div>
         </td>
-        <td class="p-3 text-slate-600 dark:text-slate-300">${p.className || "-"}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${p.tipe_izin || p.category || "Izin"}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300">${window.sanitizeHTML(p.className || "-")}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${window.sanitizeHTML(p.tipe_izin || p.category || "Izin")}</td>
         <td class="p-3 text-slate-500 text-[10px]">
-          <div>Mulai: ${p.tanggal_mulai || p.start_date || "-"}</div>
-          <div>Selesai: ${p.tanggal_selesai || p.end_date || "-"}</div>
+          <div>Mulai: ${window.sanitizeHTML(p.tanggal_mulai || p.start_date || "-")}</div>
+          <div>Selesai: ${window.sanitizeHTML(p.tanggal_selesai || p.end_date || "-")}</div>
         </td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${p.keperluan || p.reason || '-'}">${p.keperluan || p.reason || "-"}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${safeReason}">${safeReason}</td>
         <td class="p-3 text-center">
           <span class="px-2 py-0.5 rounded text-[10px] font-black ${statusClass}">${displayStatus}</span>
         </td>
@@ -881,16 +887,35 @@ window.renderRecentBroadcasts = async function () {
   }
 
   data.forEach(ann => {
-    container.innerHTML += `
-      <div class="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-        <div class="flex justify-between items-start gap-2 mb-1">
-          <h4 class="text-xs font-black text-slate-800 dark:text-white">${ann.title}</h4>
-          <span class="text-[9px] text-slate-400 font-mono">${ann.created_at ? new Date(ann.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '-'}</span>
-        </div>
-        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-bold whitespace-pre-line">${ann.content}</p>
-        <div class="text-[9px] text-slate-400 font-bold mt-2">Oleh: ${ann.created_by || 'Admin'}</div>
-      </div>
-    `;
+    // Safe DOM construction to prevent XSS
+    const item = document.createElement('div');
+    item.className = 'p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30';
+
+    const title = document.createElement('h4');
+    title.className = 'text-xs font-black text-slate-800 dark:text-white';
+    title.textContent = window.sanitizeHTML(ann.title) || '';
+
+    const date = document.createElement('span');
+    date.className = 'text-[9px] text-slate-400 font-mono';
+    date.textContent = ann.created_at ? new Date(ann.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '-';
+
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'flex justify-between items-start gap-2 mb-1';
+    headerDiv.appendChild(title);
+    headerDiv.appendChild(date);
+
+    const content = document.createElement('p');
+    content.className = 'text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-bold whitespace-pre-line';
+    content.textContent = window.sanitizeHTML(ann.content) || '';
+
+    const byline = document.createElement('div');
+    byline.className = 'text-[9px] text-slate-400 font-bold mt-2';
+    byline.textContent = `Oleh: ${window.sanitizeHTML(ann.created_by) || 'Admin'}`;
+
+    item.appendChild(headerDiv);
+    item.appendChild(content);
+    item.appendChild(byline);
+    container.appendChild(item);
   });
 };
 

@@ -1667,6 +1667,14 @@ body.qibla-browser-active.qibla-browser-green {
               transform var(--motion-standard) var(--ease-standard);
 }
 
+#tahfizh-hero-card .tahfizh-hero-actions {
+  min-width: 0;
+}
+
+#tahfizh-hero-card .tahfizh-hero-copy {
+  min-width: 0;
+}
+
 #tahfizh-hero-card .tahfizh-stat-pill {
   position: relative;
   overflow: hidden;
@@ -1721,6 +1729,7 @@ body.qibla-browser-active.qibla-browser-green {
 }
 
 #tahfizh-hero-card.sticky-hero .tahfizh-hero-stats {
+  display: none !important;
   max-height: 0 !important;
   opacity: 0 !important;
   overflow: hidden !important;
@@ -1729,16 +1738,35 @@ body.qibla-browser-active.qibla-browser-green {
 
 #tahfizh-hero-card.sticky-hero {
   min-height: 0 !important;
+  height: 3.25rem !important;
+  padding: 0.55rem 0.65rem !important;
 }
 
 #tahfizh-hero-card.sticky-hero > .relative {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 0.75rem !important;
+  gap: 0.6rem !important;
+  height: 100% !important;
 }
 
 #tahfizh-hero-card.sticky-hero > .relative > div:first-child {
+  min-width: 0 !important;
+}
+
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-copy {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-copy .mb-3 {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+  min-width: 0 !important;
+}
+
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-copy .mb-3 > div:last-child {
   min-width: 0 !important;
 }
 
@@ -1751,20 +1779,27 @@ body.qibla-browser-active.qibla-browser-green {
   display: none !important;
 }
 
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-copy > span,
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-copy > p {
+  display: none !important;
+}
+
 #tahfizh-hero-card.sticky-hero h2,
 #profile-hero-card.sticky-hero #profile-name {
-  font-size: 0.95rem !important;
-  line-height: 1.25rem !important;
+  font-size: 0.78rem !important;
+  line-height: 1rem !important;
   margin: 0 !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+  max-width: 100% !important;
 }
 
 #tahfizh-hero-card.sticky-hero .tahfizh-hero-logo {
-  width: 2rem !important;
-  height: 2rem !important;
-  border-radius: 0.75rem !important;
+  width: 1.9rem !important;
+  height: 1.9rem !important;
+  border-radius: 0.65rem !important;
+  flex: 0 0 1.9rem !important;
 }
 
 #tahfizh-hero-card.sticky-hero .tahfizh-hero-logo i,
@@ -1859,10 +1894,38 @@ body.qibla-browser-active.qibla-browser-green {
 }
 
 #tahfizh-hero-card.sticky-hero button {
-  width: 2rem !important;
-  height: 2rem !important;
-  border-radius: 0.75rem !important;
+  flex: 0 0 1.9rem !important;
+  width: 1.9rem !important;
+  height: 1.9rem !important;
+  min-width: 1.9rem !important;
+  padding: 0 !important;
+  border-radius: 0.7rem !important;
   box-shadow: none !important;
+  transform: none !important;
+}
+
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.35rem !important;
+  flex: 0 0 auto !important;
+}
+
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-secondary {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+}
+
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-action {
+  border: 1px solid rgba(251, 146, 60, 0.3) !important;
+  background: #f97316 !important;
+  color: #ffffff !important;
+}
+
+#tahfizh-hero-card.sticky-hero button span {
+  display: none !important;
 }
 
 #tahfizh-hero-card.sticky-hero button svg {

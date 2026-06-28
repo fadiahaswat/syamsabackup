@@ -98,6 +98,10 @@ input[placeholder*="Cari"] {
   box-shadow: none !important;
 }
 
+.notif-filter-btn {
+  min-height: 1.875rem;
+}
+
 .status-success,
 .status-approved,
 .badge-success {

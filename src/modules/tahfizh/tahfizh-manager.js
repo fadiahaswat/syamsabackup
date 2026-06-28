@@ -834,7 +834,14 @@ function renderTahfizhBeranda() {
     renderTahfizhJadwalPerpulangan();
 
     // Akordeon Kelas
-    renderTahfizhTuntasAccordion();
+    try {
+        renderTahfizhTuntasAccordion();
+    } catch (error) {
+        console.error('[Tahfizh] Gagal render progress kelas:', error);
+        if (TDOM.tuntasTrackingAccordion) {
+            TDOM.tuntasTrackingAccordion.innerHTML = '<div class="rounded-2xl border border-orange-100 bg-orange-50 p-4 text-xs font-bold text-orange-700 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-300">Progress kelas belum bisa ditampilkan. Data Tahfizh lainnya tetap tersedia.</div>';
+        }
+    }
 
     // Leaderboards Peringkat
     renderTahfizhLeaderboard();
@@ -1154,10 +1161,21 @@ function renderTahfizhJadwalPerpulangan() {
 function renderTahfizhTuntasAccordion() {
     if (!TDOM.tuntasTrackingAccordion || !TDOM.tplAccordionItem) return;
     TDOM.tuntasTrackingAccordion.innerHTML = '';
+    const safeText = (value) => {
+        if (typeof window.sanitizeHTML === 'function') return window.sanitizeHTML(value);
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+    };
 
     for (const groupName in TahfizhState.classGroups) {
         if (groupName === 'Khusus Tahfizh' || groupName === 'Seluruh Santri') continue;
         const group = TahfizhState.classGroups[groupName];
+        if (!group || !Array.isArray(group.santri)) continue;
         const tuntasSantri = group.santri.filter(s => s.isTuntas);
         const tuntasCount = tuntasSantri.length;
         const totalCount = group.santri.length;
@@ -1182,55 +1200,62 @@ function renderTahfizhTuntasAccordion() {
         card.className = 'p-1';
         card.dataset.progressCard = 'true';
         card.innerHTML = `
-            <div class="flex items-start gap-4 mb-5 pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full p-1 shadow-inner" style="${ringStyle}">
-                    <div class="flex h-full w-full flex-col items-center justify-center rounded-full bg-white dark:bg-slate-950">
-                        <span class="text-xl font-black leading-none text-orange-600 dark:text-orange-400">${percentage}%</span>
-                        <span class="text-[8px] font-black uppercase text-orange-500/80">Progres</span>
+            <div class="rounded-2xl border border-slate-100/80 bg-white/70 p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-950/20">
+                <div class="mb-3 flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="mb-1 flex items-center gap-2">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-500 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:ring-orange-500/20">
+                                <i data-lucide="bar-chart-3" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h4 class="truncate text-base font-black leading-tight text-slate-950 dark:text-white">${safeText(groupName)}</h4>
+                                <p class="mt-0.5 text-[10px] font-bold text-slate-400">${totalCount} santri aktif</p>
+                            </div>
+                        </div>
                     </div>
+                    <span class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-orange-50 px-2 py-1 text-[10px] font-black text-orange-600 ring-1 ring-orange-100 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-500/20">
+                        <span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span>
+                        Live
+                    </span>
                 </div>
 
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-start justify-between gap-2 mb-1">
-                        <h4 class="text-lg font-bold text-slate-950 dark:text-white truncate flex items-center gap-2">
-                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-orange-500"></i>
-                            ${window.sanitizeHTML(groupName)}
-                        </h4>
-                        <span class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                            <i data-lucide="users" class="h-3 w-3"></i>${totalCount}
-                        </span>
+                <div class="grid items-center gap-3" style="grid-template-columns: 88px minmax(0, 1fr);">
+                    <div class="flex h-20 w-20 items-center justify-center rounded-full p-1 shadow-inner" style="${ringStyle}">
+                        <div class="flex h-full w-full flex-col items-center justify-center rounded-full bg-white dark:bg-slate-950">
+                            <span class="text-2xl font-black leading-none text-orange-600 dark:text-orange-400">${percentage}%</span>
+                            <span class="mt-0.5 text-[8px] font-black uppercase tracking-wide text-orange-500/80">Progres</span>
+                        </div>
                     </div>
 
-                    <div class="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs font-bold text-slate-600 dark:text-slate-300">
-                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>${tuntasCount} Tuntas</span>
-                        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>${belumCount} Proses</span>
-                        <span class="flex items-center gap-1 text-slate-500 dark:text-slate-400"><i data-lucide="book-open-check" class="w-3 h-3"></i>${totalSetoran} Setor</span>
+                    <div class="min-w-0">
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <span class="text-[10px] font-black uppercase tracking-wide text-slate-400">Rata-rata kelas</span>
+                            <span class="rounded-md bg-orange-50 px-2 py-0.5 text-xs font-black text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">${avgNilai}%</span>
+                        </div>
+                        <div class="h-2.5 overflow-hidden rounded-full bg-slate-100 shadow-inner dark:bg-slate-800">
+                            <div class="h-full rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-400" style="width:${avgNilai}%"></div>
+                        </div>
+                        <div class="mt-3 flex flex-wrap items-center gap-1.5 text-[10px] font-black text-slate-500 dark:text-slate-400">
+                            <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>${tuntasCount} Tuntas</span>
+                            <span class="inline-flex items-center gap-1 rounded-lg bg-orange-50 px-2 py-1 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300"><span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span>${belumCount} Proses</span>
+                            <span class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300"><i data-lucide="book-open-check" class="h-3 w-3"></i>${totalSetoran} Setor</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-5 px-1">
-                <div class="mb-1.5 flex items-center justify-between text-xs font-bold">
-                    <span class="text-slate-500 dark:text-slate-400">Rata-rata progres kelas</span>
-                    <span class="text-orange-600 dark:text-orange-400">${avgNilai}%</span>
+            <div class="mt-2 grid grid-cols-3 gap-2">
+                <div class="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                    <p class="text-[8px] font-black uppercase tracking-wide text-emerald-600/70 dark:text-emerald-300/70">Tuntas</p>
+                    <p class="mt-1 text-xl font-black leading-none text-emerald-600 dark:text-emerald-300">${tuntasCount}</p>
                 </div>
-                <div class="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800 shadow-inner">
-                    <div class="h-full rounded-full bg-gradient-to-r from-orange-500 to-amber-400" style="width:${avgNilai}%"></div>
+                <div class="rounded-xl border border-orange-100 bg-orange-50/70 p-3 dark:border-orange-500/20 dark:bg-orange-500/10">
+                    <p class="text-[8px] font-black uppercase tracking-wide text-orange-600/70 dark:text-orange-300/70">Proses</p>
+                    <p class="mt-1 text-xl font-black leading-none text-orange-600 dark:text-orange-300">${belumCount}</p>
                 </div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
-                <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-3">
-                    <p class="text-[9px] font-black uppercase text-slate-400">Tuntas</p>
-                    <p class="mt-1 text-lg font-black text-emerald-600 dark:text-emerald-400">${tuntasCount}</p>
-                </div>
-                <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-3">
-                    <p class="text-[9px] font-black uppercase text-slate-400">Proses</p>
-                    <p class="mt-1 text-lg font-black text-orange-600 dark:text-orange-400">${belumCount}</p>
-                </div>
-                <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800 p-3">
-                    <p class="text-[9px] font-black uppercase text-slate-400">Setoran</p>
-                    <p class="mt-1 text-lg font-black text-slate-800 dark:text-white">${totalSetoran}</p>
+                <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+                    <p class="text-[8px] font-black uppercase tracking-wide text-slate-400">Setoran</p>
+                    <p class="mt-1 text-xl font-black leading-none text-slate-800 dark:text-white">${totalSetoran}</p>
                 </div>
             </div>
         `;

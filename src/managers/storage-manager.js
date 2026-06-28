@@ -8,6 +8,13 @@
  * - Data disimpan di localStorage dengan key yang terstruktur
  * - Auto-save dengan debounce untuk mencegah excessive writes
  * - Online/offline detection untuk UI indicators
+ *
+ * Storage Keys (Canonical):
+ * - attendance: 'musyrif_app_v5_fix'
+ * - permits: 'musyrif_permits_db'
+ * - settings: 'musyrif_settings'
+ * - activityLog: 'musyrif_activity_log'
+ * - googleAuth: 'musyrif_google_session'
  */
 const storageDebugLog = (...args) => {
   if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {

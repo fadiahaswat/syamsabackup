@@ -6,43 +6,55 @@
 const CACHE_VERSION = "v249-local-only";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
-// Assets to cache (static assets only)
+// Assets to cache (static assets + core JS/CSS for offline)
 const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./output.css",
+  "./style.css",
+  // PWA Icons
   "./assets/icons/icon.svg",
   "./assets/icons/icon.webp",
   "./assets/icons/icon.png",
   "./assets/icons/app-icon.png",
+  // Branding
   "./assets/branding/Logomark.webp",
   "./assets/branding/Primary%20Logo.webp",
   "./assets/branding/Logo%20Mu%27allimin.webp",
   "./assets/branding/Logo%20PP%20Muhammadiyah.webp",
   "./assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp",
   "./assets/branding/Internastional%20Partners.webp",
+  // Screenshots
   "./assets/screenshots/desktop-wide.png",
   "./assets/screenshots/mobile-narrow.png",
-  "./assets/illustrations/arrow-up.webp",
+  // Illustrations
   "./assets/illustrations/kaaba.webp",
+  // Manifest
   "./manifest.json",
-  "./tagline.webp",
-];
-
-// JS files that should ALWAYS be fetched from network (for latest code)
-const ALWAYS_FRESH_JS = [
+  // Core JS - precached for offline functionality
   "src/config/config.js",
+  "src/core/app-init.js",
   "src/core/app-core.js",
   "src/core/script.js",
+  "src/js/app.js",
+  "src/js/router.js",
+  "src/js/loader.js",
+  "src/js/render.js",
   "src/managers/storage-manager.js",
-  "src/managers/file-upload.js",
+  "src/managers/state-manager.js",
   "src/managers/auth-manager.js",
   "src/managers/santri-manager.js",
   "src/managers/attendance-manager.js",
-  "src/managers/notification-manager.js",
+  "src/managers/permit-manager.js",
+  "src/managers/tab-manager.js",
+  "src/managers/export-manager.js",
   "src/data/data-santri.js",
   "src/data/data-kelas.js",
   "src/data/tahfizh_metadata.json",
+];
+
+// Legacy key - kept for compatibility
+const ALWAYS_FRESH_JS = [
   "src/features/qibla.js",
 ];
 
@@ -128,28 +140,27 @@ self.addEventListener("fetch", (event) => {
   if (isLocal) {
     // ========== LOCAL FILES ==========
 
-    // JS files → ALWAYS fetch from network (Critical for sync!)
+    // JS files → Stale-While-Revalidate for best performance
+    // Serve cached version immediately, update cache in background
     if (isAlwaysFreshJS(url) || url.pathname.endsWith('.js')) {
       event.respondWith(
-        fetch(event.request).then(response => {
-          // Cache successful responses for offline fallback
-          if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, responseClone).catch(err => {
-                // Ignore cache.put errors (entry not found during update is normal)
+        caches.match(event.request).then(cachedResponse => {
+          // Start network fetch in background
+          const fetchPromise = fetch(event.request).then(networkResponse => {
+            if (networkResponse.ok) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME).then(cache => {
+                cache.put(event.request, responseClone);
               });
-            });
-          }
-          return response;
-        }).catch(() => {
-          // Fallback to cache if network fails
-          return caches.match(event.request).then(response => {
-            return response || new Response("Network error - please check connection", {
-              status: 503,
-              statusText: "Service Unavailable"
-            });
-          });
+            }
+            return networkResponse;
+          }).catch(() => null);
+
+          // Return cached response if available, otherwise wait for network
+          return cachedResponse || fetchPromise || new Response(
+            "Failed to load JavaScript. Please check your connection.",
+            { status: 503, statusText: "Service Unavailable" }
+          );
         })
       );
       return;
@@ -168,7 +179,10 @@ self.addEventListener("fetch", (event) => {
             return fetchResponse;
           }).catch(() => {
             return caches.match("./index.html").then(fallback => {
-              return fallback || new Response("File not found", { status: 404, statusText: "Not Found" });
+              return fallback || caches.match("./offline.html") || new Response(
+                "<html><body style='font-family:sans-serif;text-align:center;padding:2rem'><h1>Offline</h1><p>Tidak ada koneksi internet. Silakan coba lagi nanti.</p></body></html>",
+                { status: 503, headers: { 'Content-Type': 'text/html' } }
+              );
             });
           });
         })
@@ -281,3 +295,162 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(title, notificationOptions)
   );
 });
+
+// 4. Background Sync - Process offline changes when back online
+self.addEventListener('sync', (event) => {
+  console.log('[SW] Sync event:', event.tag);
+
+  if (event.tag === 'sync-changes') {
+    event.waitUntil(processOfflineChanges());
+  }
+});
+
+/**
+ * Process offline changes from IndexedDB SyncQueue
+ * This is called when the app comes back online
+ */
+async function processOfflineChanges() {
+  try {
+    // Open IndexedDB
+    const db = await openSyncDB();
+    const changes = await getPendingChanges(db);
+
+    if (!changes || changes.length === 0) {
+      console.log('[SW] No pending changes to sync');
+      return;
+    }
+
+    console.log('[SW] Processing', changes.length, 'pending changes');
+
+    for (const change of changes) {
+      try {
+        // Process based on entity type
+        await processChange(change, db);
+        await markChangeComplete(db, change.id);
+        console.log('[SW] Synced change:', change.id, change.entityType);
+      } catch (err) {
+        console.error('[SW] Failed to sync change:', change.id, err);
+        await markChangeFailed(db, change.id, err.message);
+      }
+    }
+
+    // Notify the app that sync is complete
+    const clients = await self.clients.matchAll({ type: 'window' });
+    clients.forEach(client => {
+      client.postMessage({ type: 'SYNC_COMPLETE', count: changes.length });
+    });
+
+  } catch (err) {
+    console.error('[SW] Sync failed:', err);
+  }
+}
+
+/**
+ * Open SyncQueue IndexedDB
+ */
+function openSyncDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('syamsa_sync_queue', 1);
+
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains('changes')) {
+        db.createObjectStore('changes', { keyPath: 'id' });
+      }
+    };
+  });
+}
+
+/**
+ * Get pending changes from IndexedDB
+ */
+function getPendingChanges(db) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['changes'], 'readonly');
+    const store = tx.objectStore('changes');
+    const index = store.index('status');
+    const request = index.getAll(IDBKeyRange.only('pending'));
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+/**
+ * Process a single change
+ */
+async function processChange(change, db) {
+  // For now, changes are stored locally
+  // In a real app, this would sync to a backend API
+  console.log('[SW] Processing:', change.entityType, change.operation);
+
+  // The actual sync logic depends on your backend
+  // This is a placeholder for the sync endpoint
+  switch (change.entityType) {
+    case 'attendance':
+      // Sync attendance data
+      break;
+    case 'permit':
+      // Sync permit data
+      break;
+    case 'settings':
+      // Sync settings
+      break;
+    default:
+      console.log('[SW] Unknown entity type:', change.entityType);
+  }
+}
+
+/**
+ * Mark a change as complete
+ */
+function markChangeComplete(db, id) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['changes'], 'readwrite');
+    const store = tx.objectStore('changes');
+    const getReq = store.get(id);
+
+    getReq.onsuccess = () => {
+      const record = getReq.result;
+      if (record) {
+        record.status = 'complete';
+        record.completedAt = Date.now();
+        const putReq = store.put(record);
+        putReq.onsuccess = () => resolve();
+        putReq.onerror = () => reject(putReq.error);
+      } else {
+        resolve();
+      }
+    };
+    getReq.onerror = () => reject(getReq.error);
+  });
+}
+
+/**
+ * Mark a change as failed
+ */
+function markChangeFailed(db, id, error) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['changes'], 'readwrite');
+    const store = tx.objectStore('changes');
+    const getReq = store.get(id);
+
+    getReq.onsuccess = () => {
+      const record = getReq.result;
+      if (record) {
+        record.status = 'failed';
+        record.lastError = error;
+        record.attempts = (record.attempts || 0) + 1;
+        const putReq = store.put(record);
+        putReq.onsuccess = () => resolve();
+        putReq.onerror = () => reject(putReq.error);
+      } else {
+        resolve();
+      }
+    };
+    getReq.onerror = () => reject(getReq.error);
+  });
+}

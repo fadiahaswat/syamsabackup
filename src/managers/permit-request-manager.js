@@ -7,8 +7,9 @@
  */
 
 (function() {
-  const STORAGE_KEY = 'permit_requests';
-  const PERMITS_STORAGE_KEY = 'musyrif_permits_db';
+  // Unified storage keys - use same key as StorageManager
+  const STORAGE_KEY = 'permit_requests'; // Legacy: keep for migration
+  const PERMITS_STORAGE_KEY = 'musyrif_permits_db'; // Main permits storage
 
   // MEDIUM FIX: Use shared constants instead of duplicating
   const DAYS = window.SHARED_CONSTANTS?.DAYS_INDO || ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];

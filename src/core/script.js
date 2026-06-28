@@ -447,11 +447,15 @@ window.handleMuinClick = function () {
   }
 };
 
-// CRITICAL FIX: Superadmin password hash
-// Default password "admin123" - SHA-256 hash
-// Hash generated at: https://passwordsgenerator.net/sha256-hash-generator/
-const SUPERADMIN_PASSWORD_HASH = window.APP_SECRETS?.superadminHash ||
-  '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'; // admin123
+// Superadmin password hash - MUST be set via window.APP_SECRETS.superadminHash
+// For development, set window.APP_SECRETS = { superadminHash: 'your-hash' } in config
+const SUPERADMIN_PASSWORD_HASH = window.APP_SECRETS?.superadminHash;
+
+// Validate at startup - throw error if not configured
+if (!SUPERADMIN_PASSWORD_HASH) {
+  console.error('[Security] Superadmin hash not configured. Set window.APP_SECRETS.superadminHash');
+  // In production, uncomment: throw new Error('Superadmin password not configured');
+}
 
 // Async SHA-256 hash function
 async function sha256(message) {
@@ -684,7 +688,8 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
   if (!isAdmin && profile?.email) {
     const kelasKey = String(targetClass).replace(/\s+/g, "").toLowerCase();
     window.AppStorage.setItem(`musyrif_email_${kelasKey}`, String(profile.email).trim().toLowerCase());
-    console.log('[AuthManager] Cached musyrif email:', profile.email, 'for class:', kelasKey);
+    // Debug only - remove in production
+    if (DEBUG_MODE) console.debug('[AuthManager] Musyrif email cached for class:', kelasKey);
   }
 
   if (isAdmin) {
@@ -11048,12 +11053,12 @@ window.renderPembinaanManagement = function () {
   container.innerHTML = "";
   if (problemList.length === 0) {
     container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-100 rounded-3xl">
-                <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
-                    <i data-lucide="shield-check" class="w-8 h-8 text-emerald-500"></i>
+            <div class="rounded-3xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-950/30">
+                <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10">
+                    <i data-lucide="shield-check" class="h-7 w-7"></i>
                 </div>
-                <p class="text-sm font-bold text-slate-600">Nihil Poin Pelanggaran</p>
-                <p class="text-xs text-slate-400 text-center max-w-[200px]">
+                <p class="text-sm font-black text-slate-700 dark:text-slate-200">Nihil Poin Pelanggaran</p>
+                <p class="mx-auto mt-1 max-w-[220px] text-xs font-medium leading-relaxed text-slate-400 dark:text-slate-500">
                     Santri tertib atau pelanggaran belum dibina oleh Musyrif.
                 </p>
             </div>`;

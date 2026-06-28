@@ -1,8 +1,121 @@
-// File: dashboard-manager.js
+/**
+ * dashboard-manager.js - Dashboard & Widget Management
+ *
+ * MANIFEST (56 functions):
+ * ========================
+ * DASHBOARD CORE
+ *   - updateDashboard()           [line 7]   Main dashboard refresh
+ *   - updateProfileInfo()         [line 470]  Profile card update
+ *   - updateQuickStats()           [line 565]  Quick stats widget
+ *   - drawDonutChart()            [line 592]  Weekly chart rendering
+ *
+ * LOCATION & GEOLOCATION
+ *   - updateLocationStatus()      [line 94]   Location card widget
+ *   - verifyLocation()            [line 766]  Geofence verification
+ *   - verifyLocationCached()      [line 1853] Cached location check
+ *   - getDistanceFromLatLonInMeters() [line 728]
+ *   - getCachedLocation()         [line 743]
+ *   - deg2rad()                   [line 761]
+ *
+ * SLOT MANAGEMENT
+ *   - renderSlotList()            [line 304]  Slot list widget
+ *   - quickOpen()                 [line 849]  Quick open slot
+ *   - updateQuickAccessButtons()  [line 876]  Quick access buttons
+ *
+ * STATISTICS
+ *   - showStatDetails()           [line 906]  Stat detail modal
+ *   - renderSchoolStatsWidget()   [line 1768] School stats widget
+ *   - updateCommandCenterStats()  [line 2207] Command center stats
+ *
+ * PEMBINAAN
+ *   - getPembinaanMainActId()    [line 1000] Get main activity ID
+ *   - isPembinaanViolationStatus()[line 1004] Check violation status
+ *   - collectPembinaanViolations()[line 1008] Collect violations
+ *   - refreshPembinaanSurfaces() [line 1056]  Refresh UI
+ *   - renderDashboardPembinaan() [line 1065]  Pembinaan widget
+ *   - renderPembinaanManagement()[line 1203]   Pembinaan management
+ *   - scrollToPembinaan()        [line 1364]
+ *   - openPembinaanModal()        [line 1652]
+ *   - savePembinaan()            [line 1675]
+ *
+ * KBM & PERMITS
+ *   - renderKBMBanner()          [line 1371]  KBM banner
+ *   - renderActivePermitsWidget()[line 1411]   Active permits widget
+ *   - resolveManualStatus()      [line 1601]  Manual status override
+ *
+ * QUICK ACTIONS
+ *   - openQuickPermit()          [line 2285]  Quick permit modal
+ *   - openQuickViolation()       [line 2318]  Quick violation modal
+ *   - openQuickSetoran()         [line 2378]  Quick setoran modal
+ *
+ * STUDENT DETAIL
+ *   - openStudentDetail()        [line 2496]  Student detail modal
+ *   - switchStudentDetailTab()    [line 2554]  Tab switching
+ *   - renderStudentJournal()      [line 2574]  Journal tab
+ *   - saveStudentJournalEntry()  [line 2603]
+ *   - renderStudentAchievements() [line 2644]  Achievements tab
+ *   - calculateStudentBadges()    [line 2669]
+ *   - updateStudentDetailWarningBadge() [line 2482]
+ *
+ * LEADERBOARD & WARNINGS
+ *   - updateLeaderboardWidget()   [line 2723]
+ *   - calculateEarlyWarningStatus()[line 2806]
+ *
+ * TIMELINE & TARGETS
+ *   - renderStudentTimeline()    [line 2838]
+ *   - renderStudentTargetsTab()   [line 2938]
+ *   - saveStudentTargets()        [line 2968]
+ *   - calculateStudentSessionPercents() [line 2998]
+ *
+ * WIDGETS
+ *   - updateWorshipWidget()       [line 1878]
+ *   - updateHeroWidget()          [line 1985]
+ *   - renderAgendaWidget()        [line 2039]
+ *   - renderReminderWidget()      [line 2087]
+ *   - renderCalendarGridWidget()  [line 3407]
+ *
+ * REMINDERS
+ *   - toggleReminderDone()       [line 2127]
+ *   - deleteReminder()           [line 2137]
+ *   - openAddReminderModal()     [line 2152]
+ *   - submitAddReminder()         [line 2158]
+ *   - openReminderModal()        [line 2181]
+ *   - openNotificationSettingsModal() [line 2185]
+ *
+ * CENTERS
+ *   - openEmergencyCenter()       [line 3026]
+ *   - openCalendarCenterModal()   [line 3125]
+ *   - openCommunicationHub()      [line 3129]
+ *   - openQuickDialContact()      [line 3118]
+ *
+ * COMMUNICATION
+ *   - applyCommsTemplate()        [line 3134]
+ *   - sendCommsBroadcast()       [line 3163]
+ *
+ * SEARCH & AI
+ *   - handleGlobalSearch()        [line 3178]
+ *   - updateAIInsightsWidget()    [line 3277]
+ *   - generateAIInsights()        [line 3294]
+ *   - regenerateAIInsights()      [line 3338]
+ *   - showAISummaryModal()        [line 3346]
+ *
+ * AUDIT & SYNC
+ *   - openAuditLogModal()         [line 3372]
+ *   - syncOfflineData()           [line 3531]
+ *   - forceSyncData()            [line 3579]
+ *   - updateConnectionStatus()    [line 3505]
+ *   - changeCalendarMonth()      [line 3497]
+ *
+ * NOTE: This file is 3600+ lines. Consider splitting into:
+ *   - dashboard-widgets.js (UI rendering functions)
+ *   - dashboard-geolocation.js (location logic)
+ *   - dashboard-stats.js (statistics)
+ *   - dashboard-centers.js (modals and centers)
+ */
 
-// ==========================================
-// 3. DASHBOARD LOGIC
-// ==========================================
+// ============================================================================
+// SECTION 1: DASHBOARD CORE
+// ============================================================================
 
 window.updateDashboard = function () {
   // 1. Greeting
@@ -1262,12 +1375,12 @@ window.renderPembinaanManagement = function () {
   container.innerHTML = "";
   if (problemList.length === 0) {
     container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-100 rounded-3xl">
-                <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
-                    <i data-lucide="shield-check" class="w-8 h-8 text-emerald-500"></i>
+            <div class="rounded-3xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-950/30">
+                <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10">
+                    <i data-lucide="shield-check" class="h-7 w-7"></i>
                 </div>
-                <p class="text-sm font-bold text-slate-600">Nihil Poin Pelanggaran</p>
-                <p class="text-xs text-slate-400 text-center max-w-[200px]">
+                <p class="text-sm font-black text-slate-700 dark:text-slate-200">Nihil Poin Pelanggaran</p>
+                <p class="mx-auto mt-1 max-w-[220px] text-xs font-medium leading-relaxed text-slate-400 dark:text-slate-500">
                     Santri tertib atau pelanggaran belum dibina oleh Musyrif.
                 </p>
             </div>`;
