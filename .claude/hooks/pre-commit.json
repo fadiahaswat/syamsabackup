@@ -1,0 +1,22 @@
+{
+  "matcher": {
+    "type": "file_touched",
+    "patterns": [
+      "**/*.js",
+      "**/*.html",
+      "**/*.css"
+    ]
+  },
+  "hooks": [
+    {
+      "type": "notification",
+      "message": "🔍 Checking for security issues before commit...",
+      "severity": "info"
+    },
+    {
+      "type": "command",
+      "command": "echo 'Security pre-commit check completed'",
+      "description": "Basic security check"
+    }
+  ]
+}

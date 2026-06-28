@@ -74,10 +74,14 @@
       "Bash(powershell -Command \"\\(Get-Content 'd:\\\\syamsa-backup\\\\syamsabackup\\\\index.html'\\).Count; \\(Get-Content 'd:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\core\\\\script.js'\\).Count\")",
       "Bash(node --check \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\core\\\\script.js\")",
       "Bash(powershell -Command \"Get-Content 'd:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\modules\\\\dashboard\\\\dashboard-module.js' -Encoding UTF8 | Select-Object -First 5\")",
-      "Read(//d/syamsa-backup/syamsa-backup/src/core/**)"
+      "Read(//d/syamsa-backup/syamsa-backup/src/core/**)",
+      "WebFetch(domain:github.com)",
+      "Bash(git clone *)",
+      "Bash(mkdir -p .claude/rules/common .claude/agents .claude/hooks .claude/skills)"
     ],
     "additionalDirectories": [
-      "d:\\syamsa-backup\\syamsabackup"
+      "d:\\syamsa-backup\\syamsabackup",
+      "D:\\syamsa-backup\\syamsabackup\\.claude\\rules"
     ]
   },
   "enabledMcpjsonServers": [

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      {
+        "tool": "Bash",
+        "prompt": "run tests or lint commands"
+      },
+      {
+        "tool": "Bash",
+        "prompt": "run npm commands"
+      },
+      {
+        "tool": "Read",
+        "prompt": "read project files for context"
+      }
+    ]
+  },
+  "agent": {
+    "model": "sonnet"
+  },
+  "ui": {
+    "compactAgents": true
+  }
+}

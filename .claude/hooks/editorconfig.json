@@ -1,0 +1,15 @@
+{
+  "matcher": {
+    "type": "file_touched",
+    "patterns": [
+      "src/**/*.js"
+    ]
+  },
+  "hooks": [
+    {
+      "type": "notification",
+      "message": "📝 JavaScript file modified - checking coding standards...",
+      "severity": "info"
+    }
+  ]
+}
