@@ -129,6 +129,7 @@ window.initApp = async function () {
       console.error("Storage Error:", storageError);
       if (!appState.permits) appState.permits = [];
     }
+    if (window.loadCustomHolidays) window.loadCustomHolidays();
     appState.currentSlotId = window.determineCurrentSlot();
     const dataLoadingPromise = Promise.all([
       window.loadClassData ? window.loadClassData() : Promise.resolve({}),
@@ -3632,6 +3633,59 @@ window.isHoliday = function (
   activityId = null,
   category = null,
 ) {
+  // 1. Cek rentang libur dari countdown widget (Opsi B: Berdasarkan Jam Presisi)
+  try {
+    const scheduleStr = localStorage.getItem('syamsa_holiday_countdown_schedule_v1');
+    if (scheduleStr) {
+      const schedule = JSON.parse(scheduleStr);
+      if (schedule.perpulanganAt && schedule.balikPondokAt) {
+        const perpulangan = new Date(schedule.perpulanganAt).getTime();
+        const balikPondok = new Date(schedule.balikPondokAt).getTime();
+
+        if (Number.isFinite(perpulangan) && Number.isFinite(balikPondok)) {
+          // Cari startHour untuk menentukan waktu kegiatan/slot
+          let startHour = null;
+          if (slotId && SLOT_WAKTU[slotId]) {
+            startHour = SLOT_WAKTU[slotId].startHour;
+          } else if (activityId) {
+            for (const sId in SLOT_WAKTU) {
+              if (SLOT_WAKTU[sId].activities?.some(a => a.id === activityId)) {
+                startHour = SLOT_WAKTU[sId].startHour;
+                break;
+              }
+            }
+          } else if (category) {
+            for (const sId in SLOT_WAKTU) {
+              if (SLOT_WAKTU[sId].activities?.some(a => a.category === category)) {
+                startHour = SLOT_WAKTU[sId].startHour;
+                break;
+              }
+            }
+          }
+
+          if (startHour === null) {
+            startHour = 0; // Fallback ke awal hari jika tidak dapat dideteksi
+          }
+
+          const checkTime = new Date(`${dateStr}T${String(startHour).padStart(2, '0')}:00:00`).getTime();
+
+          if (checkTime >= perpulangan && checkTime < balikPondok) {
+            return {
+              id: "countdown_holiday",
+              title: schedule.holidayName || "Libur",
+              type: "slot",
+              date: dateStr,
+              slotId: slotId
+            };
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Error checking countdown holiday range:", e);
+  }
+
+  // 2. Cek hari libur statik/in-memory
   const holidays = appState.holidays || [];
   return (
     holidays.find((h) => {
@@ -3639,8 +3693,8 @@ window.isHoliday = function (
       if (h.type === "activity" && activityId) {
         return h.activityId === activityId;
       }
-      if (h.type === "slot" && slotId) {
-        return h.slotId === slotId;
+      if (h.type === "slot") {
+        return h.slotId === null || h.slotId === slotId;
       }
       if (h.type === "category" && category) {
         return h.category === category;
@@ -13093,4 +13147,329 @@ window.handleOnboardingSwipe = function () {
     // Swipe right (prev)
     window.prevOnboardingSlide();
   }
+};
+
+// =========================================================================
+// FITUR HARI LIBUR KHUSUS DINAMIS (Dikelola oleh Musyrif)
+// =========================================================================
+
+window.loadCustomHolidays = function () {
+  try {
+    const customHolidays = JSON.parse(localStorage.getItem('syamsa_custom_holidays_v1') || '[]');
+    if (Array.isArray(customHolidays)) {
+      const baseHolidays = (appState.holidays || []).filter(h => !h.id.startsWith("custom_"));
+      appState.holidays = [...baseHolidays, ...customHolidays];
+    }
+    // Update summary widget automatically
+    window.updateHolidayWidgetSummary();
+  } catch (e) {
+    console.error("Error loading custom holidays:", e);
+  }
+};
+
+window.updateHolidayWidgetSummary = function () {
+  const customHolidays = JSON.parse(localStorage.getItem('syamsa_custom_holidays_v1') || '[]');
+  const count = customHolidays.length;
+
+  const badgeCountEl = document.getElementById("custom-holiday-badge-count");
+  if (badgeCountEl) {
+    badgeCountEl.textContent = count;
+  }
+
+  const summaryEl = document.getElementById("custom-holiday-widget-summary");
+  if (summaryEl) {
+    summaryEl.textContent = `${count} Hari Libur Khusus Terdaftar`;
+  }
+
+  const listEl = document.getElementById("custom-holiday-widget-list");
+  if (listEl) {
+    listEl.innerHTML = "";
+    if (count === 0) {
+      listEl.innerHTML = `
+        <div class="text-center py-4 text-slate-400 dark:text-slate-500 text-[10px] font-bold italic">
+          Tidak ada hari libur khusus aktif
+        </div>
+      `;
+      return;
+    }
+    
+    // Sort holidays by date
+    const sorted = [...customHolidays].sort((a, b) => a.date.localeCompare(b.date));
+    
+    sorted.forEach(h => {
+      let scopeText = "Satu Hari Penuh";
+      let iconBg = "";
+      let iconSvg = "";
+
+      if (h.type === "slot" && h.slotId === null) {
+        // Hari Penuh
+        iconBg = "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-100/50 dark:border-rose-500/20";
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+      } else if (h.type === "slot") {
+        // Per Sesi
+        scopeText = `Sesi: ${SLOT_WAKTU[h.slotId]?.label || h.slotId}`;
+        iconBg = "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-500/20";
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+      } else if (h.type === "category") {
+        scopeText = `Kategori: ${h.category?.charAt(0).toUpperCase() + h.category?.slice(1)}`;
+        iconBg = "bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-100/50 dark:border-purple-500/20";
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+      } else if (h.type === "activity") {
+        let label = h.activityId;
+        for (const key in SLOT_WAKTU) {
+          const found = SLOT_WAKTU[key].activities?.find(a => a.id === h.activityId);
+          if (found) {
+            label = found.label;
+            break;
+          }
+        }
+        scopeText = `Kegiatan: ${label}`;
+        iconBg = "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-100/50 dark:border-amber-500/20";
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-current"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+      }
+      
+      // Parse date to a compact format e.g. "Sen, 28 Jun"
+      let dateCompact = h.date;
+      try {
+        const d = new Date(`${h.date}T00:00:00`);
+        dateCompact = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', weekday: 'short' }).format(d);
+      } catch (e) {}
+
+      listEl.innerHTML += `
+        <div class="flex items-center justify-between gap-2.5 p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-300 hover:scale-[1.01]">
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <div class="w-8 h-8 rounded-lg ${iconBg} flex items-center justify-center shrink-0">
+              ${iconSvg}
+            </div>
+            <div class="min-w-0 flex-1">
+              <h5 class="text-[10px] sm:text-[11px] font-black text-slate-800 dark:text-slate-100 truncate">${dateCompact} — ${scopeText}</h5>
+              <p class="text-[8px] sm:text-[9px] font-bold text-slate-500 dark:text-slate-400 truncate mt-0.5">${h.title}</p>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+};
+
+window.openHolidayManagementModal = function () {
+  // Set default date to today's local date
+  const dateInput = document.getElementById("custom-holiday-date");
+  if (dateInput) {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    dateInput.value = `${year}-${month}-${day}`;
+  }
+
+  // Set default type to 'full'
+  const typeSelect = document.getElementById("custom-holiday-type");
+  if (typeSelect) {
+    typeSelect.value = "full";
+  }
+
+  // Clear inputs
+  const titleInput = document.getElementById("custom-holiday-title");
+  if (titleInput) {
+    titleInput.value = "";
+  }
+
+  window.onHolidayTypeChange();
+  window.renderCustomHolidayList();
+  window.openModal("modal-manage-holidays");
+};
+
+window.onHolidayTypeChange = function () {
+  const typeSelect = document.getElementById("custom-holiday-type");
+  const container = document.getElementById("custom-holiday-target-container");
+  const targetSelect = document.getElementById("custom-holiday-target");
+
+  if (!typeSelect || !container || !targetSelect) return;
+
+  const type = typeSelect.value;
+
+  if (type === "full") {
+    container.classList.add("hidden");
+    return;
+  }
+
+  container.classList.remove("hidden");
+  targetSelect.innerHTML = "";
+
+  if (type === "slot") {
+    for (const key in SLOT_WAKTU) {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = SLOT_WAKTU[key].label;
+      targetSelect.appendChild(option);
+    }
+  } else if (type === "category") {
+    // Collect all categories dynamically from slots
+    const categories = new Set();
+    for (const key in SLOT_WAKTU) {
+      SLOT_WAKTU[key].activities?.forEach(act => {
+        if (act.category) categories.add(act.category);
+      });
+    }
+    categories.forEach(cat => {
+      const option = document.createElement("option");
+      option.value = cat;
+      option.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+      targetSelect.appendChild(option);
+    });
+  } else if (type === "activity") {
+    // Collect all activities dynamically from slots
+    const activities = new Map();
+    for (const key in SLOT_WAKTU) {
+      SLOT_WAKTU[key].activities?.forEach(act => {
+        activities.set(act.id, act.label);
+      });
+    }
+    activities.forEach((label, id) => {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = label;
+      targetSelect.appendChild(option);
+    });
+  }
+};
+
+window.addCustomHoliday = function () {
+  const dateInput = document.getElementById("custom-holiday-date");
+  const typeSelect = document.getElementById("custom-holiday-type");
+  const targetSelect = document.getElementById("custom-holiday-target");
+  const titleInput = document.getElementById("custom-holiday-title");
+
+  if (!dateInput?.value) {
+    return window.showToast?.("Pilih tanggal libur terlebih dahulu.", "warning");
+  }
+
+  const date = dateInput.value;
+  const type = typeSelect?.value || "full";
+  const target = targetSelect?.value || "";
+  const title = (titleInput?.value || "").trim() || "Libur Khusus";
+
+  const newHoliday = {
+    id: "custom_" + Date.now(),
+    title: title,
+    date: date,
+  };
+
+  if (type === "full") {
+    newHoliday.type = "slot";
+    newHoliday.slotId = null;
+  } else if (type === "slot") {
+    newHoliday.type = "slot";
+    newHoliday.slotId = target;
+  } else if (type === "category") {
+    newHoliday.type = "category";
+    newHoliday.category = target;
+  } else if (type === "activity") {
+    newHoliday.type = "activity";
+    newHoliday.activityId = target;
+  }
+
+  try {
+    const customHolidays = JSON.parse(localStorage.getItem('syamsa_custom_holidays_v1') || '[]');
+    customHolidays.push(newHoliday);
+    localStorage.setItem('syamsa_custom_holidays_v1', JSON.stringify(customHolidays));
+    
+    // Refresh app state
+    window.loadCustomHolidays();
+    window.updateHolidayWidgetSummary();
+    window.renderCustomHolidayList();
+    
+    // Refresh current UI
+    if (window.renderDashboard) window.renderDashboard();
+    if (window.updateCountdown) window.updateCountdown();
+    
+    window.showToast?.("Hari libur khusus berhasil ditambahkan.", "success");
+    
+    // Clear title input
+    if (titleInput) titleInput.value = "";
+  } catch (e) {
+    console.error(e);
+    window.showToast?.("Gagal menambahkan hari libur khusus.", "error");
+  }
+};
+
+window.deleteCustomHoliday = function (id) {
+  try {
+    let customHolidays = JSON.parse(localStorage.getItem('syamsa_custom_holidays_v1') || '[]');
+    customHolidays = customHolidays.filter(h => h.id !== id);
+    localStorage.setItem('syamsa_custom_holidays_v1', JSON.stringify(customHolidays));
+    
+    // Refresh app state
+    window.loadCustomHolidays();
+    window.updateHolidayWidgetSummary();
+    window.renderCustomHolidayList();
+    
+    // Refresh current UI
+    if (window.renderDashboard) window.renderDashboard();
+    if (window.updateCountdown) window.updateCountdown();
+    
+    window.showToast?.("Hari libur khusus berhasil dihapus.", "success");
+  } catch (e) {
+    console.error(e);
+    window.showToast?.("Gagal menghapus hari libur khusus.", "error");
+  }
+};
+
+window.renderCustomHolidayList = function () {
+  const tbody = document.getElementById("custom-holiday-list-body");
+  const emptyState = document.getElementById("custom-holiday-empty-state");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+  const customHolidays = JSON.parse(localStorage.getItem('syamsa_custom_holidays_v1') || '[]');
+
+  if (customHolidays.length === 0) {
+    if (emptyState) emptyState.classList.remove("hidden");
+    return;
+  }
+
+  if (emptyState) emptyState.classList.add("hidden");
+
+  customHolidays.forEach(h => {
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors";
+    
+    let scopeText = "Hari Penuh";
+    if (h.type === "slot" && h.slotId) {
+      scopeText = `Sesi: ${SLOT_WAKTU[h.slotId]?.label || h.slotId}`;
+    } else if (h.type === "category") {
+      scopeText = `Kategori: ${h.category?.charAt(0).toUpperCase() + h.category?.slice(1)}`;
+    } else if (h.type === "activity") {
+      let label = h.activityId;
+      for (const key in SLOT_WAKTU) {
+        const found = SLOT_WAKTU[key].activities?.find(a => a.id === h.activityId);
+        if (found) {
+          label = found.label;
+          break;
+        }
+      }
+      scopeText = `Kegiatan: ${label}`;
+    }
+
+    const dateFormatted = new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }).format(new Date(`${h.date}T00:00:00`));
+
+    tr.innerHTML = `
+      <td class="px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-300">${dateFormatted}</td>
+      <td class="px-4 py-2.5 font-medium text-slate-555 dark:text-slate-400">
+        <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50">${scopeText}</span>
+      </td>
+      <td class="px-4 py-2.5 font-medium text-slate-700 dark:text-slate-350 max-w-[120px] truncate" title="${h.title}">${h.title}</td>
+      <td class="px-4 py-2.5 text-right">
+        <button onclick="window.deleteCustomHoliday('${h.id}')" class="p-1.5 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-550 dark:text-red-400 border border-red-100 dark:border-red-500/20 active:scale-95 transition-all hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-500/20" title="Hapus hari libur">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
 };
