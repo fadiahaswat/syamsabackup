@@ -43,67 +43,6 @@ window.closeModal = function (modalId) {
   }, 200); // 200ms matches --motion-standard
 };
 
-
-window.showToast = function (message, type = "info", isPersistent = false) {
-  if (!appState.settings.notifications && !isPersistent) return;
-
-  const container = document.getElementById("toast-container");
-  if (!container) return;
-
-  // PERBAIKAN: Cegah Toast Dobel dengan mengecek pesan yang identik
-  const existingToasts = container.querySelectorAll(".toast-msg-text");
-  for (let i = 0; i < existingToasts.length; i++) {
-    if (existingToasts[i].textContent === message) {
-      // Batalkan pembuatan toast baru jika pesan yang sama persis masih ada di layar
-      return existingToasts[i].closest(".toast-element");
-    }
-  }
-
-  const toast = document.createElement("div");
-  const icons = {
-    success: "check-circle",
-    error: "x-circle",
-    warning: "alert-triangle",
-    info: "info",
-  };
-
-  // Tambahkan class penanda 'toast-element' agar lebih mudah diidentifikasi
-  // Motion: animate-toast-enter (250ms ease-enter) - using motion tokens from design system
-  toast.className = `toast-element ${UI_COLORS[type] || UI_COLORS.info} text-white px-4 sm:px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-toast-enter mb-3 z-[9999] cursor-pointer pointer-events-auto`;
-
-  // Tambahkan class penanda 'toast-msg-text' pada bagian teks
-  toast.innerHTML = `
-        <i data-lucide="${icons[type] || "info"}" class="w-5 h-5" aria-hidden="true"></i>
-        <span class="toast-msg-text font-bold text-xs" role="alert">${window.sanitizeHTML(message)}</span>
-    `;
-
-  // Fitur Tambahan: Toast sekarang bisa ditutup instan jika di-klik/disentuh (Anti-annoying)
-  // Motion: toast-exit (200ms ease-exit) untuk keluar smooth
-  toast.onclick = () => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(-20px)";
-    toast.style.transition = "opacity 200ms cubic-bezier(0.4, 0, 1, 1), transform 200ms cubic-bezier(0.4, 0, 1, 1)";
-    setTimeout(() => toast.remove(), 200);
-  };
-
-  container.appendChild(toast);
-  window.refreshIcons();
-
-  if (!isPersistent) {
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      toast.style.transform = "translateY(-20px)";
-      toast.style.transition = "opacity 200ms cubic-bezier(0.4, 0, 1, 1), transform 200ms cubic-bezier(0.4, 0, 1, 1)";
-      setTimeout(() => toast.remove(), 200);
-    }, 3000);
-  } else {
-    setTimeout(() => toast.remove(), 10000);
-  }
-
-  return toast;
-};
-
-
 window.toggleDarkMode = function () {
   document.documentElement.classList.toggle("dark");
   appState.settings.darkMode =
@@ -889,25 +828,21 @@ window.switchReportView = function (view) {
   const analysis = document.getElementById("analysis-section");
   const btnReport = document.getElementById("report-view-btn");
   const btnAnalysis = document.getElementById("analysis-view-btn");
+  const activeClass =
+    "h-10 w-10 flex items-center justify-center rounded-full bg-palette-blue text-white shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.96]";
+  const inactiveClass =
+    "h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-palette-blue dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]";
 
   if (view === "report") {
     report.classList.remove("hidden");
     analysis.classList.add("hidden");
-
-    btnReport.classList.add("bg-white", "dark:bg-slate-700", "text-indigo-600", "dark:text-indigo-400", "shadow-sm");
-    btnReport.classList.remove("text-slate-500", "hover:text-slate-700", "dark:hover:text-slate-300");
-
-    btnAnalysis.classList.remove("bg-white", "dark:bg-slate-700", "text-indigo-600", "dark:text-indigo-400", "shadow-sm");
-    btnAnalysis.classList.add("text-slate-500", "hover:text-slate-700", "dark:hover:text-slate-300");
+    if (btnReport) btnReport.className = activeClass;
+    if (btnAnalysis) btnAnalysis.className = inactiveClass;
   } else {
     report.classList.add("hidden");
     analysis.classList.remove("hidden");
-
-    btnAnalysis.classList.add("bg-white", "dark:bg-slate-700", "text-indigo-600", "dark:text-indigo-400", "shadow-sm");
-    btnAnalysis.classList.remove("text-slate-500", "hover:text-slate-700", "dark:hover:text-slate-300");
-
-    btnReport.classList.remove("bg-white", "dark:bg-slate-700", "text-indigo-600", "dark:text-indigo-400", "shadow-sm");
-    btnReport.classList.add("text-slate-500", "hover:text-slate-700", "dark:hover:text-slate-300");
+    if (btnAnalysis) btnAnalysis.className = activeClass;
+    if (btnReport) btnReport.className = inactiveClass;
 
     window.populateAnalysisDropdown();
     window.runAnalysis();

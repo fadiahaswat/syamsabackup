@@ -41,31 +41,14 @@ const NotificationRateLimiter = {
     this.lastSent[type] = Date.now();
   },
 
-  // Send with rate limiting
-  send: async function(type, options = {}, urgency = 'default') {
-    if (!this.canSend(type, urgency)) {
-      return false;
-    }
-
-    try {
-      const result = await window.sendNotification(options);
-      if (result !== false) {
-        this.markSent(type);
-        return true;
-      }
-    } catch (e) {
-      console.error('[RateLimiter] Send failed:', e);
-    }
-
-    return false;
-  },
-
   // Reset all rate limits (for testing)
   reset: function() {
     this.lastSent = {};
     notificationDebugLog('[RateLimiter] All limits reset');
   }
 };
+
+window.NotificationRateLimiter = NotificationRateLimiter;
 
 // ==========================================
 // DAFTAR SEMUA JENIS NOTIFIKASI MUSYRIF
@@ -112,6 +95,8 @@ window.isMusyrifNotificationTypeEnabled = function (key) {
   return types[key] !== false;
 };
 
+window.isNotificationTypeEnabled = window.isMusyrifNotificationTypeEnabled;
+
 window.toggleNotifications = function () {
   appState.settings.notifications = !appState.settings.notifications;
   localStorage.setItem(
@@ -133,7 +118,8 @@ window.toggleMusyrifNotificationType = function (key) {
   if (!appState.settings.notificationTypes) {
     appState.settings.notificationTypes = {};
   }
-  appState.settings.notificationTypes[key] = !appState.settings.notificationTypes[key];
+  const nextValue = !window.isMusyrifNotificationTypeEnabled(key);
+  appState.settings.notificationTypes[key] = nextValue;
   localStorage.setItem(
     APP_CONFIG.settingsKey,
     JSON.stringify(appState.settings),
@@ -142,14 +128,15 @@ window.toggleMusyrifNotificationType = function (key) {
   // Instantly update UI toggle switch if element exists
   const btn = document.getElementById("notif-toggle-" + key);
   if (btn) {
-    const active = appState.settings.notificationTypes[key];
+    const active = nextValue;
     btn.classList.toggle("bg-emerald-500", active);
     btn.classList.toggle("bg-slate-200", !active);
     btn.classList.toggle("dark:bg-slate-700", !active);
-    const dot = btn.querySelector("div");
+    btn.setAttribute("aria-checked", String(active));
+    const dot = btn.querySelector("[data-toggle-dot]");
     if (dot) {
-      dot.classList.toggle("left-5", active);
-      dot.classList.toggle("left-1", !active);
+      dot.classList.toggle("translate-x-6", active);
+      dot.classList.toggle("translate-x-1", !active);
     }
   }
 
@@ -191,8 +178,8 @@ window.renderMusyrifNotificationSettings = function () {
       html += `
         <button onclick="window.toggleMusyrifNotificationType('${key}')" class="w-full flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
           <span class="text-xs font-medium text-slate-700 dark:text-slate-200 text-left">${meta.label}</span>
-          <span id="notif-badge-${key}" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isActive ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}">
-            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}"></span>
+          <span id="notif-toggle-${key}" role="switch" aria-checked="${isActive}" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isActive ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}">
+            <span data-toggle-dot class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}"></span>
           </span>
         </button>
       `;
@@ -284,7 +271,7 @@ function notifLog(...args) {
 }
 
 // 2. Fungsi Mengirim Notifikasi (IMPROVED)
-window.sendLocalNotification = function (title, body, type = "info") {
+window.sendLocalNotification = function (title, body, type = "info", tag = title) {
   // Debug log
   notifLog("sendLocalNotification called:", title, body, type);
 
@@ -309,12 +296,19 @@ window.sendLocalNotification = function (title, body, type = "info") {
   }
   notifLog("Permission granted");
 
+  const rateType = String(tag || title || type || "notification");
+  const urgency = type === "urgent" || type === "error" ? "urgent" : (type === "reminder" ? "reminder" : "default");
+  if (!NotificationRateLimiter.canSend(rateType, urgency)) {
+    return false;
+  }
+  NotificationRateLimiter.markSent(rateType);
+
   const options = {
     body: body,
     icon: "./assets/icons/icon.webp",
     badge: "./assets/icons/icon.png",
     vibrate: [200, 100, 200],
-    tag: title,
+    tag,
     renotify: false,
     requireInteraction: false,
     data: { url: location.href, type },
@@ -331,22 +325,37 @@ window.sendLocalNotification = function (title, body, type = "info") {
         registration.showNotification(title, options)
           .then(() => {
             notifLog("Notification shown via SW!");
+            NotificationRateLimiter.markSent(rateType);
           })
           .catch((err) => {
             console.error("[NOTIF] ❌ SW showNotification failed:", err);
             notifLog("Falling back to direct Notification");
             new Notification(title, options);
+            NotificationRateLimiter.markSent(rateType);
           });
       })
       .catch((err) => {
         console.error("[NOTIF] ❌ SW.ready failed:", err);
         notifLog("Falling back to direct Notification");
         new Notification(title, options);
+        NotificationRateLimiter.markSent(rateType);
       });
   } else {
     notifLog("No SW, using direct Notification");
     new Notification(title, options);
+    NotificationRateLimiter.markSent(rateType);
   }
+
+  return true;
+};
+
+window.shouldSendScheduledNotification = function (key, scheduledAt = new Date()) {
+  const localDate = window.getLocalDateStr ? window.getLocalDateStr(scheduledAt) : scheduledAt.toISOString().slice(0, 10);
+  const minuteKey = `${localDate}-${String(scheduledAt.getHours()).padStart(2, "0")}:${String(scheduledAt.getMinutes()).padStart(2, "0")}-${key}`;
+  const storageKey = `syamsa_notification_sent_${minuteKey}`;
+  if (localStorage.getItem(storageKey) === "true") return false;
+  localStorage.setItem(storageKey, "true");
+  return true;
 };
 
 // 3. Penjadwal Otomatis (Cek Waktu Setiap Menit)
@@ -1087,8 +1096,10 @@ window.renderNotificationsUI = function (notificationsList = []) {
   if (badge) {
     if (unreadCount > 0) {
       badge.classList.remove("hidden");
+      badge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
     } else {
       badge.classList.add("hidden");
+      badge.textContent = "";
     }
   }
 
@@ -1138,7 +1149,9 @@ window.renderFilteredNotifications = function () {
         attendance: "Kehadiran",
         permit: "Perizinan",
         tahfizh: "Tahfizh",
-        system: "Sistem"
+        system: "Sistem",
+        pembinaan: "Pembinaan",
+        announcement: "Pengumuman"
       };
       const label = catLabels[filter] || filter;
       emptyTitle = `Belum ada notifikasi ${label}`;
@@ -1162,6 +1175,7 @@ window.renderFilteredNotifications = function () {
     attendance: "calendar",
     tahfizh: "book-open",
     system: "alert-triangle",
+    pembinaan: "hand-heart",
     announcement: "megaphone",
     default: "bell"
   };
@@ -1171,6 +1185,7 @@ window.renderFilteredNotifications = function () {
     attendance: "text-blue-500 bg-blue-50 dark:bg-blue-950/20",
     tahfizh: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20",
     system: "text-rose-500 bg-rose-50 dark:bg-rose-950/20",
+    pembinaan: "text-fuchsia-500 bg-fuchsia-50 dark:bg-fuchsia-950/20",
     announcement: "text-purple-500 bg-purple-50 dark:bg-purple-950/20",
     default: "text-slate-500 bg-slate-50 dark:bg-slate-950/20"
   };
@@ -1180,6 +1195,7 @@ window.renderFilteredNotifications = function () {
     attendance: "border-blue-500",
     tahfizh: "border-emerald-500",
     system: "border-rose-500",
+    pembinaan: "border-fuchsia-500",
     announcement: "border-purple-500",
     default: "border-slate-300 dark:border-slate-700"
   };

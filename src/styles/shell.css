@@ -18,6 +18,64 @@
   overflow: hidden;
 }
 
+/* ===== PAGE SPACING CONTRACT ===== */
+.tab-content {
+  --page-padding-x: 1rem;
+  --page-padding-top: max(1.25rem, env(safe-area-inset-top));
+  --page-padding-bottom: calc(7.25rem + env(safe-area-inset-bottom));
+  padding: var(--page-padding-top) var(--page-padding-x) var(--page-padding-bottom) !important;
+}
+
+.page-container,
+.tab-content > .max-w-7xl {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.page-container-spacious {
+  gap: 1.5rem;
+}
+
+.page-container > header {
+  margin-top: 0.75rem !important;
+  margin-left: 0.75rem !important;
+  margin-right: 0.75rem !important;
+  width: auto !important;
+  max-width: calc(100% - 1.5rem) !important;
+}
+
+@media (min-width: 640px) {
+  .page-container > header {
+    margin-top: 1rem !important;
+  }
+}
+
+.attendance-scroll {
+  padding: 6rem 1rem calc(8rem + env(safe-area-inset-bottom));
+}
+
+.wali-app-shell {
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .attendance-scroll {
+    padding-top: 7rem;
+  }
+
+  .wali-app-shell {
+    padding: 1.5rem;
+  }
+}
+
 /* ===== RESPONSIVE HARDENING ===== */
 @media (max-width: 767px) {
   body {
@@ -27,24 +85,24 @@
   }
 
   .tab-content {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-    padding-bottom: calc(7.25rem + env(safe-area-inset-bottom)) !important;
+    --page-padding-x: 1rem;
+    --page-padding-top: max(1.25rem, env(safe-area-inset-top));
+    --page-padding-bottom: calc(7.25rem + env(safe-area-inset-bottom));
   }
 
   #main-content > div {
     row-gap: 1rem !important;
   }
 
-  #main-content > .max-w-7xl > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
+  #main-content > .page-container > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
     width: auto !important;
     max-width: calc(100% - 1.5rem) !important;
     margin-left: 0.75rem !important;
     margin-right: 0.75rem !important;
   }
 
-  #tab-report > .max-w-7xl > :not(header),
-  #tab-tahfizh > .max-w-7xl > :not(header),
+  #tab-report > .page-container > :not(header),
+  #tab-tahfizh > .page-container > :not(header),
   #tab-profile > :not(style) {
     width: auto !important;
     max-width: calc(100% - 1.5rem) !important;
@@ -129,18 +187,23 @@
 
 @media (max-width: 380px) {
   #view-main .tab-content {
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
+    --page-padding-x: 0.75rem;
   }
 
-  #main-content > .max-w-7xl > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
+  .page-container > header {
+    margin-left: 0.5rem !important;
+    margin-right: 0.5rem !important;
+    max-width: calc(100% - 1rem) !important;
+  }
+
+  #main-content > .page-container > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
     max-width: calc(100% - 1rem) !important;
     margin-left: 0.5rem !important;
     margin-right: 0.5rem !important;
   }
 
-  #tab-report > .max-w-7xl > :not(header),
-  #tab-tahfizh > .max-w-7xl > :not(header),
+  #tab-report > .page-container > :not(header),
+  #tab-tahfizh > .page-container > :not(header),
   #tab-profile > :not(style) {
     max-width: calc(100% - 1rem) !important;
     margin-left: 0.5rem !important;
@@ -235,9 +298,10 @@
   #toast-container {
     position: fixed !important;
     top: 20px !important;
-    right: 16px !important;
-    left: auto !important;
-    width: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    width: min(calc(100vw - 2rem), 390px) !important;
+    transform: translateX(-50%) !important;
   }
 
   #view-attendance,
@@ -256,20 +320,25 @@
   }
 
   #view-main .tab-content {
-    padding-left: 1.5rem !important;
-    padding-right: 1.5rem !important;
-    padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)) !important;
+    --page-padding-x: 1.5rem;
+    --page-padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
   }
 
-  #main-content > .max-w-7xl > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
+  .page-container > header {
+    margin-left: 1rem !important;
+    margin-right: 1rem !important;
+    max-width: calc(100% - 2rem) !important;
+  }
+
+  #main-content > .page-container > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
     width: auto !important;
     max-width: calc(100% - 2rem) !important;
     margin-left: 1rem !important;
     margin-right: 1rem !important;
   }
 
-  #tab-report > .max-w-7xl > :not(header),
-  #tab-tahfizh > .max-w-7xl > :not(header),
+  #tab-report > .page-container > :not(header),
+  #tab-tahfizh > .page-container > :not(header),
   #tab-profile > :not(style) {
     width: auto !important;
     max-width: calc(100% - 2rem) !important;
@@ -356,8 +425,9 @@
   #toast-container {
     position: fixed !important;
     top: 1rem !important;
-    right: 1.5rem !important;
-    left: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
   }
 
   .blob-bg {
@@ -394,8 +464,9 @@
 
   /* Limit maximum width of content sections on desktop */
   .tab-content {
-    padding-left: 2rem !important;
-    padding-right: 2rem !important;
+    --page-padding-x: 2rem;
+    --page-padding-top: clamp(1.5rem, 2.4vh, 2rem);
+    --page-padding-bottom: 2rem;
   }
 
   .tab-content > div,
@@ -447,18 +518,18 @@
 
   #view-main .tab-content:not(.hidden),
   #view-main #main-content:not(.hidden) {
-    padding-top: clamp(1.5rem, 2.4vh, 2rem) !important;
-    padding-bottom: 2rem !important;
+    --page-padding-top: clamp(1.5rem, 2.4vh, 2rem);
+    --page-padding-bottom: 2rem;
   }
 
-  #main-content > .max-w-7xl,
+  #main-content > .page-container,
   #tab-report > div,
   #tab-profile > div,
   #tab-analysis > div {
     max-width: 1180px !important;
   }
 
-  #main-content > .max-w-7xl {
+  #main-content > .page-container {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
@@ -466,6 +537,9 @@
 
   #main-content header {
     margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100% !important;
     padding: 0.5rem 0.625rem;
     border: 1px solid rgba(226, 232, 240, 0.78);
     border-radius: 1.25rem;
@@ -480,14 +554,14 @@
     background: rgba(15, 23, 42, 0.72);
   }
 
-  #main-content > .max-w-7xl > .grid.lg\:grid-cols-12 {
+  #main-content > .page-container > .grid.lg\:grid-cols-12 {
     grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr) !important;
     gap: 1.25rem !important;
     align-items: start;
     margin-top: 0 !important;
   }
 
-  #main-content > .max-w-7xl > .grid.lg\:grid-cols-12 > div {
+  #main-content > .page-container > .grid.lg\:grid-cols-12 > div {
     min-width: 0;
     grid-column: auto !important;
   }
@@ -594,14 +668,14 @@
 }
 
 @media (min-width: 1280px) {
-  #main-content > .max-w-7xl,
+  #main-content > .page-container,
   #tab-report > div,
   #tab-profile > div,
   #tab-analysis > div {
     max-width: 1240px !important;
   }
 
-  #main-content > .max-w-7xl > .grid.lg\:grid-cols-12 {
+  #main-content > .page-container > .grid.lg\:grid-cols-12 {
     grid-template-columns: minmax(0, 1.06fr) minmax(360px, 0.94fr) !important;
     gap: 1.5rem !important;
   }

@@ -1,9 +1,9 @@
 <div
         id="tab-notifications"
-        class="tab-content hidden min-h-screen pb-40 p-6 pt-safe animate-fade-in overflow-y-auto hide-scrollbar"
+        class="tab-content hidden min-h-screen animate-fade-in overflow-y-auto hide-scrollbar"
       >
-        <div class="max-w-7xl mx-auto w-full space-y-5">
-          <header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 mt-3 sm:mt-4 w-full delay-100ms">
+        <div class="page-container">
+          <header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 w-full delay-100ms">
             <div class="flex items-center gap-3 min-w-0">
               <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 active:scale-95 transition-all duration-300" aria-label="Kembali ke Dashboard" title="Kembali ke Dashboard">
                 <div class="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-25 group-hover:opacity-50 transition-opacity duration-300"></div>
@@ -96,6 +96,9 @@
             </button>
             <button onclick="window.filterNotifications('system')" id="notif-filter-system" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
               Sistem
+            </button>
+            <button onclick="window.filterNotifications('pembinaan')" id="notif-filter-pembinaan" class="notif-filter-btn px-4 py-2 rounded-full text-xs font-bold transition-all bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:scale-[1.02] active:scale-95 shrink-0">
+              Pembinaan
             </button>
           </div>
 

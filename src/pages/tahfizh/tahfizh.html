@@ -1,19 +1,19 @@
 <div
         id="tab-tahfizh"
-        class="tab-content hidden min-h-screen pb-40 p-6 pt-safe animate-fade-in overflow-y-auto hide-scrollbar"
+        class="tab-content hidden min-h-screen animate-fade-in overflow-y-auto hide-scrollbar"
       >
-        <div class="max-w-7xl mx-auto w-full space-y-5">
-          <header class="tahfizh-page-header flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 mt-3 sm:mt-4 w-full delay-100ms">
+        <div class="page-container">
+          <header class="tahfizh-page-header flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 w-full delay-100ms">
             <div class="flex items-center gap-3 min-w-0">
               <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 active:scale-95 transition-all duration-300" aria-label="Kembali ke Dashboard" title="Kembali ke Dashboard">
                 <div class="absolute inset-0 rounded-full bg-orange-300 blur-md opacity-25 group-hover:opacity-50 transition-opacity duration-300"></div>
-                <div class="tahfizh-header-icon-glow relative w-11 h-11 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
+                <div class="relative w-11 h-11 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
                   <i data-lucide="book-open-check" class="w-5 h-5"></i>
                 </div>
               </button>
 
               <div class="flex flex-col justify-center min-w-0">
-                <div class="tahfizh-lang-rotator max-w-[190px] sm:max-w-[260px] overflow-hidden h-[16px] sm:h-[18px] mb-0 relative">
+                <div class="tahfizh-lang-rotator max-w-[170px] sm:max-w-[240px] overflow-hidden h-[15px] sm:h-[18px] mb-0 relative">
                   <span class="tahfizh-lang-ar absolute inset-0 text-xs sm:text-[13px] font-semibold text-slate-500 dark:text-slate-400 leading-none whitespace-nowrap font-rubik">
                     Mutaba'ah al-Hifzh
                   </span>
@@ -30,11 +30,11 @@
                 </div>
               </div>
             </div>
-            <div class="tahfizh-header-summary musyrif-only shrink-0 flex items-center gap-2">
-              <button onclick="window.switchTahfizhSubTab('analisis')" class="h-10 w-10 rounded-full bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 text-orange-500 dark:text-orange-300 flex items-center justify-center shadow-sm active:scale-95 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-all" title="Analisis Tahfizh" aria-label="Analisis Tahfizh">
+            <div class="tahfizh-header-summary musyrif-only flex items-center gap-2 w-auto shrink-0">
+              <button onclick="window.switchTahfizhSubTab('analisis')" class="h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-orange-500 dark:hover:text-orange-300 border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]" title="Analisis Tahfizh" aria-label="Analisis Tahfizh">
                 <i data-lucide="user-search" class="w-4 h-4"></i>
               </button>
-              <button onclick="window.switchTahfizhSubTab('riwayat')" class="h-10 w-10 rounded-full bg-orange-500 text-white border border-orange-400 flex items-center justify-center shadow-sm shadow-orange-500/20 active:scale-95 hover:bg-orange-600 transition-all" title="Riwayat Tahfizh" aria-label="Riwayat Tahfizh">
+              <button onclick="window.switchTahfizhSubTab('riwayat')" class="h-10 w-10 flex items-center justify-center rounded-full bg-orange-500 text-white shadow-sm shadow-orange-500/20 transition-all duration-300 active:scale-[0.96]" title="Riwayat Tahfizh" aria-label="Riwayat Tahfizh">
                 <i data-lucide="file-text" class="w-4 h-4"></i>
               </button>
             </div>

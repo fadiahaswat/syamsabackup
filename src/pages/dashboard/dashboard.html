@@ -1,15 +1,15 @@
 ﻿<div
         id="main-content"
-        class="tab-content flex-1 overflow-y-auto pb-32 hide-scrollbar scroll-smooth p-6 pt-safe"
+        class="tab-content flex-1 overflow-y-auto hide-scrollbar scroll-smooth"
       >
         <div id="dashboard-slot-bg-illustration" aria-hidden="true">
           <i data-lucide="school"></i>
         </div>
-        <div class="max-w-7xl mx-auto w-full space-y-6">
+        <div class="page-container page-container-spacious">
           <!-- Header -->
-<header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 mt-3 sm:mt-4 w-full delay-100ms">
+<header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 w-full delay-100ms">
   
-  <div class="flex items-center h-11 gap-3 min-w-0 self-center pl-3 sm:pl-5">
+  <div class="flex items-center h-11 gap-3 min-w-0 self-center pl-1.5 sm:pl-3">
     <img
       src="assets/branding/Primary Logo.webp"
       alt="Syamsa"
@@ -31,7 +31,7 @@
     <!-- Standalone Notification Bell Button -->
     <button onclick="window.switchTab('notifications')" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-500 dark:text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue" aria-label="Buka notifikasi" title="Notifikasi">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
-      <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" aria-hidden="true"></span>
+      <span id="notif-badge" class="hidden absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black leading-5 text-center shadow-sm" aria-label="Notifikasi belum dibaca"></span>
     </button>
 
     <!-- Standalone Profile Button -->

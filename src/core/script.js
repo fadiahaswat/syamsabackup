@@ -1406,7 +1406,7 @@ window.renderWaliView = function () {
     : `<div class="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-5 text-center text-xs font-bold text-slate-400">Belum ada riwayat izin/sakit/pulang.</div>`;
 
   view.innerHTML = `
-    <div class="min-h-full overflow-y-auto bg-slate-50 dark:bg-[#0f172a] p-4 sm:p-6">
+    <div class="wali-app-shell min-h-full overflow-y-auto bg-slate-50 dark:bg-[#0f172a]">
       <div class="mx-auto w-full max-w-4xl space-y-4 pb-8">
         <header class="flex items-center justify-between gap-3">
           <div class="min-w-0">
@@ -2010,7 +2010,7 @@ window.renderWaliView = function () {
   };
 
   view.innerHTML = `
-    <div class="h-full overflow-y-auto bg-slate-50 dark:bg-[#0f172a] p-4 sm:p-6">
+    <div class="wali-app-shell h-full overflow-y-auto bg-slate-50 dark:bg-[#0f172a]">
       <div class="mx-auto w-full max-w-5xl space-y-4 pb-8">
         <header class="flex items-center justify-between gap-3">
           <div class="min-w-0">
@@ -5471,61 +5471,104 @@ window.hideLoadingOverlay = function () {
   }
 };
 
-window.showToast = function (message, type = "info", isPersistent = false) {
-  if (!appState.settings.notifications && !isPersistent) return;
+window.showToast = function (message, typeOrOptions = "info", isPersistent = false, durationMs) {
+  const options =
+    typeof typeOrOptions === "object" && typeOrOptions !== null
+      ? typeOrOptions
+      : { type: typeOrOptions, persistent: isPersistent, duration: durationMs };
+
+  const type = ["success", "error", "warning", "info"].includes(options.type)
+    ? options.type
+    : "info";
+  const persistent = Boolean(options.persistent);
+  const bypassPreference = Boolean(options.bypassPreference || persistent);
+  const duration = Number.isFinite(options.duration)
+    ? options.duration
+    : persistent
+      ? 0
+      : 3200;
+
+  if (appState.settings?.notifications === false && !bypassPreference) return null;
 
   const container = document.getElementById("toast-container");
-  if (!container) return;
+  if (!container) return null;
 
-  // PERBAIKAN: Cegah Toast Dobel dengan mengecek pesan yang identik
-  const existingToasts = container.querySelectorAll(".toast-msg-text");
-  for (let i = 0; i < existingToasts.length; i++) {
-    if (existingToasts[i].textContent === message) {
-      // Batalkan pembuatan toast baru jika pesan yang sama persis masih ada di layar
-      return existingToasts[i].closest(".toast-element");
-    }
+  const normalizedMessage = String(message || "").trim();
+  if (!normalizedMessage) return null;
+
+  window.__toastHistory = window.__toastHistory || new Map();
+  const now = Date.now();
+  const toastKey = `${type}:${normalizedMessage}`;
+  const existingToasts = Array.from(container.querySelectorAll(".toast-element"));
+  const lastShownAt = window.__toastHistory.get(toastKey) || 0;
+  if (now - lastShownAt < 1500) {
+    return existingToasts.find((item) => item.dataset.toastKey === toastKey) || null;
+  }
+  window.__toastHistory.set(toastKey, now);
+
+  const duplicate = existingToasts.find((item) => item.dataset.toastKey === toastKey);
+  if (duplicate) return duplicate;
+
+  const maxToasts = persistent ? 3 : 2;
+  while (container.querySelectorAll(".toast-element").length >= maxToasts) {
+    window.dismissToast(container.querySelector(".toast-element"), true);
   }
 
   const toast = document.createElement("div");
   const icons = {
-    success: "check-circle",
+    success: "check-circle-2",
     error: "x-circle",
     warning: "alert-triangle",
     info: "info",
   };
 
-  // Tambahkan class penanda 'toast-element' agar lebih mudah diidentifikasi
-  toast.className = `toast-element ${UI_COLORS[type] || UI_COLORS.info} text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-toast-enter mb-3 z-[9999] cursor-pointer pointer-events-auto`;
-
-  // Tambahkan class penanda 'toast-msg-text' pada bagian teks
+  toast.className = `toast-element toast-${type} animate-toast-enter`;
+  toast.dataset.toastKey = toastKey;
+  toast.setAttribute("role", type === "error" || type === "warning" ? "alert" : "status");
+  toast.setAttribute("aria-live", type === "error" || type === "warning" ? "assertive" : "polite");
+  toast.tabIndex = 0;
   toast.innerHTML = `
-        <i data-lucide="${icons[type] || "info"}" class="w-5 h-5" aria-hidden="true"></i>
-        <span class="toast-msg-text font-bold text-xs" role="alert">${window.sanitizeHTML(message)}</span>
-    `;
+    <span class="toast-icon" aria-hidden="true">
+      <i data-lucide="${icons[type]}" class="w-4 h-4"></i>
+    </span>
+    <span class="toast-msg-text">${window.sanitizeHTML(normalizedMessage)}</span>
+    <button type="button" class="toast-close" aria-label="Tutup notifikasi">
+      <i data-lucide="x" class="w-3.5 h-3.5" aria-hidden="true"></i>
+    </button>
+  `;
 
-  // Fitur Tambahan: Toast sekarang bisa ditutup instan jika di-klik/disentuh (Anti-annoying)
-  toast.onclick = () => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(-20px)";
-    toast.style.transition = "opacity var(--motion-standard) var(--ease-exit), transform var(--motion-standard) var(--ease-exit)";
-    setTimeout(() => toast.remove(), 200);
-  };
+  toast.addEventListener("click", () => window.dismissToast(toast));
+  toast.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" || event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      window.dismissToast(toast);
+    }
+  });
+  toast.querySelector(".toast-close")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    window.dismissToast(toast);
+  });
 
   container.appendChild(toast);
-  window.refreshIcons();
+  window.refreshIcons?.();
 
-  if (!isPersistent) {
-    setTimeout(() => {
-      toast.style.opacity = "0";
-      toast.style.transform = "translateY(-20px)";
-      toast.style.transition = "opacity var(--motion-standard) var(--ease-exit), transform var(--motion-standard) var(--ease-exit)";
-      setTimeout(() => toast.remove(), 200);
-    }, 3000);
-  } else {
-    setTimeout(() => toast.remove(), 10000);
+  if (duration > 0) {
+    toast._dismissTimer = setTimeout(() => window.dismissToast(toast), duration);
   }
 
   return toast;
+};
+
+window.dismissToast = function (toast, immediate = false) {
+  if (!toast) return;
+  clearTimeout(toast._dismissTimer);
+  if (immediate) {
+    toast.remove();
+    return;
+  }
+  toast.classList.remove("animate-toast-enter");
+  toast.classList.add("animate-toast-exit");
+  setTimeout(() => toast.remove(), 220);
 };
 
 window.toggleDarkMode = function () {
@@ -5574,7 +5617,11 @@ window.toggleNotifications = async function () {
     // Disabling notifications
     appState.settings.notifications = false;
     window.AppStorage.setJson(APP_CONFIG.settingsKey, appState.settings);
-    window.showToast("Notifikasi Nonaktif", "info");
+    window.showToast("Notifikasi Nonaktif", {
+      type: "info",
+      duration: 2400,
+      bypassPreference: true,
+    });
   }
 
   const btn = document.getElementById("btn-notifications");
@@ -9957,18 +10004,22 @@ window.requestGPSPermissionOnStartup = async function () {
 };
 
 
-window.isNotificationTypeEnabled = function (key) {
-  const types = appState.settings.notificationTypes || {};
-  return types[key] !== false;
-};
+if (typeof window.isNotificationTypeEnabled !== "function") {
+  window.isNotificationTypeEnabled = function (key) {
+    const types = appState.settings.notificationTypes || {};
+    return types[key] !== false;
+  };
+}
 
-window.shouldSendScheduledNotification = function (key, scheduledAt = new Date()) {
-  const minuteKey = `${window.getLocalDateStr(scheduledAt)}-${String(scheduledAt.getHours()).padStart(2, "0")}:${String(scheduledAt.getMinutes()).padStart(2, "0")}-${key}`;
-  const storageKey = `syamsa_notification_sent_${minuteKey}`;
-  if (localStorage.getItem(storageKey) === "true") return false;
-  localStorage.setItem(storageKey, "true");
-  return true;
-};
+if (typeof window.shouldSendScheduledNotification !== "function") {
+  window.shouldSendScheduledNotification = function (key, scheduledAt = new Date()) {
+    const minuteKey = `${window.getLocalDateStr(scheduledAt)}-${String(scheduledAt.getHours()).padStart(2, "0")}:${String(scheduledAt.getMinutes()).padStart(2, "0")}-${key}`;
+    const storageKey = `syamsa_notification_sent_${minuteKey}`;
+    if (localStorage.getItem(storageKey) === "true") return false;
+    localStorage.setItem(storageKey, "true");
+    return true;
+  };
+}
 
 window.getNotificationScheduledAt = function (baseDate, totalMinutes) {
   const scheduledAt = new Date(baseDate);
@@ -9993,30 +10044,32 @@ window.sendScheduledNotificationAt = function (
   return true;
 };
 
-window.sendLocalNotification = function (title, body, type = "info", tag = title) {
-  if (!("Notification" in window)) return;
-  if (Notification.permission !== "granted") return;
-  if (appState.settings && appState.settings.notifications === false) return;
+if (typeof window.sendLocalNotification !== "function") {
+  window.sendLocalNotification = function (title, body, type = "info", tag = title) {
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    if (appState.settings && appState.settings.notifications === false) return;
 
-  const options = {
-    body,
-    icon: "assets/icons/icon.webp",
-    badge: "assets/icons/icon.png",
-    vibrate: [160, 70, 160],
-    tag,
-    renotify: false,
-    data: { url: location.href, type },
+    const options = {
+      body,
+      icon: "assets/icons/icon.webp",
+      badge: "assets/icons/icon.png",
+      vibrate: [160, 70, 160],
+      tag,
+      renotify: false,
+      data: { url: location.href, type },
+    };
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready
+        .then((registration) => registration.showNotification(title, options))
+        .catch(() => new Notification(title, options));
+      return;
+    }
+
+    new Notification(title, options);
   };
-
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.ready
-      .then((registration) => registration.showNotification(title, options))
-      .catch(() => new Notification(title, options));
-    return;
-  }
-
-  new Notification(title, options);
-};
+}
 
 window.getSlotEndMinutesForNotification = function (slotId) {
   if (window.getTimesheetSlotEndMinutes) return window.getTimesheetSlotEndMinutes(slotId);
@@ -10039,6 +10092,7 @@ window.getIncompleteAttendanceCountForDate = function (dateStr) {
   return missing;
 };
 
+if (typeof window.checkScheduledNotifications !== "function") {
 window.checkScheduledNotifications = function () {
   if (!("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
@@ -10171,6 +10225,7 @@ window.checkScheduledNotifications = function () {
     }
   }
 };
+}
 
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
@@ -12241,9 +12296,9 @@ window.switchReportView = function (view) {
   const btnReport = document.getElementById("report-view-btn");
   const btnAnalysis = document.getElementById("analysis-view-btn");
   const activeClass =
-    "px-3 sm:px-4 py-2 flex items-center justify-center gap-2 rounded-full bg-palette-blue text-white text-xs font-black shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.98]";
+    "h-10 w-10 flex items-center justify-center rounded-full bg-palette-blue text-white shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.96]";
   const inactiveClass =
-    "px-3 sm:px-4 py-2 flex items-center justify-center gap-2 rounded-full text-xs font-black text-slate-500 hover:text-palette-blue dark:hover:text-white transition-all duration-300 active:scale-[0.98]";
+    "h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-palette-blue dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]";
 
   if (view === "report") {
     report.classList.remove("hidden");

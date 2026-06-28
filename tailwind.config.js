@@ -131,12 +131,12 @@ module.exports = {
         },
         // Toast animations
         toastEnter: {
-          from: { opacity: 0, transform: "translateY(-20px) scale(0.95)" },
-          to: { opacity: 1, transform: "translateY(0) scale(1)" },
+          from: { opacity: 0, transform: "translateY(-18px) scale(0.98)", filter: "blur(6px)" },
+          to: { opacity: 1, transform: "translateY(0) scale(1)", filter: "blur(0)" },
         },
         toastExit: {
-          from: { opacity: 1, transform: "translateY(0) scale(1)" },
-          to: { opacity: 0, transform: "translateY(-20px) scale(0.95)" },
+          from: { opacity: 1, transform: "translateY(0) scale(1)", filter: "blur(0)" },
+          to: { opacity: 0, transform: "translateY(-16px) scale(0.98)", filter: "blur(4px)" },
         },
         // View transitions
         viewEnter: {
