@@ -26,3 +26,9 @@ Thumbs.db
 .env
 .env.*
 
+# Agent and auxiliary folders
+ecc/
+izinasramasatu-main/
+.agents/
+.gemini/
+
