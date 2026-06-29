@@ -1737,7 +1737,8 @@ body.qibla-browser-active.qibla-browser-green {
   display: none !important;
 }
 
-#tahfizh-hero-card.sticky-hero .tahfizh-hero-stats {
+#tahfizh-hero-card.sticky-hero .tahfizh-hero-stats,
+#tahfizh-hero-card.sticky-hero #tahfizh-hero-card-body {
   display: none !important;
   max-height: 0 !important;
   opacity: 0 !important;
