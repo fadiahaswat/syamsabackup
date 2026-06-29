@@ -294,7 +294,11 @@ window.initApp = async function () {
         } else {
           // If onboarding has been seen, ensure login screen is visible
           const viewLogin = document.getElementById("view-login");
-          if (viewLogin) viewLogin.classList.remove("hidden");
+          if (viewLogin) {
+            viewLogin.classList.remove("hidden");
+            // Populate class dropdown when login page becomes visible
+            window.populateClassDropdown?.();
+          }
         }
       }
     } catch (onboardingInitErr) {
@@ -364,30 +368,39 @@ window.initBottomNavScroll = function () {
 window.populateClassDropdown = function () {
   // Populate musyrif login dropdown
   const musyrifSelect = document.getElementById("musyrif-kelas");
-  if (musyrifSelect) {
-    musyrifSelect.innerHTML =
-      '<option value="" disabled selected>Pilih Kelas</option>';
-      
-    const keys = Object.keys(MASTER_KELAS);
-    const hasAdminKey = keys.some(k => k.toLowerCase() === "admin musyrif");
-    if (!hasAdminKey) {
-      keys.push("Admin Musyrif");
-      if (typeof MASTER_KELAS !== "undefined") {
-        MASTER_KELAS["Admin Musyrif"] = MASTER_KELAS["Admin Musyrif"] || {
-          wali: "-",
-          musyrif: "Andi Aqillah Fadia Haswat, S.A.P.",
-          email: "andiaqillah@muallimin.sch.id"
-        };
-      }
-    }
-
-    keys.sort().forEach((k) => {
-      const opt = document.createElement("option");
-      opt.value = k;
-      opt.textContent = `${k} - ${MASTER_KELAS[k]?.musyrif || ""}`;
-      musyrifSelect.appendChild(opt);
-    });
+  if (!musyrifSelect) {
+    console.warn("[populateClassDropdown] #musyrif-kelas not found, retrying...");
+    // Retry after a short delay in case element hasn't loaded yet
+    setTimeout(() => window.populateClassDropdown(), 500);
+    return;
   }
+
+  musyrifSelect.innerHTML = '<option value="" disabled selected>Pilih Kelas</option>';
+
+  // Use window.classData as primary source (set by data-kelas.js)
+  const classData = window.classData || MASTER_KELAS || {};
+  const keys = Object.keys(classData);
+
+  // Add Admin Musyrif if not present
+  const hasAdminKey = keys.some(k => k.toLowerCase() === "admin musyrif");
+  if (!hasAdminKey) {
+    keys.push("Admin Musyrif");
+    classData["Admin Musyrif"] = {
+      wali: "-",
+      musyrif: "Andi Aqillah Fadia Haswat, S.A.P.",
+      email: "andiaqillah@muallimin.sch.id"
+    };
+  }
+
+  // Sync to MASTER_KELAS for consistency
+  MASTER_KELAS = { ...classData };
+
+  keys.sort().forEach((k) => {
+    const opt = document.createElement("option");
+    opt.value = k;
+    opt.textContent = `${k} - ${classData[k]?.musyrif || ""}`;
+    musyrifSelect.appendChild(opt);
+  });
 };
 
 // ==========================================
@@ -13137,6 +13150,8 @@ window.closeOnboarding = function () {
     loginCard.classList.remove("scale-100", "opacity-100");
     loginCard.classList.add("scale-95", "opacity-0");
     viewLogin.classList.remove("hidden");
+    // Populate class dropdown when login page becomes visible
+    window.populateClassDropdown?.();
   }
 
   // Animate onboarding card out
