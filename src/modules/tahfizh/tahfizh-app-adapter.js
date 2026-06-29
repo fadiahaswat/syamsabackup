@@ -259,7 +259,7 @@ function renderTahfizhDashboard() {
 
   return `
         <div class="p-6 space-y-6">
-            <div class="glass-card p-6 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20">
+            <div class="glass-card p-6 rounded-xl bg-orange-50 dark:bg-orange-900/20">
                 <h2 class="text-2xl font-bold text-orange-900 dark:text-orange-300">Sistem Tahfizh</h2>
                 <p class="text-orange-700 dark:text-orange-400 mt-2">Mode: ${role}</p>
             </div>

@@ -1242,7 +1242,7 @@ function renderTahfizhTuntasAccordion() {
                             <span class="rounded-md bg-orange-50 px-2 py-0.5 text-xs font-black text-orange-600 dark:bg-orange-500/10 dark:text-orange-300">${avgNilai}%</span>
                         </div>
                         <div class="h-2.5 overflow-hidden rounded-full bg-slate-100 shadow-inner dark:bg-slate-800">
-                            <div class="h-full rounded-full bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-400" style="width:${avgNilai}%"></div>
+                            <div class="h-full rounded-full bg-orange-500" style="width:${avgNilai}%"></div>
                         </div>
                         <div class="mt-3 flex flex-wrap items-center gap-1.5 text-[10px] font-black text-slate-500 dark:text-slate-400">
                             <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>${tuntasCount} Tuntas</span>
@@ -1872,16 +1872,21 @@ function renderTahfizhSantriRaporDashboard(santriId) {
     // Status badge
     const statusBadge = dash.querySelector('[data-status-badge]');
     if (statusBadge) {
-        statusBadge.textContent = s.isTuntas ? 'Tuntas' : 'Proses';
+        statusBadge.innerHTML = s.isTuntas 
+            ? '<span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>Tuntas</span>'
+            : '<span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>Proses</span>';
         statusBadge.className = `inline-flex h-7 items-center justify-center rounded-lg border px-3 py-1 text-xs font-black shadow-sm ${s.isTuntas ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/50' : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-900/50'}`;
     }
 
     // Perpulangan badge
     const perpulanganBadge = dash.querySelector('[data-perpulangan-badge]');
     if (perpulanganBadge) {
-        perpulanganBadge.textContent = s.statusPerpulangan;
         const bolehPulangLabel = getTahfizhLabels().bolehPulang;
-        perpulanganBadge.className = `inline-flex h-7 items-center justify-center rounded-lg border px-3 py-1 text-xs font-black shadow-sm ${s.statusPerpulangan === bolehPulangLabel ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/50' : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/50'}`;
+        const isBoleh = s.statusPerpulangan === bolehPulangLabel;
+        perpulanganBadge.innerHTML = isBoleh
+            ? `<span class="flex items-center gap-1.5"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-green-500"></i>${window.sanitizeHTML(s.statusPerpulangan)}</span>`
+            : `<span class="flex items-center gap-1.5"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-500"></i>${window.sanitizeHTML(s.statusPerpulangan)}</span>`;
+        perpulanganBadge.className = `inline-flex h-7 items-center justify-center rounded-lg border px-3 py-1 text-xs font-black shadow-sm ${isBoleh ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-900/50' : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/50'}`;
     }
 
     setElementText(dash, '[data-nilai]', s.nilaiTampil);

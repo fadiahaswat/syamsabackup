@@ -382,7 +382,7 @@
         statusBadge = `<span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/40">Disetujui</span>`;
         const escapedData = encodeURIComponent(JSON.stringify(req));
         ticketBtn = `
-          <button onclick="window.showExitTicket('${escapedData}')" class="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition-all">
+          <button onclick="window.showExitTicket('${escapedData}')" class="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md hover:shadow-lg active:scale-95 transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 13 2 2 4-4"/></svg>
             <span>Tampilkan Tiket Keluar</span>
           </button>
@@ -887,7 +887,7 @@
           <button onclick="window.processPermitRequest('${req.id}', 'reject')" class="py-2 px-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-600 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all active:scale-95">
             Tolak
           </button>
-          <button onclick="window.processPermitRequest('${req.id}', 'approve')" class="py-2 px-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
+          <button onclick="window.processPermitRequest('${req.id}', 'approve')" class="py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all active:scale-95">
             Setujui
           </button>
         </div>

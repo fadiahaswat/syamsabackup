@@ -416,10 +416,135 @@ window.populateClassDropdown = function () {
 
 let loginIconClickCount = 0;
 let loginIconClickTimeout = null;
+let loginIconLastClickTime = 0;
+const LOGIN_BYPASS_TAPS_MUSYRIF = 3;
+const LOGIN_BYPASS_TAPS_ADMIN = 5;
+const LOGIN_BYPASS_WINDOW_MS = 1500; // 1.5 detik untuk ketukan
 window.googleBypassActive = false;
+window.adminBypassActive = false;
 
+/**
+ * Update UI bypass badge dan text di form Musyrif
+ */
+window.updateMusyrifBypassUI = function () {
+  const badge = document.getElementById("musyrif-bypass-badge");
+  const submitText = document.getElementById("musyrif-submit-text");
+  const submitBtn = document.getElementById("musyrif-submit-btn");
+
+  if (window.googleBypassActive) {
+    if (badge) badge.classList.remove("hidden");
+    if (submitText) submitText.textContent = "Masuk";
+    if (submitBtn) {
+      submitBtn.classList.remove("bg-syamsa-foreground");
+      submitBtn.classList.add("bg-emerald-500", "hover:bg-emerald-600");
+    }
+  } else {
+    if (badge) badge.classList.add("hidden");
+    if (submitText) submitText.textContent = "Lanjutkan";
+    if (submitBtn) {
+      submitBtn.classList.remove("bg-emerald-500", "hover:bg-emerald-600");
+      submitBtn.classList.add("bg-syamsa-foreground");
+    }
+  }
+};
+
+/**
+ * Reset semua bypass state
+ */
+window.resetBypassState = function () {
+  window.googleBypassActive = false;
+  window.adminBypassActive = false;
+  window.updateMusyrifBypassUI();
+};
+
+/**
+ * Handle logo tap untuk bypass login Google
+ * 3 ketukan → bypass Musyrif (pilih kelas dulu)
+ * 5 ketukan → bypass Admin (langsung masuk semua akses)
+ */
 window.handleLogoClick = function () {
-  // bypass disabled
+  const now = Date.now();
+
+  // Reset counter jika waktu antar ketukan terlalu lama
+  if (now - loginIconLastClickTime > LOGIN_BYPASS_WINDOW_MS) {
+    loginIconClickCount = 0;
+  }
+  loginIconLastClickTime = now;
+
+  loginIconClickCount++;
+  clearTimeout(loginIconClickTimeout);
+
+  // Feedback visual saat mengetuk
+  const logoIcon = document.getElementById("login-logo-icon");
+  const tapBadge = document.getElementById("tap-counter-badge");
+
+  if (logoIcon) {
+    logoIcon.classList.add("scale-90");
+    setTimeout(() => logoIcon.classList.remove("scale-90"), 100);
+  }
+
+  // Tampilkan badge counter
+  if (tapBadge) {
+    tapBadge.textContent = loginIconClickCount;
+    tapBadge.classList.remove("opacity-0", "scale-75");
+    tapBadge.classList.add("opacity-100", "scale-100");
+
+    // Sembunyikan setelah timeout
+    clearTimeout(window.tapBadgeTimeout);
+    window.tapBadgeTimeout = setTimeout(() => {
+      tapBadge.classList.remove("opacity-100", "scale-100");
+      tapBadge.classList.add("opacity-0", "scale-75");
+    }, LOGIN_BYPASS_WINDOW_MS);
+  }
+
+  // ============================================
+  // ADMIN BYPASS: 5 ketukan
+  // ============================================
+  if (loginIconClickCount >= LOGIN_BYPASS_TAPS_ADMIN) {
+    loginIconClickCount = 0;
+    clearTimeout(loginIconClickTimeout);
+
+    // Langsung login Admin tanpa pilih kelas
+    window.adminBypassActive = true;
+    window.googleBypassActive = true;
+
+    const bypassProfile = {
+      name: "Admin Bypass",
+      email: "bypass-admin@localhost",
+      given_name: "Admin",
+      authProvider: "bypass",
+      bypassMode: true,
+      isAdmin: true
+    };
+
+    window.startAuthenticatedSession("Admin Musyrif", bypassProfile);
+    return;
+  }
+
+  // ============================================
+  // MUSYRIF BYPASS: 3 ketukan
+  // ============================================
+  if (loginIconClickCount >= LOGIN_BYPASS_TAPS_MUSYRIF) {
+    loginIconClickCount = 0;
+    clearTimeout(loginIconClickTimeout);
+
+    // Aktifkan bypass mode Musyrif
+    window.googleBypassActive = true;
+    window.adminBypassActive = false;
+    window.updateMusyrifBypassUI();
+
+    // Langsung buka form Musyrif dengan bypass
+    window.handleMusyrifLogin();
+    return;
+  }
+
+  // ============================================
+  // FEEDBACK: belum cukup ketukan
+  // ============================================
+  // Auto-reset setelah window timeout
+  loginIconClickTimeout = setTimeout(() => {
+    loginIconClickCount = 0;
+  }, LOGIN_BYPASS_WINDOW_MS);
 };
 
 // Superadmin logo click handler with rate limiting
@@ -853,6 +978,10 @@ window.cancelMusyrifLogin = function () {
   const selectionView = document.getElementById("login-selection-view");
   const musyrifView = document.getElementById("login-musyrif-view");
   const doodles = document.getElementById("login-doodles-container");
+
+  // Reset bypass state saat cancel
+  window.resetBypassState();
+
   if (musyrifView) musyrifView.classList.add("hidden");
   if (selectionView) selectionView.classList.remove("hidden");
   if (doodles) doodles.classList.remove("hidden");
@@ -860,11 +989,27 @@ window.cancelMusyrifLogin = function () {
 
 window.handleMusyrifSubmit = async function () {
   const kelas = document.getElementById("musyrif-kelas")?.value?.trim() || "";
-  const authMode = window.getAuthMode();
 
   if (!kelas) return window.showToast("Pilih kelas terlebih dahulu.", "warning");
 
-  // Mode testing dihapus. Selalu gunakan login Google.
+  // ============================================
+  // BYPASS MODE: Langsung login tanpa Google
+  // ============================================
+  if (window.googleBypassActive) {
+    const bypassProfile = {
+      name: `Musyrif ${kelas}`,
+      email: `bypass-${kelas}@localhost`,
+      given_name: "Musyrif",
+      authProvider: "bypass",
+      bypassMode: true,
+      selectedClass: kelas
+    };
+
+    window.showToast(`🔓 Login Bypass - Kelas ${kelas}`, "success");
+    await window.startAuthenticatedSession(kelas, bypassProfile);
+    window.googleBypassActive = false; // Reset bypass setelah digunakan
+    return;
+  }
 
   // Production mode - Google OAuth
   appState.tempClass = kelas;
@@ -1372,7 +1517,7 @@ window.updateWaliDashboardSummary = function () {
       if (waliAnn) {
         const dateFormatted = waliAnn.created_at ? new Date(waliAnn.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '-';
         bannerContainer.innerHTML = `
-          <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 border border-amber-200/50 dark:border-amber-900/35 rounded-3xl p-4 flex gap-3 relative overflow-hidden backdrop-blur-md">
+          <div class="bg-amber-500/10 dark:bg-amber-500/20 border border-amber-200/50 dark:border-amber-900/35 rounded-3xl p-4 flex gap-3 relative overflow-hidden backdrop-blur-md">
             <div class="absolute -right-6 -top-6 w-20 h-20 bg-amber-400 rounded-full blur-[40px] opacity-25"></div>
             <div class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-megaphone"><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>
@@ -1415,7 +1560,7 @@ window.updateWaliDashboardSummary = function () {
           const topSP = approvedSPs[0];
           
           spBannerContainer.innerHTML = `
-            <div class="bg-gradient-to-r from-red-500/10 to-rose-500/10 dark:from-red-500/20 dark:to-rose-500/20 border border-red-200/50 dark:border-red-900/35 rounded-3xl p-4 flex gap-3 relative overflow-hidden backdrop-blur-md animate-pulse">
+            <div class="bg-red-500/10 dark:bg-red-500/20 border border-red-200/50 dark:border-red-900/35 rounded-3xl p-4 flex gap-3 relative overflow-hidden backdrop-blur-md animate-pulse">
               <div class="absolute -right-6 -top-6 w-20 h-20 bg-rose-400 rounded-full blur-[40px] opacity-25"></div>
               <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-rose-600/20">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-warning"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
@@ -3170,29 +3315,27 @@ window.renderWeeklyCalendar = function () {
   const isDark = document.documentElement.classList.contains("dark");
   const themeColors = {
     emerald: {
-      bg: "linear-gradient(135deg, #0f766e, #10b981)",
+      bg: "#10b981",
       textSub: "#a7f3d0",
     },
     cyan: {
-      bg: "linear-gradient(135deg, #0c4e8c, #0c81e4)",
+      bg: "#0c81e4",
       textSub: "#cffafe",
     },
     orange: {
-      bg: "linear-gradient(135deg, #b45309, #f59e0b)",
+      bg: "#f59e0b",
       textSub: "#ffedd5",
     },
     indigo: {
-      bg: "linear-gradient(135deg, #4338ca, #7e22ce)",
+      bg: "#4338ca",
       textSub: "#e0e7ff",
     },
     slate: {
-      bg: isDark
-        ? "linear-gradient(135deg, #0f172a, #1e3a8a)"
-        : "linear-gradient(135deg, #475569, #64748b)",
+      bg: isDark ? "#1e3a8a" : "#64748b",
       textSub: "#e2e8f0",
     },
     blue: {
-      bg: "linear-gradient(135deg, #0c4e8c, #0c81e4)",
+      bg: "#0c81e4",
       textSub: "#dbeafe",
     }
   };
@@ -3487,11 +3630,11 @@ window.renderSlotList = function () {
     } else {
       // 3. STATUS: AKTIF (Rich Solid Session Background Theme)
       const themeSolidClasses = {
-        emerald: "bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-950 dark:to-emerald-900/80 text-white border-emerald-500/30 shadow-[0_8px_25px_rgba(16,185,129,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(16,185,129,0.2)]",
-        cyan: "bg-gradient-to-br from-sky-500 to-indigo-600 dark:from-sky-950 dark:to-indigo-900/80 text-white border-sky-500/30 shadow-[0_8px_25px_rgba(14,165,233,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(14,165,233,0.2)]",
-        orange: "bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-950 dark:to-orange-900/80 text-white border-amber-500/30 shadow-[0_8px_25px_rgba(245,158,11,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(245,158,11,0.2)]",
-        indigo: "bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-indigo-950 dark:to-purple-900/80 text-white border-indigo-500/30 shadow-[0_8px_25px_rgba(99,102,241,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(99,102,241,0.2)]",
-        slate: "bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white border-slate-500/30 shadow-[0_8px_25px_rgba(100,116,139,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(100,116,139,0.2)]"
+        emerald: "bg-emerald-500 dark:bg-emerald-600 text-white border-emerald-500/30 shadow-[0_8px_25px_rgba(16,185,129,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(16,185,129,0.2)]",
+        cyan: "bg-sky-500 dark:bg-indigo-600 text-white border-sky-500/30 shadow-[0_8px_25px_rgba(14,165,233,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(14,165,233,0.2)]",
+        orange: "bg-amber-500 dark:bg-orange-600 text-white border-amber-500/30 shadow-[0_8px_25px_rgba(245,158,11,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(245,158,11,0.2)]",
+        indigo: "bg-indigo-500 dark:bg-purple-600 text-white border-indigo-500/30 shadow-[0_8px_25px_rgba(99,102,241,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(99,102,241,0.2)]",
+        slate: "bg-slate-600 dark:bg-slate-800 text-white border-slate-500/30 shadow-[0_8px_25px_rgba(100,116,139,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(100,116,139,0.2)]"
       };
 
       item.classList.add(...(themeSolidClasses[s.theme] || themeSolidClasses.emerald).split(" "));
@@ -3560,7 +3703,7 @@ window.renderSlotList = function () {
       }
 
       if (progressBar) {
-        progressBar.className = "slot-progress-bar h-full rounded-full bg-gradient-to-r from-white/70 to-white animate-pulse-subtle transition-all duration-500 shadow-[0_0_8px_rgba(255,255,255,0.8)]";
+        progressBar.className = "slot-progress-bar h-full rounded-full bg-white/70 animate-pulse-subtle transition-all duration-500 shadow-[0_0_8px_rgba(255,255,255,0.8)]";
         progressBar.style.backgroundColor = "";
       }
 
@@ -3657,10 +3800,22 @@ window.updateProfileInfo = function () {
     const musyrifName = (typeof MASTER_KELAS !== "undefined" && MASTER_KELAS[className]?.musyrif) || santri?.musyrif_khusus || "-";
     if (elWaliMusyrifNama) elWaliMusyrifNama.textContent = musyrifName;
 
-    if (elWaliMusyrifWa) {
+    const elTahfizhWaliWa = document.getElementById("tahfizh-wali-wa-btn");
+    const elLaporanWaliWa = document.getElementById("laporan-wali-wa-btn");
+
+    if (elWaliMusyrifWa || elTahfizhWaliWa || elLaporanWaliWa) {
       const rawHp = String(santri?.hp_musyrif || (typeof MASTER_KELAS !== "undefined" && MASTER_KELAS[className]?.hp_musyrif) || "628123456789");
       const hp = rawHp.startsWith("0") ? "62" + rawHp.substring(1) : rawHp;
-      elWaliMusyrifWa.href = `https://wa.me/${hp}?text=${encodeURIComponent("Assalamualaikum Ustadz " + musyrifName + ", saya orang tua/wali dari " + santriName + " ingin menanyakan perkembangan anak kami...")}`;
+      
+      if (elWaliMusyrifWa) {
+        elWaliMusyrifWa.href = `https://wa.me/${hp}?text=${encodeURIComponent("Assalamualaikum Ustadz " + musyrifName + ", saya orang tua/wali dari " + santriName + " ingin menanyakan perkembangan anak kami...")}`;
+      }
+      if (elTahfizhWaliWa) {
+        elTahfizhWaliWa.href = `https://wa.me/${hp}?text=${encodeURIComponent("Assalamualaikum Ustadz " + musyrifName + ", saya orang tua/wali dari " + santriName + " ingin menanyakan perkembangan hafalan/tahfizh anak kami...")}`;
+      }
+      if (elLaporanWaliWa) {
+        elLaporanWaliWa.href = `https://wa.me/${hp}?text=${encodeURIComponent("Assalamualaikum Ustadz " + musyrifName + ", saya orang tua/wali dari " + santriName + " ingin menanyakan perkembangan presensi/kehadiran anak kami...")}`;
+      }
     }
 
     window.updateWaliDashboardSummary?.();
@@ -4408,7 +4563,7 @@ window.renderAttendanceList = function () {
     );
     const avatar = avatarOptions[avatarSeed % avatarOptions.length];
     avatarEl.className =
-      `w-10 h-10 rounded-xl bg-gradient-to-br ${avatar.class} flex items-center justify-center text-lg shadow-inner shrink-0 ring-1 ring-white/70 dark:ring-white/10 cursor-pointer hover:scale-105 transition-transform`;
+      `w-10 h-10 rounded-xl ${avatar.class} flex items-center justify-center text-lg shadow-inner shrink-0 ring-1 ring-white/70 dark:ring-white/10 cursor-pointer hover:scale-105 transition-transform`;
     avatarEl.textContent = avatar.icon;
     avatarEl.onclick = () => { if (window.openStudentDetail) window.openStudentDetail(id); };
     const iconAvatarOptions = [
@@ -6692,7 +6847,7 @@ window.updateReportTab = function () {
       const dateKey = appState.reportDate || appState.date;
       const formattedDate = window.formatDate(dateKey);
       summaryHTML = `
-        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-5 border border-white/10 shadow-lg relative overflow-hidden group">
+        <div class="bg-slate-900 text-white rounded-3xl p-5 border border-white/10 shadow-lg relative overflow-hidden group">
           <div class="absolute -right-10 -top-10 w-36 h-36 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
           <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -6739,7 +6894,7 @@ window.updateReportTab = function () {
       }
 
       summaryHTML = `
-        <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-5 border border-white/10 shadow-lg relative overflow-hidden group">
+        <div class="bg-slate-900 text-white rounded-3xl p-5 border border-white/10 shadow-lg relative overflow-hidden group">
           <div class="absolute -right-10 -top-10 w-36 h-36 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none"></div>
           <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-5 items-center">
             <!-- Nilai Akhir -->
@@ -9044,7 +9199,8 @@ window.runAnalysis = function () {
     divider += 0.15;
   }
 
-  const finalScore = divider ? Math.round(totalScore / divider) : 0;
+  const hasData = divider > 0;
+  const finalScore = hasData ? Math.round(totalScore / divider) :  0;
   const totalRecords =
     stats.school.total + stats.fardu.total + stats.kbm.total + stats.sunnah.total;
   const issueCount = Object.values(stats.issues).reduce((sum, count) => sum + count, 0);
@@ -9058,7 +9214,9 @@ window.runAnalysis = function () {
       : 0;
   const trendDelta = avgScore(secondHalf.length ? secondHalf : stats.timeline) - avgScore(firstHalf);
 
-  document.getElementById("anl-total-score").textContent = `${finalScore}%`;
+  // Hanya tampilkan skor jika ada data
+  const scoreEl = document.getElementById("anl-total-score");
+  if (scoreEl) scoreEl.textContent = hasData ? `${finalScore}%` : "-";
   document.getElementById("stat-hadir-mini").textContent =
     stats.school.h + stats.fardu.h + stats.kbm.h + stats.sunnah.y;
   document.getElementById("stat-masalah-mini").textContent = issueCount;
@@ -9083,18 +9241,23 @@ window.runAnalysis = function () {
     profileDominant.textContent = dominantIssue && dominantIssue[1] > 0 ? dominantIssue[0] : "Tidak ada";
   }
   if (profileStatus) {
-    const statusTone =
-      finalScore >= 90
-        ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-        : finalScore >= 75
-          ? "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400"
-          : finalScore >= 60
-            ? "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-400"
-            : "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400";
-    profileStatus.textContent =
-      finalScore >= 90 ? "Sangat baik" : finalScore >= 75 ? "Baik" : finalScore >= 60 ? "Perlu dampingan" : "Prioritas";
-    profileStatus.className =
-      `inline-flex items-center justify-center px-2.5 py-1 rounded-full border text-[10px] font-black whitespace-nowrap ${statusTone}`;
+    if (!hasData) {
+      profileStatus.textContent = "Belum Ada Data";
+      profileStatus.className = "inline-flex items-center justify-center px-2.5 py-1 rounded-full border text-[10px] font-black whitespace-nowrap bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400";
+    } else {
+      const statusTone =
+        finalScore >= 90
+          ? "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+          : finalScore >= 75
+            ? "bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400"
+            : finalScore >= 60
+              ? "bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-400"
+              : "bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-600 dark:text-red-400";
+      profileStatus.textContent =
+        finalScore >= 90 ? "Sangat baik" : finalScore >= 75 ? "Baik" : finalScore >= 60 ? "Perlu dampingan" : "Prioritas";
+      profileStatus.className =
+        `inline-flex items-center justify-center px-2.5 py-1 rounded-full border text-[10px] font-black whitespace-nowrap ${statusTone}`;
+    }
   }
   if (profileIcon) {
     const issueIcon =
@@ -9105,9 +9268,10 @@ window.runAnalysis = function () {
           : stats.issues.Pulang >= stats.issues.Alpa
             ? "home"
             : "alert-triangle";
-    const iconName = issueCount === 0 && finalScore >= 90 ? "flame" : issueIcon;
-    const iconColor =
-      issueCount === 0 && finalScore >= 90
+    const iconName = hasData && issueCount === 0 && finalScore >= 90 ? "flame" : issueIcon;
+    const iconColor = !hasData
+      ? "text-slate-400 bg-slate-100 dark:bg-slate-800"
+      : issueCount === 0 && finalScore >= 90
         ? "text-orange-500 bg-orange-50 dark:bg-orange-500/10"
         : finalScore >= 75
           ? "text-blue-500 bg-blue-50 dark:bg-blue-500/10"
@@ -9186,7 +9350,10 @@ window.runAnalysis = function () {
   const elVerdict = document.getElementById("anl-verdict");
   const verdictBaseClass =
     "w-full rounded-xl border px-2 py-1.5 truncate font-black text-[10px] leading-none";
-  if (finalScore >= 90) {
+  if (!hasData) {
+    elVerdict.textContent = "Belum Ada Data";
+    elVerdict.className = `${verdictBaseClass} bg-slate-100/70 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400`;
+  } else if (finalScore >= 90) {
     elVerdict.textContent = "Mumtaz (Sangat Baik)";
     elVerdict.className = `${verdictBaseClass} bg-emerald-50/70 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300`;
   } else if (finalScore >= 75) {
@@ -9200,14 +9367,15 @@ window.runAnalysis = function () {
     elVerdict.className = `${verdictBaseClass} bg-red-50/70 dark:bg-red-500/10 border-red-100 dark:border-red-500/20 text-red-700 dark:text-red-300`;
   }
 
-  document.getElementById("anl-score-school").textContent =
-    Math.round(pctSchool) + "%";
-  document.getElementById("anl-score-fardu").textContent =
-    Math.round(pctFardu) + "%";
-  document.getElementById("anl-score-kbm").textContent =
-    Math.round(pctKbm) + "%";
-  document.getElementById("anl-score-sunnah").textContent =
-    Math.round(pctSunnah) + "%";
+  // Hanya tampilkan nilai jika ada data untuk kategori tersebut
+  const setScore = (elId, pct, total) => {
+    const el = document.getElementById(elId);
+    if (el) el.textContent = total > 0 ? `${Math.round(pct)}%` : "-";
+  };
+  setScore("anl-score-school", pctSchool, stats.school.total);
+  setScore("anl-score-fardu", pctFardu, stats.fardu.total);
+  setScore("anl-score-kbm", pctKbm, stats.kbm.total);
+  setScore("anl-score-sunnah", pctSunnah, stats.sunnah.total);
 
   if (window.lucide) window.lucide.createIcons();
 };
@@ -11308,7 +11476,7 @@ window.renderPembinaanManagement = function () {
                 </div>
                 
                 <div class="relative w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-3">
-                    <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 via-orange-400 to-red-500" style="width: ${percentage}%"></div>
+                    <div class="absolute top-0 left-0 h-full bg-emerald-500" style="width: ${percentage}%"></div>
                 </div>
                 
                 <div class="flex justify-between items-center">
@@ -12482,9 +12650,9 @@ window.switchReportView = function (view) {
   const btnReport = document.getElementById("report-view-btn");
   const btnAnalysis = document.getElementById("analysis-view-btn");
   const activeClass =
-    "h-10 w-10 flex items-center justify-center rounded-full bg-palette-blue text-white shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.96]";
+    "h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.96]";
   const inactiveClass =
-    "h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-palette-blue dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]";
+    "h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-blue-500 dark:hover:text-blue-300 border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]";
 
   if (view === "report") {
     report.classList.remove("hidden");
@@ -12648,7 +12816,7 @@ window.initSalatHijriWidget = async function () {
             "hover:bg-slate-100", "dark:hover:bg-slate-900/60", "hover:shadow-sm", "hover:-translate-y-1"
           );
           el.classList.add(
-            "bg-gradient-to-b", "from-emerald-500", "to-emerald-600", "dark:from-emerald-600", "dark:to-emerald-800",
+            "bg-emerald-500", "dark:bg-emerald-600",
             "border-none", "shadow-lg", "shadow-emerald-500/30", "z-10"
           );
           
@@ -12671,7 +12839,7 @@ window.initSalatHijriWidget = async function () {
         } else {
           // Inactive state classes for card
           el.classList.remove(
-            "bg-gradient-to-b", "from-emerald-500", "to-emerald-600", "dark:from-emerald-600", "dark:to-emerald-800",
+            "bg-emerald-500", "dark:bg-emerald-600",
             "border-none", "shadow-lg", "shadow-emerald-500/30", "z-10"
           );
           el.classList.add(
@@ -12825,15 +12993,15 @@ window.openBentoModal = function (s, access, stats) {
   // Header background theme
   const header = document.getElementById("bento-modal-header");
   if (header) {
-    header.className = "relative p-6 text-white flex flex-col justify-end min-h-[130px] bg-gradient-to-br";
-    const gradientMap = {
-      emerald: ["from-emerald-500", "to-emerald-600"],
-      cyan: ["from-cyan-600", "to-blue-500"],
-      orange: ["from-orange-500", "to-amber-500"],
-      indigo: ["from-indigo-600", "to-purple-600"],
-      slate: ["from-slate-700", "to-slate-800"]
+    header.className = "relative p-6 text-white flex flex-col justify-end min-h-[130px]";
+    const themeSolidClass = {
+      emerald: "bg-emerald-500",
+      cyan: "bg-cyan-600",
+      orange: "bg-orange-500",
+      indigo: "bg-indigo-600",
+      slate: "bg-slate-700"
     };
-    header.classList.add(...(gradientMap[s.theme] || gradientMap.emerald));
+    header.classList.add(themeSolidClass[s.theme] || themeSolidClass.emerald);
   }
 
   // Status badge inside modal
@@ -12893,14 +13061,14 @@ window.openBentoModal = function (s, access, stats) {
       pBar.style.backgroundColor = "";
     } else {
       const themeColors = {
-        emerald: "from-emerald-500 to-emerald-600",
-        cyan: "from-sky-500 to-indigo-500",
-        orange: "from-amber-500 to-orange-500",
-        indigo: "from-indigo-500 to-purple-500",
-        slate: "from-slate-500 to-slate-600"
+        emerald: "#10b981",
+        cyan: "#0ea5e9",
+        orange: "#f59e0b",
+        indigo: "#6366f1",
+        slate: "#64748b"
       };
-      const themeGrad = themeColors[s.theme] || themeColors.emerald;
-      pBar.className = `h-full rounded-full transition-all duration-500 bg-gradient-to-r ${themeGrad} animate-pulse-subtle shadow-[0_0_8px_rgba(255,255,255,0.3)]`;
+      const themeColor = themeColors[s.theme] || themeColors.emerald;
+      pBar.style.backgroundColor = themeColor;
       pBar.style.backgroundColor = "";
     }
   }
@@ -12940,7 +13108,7 @@ window.openBentoModal = function (s, access, stats) {
     ctaBtn.onclick = () => window.showToast(`🔒 Akses ${s.label} ${lockText}`, "error");
   } else if (window.isWaliMode()) {
     ctaText.textContent = "Lihat Rekap Santri";
-    ctaBtn.className = "w-full py-3.5 rounded-2xl font-bold text-sm bg-gradient-to-r from-blue-500 to-sky-500 text-white shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2";
+    ctaBtn.className = "w-full py-3.5 rounded-2xl font-bold text-sm bg-blue-500 text-white shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2";
     ctaBtn.onclick = () => {
       window.closeBentoModal();
       appState.currentSlotId = s.id;
@@ -12949,14 +13117,14 @@ window.openBentoModal = function (s, access, stats) {
   } else {
     ctaText.textContent = stats.isFilled ? "Ubah Presensi" : "Mulai Presensi";
     const btnThemeMap = {
-      emerald: "from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/20",
-      cyan: "from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 shadow-cyan-500/20",
-      orange: "from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-orange-500/20",
-      indigo: "from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 shadow-indigo-500/20",
-      slate: "from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 shadow-slate-600/20"
+      emerald: "bg-emerald-500 hover:bg-emerald-600",
+      cyan: "bg-cyan-500 hover:bg-cyan-600",
+      orange: "bg-orange-500 hover:bg-orange-600",
+      indigo: "bg-indigo-500 hover:bg-indigo-600",
+      slate: "bg-slate-600 hover:bg-slate-700"
     };
     const themeClass = btnThemeMap[s.theme] || btnThemeMap.emerald;
-    ctaBtn.className = `w-full py-3.5 rounded-2xl font-bold text-sm bg-gradient-to-r ${themeClass} text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2`;
+    ctaBtn.className = `w-full py-3.5 rounded-2xl font-bold text-sm ${themeClass} text-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2`;
 
     ctaBtn.onclick = () => {
       window.closeBentoModal();

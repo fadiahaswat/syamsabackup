@@ -1575,8 +1575,7 @@ const SLOT_WAKTU = {
     style: {
       icon: "sunrise",
       progressBg: "bg-emerald-500", // <-- TAMBAHKAN INI
-      gradient:
-        "from-emerald-50 to-emerald-100 dark:from-emerald-900/40 dark:to-emerald-900/20",
+      gradient: "bg-emerald-50 dark:bg-emerald-900/40",
       border: "hover:border-emerald-300 dark:hover:border-emerald-700",
       text: "text-emerald-700 dark:text-emerald-300",
       iconBg:
@@ -1628,8 +1627,7 @@ const SLOT_WAKTU = {
     style: {
       icon: "graduation-cap",
       progressBg: "bg-cyan-500", // <-- TAMBAHKAN INI
-      gradient:
-        "from-cyan-50 to-blue-100 dark:from-cyan-900/40 dark:to-blue-900/20",
+      gradient: "bg-cyan-50 dark:bg-cyan-900/40",
       border: "hover:border-cyan-300 dark:hover:border-cyan-700",
       text: "text-cyan-700 dark:text-cyan-300",
       iconBg: "bg-cyan-100 text-cyan-600 dark:bg-cyan-800 dark:text-cyan-200",
@@ -1654,8 +1652,7 @@ const SLOT_WAKTU = {
     style: {
       icon: "sun",
       progressBg: "bg-orange-500", // <-- TAMBAHKAN INI
-      gradient:
-        "from-orange-50 to-amber-100 dark:from-orange-900/40 dark:to-amber-900/20",
+      gradient: "bg-orange-50 dark:bg-orange-900/40",
       border: "hover:border-orange-300 dark:hover:border-orange-700",
       text: "text-orange-700 dark:text-orange-300",
       iconBg:
@@ -1680,8 +1677,7 @@ const SLOT_WAKTU = {
     style: {
       icon: "sunset",
       progressBg: "bg-indigo-500", // <-- TAMBAHKAN INI
-      gradient:
-        "from-indigo-50 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/20",
+      gradient: "bg-indigo-50 dark:bg-indigo-900/40",
       border: "hover:border-indigo-300 dark:hover:border-indigo-700",
       text: "text-indigo-700 dark:text-indigo-300",
       iconBg:
@@ -1736,8 +1732,7 @@ const SLOT_WAKTU = {
     style: {
       icon: "moon",
       progressBg: "bg-slate-500", // <-- TAMBAHKAN INI
-      gradient:
-        "from-slate-50 to-blue-100 dark:from-slate-800 dark:to-blue-900/40",
+      gradient: "bg-slate-50 dark:bg-slate-800",
       border: "hover:border-blue-300 dark:hover:border-blue-700",
       text: "text-slate-700 dark:text-slate-300",
       iconBg:

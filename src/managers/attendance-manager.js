@@ -283,7 +283,7 @@ window.renderAttendanceList = function () {
     );
     const avatar = avatarOptions[avatarSeed % avatarOptions.length];
     avatarEl.className =
-      `w-10 h-10 rounded-xl bg-gradient-to-br ${avatar.class} flex items-center justify-center text-lg shadow-inner shrink-0 ring-1 ring-white/70 dark:ring-white/10 cursor-pointer hover:scale-105 transition-transform`;
+      `w-10 h-10 rounded-xl ${avatar.class} flex items-center justify-center text-lg shadow-inner shrink-0 ring-1 ring-white/70 dark:ring-white/10 cursor-pointer hover:scale-105 transition-transform`;
     avatarEl.textContent = avatar.icon;
     avatarEl.onclick = () => { if (window.openStudentDetail) window.openStudentDetail(id); };
     const iconAvatarOptions = [

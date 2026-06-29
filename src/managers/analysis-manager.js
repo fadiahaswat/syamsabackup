@@ -268,12 +268,17 @@ window.runAnalysis = function () {
     divider += 0.10;
   }
 
-  const finalScore = divider ? Math.round(totalScore / divider) : 0;
+  // Cek apakah ada data sama sekali (divider = 0 berarti tidak ada aktivitas yang dicatat)
+  const hasData = divider > 0;
+  const finalScore = hasData ? Math.round(totalScore / divider) : 0;
 
-  document.getElementById("anl-total-score").textContent = `${finalScore}%`;
+  document.getElementById("anl-total-score").textContent = hasData ? `${finalScore}%` : "-";
 
   const elVerdict = document.getElementById("anl-verdict");
-  if (finalScore >= 90) {
+  if (!hasData) {
+    elVerdict.textContent = "Belum Ada Data";
+    elVerdict.className = "text-sm font-bold text-slate-400";
+  } else if (finalScore >= 90) {
     elVerdict.textContent = "Mumtaz (Sangat Baik)";
     elVerdict.className = "text-sm font-bold text-emerald-500";
   } else if (finalScore >= 75) {
@@ -287,14 +292,11 @@ window.runAnalysis = function () {
     elVerdict.className = "text-sm font-bold text-red-500";
   }
 
-  document.getElementById("anl-score-school").textContent =
-    Math.round(pctSekolah) + "%";
-  document.getElementById("anl-score-fardu").textContent =
-    Math.round(pctShalat) + "%";
-  document.getElementById("anl-score-kbm").textContent =
-    Math.round(pctMahad) + "%";
-  document.getElementById("anl-score-sunnah").textContent =
-    Math.round(pctSunnah) + "%";
+  // Hanya tampilkan nilai jika ada data untuk kategori tersebut
+  document.getElementById("anl-score-school").textContent = stats.sekolah.total > 0 ? `${Math.round(pctSekolah)}%` : "-";
+  document.getElementById("anl-score-fardu").textContent = stats.shalat.total > 0 ? `${Math.round(pctShalat)}%` : "-";
+  document.getElementById("anl-score-kbm").textContent = stats.mahad.total > 0 ? `${Math.round(pctMahad)}%` : "-";
+  document.getElementById("anl-score-sunnah").textContent = stats.sunnah.total > 0 ? `${Math.round(pctSunnah)}%` : "-";
 
   // Render detailed sunnah breakdown
   const sunnahs = ["tahajjud", "dhuha", "tilawah", "puasa"];

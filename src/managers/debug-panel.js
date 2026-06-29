@@ -72,7 +72,7 @@ class DatabaseDebug {
    */
   _getPanelHTML() {
     return `
-      <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-3 flex items-center justify-between">
+      <div class="bg-emerald-500 px-4 py-3 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,7 +156,7 @@ class DatabaseDebug {
 
     content.innerHTML = `
       <!-- State Version -->
-      <div class="rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-4 border border-indigo-100 dark:border-indigo-800/30">
+      <div class="rounded-xl bg-indigo-50 dark:bg-indigo-900/20 p-4 border border-indigo-100 dark:border-indigo-800/30">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs font-medium text-indigo-600 dark:text-indigo-400">State Version</span>
           <span class="px-2 py-0.5 bg-indigo-500 text-white rounded-full text-xs font-bold">v${version}</span>

@@ -1,4 +1,5 @@
 <div
+<div
         id="tab-report"
         class="tab-content hidden min-h-screen animate-fade-in overflow-y-auto hide-scrollbar"
       >
@@ -6,8 +7,8 @@
         <header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 w-full delay-100ms">
           <div class="flex items-center gap-3 min-w-0">
             <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 active:scale-95 transition-all duration-300" aria-label="Kembali ke Dashboard" title="Kembali ke Dashboard">
-              <div class="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-25 group-hover:opacity-50 transition-opacity duration-300"></div>
-              <div class="relative w-11 h-11 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
+              <div class="absolute inset-0 rounded-full bg-blue-400 blur-md opacity-25 group-hover:opacity-50 transition-opacity duration-300"></div>
+              <div class="relative w-11 h-11 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
                 <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
               </div>
             </button>
@@ -25,11 +26,11 @@
                 </span>
               </div>
               <h1 class="text-base sm:text-lg font-black text-slate-800 dark:text-white tracking-tight leading-normal pb-[2px] truncate mb-0.5">
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 to-emerald-500 dark:from-emerald-400 dark:to-emerald-300">
+                <span class="text-blue-700 dark:text-blue-400">
                   Laporan Kelas
                 </span>
               </h1>
-              <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100/50 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] w-fit">
+              <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-500/10 border border-blue-100/50 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 text-[9px] w-fit">
                 <span id="report-badge-label" class="font-bold uppercase tracking-widest text-[8px]">Laporan & Analisis</span>
               </div>
             </div>
@@ -39,7 +40,7 @@
           <button
             id="report-view-btn"
             onclick="window.switchReportView('report')"
-            class="h-10 w-10 flex items-center justify-center rounded-full bg-palette-blue text-white shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.96]"
+            class="h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.96]"
             aria-label="Tampilkan laporan"
             title="Laporan"
           >
@@ -48,12 +49,24 @@
           <button
             id="analysis-view-btn"
             onclick="window.switchReportView('analysis')"
-            class="h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-palette-blue dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]"
+            class="h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-blue-500 dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]"
             aria-label="Tampilkan analisis"
             title="Analisis"
           >
             <i data-lucide="user-search" class="w-4 h-4"></i>
           </button>
+          </div>
+          <div class="wali-only flex items-center gap-2 w-auto shrink-0">
+            <a
+              id="laporan-wali-wa-btn"
+              href="#"
+              target="_blank"
+              class="h-10 px-4 flex items-center justify-center gap-1.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-black text-xs shadow-sm shadow-blue-500/25 transition-all duration-300 active:scale-[0.96]"
+              title="Hubungi Musyrif"
+            >
+              <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
+              <span class="hidden sm:inline">Hubungi Musyrif</span>
+            </a>
           </div>
         </header>
 

@@ -1449,7 +1449,7 @@ window.renderPembinaanManagement = function () {
                 </div>
                 
                 <div class="relative w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-3">
-                    <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 via-orange-400 to-red-500" style="width: ${percentage}%"></div>
+                    <div class="absolute top-0 left-0 h-full bg-emerald-500" style="width: ${percentage}%"></div>
                 </div>
                 
                 <div class="flex justify-between items-center">
@@ -2104,45 +2104,45 @@ window.updateHeroWidget = function() {
   
   let greet = "Selamat Pagi, Musyrif.";
   let context = "Semoga hari ini penuh berkah.";
-  let gradientClass = "from-emerald-500 to-emerald-600";
+  let gradientClass = "bg-emerald-500";
   let svgPath = "";
   
   if (h >= 4 && h < 5.5) {
     greet = "Selamat Fajar, Musyrif.";
     context = "Sesi Shubuh siap diisi.";
-    gradientClass = "from-indigo-900 to-amber-700";
+    gradientClass = "bg-indigo-900";
     svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>`;
   } else if (h >= 5.5 && h < 10) {
     greet = "Selamat Pagi, Musyrif.";
     context = "Semoga aktivitas hari ini membawa berkah.";
-    gradientClass = "from-emerald-500 to-emerald-600";
+    gradientClass = "bg-emerald-500";
     svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
   } else if (h >= 10 && h < 15) {
     greet = "Selamat Siang, Musyrif.";
     context = window.isSlotHoliday("sekolah", appState.date)
       ? "Hari ini sekolah libur, cek sesi ibadah yang berjalan."
       : "Jangan lupa isi presensi sekolah santri.";
-    gradientClass = "from-cyan-500 to-blue-600";
+    gradientClass = "bg-cyan-500";
     svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M5.64 18.36l-1.42 1.42M19.78 4.22l-1.42 1.42"/></svg>`;
   } else if (h >= 15 && h < 17.5) {
     greet = "Selamat Sore, Musyrif.";
     context = "Waktu Ashar sedang berlangsung.";
-    gradientClass = "from-amber-500 to-orange-600";
+    gradientClass = "bg-amber-500";
     svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
   } else if (h >= 17.5 && h < 18.5) {
     greet = "Selamat Senja, Musyrif.";
     context = "Bersiap untuk shalat Maghrib berjamaah.";
-    gradientClass = "from-orange-650 to-indigo-900";
+    gradientClass = "bg-orange-600";
     svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><path d="M12 2v2M4.93 4.93l1.41 1.41M2 12h2M20 12h2M19.07 4.93l-1.41 1.41"/><path d="M2 22h20M12 18a6 6 0 0 0-6-6H4v6h14v-6h-2a6 6 0 0 0-6 6z"/></svg>`;
   } else {
     greet = "Selamat Malam, Musyrif.";
     context = "Cek rekap dan pastikan semua data hari ini lengkap.";
-    gradientClass = "from-slate-900 to-slate-800";
+    gradientClass = "bg-slate-900";
     svgPath = `<svg viewBox="0 0 24 24" width="80" height="80" class="text-white/20 fill-none stroke-current stroke-2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`;
   }
   
   if (elBg) {
-    elBg.className = `absolute inset-0 bg-gradient-to-br ${gradientClass} opacity-90 transition-all duration-1000`;
+    elBg.className = `absolute inset-0 ${gradientClass} opacity-90 transition-all duration-1000`;
   }
   if (elGreet) elGreet.textContent = greet;
   if (elContext) elContext.textContent = context;
@@ -2763,7 +2763,7 @@ window.renderStudentAchievements = function (studentId) {
 
   badges.forEach(badge => {
     const el = document.createElement("div");
-    el.className = `p-3 rounded-2xl border flex items-center gap-3 transition-all duration-300 ${badge.earned ? 'bg-gradient-to-r from-amber-500/10 to-amber-600/5 border-amber-200 dark:from-slate-800 dark:to-slate-850 dark:border-amber-900/30' : 'bg-slate-50 border-slate-100 dark:bg-slate-900 dark:border-slate-800 opacity-40 grayscale'}`;
+    el.className = `p-3 rounded-2xl border flex items-center gap-3 transition-all duration-300 ${badge.earned ? 'bg-amber-500/10 border-amber-200 dark:bg-slate-800 dark:border-amber-900/30' : 'bg-slate-50 border-slate-100 dark:bg-slate-900 dark:border-slate-800 opacity-40 grayscale'}`;
     el.innerHTML = `
       <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${badge.earned ? 'bg-amber-100 dark:bg-amber-955 text-amber-500 ring-2 ring-amber-400/20' : 'bg-slate-200 text-slate-400 dark:bg-slate-800' }">
         <i data-lucide="${badge.icon}" class="w-5 h-5"></i>
@@ -2844,6 +2844,7 @@ window.updateLeaderboardWidget = function () {
   FILTERED_SANTRI.forEach(s => {
     const id = String(s.nis || s.id);
     let score = 0;
+    let hasData = false;
 
     if (category === "attendance") {
       let totalSessi = 0;
@@ -2853,32 +2854,50 @@ window.updateLeaderboardWidget = function () {
           const stats = window.calculateSlotStats(slotId, dateKey);
           if (stats.isFilled) {
             totalSessi++;
+            hasData = true;
             const st = window.getAttendanceStatus(id, slotId, dateKey);
             if (st === "Hadir" || st === "Telat") hadirSessi++;
           }
         });
       });
-      score = totalSessi > 0 ? Math.round((hadirSessi / totalSessi) * 100) : 100;
+      // Hanya hitung score jika ada data, jika tidak ada data beri -1 sebagai penanda
+      score = totalSessi > 0 ? Math.round((hadirSessi / totalSessi) * 100) : (hasData ? 100 : -1);
     } else if (category === "tahfizh") {
       try {
         const setoranList = typeof window.getTahfizhSetoran === "function"
           ? window.getTahfizhSetoran()
           : JSON.parse(localStorage.getItem('tahfizh_local_setoran') || "[]");
-        score = setoranList.filter(set => String(set.nis || set.Nis || set.santriId || set.studentId) === id).length;
+        const count = setoranList.filter(set => String(set.nis || set.Nis || set.santriId || set.studentId) === id).length;
+        score = count;
+        hasData = count > 0;
       } catch (e) {
         score = 0;
       }
     } else if (category === "worship") {
-      // Sunnah items count
-      score = (appState.studentLogs || []).filter(l => String(l.studentId) === id && l.type === "Perkembangan Ibadah").length * 5;
-      // Also add randomly based on NIS to avoid zero initially
-      score += parseInt(id.substring(id.length - 1) || "2") * 3 + 12;
+      // Sunnah items count - hanya dari data nyata, tidak ada nilai acak
+      const logCount = (appState.studentLogs || []).filter(l => String(l.studentId) === id && l.type === "Perkembangan Ibadah").length;
+      score = logCount * 5;
+      hasData = logCount > 0;
     } else if (category === "discipline") {
       const vCount = (appState.violations || []).filter(v => String(v.studentId) === id).length;
-      score = Math.max(0, 100 - (vCount * 10));
+      // Ada pelanggaran = ada data, tidak ada pelanggaran tapi ada presensi = 100, tidak ada data = -1
+      const hasAttendanceData = Object.keys(appState.attendanceData || {}).some(dateKey => {
+        return Object.keys(SLOT_WAKTU).some(slotId => {
+          const stats = window.calculateSlotStats(slotId, dateKey);
+          return stats.isFilled;
+        });
+      });
+      hasData = vCount > 0 || hasAttendanceData;
+      score = hasData ? Math.max(0, 100 - (vCount * 10)) : -1;
     }
 
-    scores.push({ student: s, score: score });
+    // Hanya masukkan ke daftar jika ada data
+    if (hasData) {
+      scores.push({ student: s, score: score });
+    } else {
+      // Santri tanpa data di akhir daftar
+      scores.push({ student: s, score: -1 });
+    }
   });
 
   // Sort descending
@@ -2895,7 +2914,22 @@ window.updateLeaderboardWidget = function () {
 
   top5.forEach((item, index) => {
     const el = document.createElement("div");
-    el.className = "flex items-center justify-between p-2 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60";
+    const isNoData = item.score === -1;
+    el.className = `flex items-center justify-between p-2 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60${isNoData ? ' opacity-50' : ''}`;
+
+    // Format display score
+    let displayScore = "-";
+    let suffix = "";
+    if (!isNoData) {
+      if (category === "attendance" || category === "discipline") {
+        displayScore = item.score + "%";
+      } else if (category === "tahfizh") {
+        displayScore = item.score + " Setor";
+      } else {
+        displayScore = item.score + " Poin";
+      }
+    }
+
     el.innerHTML = `
       <div class="flex items-center gap-3">
         <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${colors[index]}">
@@ -2905,8 +2939,8 @@ window.updateLeaderboardWidget = function () {
           ${item.student.nama}
         </div>
       </div>
-      <div class="font-black text-xs text-indigo-500 dark:text-indigo-400">
-        ${item.score}${category === "attendance" || category === "discipline" ? "%" : category === "tahfizh" ? " Setor" : " Poin"}
+      <div class="font-black text-xs ${isNoData ? 'text-slate-400' : 'text-indigo-500 dark:text-indigo-400'}">
+        ${displayScore}
       </div>
     `;
     container.appendChild(el);

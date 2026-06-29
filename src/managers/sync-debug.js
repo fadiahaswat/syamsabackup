@@ -60,7 +60,7 @@ class SyncDebug {
     return `
       <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <!-- Header -->
-        <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-blue-500 to-indigo-500">
+        <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-blue-500">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

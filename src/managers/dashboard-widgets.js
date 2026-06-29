@@ -165,7 +165,7 @@ window.renderKBMBanner = function () {
 
   if (isWeekend) {
     container.innerHTML = `
-      <div class="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl text-white">
+      <div class="flex items-center gap-3 p-4 bg-indigo-500 rounded-2xl text-white">
         <div class="p-2 bg-white/20 rounded-xl">
           <i data-lucide="sun" class="w-6 h-6"></i>
         </div>
@@ -198,7 +198,7 @@ window.renderKBMBanner = function () {
     }
 
     container.innerHTML = `
-      <div class="flex items-center gap-3 p-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl text-white">
+      <div class="flex items-center gap-3 p-4 bg-emerald-500 rounded-2xl text-white">
         <div class="p-2 bg-white/20 rounded-xl">
           <i data-lucide="book-open" class="w-6 h-6"></i>
         </div>
@@ -390,28 +390,28 @@ window.updateHeroWidget = function () {
   const hour = new Date().getHours();
   let greeting = "";
   let icon = "sun";
-  let gradient = "from-amber-400 to-orange-500";
+  let gradient = "bg-amber-400";
 
   if (hour >= 5 && hour < 10) {
     greeting = "Selamat Pagi";
     icon = "sunrise";
-    gradient = "from-amber-400 to-orange-500";
+    gradient = "bg-amber-400";
   } else if (hour >= 10 && hour < 15) {
     greeting = "Selamat Siang";
     icon = "sun";
-    gradient = "from-yellow-400 to-amber-500";
+    gradient = "bg-yellow-400";
   } else if (hour >= 15 && hour < 18) {
     greeting = "Selamat Sore";
     icon = "sunset";
-    gradient = "from-orange-400 to-red-500";
+    gradient = "bg-orange-400";
   } else {
     greeting = "Selamat Malam";
     icon = "moon";
-    gradient = "from-indigo-500 to-purple-600";
+    gradient = "bg-indigo-500";
   }
 
   container.innerHTML = `
-    <div class="flex items-center gap-4 p-4 bg-gradient-to-r ${gradient} rounded-2xl text-white">
+    <div class="flex items-center gap-4 p-4 ${gradient} rounded-2xl text-white">
       <div class="p-3 bg-white/20 rounded-2xl">
         <i data-lucide="${icon}" class="w-8 h-8"></i>
       </div>
