@@ -474,25 +474,24 @@ window.handleMuinClick = function () {
 const SUPERADMIN_PASSWORD_HASH = window.APP_SECRETS?.superadminHash || null;
 const IS_SUPERADMIN_CONFIGURED = Boolean(SUPERADMIN_PASSWORD_HASH);
 
-// Validate at startup - throw error if not configured (production enforcement)
-if (!IS_SUPERADMIN_CONFIGURED) {
-  const msg = '[Security] Superadmin hash NOT configured. Create config.local.js with window.APP_SECRETS = { superadminHash: "your-hash" }';
-  // Only warn if APP_SECRETS was partially defined but missing superadminHash
-  if (typeof window.APP_SECRETS !== 'undefined') {
-    console.warn(msg);
-  }
-  // In production, uncomment: throw new Error(msg);
+// Validate at startup - only show warning in debug mode
+const _isDebugMode = localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true");
+if (!IS_SUPERADMIN_CONFIGURED && _isDebugMode) {
+  console.warn('[Security] Superadmin hash NOT configured. Create config.local.js with window.APP_SECRETS = { superadminHash: "your-hash" }');
 }
 
 // Also validate critical credentials from config
+// Only show warnings in development/debug mode
 const _creds = window.APP_CREDENTIALS || {};
-if (!_creds.googleSheetUrl) {
+const _isDebugMode = localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true");
+
+if (_isDebugMode && !_creds.googleSheetUrl) {
   console.warn('[Config] googleSheetUrl not configured. Set window.APP_SECRETS.googleSheetUrl in config.local.js');
 }
-if (!_creds.googleClientId) {
+if (_isDebugMode && !_creds.googleClientId) {
   console.warn('[Config] googleClientId not configured. Set window.APP_SECRETS.googleClientId in config.local.js');
 }
-if (!_creds.adminEmails || _creds.adminEmails.length === 0) {
+if (_isDebugMode && (!_creds.adminEmails || _creds.adminEmails.length === 0)) {
   console.warn('[Config] adminEmails not configured. Set window.APP_SECRETS.adminEmails in config.local.js');
 }
 

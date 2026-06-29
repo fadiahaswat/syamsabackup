@@ -9351,9 +9351,9 @@
     </template>
 
     <!-- Scripts -->
-    <script src="src/config/config.js"></script>
-    <!-- Local config overrides (should be created from config.example.js) -->
+    <!-- Local config MUST be loaded BEFORE config.js to override defaults -->
     <script src="src/config/config.local.js"></script>
+    <script src="src/config/config.js"></script>
     <script src="src/data/data-kelas.js"></script>
     <script src="src/data/data-santri.js"></script>
     <script src="src/managers/santri-manager.js"></script>

@@ -36,11 +36,22 @@ async function loadSantriData() {
       return window.santriData;
     }
 
+    // Skip fetch jika googleSheetUrl belum dikonfigurasi
+    if (!window.APP_CREDENTIALS?.googleSheetUrl) {
+      santriDataDebugLog("loadSantriData dilewati: googleSheetUrl belum dikonfigurasi");
+      return window.santriData || [];
+    }
+
     // 2. Jika Cache Kosong (Pertama kali buka), Download Baru secara sinkron
     santriDataDebugLog("Mengunduh data santri pertama kali dari server...");
     const response = await fetch(window.APP_CREDENTIALS.googleSheetUrl);
 
     if (!response.ok) throw new Error("Gagal koneksi server santri");
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error("Response bukan JSON valid");
+    }
 
     const data = await response.json();
 
@@ -60,7 +71,7 @@ async function loadSantriData() {
     santriDataDebugLog("Data Santri berhasil diunduh:", data.length, "santri.");
     return window.santriData;
   } catch (error) {
-    console.error("Error loadSantriData:", error);
+    santriDataDebugLog("Error loadSantriData:", error.message);
     return [];
   }
 }
@@ -69,9 +80,27 @@ async function loadSantriData() {
 async function fetchSantriBackground() {
   const CACHE_KEY = "cache_data_santri_full";
   const CACHE_TIME = "time_data_santri";
+
   try {
+    // Skip if googleSheetUrl is not configured
+    if (!window.APP_CREDENTIALS?.googleSheetUrl) {
+      santriDataDebugLog("Background update santri dilewati: googleSheetUrl belum dikonfigurasi");
+      return;
+    }
+
     const response = await fetch(window.APP_CREDENTIALS.googleSheetUrl);
-    if (!response.ok) throw new Error("Gagal koneksi server santri");
+
+    // Check for HTTP errors
+    if (!response.ok) {
+      santriDataDebugLog(`Background update santri gagal: HTTP ${response.status}`);
+      return;
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      santriDataDebugLog("Background update santri gagal: response bukan JSON");
+      return;
+    }
 
     const data = await response.json();
     if (!Array.isArray(data)) throw new Error("Format data santri salah");
@@ -88,7 +117,8 @@ async function fetchSantriBackground() {
 
     santriDataDebugLog("Data Santri background update selesai.");
   } catch (e) {
-    console.warn("Background update santri gagal:", e);
+    santriDataDebugLog("Background update santri gagal:", e.message);
+    // Silent fail untuk background update - jangan tampilkan error
   }
 }
 
