@@ -1,29 +1,75 @@
-# Syamsa
+# Syriansa PWA
 
-Struktur proyek ini dipertahankan sederhana karena aplikasi masih berjalan sebagai aplikasi web statis.
+Aplikasi PWA untuk operasional asrama/pesantren dengan fitur presensi, izin, tahfizh, dan laporan.
 
-## Entry point
+## Tech Stack
 
-- `index.html` adalah halaman utama aplikasi.
-- `output.css` adalah hasil build Tailwind.
-- `style.css` berisi gaya tambahan yang belum masuk Tailwind.
-- `sw.js` dan `manifest.json` mengatur PWA/offline support.
+- **Core:** Vanilla JavaScript (ES6+), HTML5
+- **Styling:** TailwindCSS + custom CSS variables
+- **Data:** LocalStorage + IndexedDB
+- **PWA:** Service Worker, Web App Manifest
+- **Icons:** Lucide Icons
+- **Charts:** Recharts
 
-## Folder aktif
+## File Structure
 
-- `config/` berisi konfigurasi aplikasi.
-- `core/` berisi bootstrap dan logic utama aplikasi.
-- `data/` berisi data kelas dan santri.
-- `docs/` berisi dokumentasi, checklist, dan design system.
-- `features/` berisi fitur mandiri seperti kiblat.
-- `managers/` berisi modul pengelola fitur.
-- `tahfizh/` berisi modul tahfizh.
-- `assets/` berisi ikon, branding, ilustrasi, dan screenshot.
-- `src/` berisi sumber CSS untuk proses build Tailwind.
+```
+src/
+├── js/           # App logic, router, loader
+├── managers/     # Business logic (auth, attendance, tahfizh, permit, etc.)
+├── components/   # HTML templates, modals
+├── pages/        # Page components (dashboard, tahfizh, report, profile)
+├── layouts/      # Shell, navigation
+├── styles/       # Base, components, theme CSS
+├── core/         # Constants, templates
+├── shared/       # Utilities
+└── data/         # Static data (kelas, metadata)
 
-## Arsip
+root/
+├── index.html    # Entry point
+├── sw.js         # Service Worker
+├── manifest.json # PWA manifest
+├── style.css     # Custom styles
+└── output.css    # Tailwind build output
+```
 
-- `_legacy/root-flat-files/` berisi salinan file lama yang sebelumnya berada di root.
-- `_legacy/syamsa-main-lama/` adalah snapshot proyek lama.
+## User Roles
 
-File di folder arsip tidak dipakai langsung oleh `index.html`.
+| Role | Description |
+|------|-------------|
+| Musyrif | Input presensi cepat, approve izin, pantau santri |
+| Wali Santri | Lihat kondisi anak, kehadiran, tahfizh, perizinan |
+| Admin | Monitoring lintas kelas, audit, broadcast |
+
+## Key Features
+
+- **Presensi** — Multi-sesi harian (Shubuh, Sekolah, Ashar, Maghrib, Isya)
+- **Perizinan** — Pengajuan dan approve izin (sakit, pulang, dll)
+- **Tahfizh** — Setoran dan progres hafalan Al-Quran
+- **Laporan** — Visualisasi data kehadiran dan hafalan
+
+## Development
+
+```bash
+# Install dependencies
+npm install
+
+# Build Tailwind CSS
+npm run build:css
+
+# Watch mode for development
+npm run watch:css
+
+# Start local server
+npx serve .
+```
+
+## Testing
+
+- Manual testing via browser DevTools
+- PWA testing dengan Lighthouse
+- Offline functionality via DevTools > Application > Service Workers
+
+---
+
+Project instructions dan coding standards tersedia di [CLAUDE.md](CLAUDE.md).
