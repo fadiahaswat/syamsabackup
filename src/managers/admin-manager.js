@@ -2366,5 +2366,193 @@ window.handleEditTahfizhSubmit = function (e) {
   }
 };
 
+// ==========================================
+// TASK 9: PLOTTING & AKUN MUSYRIF MANAGEMENT
+// ==========================================
+
+window.showAdminMusyrifView = function () {
+  const view = document.getElementById("view-admin-musyrif");
+  if (view) {
+    view.classList.remove("hidden");
+    window.renderAdminMusyrifList();
+    if (window.lucide) window.lucide.createIcons();
+  }
+};
+
+window.closeAdminMusyrifView = function () {
+  const view = document.getElementById("view-admin-musyrif");
+  if (view) view.classList.add("hidden");
+};
+
+window.renderAdminMusyrifList = function () {
+  const tbody = document.getElementById("admin-musyrif-table-body");
+  const mobileList = document.getElementById("admin-musyrif-mobile-list");
+  if (!tbody) return;
+
+  const searchQuery = (document.getElementById("admin-musyrif-search")?.value || "").toLowerCase().trim();
+
+  // Read from the classData cache (writable local copy)
+  const classDb = window.classData || MASTER_KELAS || {};
+  const entries = Object.entries(classDb).filter(([kelas]) =>
+    String(kelas).toLowerCase() !== "admin musyrif"
+  );
+
+  const filtered = searchQuery
+    ? entries.filter(([kelas, info]) =>
+        String(kelas).toLowerCase().includes(searchQuery) ||
+        String(info.musyrif || "").toLowerCase().includes(searchQuery) ||
+        String(info.wali || "").toLowerCase().includes(searchQuery)
+      )
+    : entries;
+
+  const _safe = (v, fallback = "-") => {
+    const text = v === null || v === undefined || v === "" ? fallback : String(v);
+    return typeof window.sanitizeHTML === "function" ? window.sanitizeHTML(text) : text.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  };
+
+  tbody.innerHTML = "";
+  if (mobileList) mobileList.innerHTML = "";
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 font-bold">${searchQuery ? "Tidak ada kelas ditemukan." : "Tidak ada data kelas."}</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">${searchQuery ? "Tidak ada kelas ditemukan." : "Tidak ada data kelas."}</p>`;
+    return;
+  }
+
+  filtered.sort(([a], [b]) => String(a).localeCompare(String(b)));
+
+  filtered.forEach(([kelas, info]) => {
+    const safeKelas = _safe(kelas);
+    const safeMusyrif = _safe(info.musyrif, "Belum diisi");
+    const safeEmail = _safe(info.email, "Belum ada email");
+    const safeWali = _safe(info.wali, "-");
+    const hasEmail = Boolean(info.email);
+
+    const emailBadge = hasEmail
+      ? `<span class="text-emerald-600 dark:text-emerald-400 font-bold">${safeEmail}</span>`
+      : `<span class="text-red-500 dark:text-red-400 font-bold italic">Belum ada email</span>`;
+
+    // Desktop row
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+        <td class="p-3">
+          <div class="font-black text-slate-800 dark:text-white">${safeKelas}</div>
+        </td>
+        <td class="p-3 text-slate-700 dark:text-slate-300 font-bold">${safeMusyrif}</td>
+        <td class="p-3 text-xs">${emailBadge}</td>
+        <td class="p-3 text-slate-500 dark:text-slate-400">${safeWali}</td>
+        <td class="p-3 text-center">
+          <button onclick="window.editAdminMusyrif('${safeKelas}')" class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-500 dark:text-violet-400 flex items-center justify-center border border-violet-100 dark:border-violet-900/35 hover:scale-105 active:scale-95 transition-all mx-auto" title="Edit Musyrif">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+        </td>
+      </tr>
+    `;
+
+    // Mobile card
+    if (mobileList) {
+      mobileList.innerHTML += `
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-black text-slate-800 dark:text-white text-sm">Kelas ${safeKelas}</h3>
+              <p class="text-xs font-bold text-slate-500 mt-0.5">${safeMusyrif}</p>
+            </div>
+            <button onclick="window.editAdminMusyrif('${safeKelas}')" class="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-500 dark:text-violet-400 flex items-center justify-center border border-violet-100 dark:border-violet-900/35 active:scale-95 transition-all" title="Edit">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button>
+          </div>
+          <div class="space-y-1 text-[11px] font-bold">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Wali Kelas</span>
+              <span class="text-slate-700 dark:text-slate-300">${safeWali}</span>
+            </div>
+            <div class="flex justify-between gap-2">
+              <span class="text-slate-400 shrink-0">Email Login</span>
+              <span class="${hasEmail ? "text-emerald-600 dark:text-emerald-400 text-right" : "text-red-500 italic"}">${hasEmail ? safeEmail : "Belum ada"}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.editAdminMusyrif = function (kelas) {
+  const classDb = window.classData || MASTER_KELAS || {};
+  const info = classDb[kelas];
+  if (!info) {
+    window.showToast?.("Data kelas tidak ditemukan!", "error");
+    return;
+  }
+
+  document.getElementById("edit-musyrif-kelas").value = kelas;
+  document.getElementById("edit-musyrif-kelas-display").value = kelas;
+  document.getElementById("edit-musyrif-nama").value = info.musyrif || "";
+  document.getElementById("edit-musyrif-email").value = info.email || "";
+  document.getElementById("edit-musyrif-wali").value = info.wali || "";
+  document.getElementById("edit-musyrif-subtitle").textContent = `Kelas ${kelas}`;
+
+  document.getElementById("modal-edit-musyrif").classList.remove("hidden");
+};
+
+window.handleEditMusyrifSubmit = function (e) {
+  e.preventDefault();
+  try {
+    const kelas = document.getElementById("edit-musyrif-kelas").value;
+    const nama = document.getElementById("edit-musyrif-nama").value.trim();
+    const email = document.getElementById("edit-musyrif-email").value.trim();
+    const wali = document.getElementById("edit-musyrif-wali").value.trim();
+
+    if (!kelas) {
+      window.showToast?.("Data kelas tidak valid!", "error");
+      return;
+    }
+
+    // Update in-memory classData
+    if (window.classData) {
+      if (!window.classData[kelas]) window.classData[kelas] = {};
+      window.classData[kelas].musyrif = nama;
+      window.classData[kelas].email = email;
+      window.classData[kelas].wali = wali;
+    }
+
+    // Update global MASTER_KELAS reference
+    if (typeof MASTER_KELAS !== "undefined") {
+      if (!MASTER_KELAS[kelas]) MASTER_KELAS[kelas] = {};
+      MASTER_KELAS[kelas].musyrif = nama;
+      MASTER_KELAS[kelas].email = email;
+      MASTER_KELAS[kelas].wali = wali;
+    }
+
+    // Persist to local cache
+    try {
+      const cached = JSON.parse(localStorage.getItem("cache_data_kelas") || "{}");
+      if (!cached[kelas]) cached[kelas] = {};
+      cached[kelas].musyrif = nama;
+      cached[kelas].email = email;
+      cached[kelas].wali = wali;
+      localStorage.setItem("cache_data_kelas", JSON.stringify(cached));
+    } catch (cacheErr) {
+      console.warn("[EditMusyrif] Cache update failed:", cacheErr);
+    }
+
+    window.logActivityAudit?.("Edit Musyrif", "Admin", `Memperbarui data Musyrif untuk Kelas ${kelas}.`);
+    window.showToast?.("Data Musyrif berhasil diperbarui!", "success");
+
+    document.getElementById("modal-edit-musyrif").classList.add("hidden");
+    window.renderAdminMusyrifList();
+    
+    // Also refresh the Musyrif Leaderboard if visible
+    if (window.renderMusyrifLeaderboard) window.renderMusyrifLeaderboard();
+  } catch (err) {
+    console.error("[EditMusyrif] Submit error:", err);
+    window.showToast?.("Gagal menyimpan data Musyrif!", "error");
+  }
+};
+
+
 
 
