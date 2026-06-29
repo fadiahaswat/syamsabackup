@@ -55,7 +55,6 @@ const STATIC_ASSETS = [
   "src/js/app.js",
   "src/js/router.js",
   "src/js/loader.js",
-  "src/js/render.js",
 
   // Managers
   "src/managers/storage-manager.js",
