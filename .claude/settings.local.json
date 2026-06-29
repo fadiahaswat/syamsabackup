@@ -80,7 +80,14 @@
       "Bash(mkdir -p .claude/rules/common .claude/agents .claude/hooks .claude/skills)",
       "Bash(Get-ChildItem -Path src/components -Recurse -Include \"*.html\")",
       "Bash(Select-Object FullName)",
-      "Bash(rm -f src/pages/admin/subtabs/*.html)"
+      "Bash(rm -f src/pages/admin/subtabs/*.html)",
+      "Bash(Get-Content \"d:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\modules\\\\tahfizh\\\\tahfizh-manager.js\")",
+      "Bash(Select-Object -Skip 800 -First 10)",
+      "Bash(powershell -Command \"Get-Content 'd:\\\\syamsa-backup\\\\syamsabackup\\\\src\\\\modules\\\\tahfizh\\\\tahfizh-manager.js' | Select-Object -Skip 800 -First 10\")",
+      "Bash(powershell -Command \"Get-Content 'd:/syamsa-backup/syamsabackup/src/modules/tahfizh/tahfizh-manager.js' | Select-Object -Index \\(799..806\\)\")",
+      "Bash(powershell -Command \"\\(Get-Content 'd:/syamsa-backup/syamsabackup/src/modules/tahfizh/tahfizh-manager.js' -Raw\\).Substring\\(0, 100\\)\")",
+      "Bash(node \"d:/syamsa-backup/syamsabackup/temp_read.js\")",
+      "Bash(node \"d:/syamsa-backup/syamsabackup/temp_fix.js\")"
     ],
     "additionalDirectories": [
       "d:\\syamsa-backup\\syamsabackup",

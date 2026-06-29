@@ -389,7 +389,8 @@ const ComponentLoader = {
       ['modal-edit-wali-permit', 'modal-edit-wali-permit'],
       ['modal-delete-wali-permit', 'modal-delete-wali-permit'],
       ['modal-permit', 'modal-permit'],
-      ['modal-notification-settings', 'modal-notification-settings']
+      ['modal-notification-settings', 'modal-notification-settings'],
+      ['modal-input-pelanggaran', 'modal-input-pelanggaran']
     ];
 
     await Promise.all(modals.map(([id, name]) => this.ensureModal(id, name)));
@@ -462,7 +463,8 @@ const ComponentLoader = {
       `${this.basePath}/modals/modal-edit-wali-permit.html`,
       `${this.basePath}/modals/modal-delete-wali-permit.html`,
       `${this.basePath}/modals/modal-permit.html`,
-      `${this.basePath}/modals/modal-notification-settings.html`
+      `${this.basePath}/modals/modal-notification-settings.html`,
+      `${this.basePath}/modals/modal-input-pelanggaran.html`
     ];
 
     await Promise.all(critical.map(path => this.load(path).catch(() => '')));

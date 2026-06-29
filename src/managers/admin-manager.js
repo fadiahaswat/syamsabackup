@@ -475,6 +475,10 @@ window.renderAdminOpsMatrix = async function () {
   });
 
   if (window.lucide) window.lucide.createIcons();
+  
+  if (window.renderMusyrifLeaderboard) {
+    window.renderMusyrifLeaderboard();
+  }
 };
 
 window.overrideAttendance = function (className, slotId) {
@@ -1128,4 +1132,272 @@ window.openAdminBroadcast = function () {
       broadcastForm.scrollIntoView({ behavior: 'smooth' });
     }
   }, 100);
+};
+
+// ==========================================
+// CONFIGURASI GPS & GEOFENCING OVERRIDE (ADMIN ONLY)
+// ==========================================
+
+window.renderAdminGPSConfig = function () {
+  const toggle = document.getElementById("admin-gps-geofencing-toggle");
+  const radiusInput = document.getElementById("admin-gps-radius-input");
+  const radiusVal = document.getElementById("admin-gps-radius-val");
+  const listContainer = document.getElementById("admin-gps-locations-list");
+
+  if (!toggle || !radiusInput || !listContainer) return;
+
+  // Set values from current GEO_CONFIG
+  toggle.checked = GEO_CONFIG.useGeofencing;
+  radiusInput.value = GEO_CONFIG.maxRadiusMeters;
+  if (radiusVal) radiusVal.textContent = GEO_CONFIG.maxRadiusMeters + "m";
+
+  // Render list of locations
+  listContainer.innerHTML = "";
+  if (!GEO_CONFIG.locations || GEO_CONFIG.locations.length === 0) {
+    listContainer.innerHTML = `<p class="text-[10px] font-bold text-slate-400 p-2 text-center">Belum ada lokasi terdaftar</p>`;
+  } else {
+    GEO_CONFIG.locations.forEach((loc, idx) => {
+      const item = document.createElement("div");
+      item.className = "flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-300";
+      item.innerHTML = `
+        <div class="min-w-0 pr-2">
+          <p class="truncate font-black text-slate-900 dark:text-white leading-tight">${loc.name || 'Lokasi'}</p>
+          <p class="text-[9px] text-slate-400 font-semibold mt-0.5">${Number(loc.lat).toFixed(6)}, ${Number(loc.lng).toFixed(6)}</p>
+        </div>
+        <button type="button" onclick="window.deleteAdminGPSLocation(${idx})" class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-100 shrink-0 active:scale-95 transition-all">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        </button>
+      `;
+      listContainer.appendChild(item);
+    });
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.saveAdminGPSConfig = function () {
+  const toggle = document.getElementById("admin-gps-geofencing-toggle");
+  const radiusInput = document.getElementById("admin-gps-radius-input");
+
+  if (!toggle || !radiusInput) return;
+
+  const isChecked = toggle.checked;
+  const radius = parseInt(radiusInput.value) || 50;
+
+  // Update GEO_CONFIG in memory
+  GEO_CONFIG.useGeofencing = isChecked;
+  GEO_CONFIG.maxRadiusMeters = radius;
+
+  // Persist to localStorage
+  const gpsConfig = {
+    useGeofencing: isChecked,
+    maxRadiusMeters: radius,
+    locations: GEO_CONFIG.locations
+  };
+  localStorage.setItem("syamsa_gps_config", JSON.stringify(gpsConfig));
+  window.logActivityAudit("Update GPS", "Geofencing", `Mengubah status geofencing ke ${isChecked} dengan radius ${radius}m.`);
+
+  window.showToast?.("Pengaturan GPS disimpan!", "success");
+};
+
+window.addAdminGPSLocation = function () {
+  const nameEl = document.getElementById("admin-gps-new-name");
+  const latEl = document.getElementById("admin-gps-new-lat");
+  const lngEl = document.getElementById("admin-gps-new-lng");
+
+  if (!nameEl || !latEl || !lngEl) return;
+
+  const name = nameEl.value.trim();
+  const lat = parseFloat(latEl.value);
+  const lng = parseFloat(lngEl.value);
+
+  if (!name || isNaN(lat) || isNaN(lng)) {
+    window.showToast?.("Semua field lokasi baru wajib diisi secara valid!", "warning");
+    return;
+  }
+
+  // Add to locations array
+  if (!GEO_CONFIG.locations) GEO_CONFIG.locations = [];
+  GEO_CONFIG.locations.push({ name, lat, lng });
+
+  // Save config
+  window.saveAdminGPSConfig();
+
+  // Clear inputs
+  nameEl.value = "";
+  latEl.value = "";
+  lngEl.value = "";
+
+  // Re-render
+  window.renderAdminGPSConfig();
+  window.showToast?.("Lokasi baru ditambahkan!", "success");
+};
+
+window.deleteAdminGPSLocation = function (idx) {
+  if (!GEO_CONFIG.locations || idx < 0 || idx >= GEO_CONFIG.locations.length) return;
+
+  const deleted = GEO_CONFIG.locations[idx];
+  GEO_CONFIG.locations.splice(idx, 1);
+
+  // Save config
+  window.saveAdminGPSConfig();
+
+  // Re-render
+  window.renderAdminGPSConfig();
+  window.showToast?.(`Lokasi ${deleted.name} dihapus!`, "info");
+};
+
+// ==========================================
+// LEADERBOARD KEPATUHAN MUSYRIF (STREAK HARIAN)
+// ==========================================
+
+window.calculateMusyrifStreaks = function () {
+  const result = [];
+  const slots = ['shubuh', 'sekolah', 'ashar', 'maghrib', 'isya'];
+  const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().split('T')[0];
+
+  // Helper to subtract days
+  const subtractDays = (dateStr, days) => {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split('T')[0];
+  };
+
+  Object.keys(MASTER_KELAS).forEach(className => {
+    if (className.toLowerCase() === 'admin musyrif') return;
+
+    const classInfo = MASTER_KELAS[className];
+    const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+    const savedData = localStorage.getItem(storageKey);
+    
+    let totalSlotsFilled = 0;
+    let filledDatesSet = new Set();
+
+    if (savedData) {
+      const attendanceData = window.safeJsonParse(savedData, {});
+      if (attendanceData) {
+        Object.keys(attendanceData).forEach(dateKey => {
+          const dayData = attendanceData[dateKey];
+          if (dayData) {
+            let dayHasData = false;
+            slots.forEach(slotId => {
+              if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
+                totalSlotsFilled++;
+                dayHasData = true;
+              }
+            });
+            if (dayHasData) {
+              filledDatesSet.add(dateKey);
+            }
+          }
+        });
+      }
+    }
+
+    // Compute current streak
+    let currentStreak = 0;
+    
+    // If today is not filled, check yesterday. If yesterday is also not filled, streak is 0
+    const todayFilled = filledDatesSet.has(todayStr);
+    const yesterdayStr = subtractDays(todayStr, 1);
+    const yesterdayFilled = filledDatesSet.has(yesterdayStr);
+
+    if (todayFilled) {
+      currentStreak = 1;
+      let dayOffset = 1;
+      while (true) {
+        const prevDate = subtractDays(todayStr, dayOffset);
+        if (filledDatesSet.has(prevDate)) {
+          currentStreak++;
+          dayOffset++;
+        } else {
+          break;
+        }
+      }
+    } else if (yesterdayFilled) {
+      currentStreak = 1;
+      let dayOffset = 2;
+      while (true) {
+        const prevDate = subtractDays(todayStr, dayOffset);
+        if (filledDatesSet.has(prevDate)) {
+          currentStreak++;
+          dayOffset++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Compute compliance rate (percentage of days filled in the last 14 days)
+    let filledLast14 = 0;
+    for (let i = 0; i < 14; i++) {
+      const dateToCheck = subtractDays(todayStr, i);
+      if (filledDatesSet.has(dateToCheck)) {
+        filledLast14++;
+      }
+    }
+    const complianceRate = Math.round((filledLast14 / 14) * 100);
+
+    result.push({
+      className,
+      musyrif: classInfo.musyrif || 'Musyrif',
+      streak: currentStreak,
+      totalSlots: totalSlotsFilled,
+      compliance: complianceRate
+    });
+  });
+
+  // Sort by streak desc, then by compliance desc, then by totalSlots desc
+  result.sort((a, b) => b.streak - a.streak || b.compliance - a.compliance || b.totalSlots - a.totalSlots);
+  return result;
+};
+
+window.renderMusyrifLeaderboard = function () {
+  const tbody = document.getElementById("admin-musyrif-streak-body");
+  if (!tbody) return;
+
+  const data = window.calculateMusyrifStreaks();
+
+  tbody.innerHTML = "";
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada data kepatuhan Musyrif.</td></tr>`;
+    return;
+  }
+
+  data.forEach((row, index) => {
+    const rank = index + 1;
+    const badgeColor = rank === 1 ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
+                       rank === 2 ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" :
+                       rank === 3 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" :
+                       "bg-slate-50 text-slate-500 dark:bg-slate-900/50";
+                       
+    const streakDisplay = row.streak > 0 ? `🔥 <span class="text-amber-500">${row.streak} Hari</span>` : `<span class="text-slate-400">-</span>`;
+    
+    // Compliance progress bar color
+    const progressColor = row.compliance >= 80 ? "bg-emerald-500" :
+                          row.compliance >= 50 ? "bg-amber-500" :
+                          "bg-rose-500";
+
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+        <td class="p-3 text-center">
+          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-black ${badgeColor}">${rank}</span>
+        </td>
+        <td class="p-3 text-slate-900 dark:text-white font-black">${_escapeHtml(row.musyrif)}</td>
+        <td class="p-3 text-slate-500 dark:text-slate-400 font-bold">${_escapeHtml(row.className)}</td>
+        <td class="p-3 text-center font-black text-xs">${streakDisplay}</td>
+        <td class="p-3 text-center font-bold text-slate-600 dark:text-slate-300">${row.totalSlots} Sesi</td>
+        <td class="p-3">
+          <div class="flex items-center gap-2">
+            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+              <div class="${progressColor} h-2 rounded-full" style="width: ${row.compliance}%"></div>
+            </div>
+            <span class="text-[10px] font-black text-slate-600 dark:text-slate-300 shrink-0 w-8 text-right">${row.compliance}%</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+
+  if (window.lucide) window.lucide.createIcons();
 };

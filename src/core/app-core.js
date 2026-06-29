@@ -273,6 +273,24 @@ const GEO_CONFIG = {
   locations: window.APP_LOCATION?.geofenceLocations || [],
 };
 
+try {
+  const localGpsConfig = localStorage.getItem("syamsa_gps_config");
+  if (localGpsConfig) {
+    const parsedGpsConfig = JSON.parse(localGpsConfig);
+    if (parsedGpsConfig.useGeofencing !== undefined) {
+      GEO_CONFIG.useGeofencing = parsedGpsConfig.useGeofencing === true || parsedGpsConfig.useGeofencing === "true";
+    }
+    if (parsedGpsConfig.maxRadiusMeters !== undefined) {
+      GEO_CONFIG.maxRadiusMeters = Number(parsedGpsConfig.maxRadiusMeters) || 50;
+    }
+    if (Array.isArray(parsedGpsConfig.locations)) {
+      GEO_CONFIG.locations = parsedGpsConfig.locations;
+    }
+  }
+} catch (e) {
+  console.warn("[AppCore] Failed to load local GPS override:", e);
+}
+
 // ==========================================
 // UI COLOR SCHEME
 // ==========================================

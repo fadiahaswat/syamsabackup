@@ -6142,6 +6142,7 @@ window.switchTab = function (tabName) {
     window.renderPermitHistory();
     if (appState.adminMode === true) {
       if (window.renderRecentBroadcasts) window.renderRecentBroadcasts();
+      if (window.renderAdminGPSConfig) window.renderAdminGPSConfig();
     }
   }
   // 6. Refresh Icon Lucide
