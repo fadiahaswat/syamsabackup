@@ -366,12 +366,14 @@ window.initBottomNavScroll = function () {
 };
 
 window.populateClassDropdown = function () {
+  console.log("[populateClassDropdown] Called, window.classData:", window.classData, "MASTER_KELAS:", MASTER_KELAS);
+
   // Populate musyrif login dropdown
   const musyrifSelect = document.getElementById("musyrif-kelas");
+  console.log("[populateClassDropdown] musyrifSelect element:", musyrifSelect);
+
   if (!musyrifSelect) {
-    console.warn("[populateClassDropdown] #musyrif-kelas not found, retrying...");
-    // Retry after a short delay in case element hasn't loaded yet
-    setTimeout(() => window.populateClassDropdown(), 500);
+    console.warn("[populateClassDropdown] #musyrif-kelas not found in DOM");
     return;
   }
 
@@ -379,7 +381,10 @@ window.populateClassDropdown = function () {
 
   // Use window.classData as primary source (set by data-kelas.js)
   const classData = window.classData || MASTER_KELAS || {};
+  console.log("[populateClassDropdown] classData to use:", classData);
+
   const keys = Object.keys(classData);
+  console.log("[populateClassDropdown] keys:", keys);
 
   // Add Admin Musyrif if not present
   const hasAdminKey = keys.some(k => k.toLowerCase() === "admin musyrif");
@@ -401,6 +406,8 @@ window.populateClassDropdown = function () {
     opt.textContent = `${k} - ${classData[k]?.musyrif || ""}`;
     musyrifSelect.appendChild(opt);
   });
+
+  console.log("[populateClassDropdown] Done, options count:", musyrifSelect.options.length);
 };
 
 // ==========================================

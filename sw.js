@@ -5,7 +5,7 @@
  * @version 2.3.7
  */
 
-const CACHE_VERSION = "v258";
+const CACHE_VERSION = "v259";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Static assets to cache for offline functionality
@@ -43,6 +43,7 @@ const STATIC_ASSETS = [
 
   // Core JS - precached for offline functionality
   "src/config/config.js",
+  "src/config/config.local.js",
   "src/core/app-init.js",
   "src/core/app-core.js",
   "src/core/script.js",
