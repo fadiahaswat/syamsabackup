@@ -1241,7 +1241,97 @@ window.updateWaliDashboardSummary = function () {
       ? "shrink-0 rounded-full bg-blue-500/15 border border-blue-400/20 px-3 py-1 text-[10px] font-black text-blue-200"
       : "shrink-0 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-[10px] font-black text-palette-mint";
   }
+
+  // Wali Announcement Banner rendering logic
+  const bannerContainer = document.getElementById("wali-announcement-banner-container");
+  if (bannerContainer) {
+    try {
+      const saved = localStorage.getItem("local_announcements");
+      const announcements = saved ? JSON.parse(saved) : [];
+      
+      // Filter for announcements targeting 'wali' or 'all'
+      const waliAnn = announcements.find(ann => ann.target === "wali" || ann.target === "all");
+      
+      if (waliAnn) {
+        const dateFormatted = waliAnn.created_at ? new Date(waliAnn.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '-';
+        bannerContainer.innerHTML = `
+          <div class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 border border-amber-200/50 dark:border-amber-900/35 rounded-3xl p-4 flex gap-3 relative overflow-hidden backdrop-blur-md">
+            <div class="absolute -right-6 -top-6 w-20 h-20 bg-amber-400 rounded-full blur-[40px] opacity-25"></div>
+            <div class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-megaphone"><path d="m3 11 18-5v12L3 14v-3z"></path><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"></path></svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <span class="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block">Pengumuman Ma'had</span>
+              <h4 class="text-xs font-black text-slate-900 dark:text-white mt-0.5 truncate">${window.sanitizeHTML(waliAnn.title)}</h4>
+              <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">${window.sanitizeHTML(waliAnn.content)}</p>
+              <span class="text-[8px] font-semibold text-slate-400 block mt-2">Diterbitkan: ${dateFormatted} oleh ${window.sanitizeHTML(waliAnn.created_by || 'Admin')}</span>
+            </div>
+          </div>
+        `;
+        bannerContainer.classList.remove("hidden");
+      } else {
+        bannerContainer.classList.add("hidden");
+      }
+    } catch (e) {
+      console.error("[WaliBanner] Error loading wali banner:", e);
+      bannerContainer.classList.add("hidden");
+    }
+  }
+
+  // Wali SP Banner rendering logic
+  const spBannerContainer = document.getElementById("wali-sp-banner-container");
+  if (spBannerContainer) {
+    try {
+      const spKey = "musyrif_sp_docs";
+      const spSaved = localStorage.getItem(spKey);
+      const spDocs = spSaved ? JSON.parse(spSaved) : [];
+      
+      const student = appState.waliSantri;
+      const nis = student?.nis || student?.id;
+      
+      if (nis) {
+        const approvedSPs = spDocs.filter(d => String(d.studentId) === String(nis) && d.status === "approved");
+        
+        if (approvedSPs.length > 0) {
+          // Get the highest SP level
+          approvedSPs.sort((a, b) => b.level - a.level);
+          const topSP = approvedSPs[0];
+          
+          spBannerContainer.innerHTML = `
+            <div class="bg-gradient-to-r from-red-500/10 to-rose-500/10 dark:from-red-500/20 dark:to-rose-500/20 border border-red-200/50 dark:border-red-900/35 rounded-3xl p-4 flex gap-3 relative overflow-hidden backdrop-blur-md animate-pulse">
+              <div class="absolute -right-6 -top-6 w-20 h-20 bg-rose-400 rounded-full blur-[40px] opacity-25"></div>
+              <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-rose-600/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-warning"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <span class="text-[9px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest block">Dokumen Penting</span>
+                <h4 class="text-xs font-black text-slate-900 dark:text-white mt-0.5">${topSP.spName} Telah Diterbitkan</h4>
+                <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                  Surat Peringatan resmi telah diterbitkan untuk ananda ${window.sanitizeHTML(topSP.studentName)} karena akumulasi ${topSP.alpaCount} alpa shalat.
+                </p>
+                <div class="flex gap-2 mt-3">
+                  <button onclick="window.openSPModal('${topSP.id}')" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-black text-[9px] uppercase tracking-wider active:scale-95 transition-all">
+                    Lihat Dokumen Resmi
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+          spBannerContainer.classList.remove("hidden");
+        } else {
+          spBannerContainer.classList.add("hidden");
+        }
+      } else {
+        spBannerContainer.classList.add("hidden");
+      }
+    } catch (e) {
+      console.error("[WaliSPBanner] Error loading SP banner:", e);
+      spBannerContainer.classList.add("hidden");
+    }
+  }
 };
+
+
 
 window.scrollToWaliPermit = function () {
   const el = document.getElementById("dashboard-wali-permit-widget");

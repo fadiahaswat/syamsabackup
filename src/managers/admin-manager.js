@@ -243,7 +243,7 @@ window.changeWaliPassword = async function (nis, newPassword) {
  * 7. COMMUNICATIONS: Membuat pengumuman broadcast baru
  * Menggunakan localStorage
  */
-window.createAnnouncement = async function (title, content) {
+window.createAnnouncement = async function (title, content, target = "musyrif") {
   try {
     const announcementKey = 'local_announcements';
     const saved = localStorage.getItem(announcementKey);
@@ -253,6 +253,7 @@ window.createAnnouncement = async function (title, content) {
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
       title,
       content,
+      target,
       created_by: appState.userProfile?.name || 'Admin',
       created_at: new Date().toISOString()
     };
@@ -263,7 +264,7 @@ window.createAnnouncement = async function (title, content) {
 
     // Catat ke audit log
     if (window.logActivityAudit) {
-      window.logActivityAudit('Broadcast', 'Semua Musyrif', `Mengirim pengumuman: "${title}"`);
+      window.logActivityAudit('Broadcast', target === 'musyrif' ? 'Semua Musyrif' : target === 'wali' ? 'Semua Wali' : 'Semua Musyrif & Wali', `Mengirim pengumuman: "${title}"`);
     }
 
     return { success: true, error: null };
@@ -479,6 +480,18 @@ window.renderAdminOpsMatrix = async function () {
   if (window.renderMusyrifLeaderboard) {
     window.renderMusyrifLeaderboard();
   }
+  if (window.renderViolationLeaderboard) {
+    window.renderViolationLeaderboard();
+  }
+  if (window.renderAdminViolationsList) {
+    window.renderAdminViolationsList();
+  }
+  if (window.renderAdminViolationRules) {
+    window.renderAdminViolationRules();
+  }
+  if (window.renderAdminIbadahAnalytics) {
+    window.renderAdminIbadahAnalytics();
+  }
 };
 
 window.overrideAttendance = function (className, slotId) {
@@ -690,6 +703,18 @@ window.renderAdminTahfizhList = async function () {
     const safeDate = safeTahfizhText(r.tanggal ? window.formatDate(r.tanggal) : "-");
     const safeMusyrif = safeTahfizhText(r.musyrif);
 
+    const safeRecordId = String(r.id).replace(/[`$\\]/g, '\\$&');
+    const actions = `
+      <div class="flex items-center justify-center gap-1.5">
+        <button onclick="window.editAdminTahfizh('${safeRecordId}')" class="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-500 dark:text-orange-400 flex items-center justify-center border border-orange-100 dark:border-orange-900/35 hover:scale-105 active:scale-95 transition-all animate-fade-in" title="Edit Catatan">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+        <button onclick="window.deleteAdminTahfizh('${safeRecordId}')" class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-500 dark:text-red-400 flex items-center justify-center border border-red-100 dark:border-red-900/35 hover:scale-105 active:scale-95 transition-all animate-fade-in" title="Hapus Catatan">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+        </button>
+      </div>
+    `;
+
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
         <td class="p-3">
@@ -704,6 +729,7 @@ window.renderAdminTahfizhList = async function () {
         </td>
         <td class="p-3 text-slate-400 font-mono text-[10px]">${safeDate}</td>
         <td class="p-3 text-slate-600 dark:text-slate-300">${safeMusyrif}</td>
+        <td class="p-3 text-center">${actions}</td>
       </tr>
     `;
 
@@ -737,6 +763,10 @@ window.renderAdminTahfizhList = async function () {
             <span>Musyrif:</span>
             <span class="text-slate-700 dark:text-slate-300 font-black">${safeMusyrif}</span>
           </div>
+          <div class="pt-2 flex gap-2 w-full mt-2">
+            <button onclick="window.editAdminTahfizh('${safeRecordId}')" class="flex-1 py-2 rounded-xl bg-orange-500 text-white font-black text-xs active:scale-[0.98] transition-all text-center">Edit</button>
+            <button onclick="window.deleteAdminTahfizh('${safeRecordId}')" class="flex-1 py-2 rounded-xl bg-red-500 text-white font-black text-xs active:scale-[0.98] transition-all text-center">Hapus</button>
+          </div>
         </div>
       `;
     }
@@ -744,7 +774,7 @@ window.renderAdminTahfizhList = async function () {
 
   if (filtered.length > 100) {
     const moreText = `Menampilkan 100 dari ${filtered.length} setoran. Silakan gunakan pencarian untuk lebih spesifik.`;
-    tbody.innerHTML += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
+    tbody.innerHTML += `<tr><td colspan="8" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
     if (mobileList) {
       mobileList.innerHTML += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
     }
@@ -754,160 +784,290 @@ window.renderAdminTahfizhList = async function () {
 
 
 window.renderAdminPermits = async function () {
-  const tbody = document.getElementById("admin-permits-table-body");
-  const mobileList = document.getElementById("admin-permits-mobile-list");
-  if (!tbody) return;
+  const tbodyDashboard = document.getElementById("admin-dashboard-permits-tbody");
+  const mobileListDashboard = document.getElementById("admin-dashboard-permits-mobile-list");
+  const badgeDashboard = document.getElementById("admin-pending-permits-count-badge");
 
-  tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Memuat riwayat perizinan...</td></tr>`;
-  if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat riwayat perizinan...</p>`;
+  const tbodyReport = document.getElementById("admin-permits-table-body");
+  const mobileListReport = document.getElementById("admin-permits-mobile-list");
 
   const { data, error } = await window.loadGlobalPermits();
   if (error || !data) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gagal memuat perizinan: ${error || 'Offline'}</td></tr>`;
-    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-red-500 font-bold p-4 text-center">Gagal memuat perizinan: ${error || 'Offline'}</p>`;
+    if (tbodyReport) {
+      tbodyReport.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gagal memuat perizinan: ${error || 'Offline'}</td></tr>`;
+    }
     return;
   }
 
-  const searchQuery = document.getElementById("admin-permit-search")?.value?.toLowerCase().trim() || "";
-  const statusFilter = document.getElementById("admin-permit-status-filter")?.value || "all";
+  // 1. POPULATE DASHBOARD PERSUB (PENDING ONLY)
+  if (tbodyDashboard) {
+    const pendingPermits = data.filter(p => String(p.status || "approved").toLowerCase() === "pending");
+    if (badgeDashboard) badgeDashboard.textContent = `${pendingPermits.length} Pending`;
 
-  tbody.innerHTML = "";
-  if (mobileList) mobileList.innerHTML = "";
+    tbodyDashboard.innerHTML = "";
+    if (mobileListDashboard) mobileListDashboard.innerHTML = "";
 
-  // Filter search and status
-  let filtered = data;
+    if (pendingPermits.length === 0) {
+      tbodyDashboard.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tidak ada pengajuan izin pending.</td></tr>`;
+      if (mobileListDashboard) mobileListDashboard.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada pengajuan izin pending.</p>`;
+    } else {
+      pendingPermits.forEach(p => {
+        const safePermitId = String(p.id || p.nis || '').replace(/[`$\\]/g, '\\$&');
+        const safeStudentName = window.sanitizeHTML(p.studentName || 'Santri');
+        const safeNis = window.sanitizeHTML(p.nis || '-');
+        const safeClassName = window.sanitizeHTML(p.className || "-");
+        const safeType = window.sanitizeHTML(p.tipe_izin || p.category || "Izin");
+        const safeStartDate = window.sanitizeHTML(p.tanggal_mulai || p.start_date || "-");
+        const safeEndDate = window.sanitizeHTML(p.tanggal_selesai || p.end_date || "-");
+        const safeReason = window.sanitizeHTML(p.keperluan || p.reason || '-');
 
-  if (searchQuery) {
-    filtered = filtered.filter(p =>
-      (p.studentName && p.studentName.toLowerCase().includes(searchQuery)) ||
-      (p.nis && String(p.nis).includes(searchQuery)) ||
-      (p.className && p.className.toLowerCase().includes(searchQuery)) ||
-      (p.tipe_izin && p.tipe_izin.toLowerCase().includes(searchQuery)) ||
-      (p.category && p.category.toLowerCase().includes(searchQuery)) ||
-      (p.keperluan && p.keperluan.toLowerCase().includes(searchQuery)) ||
-      (p.reason && p.reason.toLowerCase().includes(searchQuery))
-    );
+        tbodyDashboard.innerHTML += `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+            <td class="p-3">
+              <div class="font-black text-slate-800 dark:text-white">${safeStudentName}</div>
+              <div class="text-[9px] text-slate-400 font-mono">${safeNis}</div>
+            </td>
+            <td class="p-3 text-slate-600 dark:text-slate-300">${safeClassName}</td>
+            <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${safeType}</td>
+            <td class="p-3 text-slate-500 text-[10px]">
+              <div>Mulai: ${safeStartDate}</div>
+              <div>Selesai: ${safeEndDate}</div>
+            </td>
+            <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${safeReason}">${safeReason}</td>
+            <td class="p-3 text-center">
+              <div class="flex items-center justify-center gap-1.5">
+                <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
+                <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="px-2.5 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
+              </div>
+            </td>
+          </tr>
+        `;
+
+        if (mobileListDashboard) {
+          mobileListDashboard.innerHTML += `
+            <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeStudentName}</h3>
+                  <p class="text-[9px] text-slate-400 font-mono mt-0.5">${safeClassName} • NIS: ${safeNis}</p>
+                </div>
+                <span class="px-2 py-0.5 rounded text-[9px] font-black bg-amber-50 text-amber-500">Pending</span>
+              </div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-400 font-bold leading-relaxed">
+                <p><span class="text-slate-400">Tipe:</span> ${safeType}</p>
+                <p><span class="text-slate-400">Waktu:</span> ${safeStartDate} s/d ${safeEndDate}</p>
+                <p class="mt-1"><span class="text-slate-400">Keperluan:</span> "${safeReason}"</p>
+              </div>
+              <div class="flex gap-2 w-full mt-2">
+                <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="flex-1 py-2 rounded-xl bg-emerald-500 text-white font-black text-xs active:scale-[0.98] transition-all text-center">Setujui</button>
+                <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="flex-1 py-2 rounded-xl bg-red-500 text-white font-black text-xs active:scale-[0.98] transition-all text-center">Tolak</button>
+              </div>
+            </div>
+          `;
+        }
+      });
+    }
   }
 
-  if (statusFilter !== "all") {
-    filtered = filtered.filter(p => {
+  // 2. POPULATE LAPORAN ARSIP (ALL WITH SEARCH / FILTERS / FORCE RETURN)
+  if (tbodyReport) {
+    const searchQuery = document.getElementById("admin-permit-search")?.value?.toLowerCase().trim() || "";
+    const statusFilter = document.getElementById("admin-permit-status-filter")?.value || "all";
+
+    tbodyReport.innerHTML = "";
+    if (mobileListReport) mobileListReport.innerHTML = "";
+
+    let filtered = data;
+
+    if (searchQuery) {
+      filtered = filtered.filter(p =>
+        (p.studentName && p.studentName.toLowerCase().includes(searchQuery)) ||
+        (p.nis && String(p.nis).includes(searchQuery)) ||
+        (p.className && p.className.toLowerCase().includes(searchQuery)) ||
+        (p.tipe_izin && p.tipe_izin.toLowerCase().includes(searchQuery)) ||
+        (p.category && p.category.toLowerCase().includes(searchQuery)) ||
+        (p.keperluan && p.keperluan.toLowerCase().includes(searchQuery)) ||
+        (p.reason && p.reason.toLowerCase().includes(searchQuery))
+      );
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(p => {
+        const statusLower = String(p.status || "approved").toLowerCase();
+        const isActive = p.is_active !== false;
+
+        if (statusFilter === "pending") {
+          return statusLower === "pending";
+        } else if (statusFilter === "approved_active") {
+          return statusLower === "approved" && isActive;
+        } else if (statusFilter === "kembali") {
+          return statusLower === "approved" && !isActive;
+        } else if (statusFilter === "rejected") {
+          return statusLower === "rejected";
+        }
+        return true;
+      });
+    }
+
+    if (filtered.length === 0) {
+      tbodyReport.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada riwayat perizinan ditemukan.</td></tr>`;
+      if (mobileListReport) mobileListReport.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada riwayat perizinan ditemukan.</p>`;
+      return;
+    }
+
+    filtered.slice(0, 100).forEach(p => {
       const statusLower = String(p.status || "approved").toLowerCase();
       const isActive = p.is_active !== false;
 
-      if (statusFilter === "pending") {
-        return statusLower === "pending";
-      } else if (statusFilter === "approved_active") {
-        return statusLower === "approved" && isActive;
-      } else if (statusFilter === "kembali") {
-        return statusLower === "approved" && !isActive;
-      } else if (statusFilter === "rejected") {
-        return statusLower === "rejected";
+      let displayStatus = "Disetujui";
+      let statusClass = "bg-emerald-50 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400";
+
+      if (statusLower === "pending") {
+        displayStatus = "Diajukan";
+        statusClass = "bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400";
+      } else if (statusLower === "rejected") {
+        displayStatus = "Ditolak";
+        statusClass = "bg-red-50 text-red-500 dark:bg-red-950/40 dark:text-red-400";
+      } else if (!isActive) {
+        displayStatus = "Kembali";
+        statusClass = "bg-blue-50 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400";
       }
-      return true;
-    });
-  }
 
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada riwayat perizinan ditemukan.</td></tr>`;
-    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada riwayat perizinan ditemukan.</p>`;
-    return;
-  }
+      const safePermitId = String(p.id || p.nis || '').replace(/[`$\\]/g, '\\$&');
+      
+      let actions = `<span class="text-slate-400 text-[10px]">-</span>`;
+      let mobileActions = "";
 
-  filtered.slice(0, 100).forEach(p => {
-    const statusLower = String(p.status || "approved").toLowerCase();
-    const isActive = p.is_active !== false;
-
-    let displayStatus = "Disetujui";
-    let statusClass = "bg-emerald-50 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400";
-
-    if (statusLower === "pending") {
-      displayStatus = "Diajukan";
-      statusClass = "bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400";
-    } else if (statusLower === "rejected") {
-      displayStatus = "Ditolak";
-      statusClass = "bg-red-50 text-red-500 dark:bg-red-950/40 dark:text-red-400";
-    } else if (!isActive) {
-      displayStatus = "Kembali";
-      statusClass = "bg-blue-50 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400";
-    }
-
-    // Safe ID for event handlers - escape backticks and $
-    const safePermitId = String(p.id || p.nis || '').replace(/[`$\\]/g, '\\$&');
-    const actions = (statusLower === "pending")
-      ? `<div class="flex items-center justify-center gap-1">
-          <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="px-2 py-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
-          <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600 text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
-         </div>`
-      : `<span class="text-slate-400 text-[10px]">-</span>`;
-
-    // Mobile Actions Layout
-    const mobileActions = (statusLower === "pending")
-      ? `<div class="flex gap-2 w-full mt-2">
-          <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="flex-1 py-2 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-black active:scale-[0.98] transition-all text-center">Setujui</button>
-          <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="flex-1 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-[10px] font-black active:scale-[0.98] transition-all text-center">Tolak</button>
-         </div>`
-      : "";
-
-    // Sanitize user-provided fields to prevent XSS
-    const safeStudentName = window.sanitizeHTML(p.studentName || 'Santri');
-    const safeNis = window.sanitizeHTML(p.nis || '-');
-    const safeClassName = window.sanitizeHTML(p.className || "-");
-    const safeType = window.sanitizeHTML(p.tipe_izin || p.category || "Izin");
-    const safeStartDate = window.sanitizeHTML(p.tanggal_mulai || p.start_date || "-");
-    const safeEndDate = window.sanitizeHTML(p.tanggal_selesai || p.end_date || "-");
-    const safeReason = window.sanitizeHTML(p.keperluan || p.reason || '-');
-
-    tbody.innerHTML += `
-      <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
-        <td class="p-3">
-          <div class="font-black text-slate-800 dark:text-white">${safeStudentName}</div>
-          <div class="text-[9px] text-slate-400 font-mono">${safeNis}</div>
-        </td>
-        <td class="p-3 text-slate-600 dark:text-slate-300">${safeClassName}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${safeType}</td>
-        <td class="p-3 text-slate-500 text-[10px]">
-          <div>Mulai: ${safeStartDate}</div>
-          <div>Selesai: ${safeEndDate}</div>
-        </td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${safeReason}">${safeReason}</td>
-        <td class="p-3 text-center">
-          <span class="px-2 py-0.5 rounded text-[10px] font-black ${statusClass}">${displayStatus}</span>
-        </td>
-        <td class="p-3 text-center">${actions}</td>
-      </tr>
-    `;
-
-    if (mobileList) {
-      mobileList.innerHTML += `
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
-          <div class="flex justify-between items-start">
-            <div>
-              <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeStudentName}</h3>
-              <p class="text-[9px] text-slate-400 font-mono mt-0.5">NIS: ${safeNis} (${safeClassName})</p>
-            </div>
-            <div>
-              <span class="px-2 py-0.5 rounded text-[9px] font-black ${statusClass}">${displayStatus}</span>
-            </div>
+      if (statusLower === "pending") {
+        actions = `
+          <div class="flex items-center justify-center gap-1">
+            <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="px-2 py-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
+            <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600 text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
           </div>
-          <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
-            <div>
-              <span class="block text-[8px] text-slate-400 uppercase">Tipe Izin</span>
-              <span class="text-slate-700 dark:text-slate-300">${safeType}</span>
-            </div>
-            <div>
-              <span class="block text-[8px] text-slate-400 uppercase">Durasi Izin</span>
-              <span class="text-slate-700 dark:text-slate-300 text-[9px] leading-tight block">Mulai: ${safeStartDate}<br>Selesai: ${safeEndDate}</span>
-            </div>
-            <div class="col-span-2">
-              <span class="block text-[8px] text-slate-400 uppercase">Keperluan</span>
-              <span class="text-slate-700 dark:text-slate-300">${safeReason}</span>
-            </div>
+        `;
+        mobileActions = `
+          <div class="flex gap-2 w-full mt-2">
+            <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="flex-1 py-2 rounded-xl bg-emerald-500 text-white text-[10px] font-black active:scale-[0.98] transition-all text-center">Setujui</button>
+            <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="flex-1 py-2 rounded-xl bg-red-500 text-white text-[10px] font-black active:scale-[0.98] transition-all text-center">Tolak</button>
           </div>
-          ${mobileActions}
-        </div>
+        `;
+      } else if (statusLower === "approved" && isActive) {
+        actions = `
+          <button onclick="window.forceReturnPermit('${safePermitId}')" class="px-2.5 py-1 rounded-lg bg-orange-100 border border-orange-200 hover:bg-orange-200 text-orange-700 dark:bg-orange-950/40 dark:border-orange-900/35 dark:text-orange-400 text-[10px] font-black active:scale-95 transition-all">
+            Paksa Kembali
+          </button>
+        `;
+        mobileActions = `
+          <button onclick="window.forceReturnPermit('${safePermitId}')" class="w-full mt-2 py-2 rounded-xl bg-orange-100 border border-orange-200 text-orange-700 text-[10px] font-black active:scale-95 transition-all text-center">
+            Paksa Kembali
+          </button>
+        `;
+      }
+
+      const safeStudentName = window.sanitizeHTML(p.studentName || 'Santri');
+      const safeNis = window.sanitizeHTML(p.nis || '-');
+      const safeClassName = window.sanitizeHTML(p.className || "-");
+      const safeType = window.sanitizeHTML(p.tipe_izin || p.category || "Izin");
+      const safeStartDate = window.sanitizeHTML(p.tanggal_mulai || p.start_date || "-");
+      const safeEndDate = window.sanitizeHTML(p.tanggal_selesai || p.end_date || "-");
+      const safeReason = window.sanitizeHTML(p.keperluan || p.reason || '-');
+
+      tbodyReport.innerHTML += `
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+          <td class="p-3">
+            <div class="font-black text-slate-800 dark:text-white">${safeStudentName}</div>
+            <div class="text-[9px] text-slate-400 font-mono">${safeNis}</div>
+          </td>
+          <td class="p-3 text-slate-600 dark:text-slate-300">${safeClassName}</td>
+          <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${safeType}</td>
+          <td class="p-3 text-slate-500 text-[10px]">
+            <div>Mulai: ${safeStartDate}</div>
+            <div>Selesai: ${safeEndDate}</div>
+          </td>
+          <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${safeReason}">${safeReason}</td>
+          <td class="p-3 text-center">
+            <span class="px-2 py-0.5 rounded text-[10px] font-black ${statusClass}">${displayStatus}</span>
+          </td>
+          <td class="p-3 text-center">${actions}</td>
+        </tr>
       `;
+
+      if (mobileListReport) {
+        mobileListReport.innerHTML += `
+          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeStudentName}</h3>
+                <p class="text-[9px] text-slate-400 font-mono mt-0.5">NIS: ${safeNis} (${safeClassName})</p>
+              </div>
+              <div>
+                <span class="px-2 py-0.5 rounded text-[9px] font-black ${statusClass}">${displayStatus}</span>
+              </div>
+            </div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 font-bold leading-relaxed">
+              <p><span class="text-slate-400">Tipe:</span> ${safeType}</p>
+              <p><span class="text-slate-400">Waktu:</span> ${safeStartDate} s/d ${safeEndDate}</p>
+              <p class="mt-1"><span class="text-slate-400">Keperluan:</span> "${safeReason}"</p>
+            </div>
+            ${mobileActions}
+          </div>
+        `;
+      }
+    });
+
+    if (filtered.length > 100) {
+      const moreText = `Menampilkan 100 dari ${filtered.length} perizinan. Silakan gunakan pencarian atau filter status untuk lebih spesifik.`;
+      tbodyReport.innerHTML += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
+      if (mobileListReport) {
+        mobileListReport.innerHTML += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
+      }
     }
-  });
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.forceReturnPermit = async function (permitId) {
+  if (!confirm("Apakah Anda yakin ingin mematikan izin ini dan memaksa status santri kembali ke pondok?")) return;
+
+  try {
+    const permitKey = 'musyrif_permits_db';
+    const saved = localStorage.getItem(permitKey);
+    let permits = saved ? JSON.parse(saved) : [];
+
+    const permitIdx = permits.findIndex(p => String(p.id || p.nis) === String(permitId));
+    if (permitIdx === -1) {
+      window.showToast?.("Izin tidak ditemukan!", "error");
+      return;
+    }
+
+    // Update permit status to returned (is_active = false)
+    permits[permitIdx].is_active = false;
+    permits[permitIdx].tanggal_kembali = new Date().toISOString().split('T')[0] + " " + new Date().toTimeString().split(' ')[0];
+    
+    localStorage.setItem(permitKey, JSON.stringify(permits));
+
+    // Update in appState if present
+    if (appState.permits) {
+      const appStateIdx = appState.permits.findIndex(p => String(p.id || p.nis) === String(permitId));
+      if (appStateIdx !== -1) {
+        appState.permits[appStateIdx].is_active = false;
+        appState.permits[appStateIdx].tanggal_kembali = permits[permitIdx].tanggal_kembali;
+      }
+    }
+
+    const permit = permits[permitIdx];
+    const studentName = permit.studentName || "Santri";
+    
+    window.logActivityAudit("Force Return", studentName, `Memaksa kembali santri dari izin ${permit.tipe_izin || 'Izin'}.`);
+    window.showToast?.(`Status ${studentName} direset ke Pondok!`, "success");
+
+    // Re-render
+    window.renderAdminPermits();
+  } catch (err) {
+    window.showToast("Gagal melakukan force return", "error");
+  }
+};
 
   if (filtered.length > 100) {
     const moreText = `Menampilkan 100 dari ${filtered.length} perizinan. Silakan gunakan pencarian atau filter status untuk lebih spesifik.`;
@@ -918,6 +1078,8 @@ window.renderAdminPermits = async function () {
   }
 
   if (window.lucide) window.lucide.createIcons();
+  
+  if (window.renderAdminSPHub) window.renderAdminSPHub();
 };
 
 window.approveOrRejectPermit = async function (permitId, approved) {
@@ -972,14 +1134,16 @@ window.handleAdminBroadcastSubmit = async function (e) {
 
   const titleInput = document.getElementById("admin-broadcast-title");
   const contentInput = document.getElementById("admin-broadcast-content");
+  const targetInput = document.getElementById("admin-broadcast-target");
   if (!titleInput || !contentInput) return;
 
   const title = titleInput.value.trim();
   const content = contentInput.value.trim();
+  const target = targetInput ? targetInput.value : "musyrif";
 
   if (!title || !content) return;
 
-  const { success, error } = await window.createAnnouncement(title, content);
+  const { success, error } = await window.createAnnouncement(title, content, target);
   if (success) {
     window.showToast("Broadcast pengumuman berhasil dikirim!", "success");
     titleInput.value = "";
@@ -1012,35 +1176,46 @@ window.renderRecentBroadcasts = async function () {
   data.forEach(ann => {
     // Safe DOM construction to prevent XSS
     const item = document.createElement('div');
-    item.className = 'p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30';
+    item.className = 'p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 space-y-2';
 
     const title = document.createElement('h4');
     title.className = 'text-xs font-black text-slate-800 dark:text-white';
     title.textContent = window.sanitizeHTML(ann.title) || '';
 
     const date = document.createElement('span');
-    date.className = 'text-[9px] text-slate-400 font-mono';
+    date.className = 'text-[9px] text-slate-400 font-mono shrink-0';
     date.textContent = ann.created_at ? new Date(ann.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '-';
 
     const headerDiv = document.createElement('div');
-    headerDiv.className = 'flex justify-between items-start gap-2 mb-1';
+    headerDiv.className = 'flex justify-between items-start gap-2';
     headerDiv.appendChild(title);
     headerDiv.appendChild(date);
+
+    // Target badge display
+    const targetBadge = document.createElement('div');
+    const targetText = ann.target === 'wali' ? 'Wali Santri' : ann.target === 'all' ? 'Semua User' : 'Musyrif';
+    const targetColor = ann.target === 'wali' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/30 dark:text-amber-400' :
+                        ann.target === 'all' ? 'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-950/30 dark:text-purple-400' :
+                        'bg-teal-50 text-teal-600 border-teal-100 dark:bg-teal-950/30 dark:text-teal-400';
+    targetBadge.className = `inline-flex text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${targetColor}`;
+    targetBadge.textContent = targetText;
 
     const content = document.createElement('p');
     content.className = 'text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-bold whitespace-pre-line';
     content.textContent = window.sanitizeHTML(ann.content) || '';
 
     const byline = document.createElement('div');
-    byline.className = 'text-[9px] text-slate-400 font-bold mt-2';
+    byline.className = 'text-[9px] text-slate-400 font-bold';
     byline.textContent = `Oleh: ${window.sanitizeHTML(ann.created_by) || 'Admin'}`;
 
     item.appendChild(headerDiv);
+    item.appendChild(targetBadge);
     item.appendChild(content);
     item.appendChild(byline);
     container.appendChild(item);
   });
 };
+
 
 window.renderAdminLogs = async function () {
   const tbody = document.getElementById("admin-logs-tbody");
@@ -1401,3 +1576,795 @@ window.renderMusyrifLeaderboard = function () {
 
   if (window.lucide) window.lucide.createIcons();
 };
+
+// ==========================================
+// MANAJEMEN PELANGGARAN & POIN DENDA (ADMIN ONLY)
+// ==========================================
+
+const DEFAULT_VIOLATION_RULES = {
+  "Kabur dari Asrama": 50,
+  "Merusak Fasilitas": 30,
+  "Membawa HP / Elektronik": 20,
+  "Melanggar Aturan Busana": 10,
+  "Terlambat Sesi Shalat": 5,
+  "Lainnya": 10
+};
+
+window.getViolationRules = function () {
+  try {
+    const saved = localStorage.getItem("syamsa_violation_rules");
+    return saved ? JSON.parse(saved) : DEFAULT_VIOLATION_RULES;
+  } catch (e) {
+    return DEFAULT_VIOLATION_RULES;
+  }
+};
+
+window.renderAdminViolationRules = function () {
+  const container = document.getElementById("admin-violation-rules-list");
+  if (!container) return;
+
+  const rules = window.getViolationRules();
+  container.innerHTML = "";
+
+  Object.keys(rules).forEach(ruleName => {
+    const points = rules[ruleName];
+    const item = document.createElement("div");
+    item.className = "flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100/50 dark:border-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-300";
+    item.innerHTML = `
+      <span class="truncate pr-2 font-black">${ruleName}</span>
+      <div class="flex items-center gap-1 shrink-0">
+        <input type="number" data-rule="${ruleName}" value="${points}" min="1" max="100" class="w-14 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-1 text-center text-xs font-black text-slate-900 dark:text-white focus:outline-none focus:border-teal-500" />
+        <span class="text-[9px] font-extrabold text-slate-400">Poin</span>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+};
+
+window.saveAdminViolationRules = function () {
+  const inputs = document.querySelectorAll("#admin-violation-rules-list input[type='number']");
+  const rules = {};
+
+  inputs.forEach(input => {
+    const ruleName = input.getAttribute("data-rule");
+    const points = parseInt(input.value) || 10;
+    rules[ruleName] = points;
+  });
+
+  localStorage.setItem("syamsa_violation_rules", JSON.stringify(rules));
+  
+  // Also update options inside violation-type-select if it exists
+  const typeSelect = document.getElementById("violation-type-select");
+  if (typeSelect) {
+    typeSelect.innerHTML = "";
+    Object.keys(rules).forEach(ruleName => {
+      const opt = document.createElement("option");
+      opt.value = ruleName;
+      opt.setAttribute("data-points", rules[ruleName]);
+      opt.textContent = `${ruleName} (${rules[ruleName]} Poin)`;
+      typeSelect.appendChild(opt);
+    });
+  }
+
+  window.logActivityAudit("Update Bobot Pelanggaran", "Sistem", "Mengubah denda bobot poin pelanggaran pesantren.");
+  window.showToast?.("Bobot poin pelanggaran berhasil disimpan!", "success");
+  
+  // Refresh views
+  window.renderViolationLeaderboard();
+  window.renderAdminViolationsList();
+};
+
+window.renderViolationLeaderboard = function () {
+  const tbody = document.getElementById("admin-violation-leaderboard-body");
+  if (!tbody) return;
+
+  const violations = appState.violations || [];
+  const rules = window.getViolationRules();
+
+  // Aggregate points per student
+  const studentPointsMap = {};
+  violations.forEach(v => {
+    const studentId = String(v.studentId);
+    // Use rule point if type exists, else fallback to log point
+    const points = rules[v.type] !== undefined ? rules[v.type] : (v.points || 0);
+    
+    if (!studentPointsMap[studentId]) {
+      studentPointsMap[studentId] = {
+        studentId: studentId,
+        points: 0,
+        count: 0
+      };
+    }
+    studentPointsMap[studentId].points += points;
+    studentPointsMap[studentId].count++;
+  });
+
+  // Convert to array and enrich with student name and class
+  const data = [];
+  Object.keys(studentPointsMap).forEach(studentId => {
+    const record = studentPointsMap[studentId];
+    const student = (typeof MASTER_SANTRI !== "undefined") ? MASTER_SANTRI.find(s => String(s.nis || s.id) === studentId) : null;
+    
+    if (student) {
+      data.push({
+        studentId: studentId,
+        name: student.nama,
+        className: student.kelas || student.rombel || "-",
+        points: record.points,
+        count: record.count
+      });
+    }
+  });
+
+  // Sort by points desc
+  data.sort((a, b) => b.points - a.points);
+
+  tbody.innerHTML = "";
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Belum ada catatan pelanggaran aktif.</td></tr>`;
+    return;
+  }
+
+  data.forEach((row, index) => {
+    const rank = index + 1;
+    const badgeColor = rank === 1 ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400" :
+                       rank === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" :
+                       rank === 3 ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
+                       "bg-slate-50 text-slate-500 dark:bg-slate-900/50";
+                       
+    // Status text based on points severity
+    const statusText = row.points >= 100 ? "SP3 (Skorsing/Dikeluarkan)" :
+                       row.points >= 75 ? "SP2 (Peringatan Keras)" :
+                       row.points >= 50 ? "SP1 (Pembinaan Intensif)" :
+                       row.points >= 25 ? "Peringatan Ringan" :
+                       "Teguran Lisan";
+
+    const statusColor = row.points >= 100 ? "text-red-600 dark:text-red-400" :
+                        row.points >= 50 ? "text-orange-500 dark:text-orange-400" :
+                        "text-slate-500 dark:text-slate-400";
+
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors text-[11px] font-bold">
+        <td class="p-3 text-center">
+          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-black ${badgeColor}">${rank}</span>
+        </td>
+        <td class="p-3 text-slate-900 dark:text-white font-black">${_escapeHtml(row.name)}</td>
+        <td class="p-3 text-slate-500 dark:text-slate-400 font-bold">${_escapeHtml(row.className)}</td>
+        <td class="p-3 text-center font-black text-xs text-red-600 dark:text-red-400">${row.points} Poin</td>
+        <td class="p-3 text-center font-bold text-[10px] ${statusColor}">${statusText}</td>
+        <td class="p-3 text-center">
+          <button type="button" onclick="window.recordCoachingDirect('${row.studentId}', '${_escapeHtml(row.name)}')" class="py-1 px-2.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 border border-teal-100 dark:border-teal-500/20 text-teal-600 dark:text-teal-400 text-[10px] font-black active:scale-95 transition-all">
+            Bina Santri
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+};
+
+window.renderAdminViolationsList = function () {
+  const tbody = document.getElementById("admin-violations-log-body");
+  if (!tbody) return;
+
+  const searchQuery = (document.getElementById("admin-violation-search")?.value || "").toLowerCase().trim();
+  const violations = appState.violations || [];
+  const rules = window.getViolationRules();
+
+  tbody.innerHTML = "";
+  
+  // Filter search
+  const filtered = violations.filter(v => {
+    const student = (typeof MASTER_SANTRI !== "undefined") ? MASTER_SANTRI.find(s => String(s.nis || s.id) === String(v.studentId)) : null;
+    const studentName = student ? student.nama.toLowerCase() : "";
+    const note = (v.note || "").toLowerCase();
+    const type = (v.type || "").toLowerCase();
+    return studentName.includes(searchQuery) || note.includes(searchQuery) || type.includes(searchQuery);
+  });
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Tidak ada log pelanggaran yang cocok.</td></tr>`;
+    return;
+  }
+
+  // Sort logs by newest first
+  filtered.sort((a, b) => new Date(b.timestamp || b.date).getTime() - new Date(a.timestamp || a.date).getTime());
+
+  filtered.forEach(v => {
+    const student = (typeof MASTER_SANTRI !== "undefined") ? MASTER_SANTRI.find(s => String(s.nis || s.id) === String(v.studentId)) : null;
+    const studentName = student ? student.nama : `ID: ${v.studentId}`;
+    const className = student ? (student.kelas || student.rombel || "-") : "-";
+    const points = rules[v.type] !== undefined ? rules[v.type] : (v.points || 10);
+    const dateFormatted = v.date || new Date(v.timestamp).toISOString().split('T')[0];
+
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors text-[11px] font-bold">
+        <td class="p-2">
+          <div class="font-black text-slate-900 dark:text-white leading-tight">${_escapeHtml(studentName)}</div>
+          <div class="text-[9px] text-slate-400 mt-0.5">${_escapeHtml(className)}</div>
+        </td>
+        <td class="p-2 text-slate-700 dark:text-slate-300 font-black">${_escapeHtml(v.type)}</td>
+        <td class="p-2 text-center text-red-500 font-black">${points}</td>
+        <td class="p-2 text-slate-500 dark:text-slate-400 max-w-[150px] truncate" title="${_escapeHtml(v.note)}">${_escapeHtml(v.note)}</td>
+        <td class="p-2 text-center">
+          <button type="button" onclick="window.deleteAdminViolation('${v.id}')" class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 text-red-500 flex items-center justify-center hover:bg-red-100 shrink-0 active:scale-95 transition-all">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.deleteAdminViolation = function (id) {
+  if (!appState.violations || appState.violations.length === 0) return;
+
+  const targetIdx = appState.violations.findIndex(v => String(v.id) === String(id));
+  if (targetIdx === -1) return;
+
+  const deleted = appState.violations[targetIdx];
+  const student = (typeof MASTER_SANTRI !== "undefined") ? MASTER_SANTRI.find(s => String(s.nis || s.id) === String(deleted.studentId)) : null;
+  const name = student ? student.nama : `Santri ID: ${deleted.studentId}`;
+
+  appState.violations.splice(targetIdx, 1);
+  localStorage.setItem("musyrif_violations_db", JSON.stringify(appState.violations));
+
+  window.logActivityAudit("Hapus Pelanggaran", name, `Menghapus catatan pelanggaran ${deleted.type} (${deleted.points} Poin).`);
+  window.showToast?.("Log pelanggaran berhasil dihapus!", "info");
+
+  // Re-render lists
+  window.renderViolationLeaderboard();
+  window.renderAdminViolationsList();
+};
+
+window.recordCoachingDirect = function (studentId, name) {
+  const modal = document.getElementById("modal-input-pembinaan");
+  if (!modal) {
+    const action = prompt(`Masukkan tindakan pembinaan/pendampingan untuk ${name}:`);
+    if (action && action.trim()) {
+      window.logActivityAudit("Pembinaan Langsung", name, `Tindakan pembinaan: ${action.trim()}`);
+      window.showToast?.(`Pembinaan untuk ${name} berhasil dicatat!`, "success");
+    }
+    return;
+  }
+
+  const studentSelect = document.getElementById("pembinaan-student-select");
+  if (studentSelect) {
+    studentSelect.innerHTML = `<option value="${studentId}" selected>${name}</option>`;
+    studentSelect.disabled = true;
+  }
+
+  const noteInput = document.getElementById("pembinaan-note");
+  if (noteInput) noteInput.value = "";
+
+  window.openModal("modal-input-pembinaan");
+};
+
+// ============================================================
+// SURAT PERINGATAN (SP) APPROVAL HUB & GENERATOR
+// ============================================================
+
+window.generateSPDrafts = function () {
+  try {
+    const spKey = "musyrif_sp_docs";
+    const saved = localStorage.getItem(spKey);
+    let spDocs = saved ? JSON.parse(saved) : [];
+
+    // Loop all master students
+    const students = typeof MASTER_SANTRI !== "undefined" ? MASTER_SANTRI : [];
+    students.forEach(s => {
+      const studentId = String(s.nis || s.id || '').trim();
+      if (!studentId) return;
+
+      const totalAlpa = window.countTotalAlpa?.(studentId) || 0;
+      const statusObj = window.getPembinaanStatus?.(totalAlpa);
+      
+      if (statusObj && statusObj.level >= 2 && statusObj.level <= 4) {
+        const level = statusObj.level;
+        const spName = `SP ${level - 1}`;
+        const docId = `sp-${studentId}-${level}`;
+
+        const exists = spDocs.some(d => d.id === docId);
+        if (!exists) {
+          spDocs.push({
+            id: docId,
+            studentId,
+            studentName: s.nama,
+            className: s.kelas || s.rombel || "-",
+            level,
+            spName,
+            alpaCount: totalAlpa,
+            status: "pending",
+            created_at: new Date().toISOString(),
+            approved_by: ""
+          });
+        } else {
+          const idx = spDocs.findIndex(d => d.id === docId);
+          if (idx !== -1 && spDocs[idx].status === "pending") {
+            spDocs[idx].alpaCount = totalAlpa;
+          }
+        }
+      }
+    });
+
+    localStorage.setItem(spKey, JSON.stringify(spDocs));
+    return spDocs;
+  } catch (e) {
+    console.error("[SP Draft] Error generating SP drafts:", e);
+    return [];
+  }
+};
+
+window.renderAdminSPHub = function () {
+  const tbody = document.getElementById("admin-pending-sp-tbody");
+  const mobileList = document.getElementById("admin-pending-sp-mobile-list");
+  const badge = document.getElementById("admin-pending-sp-count-badge");
+  if (!tbody) return;
+
+  const spDocs = window.generateSPDrafts() || [];
+  const pending = spDocs.filter(d => d.status === "pending");
+
+  if (badge) badge.textContent = `${pending.length} Pending`;
+
+  tbody.innerHTML = "";
+  if (mobileList) mobileList.innerHTML = "";
+
+  if (pending.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Tidak ada penerbitan SP pending.</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada penerbitan SP pending.</p>`;
+    return;
+  }
+
+  pending.forEach(p => {
+    const safeSpId = String(p.id).replace(/[`$\\]/g, '\\$&');
+    const safeStudentName = window.sanitizeHTML(p.studentName || 'Santri');
+    const safeClassName = window.sanitizeHTML(p.className || "-");
+    const safeSpName = window.sanitizeHTML(p.spName || "SP");
+
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+        <td class="p-3">
+          <div class="font-black text-slate-800 dark:text-white">${safeStudentName}</div>
+          <div class="text-[9px] text-slate-400 font-mono">${p.studentId}</div>
+        </td>
+        <td class="p-3 text-slate-600 dark:text-slate-300">${safeClassName}</td>
+        <td class="p-3">
+          <span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-50 text-rose-500 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30">
+            Draft ${safeSpName}
+          </span>
+        </td>
+        <td class="p-3 text-center text-slate-700 dark:text-slate-300 font-black">${p.alpaCount} Sesi Alpa</td>
+        <td class="p-3 text-center">
+          <div class="flex items-center justify-center gap-1.5">
+            <button onclick="window.approveOrRejectSP('${safeSpId}', true)" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
+            <button onclick="window.approveOrRejectSP('${safeSpId}', false)" class="px-2.5 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
+          </div>
+        </td>
+      </tr>
+    `;
+
+    if (mobileList) {
+      mobileList.innerHTML += `
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeStudentName}</h3>
+              <p class="text-[9px] text-slate-400 font-mono mt-0.5">${safeClassName} • NIS: ${p.studentId}</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[9px] font-black bg-rose-50 text-rose-500 border border-rose-100">Draft ${safeSpName}</span>
+          </div>
+          <div class="text-[11px] text-slate-600 dark:text-slate-400 font-bold leading-relaxed">
+            <p><span class="text-slate-400">Akumulasi:</span> ${p.alpaCount} Sesi Alpa</p>
+          </div>
+          <div class="flex gap-2 w-full mt-2">
+            <button onclick="window.approveOrRejectSP('${safeSpId}', true)" class="flex-1 py-2 rounded-xl bg-emerald-500 text-white font-black text-xs active:scale-[0.98] transition-all text-center">Setujui</button>
+            <button onclick="window.approveOrRejectSP('${safeSpId}', false)" class="flex-1 py-2 rounded-xl bg-red-500 text-white font-black text-xs active:scale-[0.98] transition-all text-center">Tolak</button>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.approveOrRejectSP = async function (spId, approved) {
+  const actionText = approved ? "menyetujui penerbitan" : "menolak/menahan";
+  const displayStatus = approved ? "approved" : "rejected";
+
+  if (!confirm(`Apakah Anda yakin ingin ${actionText} dokumen Surat Peringatan ini?`)) return;
+
+  try {
+    const spKey = "musyrif_sp_docs";
+    const saved = localStorage.getItem(spKey);
+    let spDocs = saved ? JSON.parse(saved) : [];
+
+    const idx = spDocs.findIndex(d => String(d.id) === String(spId));
+    if (idx !== -1) {
+      spDocs[idx].status = displayStatus;
+      spDocs[idx].approved_by = appState.userProfile?.name || 'Admin';
+      spDocs[idx].updated_at = new Date().toISOString();
+      localStorage.setItem(spKey, JSON.stringify(spDocs));
+
+      window.showToast?.(`Penerbitan SP berhasil di-${approved ? 'setujui' : 'tolak'}.`, "success");
+      
+      if (window.logActivityAudit) {
+        window.logActivityAudit('Otorisasi SP', spDocs[idx].studentName, `${approved ? 'Menyetujui' : 'Menolak'} penerbitan ${spDocs[idx].spName}`);
+      }
+
+      window.renderAdminSPHub();
+      
+      // Refresh Wali view if Wali mode is open (helps on local testing)
+      if (window.updateWaliDashboardSummary) window.updateWaliDashboardSummary();
+    }
+  } catch (err) {
+    window.showToast?.("Gagal memproses Surat Peringatan", "error");
+  }
+};
+
+window.openSPModal = function (spDocId) {
+  try {
+    const spKey = "musyrif_sp_docs";
+    const saved = localStorage.getItem(spKey);
+    const spDocs = saved ? JSON.parse(saved) : [];
+    
+    const doc = spDocs.find(d => String(d.id) === String(spDocId));
+    if (!doc) {
+      window.showToast?.("Dokumen SP tidak ditemukan!", "error");
+      return;
+    }
+
+    const titleEl = document.getElementById("sp-letter-title");
+    const numEl = document.getElementById("sp-letter-number");
+    const studentEl = document.getElementById("sp-letter-student");
+    const nisEl = document.getElementById("sp-letter-nis");
+    const classEl = document.getElementById("sp-letter-class");
+    const alpaEl = document.getElementById("sp-letter-alpa");
+    const dateEl = document.getElementById("sp-letter-date");
+    const signerEl = document.getElementById("sp-letter-signer");
+
+    if (titleEl) titleEl.textContent = `Surat Peringatan (${doc.spName})`;
+    if (numEl) numEl.textContent = `Nomor: SP/2026/06/${String(doc.studentId).slice(-3)}-0${doc.level}`;
+    if (studentEl) studentEl.textContent = doc.studentName || "-";
+    if (nisEl) nisEl.textContent = doc.studentId || "-";
+    if (classEl) classEl.textContent = doc.className || "-";
+    if (alpaEl) alpaEl.textContent = `${doc.alpaCount} Sesi`;
+    if (dateEl) {
+      const dateObj = doc.created_at ? new Date(doc.created_at) : new Date();
+      dateEl.textContent = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
+    }
+    if (signerEl) signerEl.textContent = doc.approved_by || "Kepala Divisi Kesiswaan Admin";
+
+    // Show modal
+    const modal = document.getElementById("modal-view-sp");
+    if (modal) modal.classList.remove("hidden");
+  } catch (err) {
+    console.error("[SP Modal] Error opening SP modal:", err);
+  }
+};
+
+window.printSPLetter = function () {
+  const paper = document.getElementById("sp-letter-paper");
+  if (!paper) return;
+
+  const printContent = paper.outerHTML;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Surat Peringatan</title>
+        <style>
+          body { font-family: serif; padding: 40px; color: #333; line-height: 1.6; font-size: 14px; }
+          .border-b-2 { border-bottom: 2px solid #ccc; }
+          .border-double { border-style: double; }
+          .pb-4 { padding-bottom: 16px; }
+          .mb-6 { margin-bottom: 24px; }
+          .mb-4 { margin-bottom: 16px; }
+          .mt-8 { margin-top: 32px; }
+          .mt-12 { margin-top: 48px; }
+          .text-center { text-align: center; }
+          .text-justify { text-align: justify; }
+          .underline { text-decoration: underline; }
+          .uppercase { text-transform: uppercase; }
+          .font-sans { font-family: sans-serif; }
+          .font-black { font-weight: 900; }
+          .font-bold { font-weight: bold; }
+          .text-sm { font-size: 14px; }
+          .text-xs { font-size: 12px; }
+          .text-[9px] { font-size: 11px; }
+          .text-[8px] { font-size: 10px; }
+          .w-full { width: 100%; }
+          .w-28 { width: 112px; }
+          .py-1 { padding-top: 4px; padding-bottom: 4px; }
+          .px-2 { padding-left: 8px; padding-right: 8px; }
+          .flex { display: flex; }
+          .justify-between { justify-content: space-between; }
+          .items-end { align-items: flex-end; }
+          .text-right { text-align: right; }
+          .text-rose-600 { color: #dc2626; }
+        </style>
+      </head>
+      <body>
+        ${printContent}
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          }
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
+window.renderAdminIbadahAnalytics = function () {
+  const classAveragesEl = document.getElementById("ibadah-class-averages");
+  const topPerformersEl = document.getElementById("ibadah-top-performers");
+  const lowPerformersEl = document.getElementById("ibadah-low-performers");
+  if (!classAveragesEl) return;
+
+  const students = typeof MASTER_SANTRI !== "undefined" ? MASTER_SANTRI : [];
+  const targetsDb = appState.studentTargets || {};
+
+  const classGroups = {};
+  const studentPerformances = [];
+
+  students.forEach(s => {
+    const studentId = String(s.nis || s.id || '').trim();
+    if (!studentId) return;
+
+    const className = s.kelas || s.rombel || "Lainnya";
+    if (!classGroups[className]) {
+      classGroups[className] = [];
+    }
+
+    const t = targetsDb[studentId] || {
+      hafalan: { target: "Juz 30", achieved: 0 },
+      tahajjud: { target: 8, achieved: 0 },
+      puasa: { target: 4, achieved: 0 },
+      tilawah: { target: 30, achieved: 0 }
+    };
+
+    const pctTahajjud = Math.min(100, Math.round((t.tahajjud.achieved / (t.tahajjud.target || 8)) * 100));
+    const pctPuasa = Math.min(100, Math.round((t.puasa.achieved / (t.puasa.target || 4)) * 100));
+    const pctTilawah = Math.min(100, Math.round((t.tilawah.achieved / (t.tilawah.target || 30)) * 100));
+    const overallPct = Math.round((pctTahajjud + pctPuasa + pctTilawah) / 3);
+
+    const perfRecord = {
+      studentId,
+      name: s.nama,
+      className,
+      tahajjud: t.tahajjud.achieved,
+      puasa: t.puasa.achieved,
+      tilawah: t.tilawah.achieved,
+      overallPct
+    };
+
+    classGroups[className].push(perfRecord);
+    studentPerformances.push(perfRecord);
+  });
+
+  const classAverages = [];
+  Object.keys(classGroups).forEach(cName => {
+    const list = classGroups[cName];
+    const total = list.length;
+    if (total === 0) return;
+
+    const avgTahajjud = Math.round(list.reduce((acc, curr) => acc + curr.tahajjud, 0) / total * 10) / 10;
+    const avgPuasa = Math.round(list.reduce((acc, curr) => acc + curr.puasa, 0) / total * 10) / 10;
+    const avgTilawah = Math.round(list.reduce((acc, curr) => acc + curr.tilawah, 0) / total * 10) / 10;
+    const avgOverall = Math.round(list.reduce((acc, curr) => acc + curr.overallPct, 0) / total);
+
+    classAverages.push({
+      className: cName,
+      avgTahajjud,
+      avgPuasa,
+      avgTilawah,
+      avgOverall
+    });
+  });
+
+  classAverages.sort((a, b) => b.avgOverall - a.avgOverall);
+
+  classAveragesEl.innerHTML = "";
+  if (classAverages.length === 0) {
+    classAveragesEl.innerHTML = `<p class="text-xs text-slate-400 font-bold p-2 text-center">Tidak ada data kelas.</p>`;
+  } else {
+    classAverages.forEach(c => {
+      classAveragesEl.innerHTML += `
+        <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-black text-slate-800 dark:text-white">Kelas ${window.sanitizeHTML(c.className)}</span>
+            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">${c.avgOverall}% Tercapai</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 text-[9px] font-bold text-slate-500">
+            <div class="text-center bg-slate-50 dark:bg-slate-950 p-1 rounded">
+              <span class="block text-slate-400">Tahajjud</span>
+              <span class="text-slate-700 dark:text-slate-300 font-black">${c.avgTahajjud} / 8</span>
+            </div>
+            <div class="text-center bg-slate-50 dark:bg-slate-950/50 p-1 rounded">
+              <span class="block text-slate-400">Puasa</span>
+              <span class="text-slate-700 dark:text-slate-300 font-black">${c.avgPuasa} / 4</span>
+            </div>
+            <div class="text-center bg-slate-50 dark:bg-slate-950 p-1 rounded">
+              <span class="block text-slate-400">Tilawah</span>
+              <span class="text-slate-700 dark:text-slate-300 font-black">${c.avgTilawah} / 30</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  studentPerformances.sort((a, b) => b.overallPct - a.overallPct);
+  const topPerformers = studentPerformances.slice(0, 5);
+
+  topPerformersEl.innerHTML = "";
+  if (topPerformers.length === 0) {
+    topPerformersEl.innerHTML = `<p class="text-xs text-slate-400 font-bold p-2 text-center">Tidak ada data santri.</p>`;
+  } else {
+    topPerformers.forEach(p => {
+      topPerformersEl.innerHTML += `
+        <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
+          <div>
+            <h4 class="text-xs font-black text-slate-800 dark:text-white">${window.sanitizeHTML(p.name)}</h4>
+            <p class="text-[9px] text-slate-400 font-bold mt-0.5">Kelas ${window.sanitizeHTML(p.className)}</p>
+          </div>
+          <div class="text-right">
+            <span class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+              ${p.overallPct}%
+            </span>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  studentPerformances.sort((a, b) => a.overallPct - b.overallPct);
+  const lowPerformers = studentPerformances.filter(p => p.overallPct < 50).slice(0, 5);
+
+  lowPerformersEl.innerHTML = "";
+  if (lowPerformers.length === 0) {
+    lowPerformersEl.innerHTML = `
+      <div class="p-4 text-center border border-dashed border-emerald-100 bg-emerald-50/20 dark:border-emerald-950/30 dark:bg-emerald-950/10 rounded-xl">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check w-6 h-6 text-emerald-500 mx-auto mb-1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+        <p class="text-[10px] font-black text-emerald-700 dark:text-emerald-400">Semua Santri Tertib</p>
+        <p class="text-[8px] text-slate-400 font-semibold mt-0.5">Tidak ada santri di bawah 50% target.</p>
+      </div>
+    `;
+  } else {
+    lowPerformers.forEach(p => {
+      lowPerformersEl.innerHTML += `
+        <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
+          <div>
+            <h4 class="text-xs font-black text-slate-800 dark:text-white">${window.sanitizeHTML(p.name)}</h4>
+            <p class="text-[9px] text-slate-400 font-bold mt-0.5">Kelas ${window.sanitizeHTML(p.className)}</p>
+          </div>
+          <div class="text-right">
+            <span class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>
+              ${p.overallPct}%
+            </span>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.deleteAdminTahfizh = async function (id) {
+  if (!confirm("Apakah Anda yakin ingin menghapus catatan setoran tahfizh ini?")) return;
+
+  try {
+    const saved = localStorage.getItem('tahfizh_local_setoran');
+    let list = saved ? JSON.parse(saved) : [];
+
+    const beforeLength = list.length;
+    const filtered = list.filter(r => {
+      const generatedId = `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
+      return generatedId !== id;
+    });
+
+    if (filtered.length === beforeLength) {
+      window.showToast?.("Catatan setoran tidak ditemukan!", "error");
+      return;
+    }
+
+    localStorage.setItem('tahfizh_local_setoran', JSON.stringify(filtered));
+    window.showToast?.("Setoran tahfizh berhasil dihapus!", "success");
+    
+    if (window.logActivityAudit) {
+      window.logActivityAudit("Hapus Tahfizh", "Admin", "Menghapus catatan setoran tahfizh.");
+    }
+    
+    window.renderAdminTahfizhList();
+  } catch (err) {
+    window.showToast?.("Gagal menghapus setoran tahfizh", "error");
+  }
+};
+
+window.editAdminTahfizh = function (id) {
+  try {
+    const saved = localStorage.getItem('tahfizh_local_setoran');
+    const list = saved ? JSON.parse(saved) : [];
+
+    const item = list.find(r => {
+      const generatedId = `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
+      return generatedId === id;
+    });
+
+    if (!item) {
+      window.showToast?.("Catatan setoran tidak ditemukan!", "error");
+      return;
+    }
+
+    document.getElementById("edit-tahfizh-id").value = id;
+    document.getElementById("edit-tahfizh-name").value = item.namaSantri || "";
+    document.getElementById("edit-tahfizh-program").value = item.program || "Sabaq";
+    document.getElementById("edit-tahfizh-jenis").value = item.jenis || "Ziyadah";
+    document.getElementById("edit-tahfizh-juz").value = item.juz || "";
+    document.getElementById("edit-tahfizh-halaman").value = item.halaman || "";
+    document.getElementById("edit-tahfizh-kualitas").value = item.kualitas || "Lancar";
+    document.getElementById("edit-tahfizh-surat").value = item.surat || "";
+
+    document.getElementById("modal-edit-tahfizh").classList.remove("hidden");
+  } catch (err) {
+    console.error("[Edit Tahfizh] Error loading form:", err);
+  }
+};
+
+window.handleEditTahfizhSubmit = function (e) {
+  e.preventDefault();
+
+  try {
+    const id = document.getElementById("edit-tahfizh-id").value;
+    const program = document.getElementById("edit-tahfizh-program").value;
+    const jenis = document.getElementById("edit-tahfizh-jenis").value;
+    const juz = document.getElementById("edit-tahfizh-juz").value;
+    const halaman = document.getElementById("edit-tahfizh-halaman").value.trim();
+    const kualitas = document.getElementById("edit-tahfizh-kualitas").value;
+    const surat = document.getElementById("edit-tahfizh-surat").value.trim();
+
+    const saved = localStorage.getItem('tahfizh_local_setoran');
+    let list = saved ? JSON.parse(saved) : [];
+
+    const idx = list.findIndex(r => {
+      const generatedId = `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
+      return generatedId === id;
+    });
+
+    if (idx === -1) {
+      window.showToast?.("Catatan setoran tidak ditemukan!", "error");
+      return;
+    }
+
+    list[idx].program = program;
+    list[idx].jenis = jenis;
+    list[idx].juz = juz;
+    list[idx].halaman = halaman;
+    list[idx].kualitas = kualitas;
+    list[idx].surat = surat;
+    list[idx].updated_at = new Date().toISOString();
+
+    localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+    window.showToast?.("Koreksi setoran berhasil disimpan!", "success");
+
+    if (window.logActivityAudit) {
+      window.logActivityAudit("Koreksi Tahfizh", list[idx].namaSantri, `Mengoreksi setoran Juz ${juz}.`);
+    }
+
+    document.getElementById("modal-edit-tahfizh").classList.add("hidden");
+    window.renderAdminTahfizhList();
+  } catch (err) {
+    window.showToast?.("Gagal menyimpan koreksi setoran", "error");
+  }
+};
+
+
+

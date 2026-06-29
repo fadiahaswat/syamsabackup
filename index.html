@@ -4739,7 +4739,15 @@
 
             <!-- Active KBM Banner removed -->
 
+        <!-- Wali Only: Broadcast Banner Pengumuman -->
+        <div id="wali-announcement-banner-container" class="wali-only hidden w-full animate-slide-up mb-4"></div>
+
+        <!-- Wali Only: Surat Peringatan (SP) Alert Banner -->
+        <div id="wali-sp-banner-container" class="wali-only hidden w-full animate-slide-up mb-4"></div>
+
         <section id="dashboard-wali-summary-card" class="wali-only bg-slate-900 dark:bg-black rounded-[1.75rem] p-5 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden animate-slide-up delay-200ms">
+
+
           <div class="absolute top-0 right-0 w-56 h-56 bg-palette-mint rounded-full blur-[90px] opacity-20 -mr-16 -mt-16 pointer-events-none"></div>
           <div class="absolute bottom-0 left-0 w-44 h-44 bg-palette-blue rounded-full blur-[80px] opacity-10 -ml-12 -mb-12 pointer-events-none"></div>
           <img src="assets/icons/icon.webp" class="absolute -right-10 -top-10 w-48 h-48 opacity-[0.06] pointer-events-none select-none z-0 rotate-[15deg]" alt="" />
@@ -5368,61 +5376,78 @@
 
 
 
-    <!-- Admin Only: Perizinan Admin (Persetujuan) -->
+    <!-- Admin Only: Perizinan Admin (Persetujuan Cepat Dashboard) -->
     <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-6 animate-slide-up">
-      <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
         <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
-          <i data-lucide="shield-alert" class="w-4 h-4 text-blue-500"></i> Persetujuan Izin Santri
+          <i data-lucide="shield-alert" class="w-4 h-4 text-amber-500"></i> Persetujuan Izin Pending (Tindakan Cepat)
         </h2>
+        <span id="admin-pending-permits-count-badge" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 text-[10px] font-black">0 Pending</span>
       </div>
 
-      <!-- List Persetujuan -->
-      <div id="admin-permit-subview-list" class="space-y-4">
-        <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <div class="relative w-full sm:max-w-xs">
-            <input type="text" id="admin-permit-search" oninput="window.renderAdminPermits()" placeholder="Cari nama, NIS, kelas, keperluan..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2.5 pl-8 text-xs focus:outline-none focus:border-blue-500 font-bold" />
-            <i data-lucide="search" class="absolute left-3 top-3.5 w-3.5 h-3.5 text-slate-400"></i>
-          </div>
-          <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <label class="text-xs text-slate-400 font-bold">Status:</label>
-            <select id="admin-permit-status-filter" onchange="window.renderAdminPermits()" class="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2.5 text-xs font-bold focus:outline-none focus:border-blue-500">
-              <option value="all">Semua Status</option>
-              <option value="pending">Diajukan (Pending)</option>
-              <option value="approved_active">Aktif (Belum Kembali)</option>
-              <option value="kembali">Kembali (Returned)</option>
-              <option value="rejected">Ditolak (Rejected)</option>
-            </select>
-          </div>
-        </div>
+      <!-- Desktop View -->
+      <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+        <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
+          <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+            <tr>
+              <th class="p-3">Santri</th>
+              <th class="p-3">Kelas</th>
+              <th class="p-3">Tipe Izin</th>
+              <th class="p-3">Tanggal Izin</th>
+              <th class="p-3">Keperluan</th>
+              <th class="p-3 text-center">Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="admin-dashboard-permits-tbody" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+            <tr>
+              <td colspan="6" class="p-4 text-center text-slate-400">Tidak ada pengajuan izin pending.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        <!-- Desktop View -->
-        <div class="hidden md:block overflow-x-auto -mx-5 px-5">
-          <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
-            <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
-              <tr>
-                <th class="p-3">Santri</th>
-                <th class="p-3">Kelas</th>
-                <th class="p-3">Tipe Izin</th>
-                <th class="p-3">Tanggal Izin</th>
-                <th class="p-3">Keperluan</th>
-                <th class="p-3 text-center">Status</th>
-                <th class="p-3 text-center">Tindakan</th>
-              </tr>
-            </thead>
-            <tbody id="admin-permits-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
-              <tr>
-                <td colspan="7" class="p-4 text-center text-slate-400">Memuat riwayat perizinan...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Mobile View -->
-        <div class="block md:hidden space-y-3" id="admin-permits-mobile-list">
-          <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat riwayat perizinan...</p>
-        </div>
+      <!-- Mobile View -->
+      <div class="block md:hidden space-y-3" id="admin-dashboard-permits-mobile-list">
+        <p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada pengajuan izin pending.</p>
       </div>
     </section>
+
+    <!-- Admin Only: Approval Hub Surat Peringatan (SP) -->
+    <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-6 animate-slide-up">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+        <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+          <i data-lucide="file-warning" class="w-4 h-4 text-rose-500"></i> Approval Hub Surat Peringatan (SP)
+        </h2>
+        <span id="admin-pending-sp-count-badge" class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 text-[10px] font-black">0 Pending</span>
+      </div>
+
+      <!-- Desktop View -->
+      <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+        <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
+          <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+            <tr>
+              <th class="p-3">Santri</th>
+              <th class="p-3">Kelas</th>
+              <th class="p-3">Dokumen Peringatan</th>
+              <th class="p-3 text-center">Akumulasi Alpa</th>
+              <th class="p-3 text-center">Tindakan</th>
+            </tr>
+          </thead>
+          <tbody id="admin-pending-sp-tbody" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+            <tr>
+              <td colspan="5" class="p-4 text-center text-slate-400">Tidak ada penerbitan SP pending.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile View -->
+      <div class="block md:hidden space-y-3" id="admin-pending-sp-mobile-list">
+        <p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada penerbitan SP pending.</p>
+      </div>
+    </section>
+
+
 
         </div> <!-- Close max-w-7xl wrapper -->
   </div>
@@ -5746,7 +5771,7 @@
 
               <!-- Desktop View -->
               <div class="hidden md:block overflow-x-auto -mx-5 px-5">
-                <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[650px]">
+                <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
                   <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
                     <tr>
                       <th class="p-3">Santri</th>
@@ -5756,15 +5781,17 @@
                       <th class="p-3 text-center">Kualitas</th>
                       <th class="p-3">Tanggal</th>
                       <th class="p-3">Musyrif</th>
+                      <th class="p-3 text-center">Tindakan</th>
                     </tr>
                   </thead>
                   <tbody id="admin-tahfizh-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
                     <tr>
-                      <td colspan="7" class="p-8 text-center text-slate-400">Memuat setoran tahfizh...</td>
+                      <td colspan="8" class="p-8 text-center text-slate-400">Memuat setoran tahfizh...</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
+
 
               <!-- Mobile View -->
               <div class="block md:hidden space-y-3" id="admin-tahfizh-mobile-list">
@@ -6718,6 +6745,106 @@
           </div>
         </section>
 
+        <!-- Admin Only: Arsip Perizinan Seluruh Santri -->
+        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+          <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+            <div>
+              <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                <i data-lucide="archive" class="w-4 h-4 text-purple-500"></i> Arsip Perizinan Seluruh Santri
+              </h2>
+              <p class="text-xs text-slate-400 font-bold mt-0.5">Arsip pencarian riwayat izin santri. Klik "Paksa Kembali" untuk mengakhiri izin santri yang lupa melapor.</p>
+            </div>
+          </div>
+          
+          <div class="flex flex-col sm:flex-row gap-3 items-center justify-between mb-4">
+            <div class="relative w-full sm:max-w-xs">
+              <input type="text" id="admin-permit-search" oninput="window.renderAdminPermits()" placeholder="Cari nama, NIS, kelas, keperluan..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2.5 pl-8 text-xs focus:outline-none focus:border-purple-500 font-bold" />
+              <i data-lucide="search" class="absolute left-3 top-3.5 w-3.5 h-3.5 text-slate-400"></i>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <label class="text-xs text-slate-400 font-bold">Status:</label>
+              <select id="admin-permit-status-filter" onchange="window.renderAdminPermits()" class="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2.5 text-xs font-bold focus:outline-none focus:border-purple-500">
+                <option value="all">Semua Status</option>
+                <option value="pending">Diajukan (Pending)</option>
+                <option value="approved_active">Aktif (Belum Kembali)</option>
+                <option value="kembali">Kembali (Returned)</option>
+                <option value="rejected">Ditolak (Rejected)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Desktop View -->
+          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
+              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                <tr>
+                  <th class="p-3">Santri</th>
+                  <th class="p-3">Kelas</th>
+                  <th class="p-3">Tipe Izin</th>
+                  <th class="p-3">Tanggal Izin</th>
+                  <th class="p-3">Keperluan</th>
+                  <th class="p-3 text-center">Status</th>
+                  <th class="p-3 text-center">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="admin-permits-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                <tr>
+                  <td colspan="7" class="p-4 text-center text-slate-400">Memuat riwayat perizinan...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile View -->
+          <div class="block md:hidden space-y-3" id="admin-permits-mobile-list">
+            <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat riwayat perizinan...</p>
+          </div>
+        </section>
+
+        <!-- Admin Only: Rekap Global Mutabaah Ibadah Mandiri -->
+        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+          <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+            <div>
+              <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Rekap Global Mutabaah Ibadah Mandiri
+              </h2>
+              <p class="text-xs text-slate-400 font-bold mt-0.5">Analitik target & pencapaian ibadah mandiri santri (Tahajjud, Puasa, Tilawah).</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 1. Skor Rerata Kelas -->
+            <div class="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+              <h3 class="text-xs font-black text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-blue-500"></i> Rerata Pencapaian Kelas
+              </h3>
+              <div id="ibadah-class-averages" class="space-y-3">
+                <p class="text-xs text-slate-400 font-bold">Memuat rekap kelas...</p>
+              </div>
+            </div>
+
+            <!-- 2. Konsistensi Terbaik -->
+            <div class="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+              <h3 class="text-xs font-black text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
+                <i data-lucide="trophy" class="w-3.5 h-3.5 text-yellow-500"></i> Konsistensi Terbaik
+              </h3>
+              <div id="ibadah-top-performers" class="space-y-3">
+                <p class="text-xs text-slate-400 font-bold">Memuat santri terbaik...</p>
+              </div>
+            </div>
+
+            <!-- 3. Keaktifan Terendah -->
+            <div class="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+              <h3 class="text-xs font-black text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
+                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-500"></i> Keaktifan Terendah
+              </h3>
+              <div id="ibadah-low-performers" class="space-y-3">
+                <p class="text-xs text-slate-400 font-bold">Memuat evaluasi...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         
         <!-- Admin Only: Global Audit Trail (Logs) -->
         <section class="admin-only hidden bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-5 mt-4 backdrop-blur-xl animate-fade-in">
@@ -7438,7 +7565,15 @@
           <form id="admin-broadcast-form" onsubmit="window.handleAdminBroadcastSubmit(event)" class="space-y-4">
             <div>
               <label class="block text-xs font-black text-slate-500 mb-1">Judul Pengumuman</label>
-              <input type="text" id="admin-broadcast-title" required maxlength="100" placeholder="Contoh: Jadwal Piket Shalat Shubuh Baru" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500" />
+              <input type="text" id="admin-broadcast-title" required maxlength="100" placeholder="Contoh: Libur Perpulangan Santri" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Target Penerima</label>
+              <select id="admin-broadcast-target" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500">
+                <option value="musyrif" selected>Khusus Musyrif</option>
+                <option value="wali">Khusus Wali Santri (Orang Tua)</option>
+                <option value="all">Semua Pengguna (Musyrif & Wali)</option>
+              </select>
             </div>
             <div>
               <label class="block text-xs font-black text-slate-500 mb-1">Isi Pengumuman</label>
@@ -7448,6 +7583,7 @@
               Kirim Pengumuman
             </button>
           </form>
+
           
           <div class="h-px w-full bg-slate-100 dark:bg-slate-800/80 my-4"></div>
           
@@ -9335,6 +9471,186 @@
         </main>
       </div>
     </section>
+
+    <!-- Modal: View Surat Peringatan (SP) -->
+    <div id="modal-view-sp" class="fixed inset-0 z-[120] hidden">
+      <div class="modal-backdrop absolute inset-0 bg-slate-950/70 backdrop-blur-md" onclick="document.getElementById('modal-view-sp').classList.add('hidden')"></div>
+      <div class="absolute inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-2xl sm:max-h-[90vh] bg-white dark:bg-slate-900 rounded-[1.75rem] shadow-2xl overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-rose-50 dark:bg-rose-950/10">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            </div>
+            <div>
+              <h2 class="text-base font-black text-rose-700 dark:text-rose-400">Dokumen Resmi Surat Peringatan</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Pemberitahuan pelanggaran kumulatif santri</p>
+            </div>
+          </div>
+          <button onclick="document.getElementById('modal-view-sp').classList.add('hidden')" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" title="Tutup">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        
+        <!-- Content Area: Styled like a formal physical letter -->
+        <div class="flex-1 overflow-y-auto p-6 bg-slate-50/50 dark:bg-slate-950/20">
+          <div id="sp-letter-paper" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm text-slate-800 dark:text-slate-200 font-serif leading-relaxed text-xs">
+            <!-- Kop Surat -->
+            <div class="text-center border-b-2 border-double border-slate-400 pb-4 mb-6">
+              <h3 class="text-sm sm:text-base font-black font-sans uppercase tracking-wider text-slate-900 dark:text-white">Ma'had Syamsa Al-Mutawasith</h3>
+              <p class="text-[9px] font-sans font-medium text-slate-500 dark:text-slate-400 mt-1">Pondok Pesantren Semi-Mendirikan Jiwa & Raga Terpadu</p>
+              <p class="text-[8px] font-sans font-semibold text-slate-400">Jl. Syamsa Raya No. 42, Kota Syamsa, Indonesia</p>
+            </div>
+
+            <!-- Judul Surat -->
+            <div class="text-center mb-6">
+              <h4 id="sp-letter-title" class="text-xs sm:text-sm font-black uppercase underline text-slate-900 dark:text-white font-sans">Surat Peringatan (SP-1)</h4>
+              <p id="sp-letter-number" class="text-[9px] text-slate-500 font-mono mt-1">Nomor: SP/2026/06/001</p>
+            </div>
+
+            <!-- Isi Surat -->
+            <p class="mb-4">Kepada Yth.<br><strong id="sp-letter-parent">Orang Tua / Wali Santri</strong><br>Di Tempat</p>
+            
+            <p class="mb-4 text-justify font-sans">
+              Dengan hormat,<br>
+              Melalui surat ini, kami selaku pihak pengasuhan Ma'had Syamsa Al-Mutawasith memberitahukan bahwa santri yang tercantum di bawah ini:
+            </p>
+
+            <table class="w-full mb-4 border-collapse text-left font-sans">
+              <tr>
+                <td class="py-1 w-28 text-slate-400 font-bold">Nama Santri</td>
+                <td class="py-1 px-2">:</td>
+                <td id="sp-letter-student" class="py-1 font-black text-slate-900 dark:text-white">...</td>
+              </tr>
+              <tr>
+                <td class="py-1 text-slate-400 font-bold">NIS</td>
+                <td class="py-1 px-2">:</td>
+                <td id="sp-letter-nis" class="py-1 font-mono font-bold">...</td>
+              </tr>
+              <tr>
+                <td class="py-1 text-slate-400 font-bold">Kelas</td>
+                <td class="py-1 px-2">:</td>
+                <td id="sp-letter-class" class="py-1 font-bold">...</td>
+              </tr>
+            </table>
+
+            <p class="mb-4 text-justify font-sans">
+              Telah melakukan pelanggaran berupa **Akumulasi Ketidakhadiran Sesi Shalat (Alpa)** sebanyak <span id="sp-letter-alpa" class="font-black text-rose-600">0 Sesi</span>. Pelanggaran tersebut telah melampaui batas toleransi kedisiplinan yang telah disepakati di lingkungan Ma'had Syamsa Al-Mutawasith.
+            </p>
+
+            <p class="mb-6 text-justify font-sans">
+              Sehubungan dengan hal tersebut, kami mengharapkan kerja sama yang kooperatif dari Bapak/Ibu Wali Santri untuk memberikan bimbingan intensif dan berkomunikasi secara langsung dengan Musyrif Kelas guna menghindari sanksi disiplin yang lebih berat di masa mendatang.
+            </p>
+
+            <!-- Tanda Tangan -->
+            <div class="flex justify-between items-end mt-8 font-sans">
+              <div class="text-[9px]">
+                <p>Mengetahui,</p>
+                <p class="font-bold mt-12 text-slate-900 dark:text-white">Musyrif Pengasuhan</p>
+              </div>
+              <div class="text-[9px] text-right">
+                <p>Syamsa City, <span id="sp-letter-date">29 Juni 2026</span></p>
+                <p class="font-bold mt-12 text-slate-900 dark:text-white" id="sp-letter-signer">Kepala Divisi Kesiswaan Admin</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 bg-slate-50 dark:bg-slate-950/30 shrink-0">
+          <button onclick="window.printSPLetter()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs flex items-center gap-1.5 active:scale-95 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-printer"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/><path d="M6 2h12v4H6z"/></svg> Cetak / Simpan PDF
+          </button>
+          <button onclick="document.getElementById('modal-view-sp').classList.add('hidden')" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs active:scale-95 transition-all">
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Edit Setoran Tahfizh -->
+    <div id="modal-edit-tahfizh" class="fixed inset-0 z-[120] hidden">
+      <div class="modal-backdrop absolute inset-0 bg-slate-950/70 backdrop-blur-md" onclick="document.getElementById('modal-edit-tahfizh').classList.add('hidden')"></div>
+      <div class="absolute inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-[1.75rem] shadow-2xl overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-orange-50 dark:bg-orange-950/10">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600 dark:text-orange-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </div>
+            <div>
+              <h2 class="text-base font-black text-orange-700 dark:text-orange-400">Koreksi Setoran Tahfizh</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Edit data log setoran tahfizh santri</p>
+            </div>
+          </div>
+          <button onclick="document.getElementById('modal-edit-tahfizh').classList.add('hidden')" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" title="Tutup">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        
+        <!-- Form Content -->
+        <form id="form-edit-tahfizh" onsubmit="window.handleEditTahfizhSubmit(event)" class="flex-1 overflow-y-auto p-5 space-y-4">
+          <input type="hidden" id="edit-tahfizh-id" />
+          
+          <div>
+            <label class="block text-xs font-black text-slate-500 mb-1">Nama Santri</label>
+            <input type="text" id="edit-tahfizh-name" readonly class="w-full rounded-xl bg-slate-100 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold text-slate-500 focus:outline-none" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Program</label>
+              <select id="edit-tahfizh-program" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-orange-500">
+                <option value="Sabaq">Sabaq (Baru)</option>
+                <option value="Sabqi">Sabqi (Murojaah Baru)</option>
+                <option value="Manzil">Manzil (Murojaah Lama)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Jenis</label>
+              <select id="edit-tahfizh-jenis" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-orange-500">
+                <option value="Ziyadah">Ziyadah</option>
+                <option value="Murojaah">Murojaah</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Juz</label>
+              <input type="number" id="edit-tahfizh-juz" min="1" max="30" required class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-orange-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Halaman</label>
+              <input type="text" id="edit-tahfizh-halaman" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-orange-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Kualitas</label>
+              <select id="edit-tahfizh-kualitas" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-orange-500">
+                <option value="Lancar">Lancar</option>
+                <option value="Sedang">Sedang</option>
+                <option value="Kurang">Kurang</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-slate-500 mb-1">Nama Surat (Murojaah)</label>
+            <input type="text" id="edit-tahfizh-surat" placeholder="Contoh: Al-Baqarah" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 shrink-0">
+            <button type="button" onclick="document.getElementById('modal-edit-tahfizh').classList.add('hidden')" class="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs active:scale-95 transition-all">
+              Batal
+            </button>
+            <button type="submit" class="px-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs active:scale-95 transition-all shadow-md shadow-orange-500/10">
+              Simpan Koreksi
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
   </body>
 </html>

@@ -52,6 +52,8 @@ const APP_CONFIG = {
   settingsKey: "musyrif_settings",
   googleAuthKey: "musyrif_google_session",
   googleClientId: window.APP_CREDENTIALS.googleClientId,
+  violationsKey: "musyrif_violations_db",
+  studentTargetsKey: "musyrif_student_targets",
 };
 
 // ==========================================
@@ -850,6 +852,8 @@ let appState = {
   analysisDate: window.getLocalDateStr(),
   timesheetViewDate: window.getLocalDateStr(),
   activityLog: [],
+  violations: JSON.parse(localStorage.getItem("musyrif_violations_db") || "[]"),
+  studentTargets: JSON.parse(localStorage.getItem("musyrif_student_targets") || "{}"),
   settings: {
     darkMode: false,
     notifications: true,
