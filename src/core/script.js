@@ -483,7 +483,6 @@ if (!IS_SUPERADMIN_CONFIGURED && _isDebugMode) {
 // Also validate critical credentials from config
 // Only show warnings in development/debug mode
 const _creds = window.APP_CREDENTIALS || {};
-const _isDebugMode = localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true");
 
 if (_isDebugMode && !_creds.googleSheetUrl) {
   console.warn('[Config] googleSheetUrl not configured. Set window.APP_SECRETS.googleSheetUrl in config.local.js');
