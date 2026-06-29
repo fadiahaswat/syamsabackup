@@ -1,70 +1,119 @@
 /**
  * Service Worker for Syriansa PWA
  * Handles offline caching and Web Push Notifications.
+ *
+ * @version 2.3.0
  */
 
-const CACHE_VERSION = "v249-local-only";
+const CACHE_VERSION = "v250";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
-// Assets to cache (static assets + core JS/CSS for offline)
+// Static assets to cache for offline functionality
 const STATIC_ASSETS = [
+  // Core entry point
   "./",
   "./index.html",
   "./output.css",
   "./style.css",
+  "./manifest.json",
+
   // PWA Icons
   "./assets/icons/icon.svg",
   "./assets/icons/icon.webp",
   "./assets/icons/icon.png",
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png",
+  "./assets/icons/icon-maskable-512.png",
   "./assets/icons/app-icon.png",
-  // Branding
+
+  // Branding assets
   "./assets/branding/Logomark.webp",
   "./assets/branding/Primary%20Logo.webp",
   "./assets/branding/Logo%20Mu%27allimin.webp",
   "./assets/branding/Logo%20PP%20Muhammadiyah.webp",
   "./assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp",
   "./assets/branding/Internastional%20Partners.webp",
+
   // Screenshots
   "./assets/screenshots/desktop-wide.png",
   "./assets/screenshots/mobile-narrow.png",
+
   // Illustrations
   "./assets/illustrations/kaaba.webp",
-  // Manifest
-  "./manifest.json",
+
   // Core JS - precached for offline functionality
   "src/config/config.js",
   "src/core/app-init.js",
   "src/core/app-core.js",
   "src/core/script.js",
+  "src/core/constants.js",
+  "src/core/templates.js",
+  "src/core/countdown.js",
+  "src/core/pull-to-refresh.js",
+
+  // App JS
   "src/js/app.js",
   "src/js/router.js",
   "src/js/loader.js",
   "src/js/render.js",
+
+  // Managers
   "src/managers/storage-manager.js",
+  "src/managers/storage-manager-v2.js",
   "src/managers/state-manager.js",
   "src/managers/auth-manager.js",
   "src/managers/santri-manager.js",
   "src/managers/attendance-manager.js",
   "src/managers/permit-manager.js",
+  "src/managers/permit-request-manager.js",
   "src/managers/tab-manager.js",
   "src/managers/export-manager.js",
+  "src/managers/activity-logger.js",
+  "src/managers/dashboard-manager.js",
+  "src/managers/dashboard-widgets.js",
+  "src/managers/dashboard-geolocation.js",
+  "src/managers/analysis-manager.js",
+  "src/managers/date-manager.js",
+  "src/managers/sync-queue.js",
+  "src/managers/sync-debug.js",
+  "src/managers/database-schema.js",
+  "src/managers/repository.js",
+  "src/managers/data-migrator.js",
+  "src/managers/debug-panel.js",
+  "src/managers/notification-manager.js",
+  "src/managers/admin-manager.js",
+  "src/managers/file-upload.js",
+
+  // Data
   "src/data/data-santri.js",
   "src/data/data-kelas.js",
   "src/data/tahfizh_metadata.json",
+
+  // Shared utilities
+  "src/shared/utils.js",
+
+  // Platform
+  "src/platform/storage-service.js",
+
+  // Tahfizh module
+  "src/modules/tahfizh/tahfizh-module.js",
+  "src/modules/tahfizh/tahfizh-integration.js",
+  "src/modules/tahfizh/tahfizh-app-adapter.js",
+  "src/modules/tahfizh/tahfizh-manager.js",
 ];
 
-// Legacy key - kept for compatibility
+// JS files that should always be fetched fresh (dynamic features)
 const ALWAYS_FRESH_JS = [
   "src/features/qibla.js",
 ];
 
-// Check if URL is a JS file that should always be fresh
+// Check if URL should always be fetched fresh
 function isAlwaysFreshJS(url) {
   const pathname = url.pathname.replace(/^\//, '');
   return ALWAYS_FRESH_JS.some(file => pathname.endsWith(file));
 }
 
-// Check if URL is a static asset
+// Check if URL is a known static asset
 function isStaticAsset(url) {
   const pathname = url.pathname.replace(/^\//, '');
   return STATIC_ASSETS.some(asset => {
@@ -75,178 +124,255 @@ function isStaticAsset(url) {
   });
 }
 
+// Check if URL is an image/font file
+function isCacheableMedia(url) {
+  return url.pathname.match(/\.(css|png|jpg|jpeg|webp|svg|ico|woff2?|ttf|eot)$/);
+}
+
 // 1. Install Service Worker & Cache Static Assets
 self.addEventListener("install", (event) => {
-  self.skipWaiting(); // FORCE ACTIVATE IMMEDIATELY
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Cache static assets only, not JS files (they should always be fresh)
-      return cache.addAll(STATIC_ASSETS).catch(err => {
-        console.log('[SW] Some static assets failed to cache:', err);
+      console.log('[SW] Caching static assets for version', CACHE_VERSION);
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('[SW] Some static assets failed to cache:', err);
+        // Continue even if some assets fail
       });
-    }),
+    }).then(() => {
+      // Skip waiting to activate immediately
+      return self.skipWaiting();
+    })
   );
 });
 
-// 2. Activate & Hapus Cache Lama
+// 2. Activate & Clean Old Caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(
         keyList.map((key) => {
-          if (key !== CACHE_NAME) {
+          if (key !== CACHE_NAME && key.startsWith('musyrif-app-')) {
+            console.log('[SW] Deleting old cache:', key);
             return caches.delete(key);
           }
         }),
       );
     }).then(() => {
-      return self.clients.claim(); // TAKE CONTROL IMMEDIATELY
+      console.log('[SW] Claiming clients for version', CACHE_VERSION);
+      return self.clients.claim();
     })
   );
 });
 
-// Message Handler - Handle update commands from main app
+// Message Handler - Handle commands from main app
 self.addEventListener("message", (event) => {
   if (!event.data || !event.data.type) return;
 
-  console.log('[SW] Message received:', event.data.type);
+  const { type, payload } = event.data;
 
-  if (event.data.type === 'SKIP_WAITING') {
-    console.log('[SW] Skipping waiting, activating new version...');
-    self.skipWaiting();
-  }
+  switch (type) {
+    case 'SKIP_WAITING':
+      console.log('[SW] Skipping waiting, activating new version...');
+      self.skipWaiting();
+      break;
 
-  if (event.data.type === 'SKIP_CACHE') {
-    // Clear all caches to force fresh load
-    console.log('[SW] Clearing all caches...');
-    caches.keys().then(keys => {
-      return Promise.all(keys.map(key => caches.delete(key)));
-    }).then(() => {
-      console.log('[SW] All caches cleared');
-    });
+    case 'SKIP_CACHE':
+      console.log('[SW] Clearing all caches...');
+      caches.keys().then(keys => {
+        return Promise.all(keys.map(key => caches.delete(key)));
+      }).then(() => {
+        console.log('[SW] All caches cleared');
+        // Notify clients
+        self.clients.matchAll({ type: 'window' }).then(clients => {
+          clients.forEach(client => {
+            client.postMessage({ type: 'CACHE_CLEARED' });
+          });
+        });
+      });
+      break;
+
+    case 'GET_VERSION':
+      event.source.postMessage({ type: 'VERSION', version: CACHE_VERSION });
+      break;
+
+    case 'CACHE_URLS':
+      // Dynamically cache additional URLs from app
+      if (payload && payload.urls) {
+        caches.open(CACHE_NAME).then(cache => {
+          return cache.addAll(payload.urls).catch(err => {
+            console.warn('[SW] Failed to cache URLs:', err);
+          });
+        });
+      }
+      break;
+
+    default:
+      console.log('[SW] Unknown message type:', type);
   }
 });
 
-// 3. Fetch Strategy: Smart Caching
+// 3. Fetch Strategy
 self.addEventListener("fetch", (event) => {
-  // Abaikan request selain HTTP/HTTPS (seperti ws:// atau chrome-extension://)
+  // Ignore non-HTTP requests (chrome-extension, ws, etc.)
   if (!event.request.url.startsWith("http")) return;
-  // Hanya tangani GET requests
+
+  // Only handle GET requests
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
   const isLocal = url.origin === location.origin;
 
   if (isLocal) {
-    // ========== LOCAL FILES ==========
+    handleLocalFetch(event, url);
+  } else {
+    handleExternalFetch(event, url);
+  }
+});
 
-    // JS files → Stale-While-Revalidate for best performance
-    // Serve cached version immediately, update cache in background
-    if (isAlwaysFreshJS(url) || url.pathname.endsWith('.js')) {
-      event.respondWith(
-        caches.match(event.request).then(cachedResponse => {
-          // Start network fetch in background
-          const fetchPromise = fetch(event.request).then(networkResponse => {
-            if (networkResponse.ok) {
-              const responseClone = networkResponse.clone();
-              caches.open(CACHE_NAME).then(cache => {
-                cache.put(event.request, responseClone);
-              });
-            }
-            return networkResponse;
-          }).catch(() => null);
-
-          // Return cached response if available, otherwise wait for network
-          return cachedResponse || fetchPromise || new Response(
-            "Failed to load JavaScript. Please check your connection.",
+/**
+ * Handle fetch for local files
+ */
+function handleLocalFetch(event, url) {
+  // Dynamic JS features → Network first, fallback to cache
+  if (isAlwaysFreshJS(url)) {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match(event.request).then(response => {
+          return response || new Response(
+            "Failed to load. Please check your connection.",
             { status: 503, statusText: "Service Unavailable" }
           );
-        })
-      );
-      return;
-    }
-
-    // Static assets → Cache First for performance
-    if (isStaticAsset(url) || url.pathname.match(/\.(css|png|jpg|jpeg|webp|svg|ico|woff2?)$/)) {
-      event.respondWith(
-        caches.match(event.request).then((response) => {
-          if (response) return response;
-          return fetch(event.request).then(fetchResponse => {
-            if (fetchResponse.ok) {
-              const clone = fetchResponse.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-            }
-            return fetchResponse;
-          }).catch(() => {
-            return caches.match("./index.html").then(fallback => {
-              return fallback || caches.match("./offline.html") || new Response(
-                "<html><body style='font-family:sans-serif;text-align:center;padding:2rem'><h1>Offline</h1><p>Tidak ada koneksi internet. Silakan coba lagi nanti.</p></body></html>",
-                { status: 503, headers: { 'Content-Type': 'text/html' } }
-              );
-            });
-          });
-        })
-      );
-      return;
-    }
-
-    // Default: Network First
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(event.request).then((response) => {
-          return response || caches.match("./index.html");
         });
       })
     );
+    return;
+  }
 
-  } else {
-    // ========== EXTERNAL FILES (CDN, Google Fonts) ==========
+  // Regular JS files → Stale-While-Revalidate
+  if (url.pathname.endsWith('.js')) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(event.request).then((response) => {
-          if (response) {
-            return response;
-          }
-          return new Response("", { status: 503, statusText: "Service Unavailable" });
-        });
-      })
+      staleWhileRevalidate(event.request)
     );
-  }
-});
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-
-  // Extract target URL from notification data
-  let targetUrl = event.notification.data?.url || "./index.html";
-
-  // Adjust URL for GitHub Pages if relative
-  if (targetUrl.startsWith("./") && !targetUrl.includes("/syamsa/")) {
-    targetUrl = targetUrl.replace("./", "./syamsa/");
+    return;
   }
 
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      // Find open window and focus it
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          client.focus();
-          if ("navigate" in client) {
-            return client.navigate(targetUrl);
-          }
-          return client;
-        }
-      }
-      // If no open window, open a new one
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(targetUrl);
-      }
+  // Static assets & media → Cache First
+  if (isStaticAsset(url) || isCacheableMedia(url)) {
+    event.respondWith(
+      cacheFirst(event.request)
+    );
+    return;
+  }
+
+  // HTML pages → Network First with fallback
+  if (url.pathname.endsWith('.html') || url.pathname === '/') {
+    event.respondWith(
+      networkFirst(event.request, './index.html')
+    );
+    return;
+  }
+
+  // Default → Network First
+  event.respondWith(
+    networkFirst(event.request)
+  );
+}
+
+/**
+ * Handle fetch for external resources (CDN, fonts, etc.)
+ */
+function handleExternalFetch(event, url) {
+  // Google Fonts → Cache First with network fallback
+  if (url.origin.includes('fonts.googleapis.com') || url.origin.includes('fonts.gstatic.com')) {
+    event.respondWith(
+      cacheFirst(event.request)
+    );
+    return;
+  }
+
+  // Other external resources → Network First
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return new Response("", { status: 503 });
     })
   );
-});
+}
 
+/**
+ * Cache First strategy - try cache, then network
+ */
+function cacheFirst(request) {
+  return caches.match(request).then((response) => {
+    if (response) return response;
+
+    return fetch(request).then((fetchResponse) => {
+      if (fetchResponse.ok) {
+        const clone = fetchResponse.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(request, clone);
+        });
+      }
+      return fetchResponse;
+    }).catch(() => {
+      return getOfflineFallback(request);
+    });
+  });
+}
+
+/**
+ * Stale-While-Revalidate - serve cached, update in background
+ */
+function staleWhileRevalidate(request) {
+  return caches.match(request).then((cachedResponse) => {
+    const fetchPromise = fetch(request).then((networkResponse) => {
+      if (networkResponse.ok) {
+        const clone = networkResponse.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(request, clone);
+        });
+      }
+      return networkResponse;
+    }).catch(() => null);
+
+    return cachedResponse || fetchPromise || new Response(
+      "Failed to load. Please check your connection.",
+      { status: 503, statusText: "Service Unavailable" }
+    );
+  });
+}
+
+/**
+ * Network First strategy - try network, fallback to cache
+ */
+function networkFirst(request, fallbackUrl = null) {
+  return fetch(request).catch(() => {
+    return caches.match(request).then((response) => {
+      return response || (fallbackUrl ? caches.match(fallbackUrl) : null) || getOfflineFallback(request);
+    });
+  });
+}
+
+/**
+ * Get offline fallback response
+ */
+function getOfflineFallback(request) {
+  // For navigation requests, return the app shell
+  if (request.mode === 'navigate') {
+    return caches.match('./index.html').then(response => {
+      return response || new Response(
+        '<html><body style="font-family:sans-serif;text-align:center;padding:2rem;background:#0f172a;color:#fff"><h1>Offline</h1><p>Tidak ada koneksi internet.<br>Silakan coba lagi nanti.</p><button onclick="location.reload()" style="padding:0.75rem 1.5rem;background:#0C4E8C;color:#fff;border:none;border-radius:0.5rem;cursor:pointer">Coba Lagi</button></body></html>',
+        { status: 503, headers: { 'Content-Type': 'text/html' } }
+      );
+    });
+  }
+
+  // For other requests, return empty response
+  return new Response("", { status: 503 });
+}
+
+// 4. Push Notification Handler
 self.addEventListener("push", (event) => {
-  console.log("[SW] Push event received:", event);
+  console.log("[SW] Push event received");
 
   let payload = {};
   if (event.data) {
@@ -261,34 +387,22 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  console.log("[SW] Parsed push payload:", payload);
-
-  // Extract title and body
   const title = payload.notification?.title || payload.data?.title || "Syamsa";
   const body = payload.notification?.body || payload.data?.body || "Ada pembaruan baru.";
   const icon = payload.notification?.icon || payload.data?.icon || "./assets/icons/icon.webp";
   const badge = payload.notification?.badge || payload.data?.badge || "./assets/icons/icon.png";
 
-  // Extract URL for click action
   let clickUrl = payload.data?.url || payload.notification?.click_action || "./index.html";
-
-  // Adjust URL for GitHub Pages if relative
-  if (clickUrl.startsWith("./") && !clickUrl.includes("/syamsa/")) {
-    clickUrl = clickUrl.replace("./", "./syamsa/");
-  }
+  clickUrl = normalizePath(clickUrl);
 
   const notificationOptions = {
-    body: body,
-    icon: icon,
-    badge: badge,
+    body,
+    icon,
+    badge,
     vibrate: [200, 100, 200],
-    tag: payload.data?.tag || payload.notification?.tag || "syamsa-push",
-    data: {
-      url: clickUrl,
-      ...payload.data
-    },
-    // Keep interaction for important alerts (like Alpa notifications)
-    requireInteraction: payload.data?.type === "alpa_notification" || payload.notification?.requireInteraction === "true" || false
+    tag: payload.data?.tag || "syamsa-push",
+    data: { url: clickUrl, ...payload.data },
+    requireInteraction: payload.data?.type === "alpa_notification"
   };
 
   event.waitUntil(
@@ -296,7 +410,34 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// 4. Background Sync - Process offline changes when back online
+// 5. Notification Click Handler
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  let targetUrl = event.notification.data?.url || "./index.html";
+  targetUrl = normalizePath(targetUrl);
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // Focus existing window if available
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.focus();
+          if ("navigate" in client) {
+            return client.navigate(targetUrl);
+          }
+          return client;
+        }
+      }
+      // Open new window
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+// 6. Background Sync Handler
 self.addEventListener('sync', (event) => {
   console.log('[SW] Sync event:', event.tag);
 
@@ -305,13 +446,19 @@ self.addEventListener('sync', (event) => {
   }
 });
 
+// Helper function to normalize paths for GitHub Pages
+function normalizePath(path) {
+  if (path.startsWith("./") && !path.includes("/syamsa/")) {
+    return path.replace("./", "./syamsa/");
+  }
+  return path;
+}
+
 /**
  * Process offline changes from IndexedDB SyncQueue
- * This is called when the app comes back online
  */
 async function processOfflineChanges() {
   try {
-    // Open IndexedDB
     const db = await openSyncDB();
     const changes = await getPendingChanges(db);
 
@@ -324,17 +471,16 @@ async function processOfflineChanges() {
 
     for (const change of changes) {
       try {
-        // Process based on entity type
-        await processChange(change, db);
+        await processChange(change);
         await markChangeComplete(db, change.id);
-        console.log('[SW] Synced change:', change.id, change.entityType);
+        console.log('[SW] Synced:', change.id, change.entityType);
       } catch (err) {
-        console.error('[SW] Failed to sync change:', change.id, err);
+        console.error('[SW] Failed to sync:', change.id, err);
         await markChangeFailed(db, change.id, err.message);
       }
     }
 
-    // Notify the app that sync is complete
+    // Notify clients
     const clients = await self.clients.matchAll({ type: 'window' });
     clients.forEach(client => {
       client.postMessage({ type: 'SYNC_COMPLETE', count: changes.length });
@@ -345,16 +491,11 @@ async function processOfflineChanges() {
   }
 }
 
-/**
- * Open SyncQueue IndexedDB
- */
 function openSyncDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('syamsa_sync_queue', 1);
-
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
-
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       if (!db.objectStoreNames.contains('changes')) {
@@ -364,49 +505,33 @@ function openSyncDB() {
   });
 }
 
-/**
- * Get pending changes from IndexedDB
- */
 function getPendingChanges(db) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(['changes'], 'readonly');
     const store = tx.objectStore('changes');
     const index = store.index('status');
     const request = index.getAll(IDBKeyRange.only('pending'));
-
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-/**
- * Process a single change
- */
-async function processChange(change, db) {
-  // For now, changes are stored locally
-  // In a real app, this would sync to a backend API
+async function processChange(change) {
   console.log('[SW] Processing:', change.entityType, change.operation);
 
-  // The actual sync logic depends on your backend
-  // This is a placeholder for the sync endpoint
+  // Placeholder for backend sync - current app is local-only
   switch (change.entityType) {
     case 'attendance':
-      // Sync attendance data
-      break;
     case 'permit':
-      // Sync permit data
-      break;
     case 'settings':
-      // Sync settings
+    case 'tahfizh':
+      // Sync logic would go here
       break;
     default:
       console.log('[SW] Unknown entity type:', change.entityType);
   }
 }
 
-/**
- * Mark a change as complete
- */
 function markChangeComplete(db, id) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(['changes'], 'readwrite');
@@ -429,9 +554,6 @@ function markChangeComplete(db, id) {
   });
 }
 
-/**
- * Mark a change as failed
- */
 function markChangeFailed(db, id, error) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(['changes'], 'readwrite');
@@ -454,3 +576,5 @@ function markChangeFailed(db, id, error) {
     getReq.onerror = () => reject(getReq.error);
   });
 }
+
+console.log('[SW] Service Worker loaded, version:', CACHE_VERSION);
