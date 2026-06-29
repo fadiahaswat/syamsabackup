@@ -1,4 +1,13 @@
 /* Base Styles & Reset */
+
+/* iOS Safari: render system UI (scrollbar, input, select) sesuai tema aktif */
+:root {
+  color-scheme: light dark;
+}
+html.dark {
+  color-scheme: dark;
+}
+
 body {
   min-height: 100vh !important;
   min-height: 100dvh !important;

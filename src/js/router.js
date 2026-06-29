@@ -46,6 +46,17 @@ const AppRouter = {
       return;
     }
 
+    // Admin route guard: only allow if user is admin or superadmin
+    if (route === 'admin') {
+      if (appState.adminMode !== true && appState.superadminMode !== true) {
+        console.warn('[Router] Admin route requires admin privileges');
+        if (typeof window.showToast === 'function') {
+          window.showToast('Anda tidak memiliki akses ke halaman Pengelolaan', 'error');
+        }
+        return;
+      }
+    }
+
     this.currentRoute = route;
 
     // Update URL

@@ -243,10 +243,11 @@ input[placeholder*="Cari"] {
 .stat-card,
 .data-card {
   background: var(--surface) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border: 1px solid var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
+  isolation: isolate;
 }
 
 .dark .glass-card,
@@ -256,18 +257,20 @@ input[placeholder*="Cari"] {
 .dark .stat-card,
 .dark .data-card {
   background: var(--surface) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border: 1px solid var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
+  isolation: isolate;
 }
 
 .glass-nav {
   background: var(--surface-strong) !important;
-  backdrop-filter: blur(28px) saturate(170%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(170%) !important;
+  backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border-top: 1px solid var(--border-soft) !important;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03) !important;
+  isolation: isolate;
 }
 .dark .glass-nav {
   background: var(--surface-strong) !important;
@@ -303,15 +306,16 @@ input[placeholder*="Cari"] {
   color: #ffffff !important;
 }
 
-/* Modals & Dialogs (Thick Glass Material) */
+/* Modals & Dialogs (Thick Glass Material — iOS Chrome) */
 [id^="modal-"] > div:not(.absolute),
 #bento-modal-content {
   background: var(--surface-strong) !important;
-  backdrop-filter: blur(28px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+  backdrop-filter: blur(var(--blur-chrome)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--blur-chrome)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border: 1px solid var(--border-soft) !important;
   box-shadow: 0 24px 70px -16px rgba(0, 0, 0, 0.35), 
               inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  isolation: isolate;
 }
 
 /* Specific main cards overrides (if using tailwind styling in HTML) */
@@ -320,20 +324,22 @@ input[placeholder*="Cari"] {
 #att-summary-widget,
 #countdown-libur-widget > div {
   background-color: var(--surface) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border: 1px solid var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
+  isolation: isolate;
 }
 
 /* Bottom Floating Navigation (iOS Tab Bar Style) */
 #bottom-nav > div {
   background: var(--surface-strong) !important;
-  backdrop-filter: blur(28px) saturate(170%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(170%) !important;
+  backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border: 1px solid var(--border-soft) !important;
   box-shadow: 0 14px 40px -10px rgba(15, 23, 42, 0.12), 
               inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  isolation: isolate;
 }
 
 .dark #bottom-nav > div {
@@ -356,10 +362,11 @@ input[placeholder*="Cari"] {
 .bg-white\/90[class*="rounded-3xl"],
 .rekap-tab-content {
   background-color: var(--surface) !important;
-  backdrop-filter: blur(24px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border-color: var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
+  isolation: isolate;
 }
 
 .dark .dark\:bg-slate-800[class*="rounded-[1."],
@@ -379,10 +386,51 @@ input[placeholder*="Cari"] {
 .dark .dark\:bg-slate-950\/40[class*="rounded-3xl"],
 .dark .rekap-tab-content {
   background-color: var(--surface) !important;
-  backdrop-filter: blur(24px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border-color: var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
+  isolation: isolate;
+}
+
+/* ============================================================
+   @supports FALLBACK — Progressive Enhancement
+   Browser tanpa backdrop-filter support mendapat opaque background
+   ============================================================ */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-card,
+  .surface-card,
+  .surface-panel,
+  .operational-card,
+  .stat-card,
+  .data-card,
+  .glass-nav,
+  [id^="modal-"] > div:not(.absolute),
+  #bento-modal-content,
+  #bottom-nav > div,
+  #weekly-calendar-card,
+  #salat-standalone-card,
+  #att-summary-widget,
+  #countdown-libur-widget > div {
+    background: rgba(255, 255, 255, 0.97) !important;
+  }
+
+  .dark .glass-card,
+  .dark .surface-card,
+  .dark .surface-panel,
+  .dark .operational-card,
+  .dark .stat-card,
+  .dark .data-card,
+  .dark .glass-nav,
+  .dark [id^="modal-"] > div:not(.absolute),
+  .dark #bento-modal-content,
+  .dark #bottom-nav > div,
+  .dark #weekly-calendar-card,
+  .dark #salat-standalone-card,
+  .dark #att-summary-widget,
+  .dark #countdown-libur-widget > div {
+    background: rgba(15, 23, 42, 0.98) !important;
+  }
 }
 
 

@@ -1,5 +1,19 @@
 /* Theme Variables - Design System */
 :root {
+  /* ========== iOS GLASS MATERIAL TIERS ========== */
+  /* Blur — 3 tiers following Apple HIG */
+  --blur-thin:    10px;   /* Thin Material — segmented control, chip */
+  --blur-regular: 20px;   /* Regular Material — cards, panels */
+  --blur-thick:   28px;   /* Thick Material — nav bar, tab bar, modal */
+  --blur-chrome:  32px;   /* Chrome — overlay, fullscreen sheet */
+
+  /* Vibrancy — Apple formula: blur + saturate + brightness */
+  --glass-saturate:          180%;
+  --glass-brightness:        1.08;   /* Light mode: brighten slightly */
+  --glass-brightness-dark:   0.92;   /* Dark mode: darken slightly */
+
+  /* color-scheme: tells browser to render system UI (scrollbar, form) correctly */
+  color-scheme: light dark;
   --color-brand: #0C81E4;
   --color-brand-hover: #0C4E8C;
   --color-brand-ring: rgba(12, 129, 228, 0.15);
@@ -51,12 +65,17 @@ html.dark {
   --surface-muted: rgba(30, 41, 59, 0.58);
   --surface-subtle: rgba(15, 23, 42, 0.35);
   --border-soft: rgba(255, 255, 255, 0.08);
+
+  /* Dark mode vibrancy override */
+  --glass-brightness: var(--glass-brightness-dark);
   
   /* Shadow dengan Inset Bevel Gelap */
   --shadow-card: 0 16px 40px -16px rgba(0, 0, 0, 0.45), 
                  inset 0 1px 0 rgba(255, 255, 255, 0.12);
   --shadow-card-hover: 0 22px 48px -12px rgba(17, 196, 212, 0.18), 
                        inset 0 1px 0 rgba(255, 255, 255, 0.20);
+
+  color-scheme: dark;
 }
 
 html {

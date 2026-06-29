@@ -116,6 +116,25 @@ module.exports = {
         // Spinner
         spinner: "spin 0.8s linear infinite",
       },
+      /* ============================================================
+         iOS GLASSMORPHISM \u2014 Semantic Backdrop Filter Extensions
+         Usage: backdrop-blur-glass-thin, backdrop-blur-glass-regular, etc.
+         ============================================================ */
+      backdropBlur: {
+        'glass-thin':    '10px',   /* Thin Material \u2014 segmented control */
+        'glass-regular': '20px',   /* Regular Material \u2014 cards, panels */
+        'glass-thick':   '28px',   /* Thick Material \u2014 nav, tab bar */
+        'glass-chrome':  '32px',   /* Chrome \u2014 modal, full sheet */
+      },
+      backdropSaturate: {
+        'glass':        '180%',    /* Standard iOS vibrancy */
+        'glass-vivid':  '200%',    /* High vibrancy */
+        'glass-subtle': '150%',    /* Muted vibrancy */
+      },
+      backdropBrightness: {
+        'glass':      '1.08',      /* Light mode: slightly brighter */
+        'glass-dark': '0.92',      /* Dark mode: slightly darker */
+      },
       keyframes: {
         slideUp: {
           "0%": { transform: "translateY(20px)", opacity: 0 },

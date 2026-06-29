@@ -442,7 +442,17 @@
     position: relative;
     z-index: 20;
     overflow: hidden;
+    /* iOS Glass Material \u2014 Thick Material untuk persistent sidebar */
+    background: var(--surface-strong) !important;
+    backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+    -webkit-backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+    border-right: 1px solid var(--border-soft) !important;
     box-shadow: 18px 0 42px -36px rgba(15, 23, 42, 0.45);
+    isolation: isolate;
+  }
+
+  .dark #desktop-sidebar {
+    background: var(--surface-strong) !important;
   }
 
   #desktop-sidebar > div:first-child {

@@ -1,22 +1,38 @@
 // File: config.js
 // Konfigurasi terpusat — edit file ini untuk menyesuaikan deployment.
+//
+// ==========================================
+// KEAMANAN: SEcrets Management
+// ==========================================
+// PENTING: Untuk production, buat file 'config.local.js' yang meng-override
+// nilai-nilai sensitif di bawah ini. Pastikan config.local.js TIDAK di-commit ke repo.
+//
+// Contoh config.local.js:
+//   window.APP_SECRETS = {
+//     googleSheetUrl: "https://your-script.google.com/...",
+//     googleClientId: "your-client-id.apps.googleusercontent.com",
+//     adminEmails: ["admin@yourdomain.com"],
+//     superadminHash: "sha256-hash-dari-password"
+//   };
+//
+// Nilai di bawah ini adalah FALLBACK untuk development. Override di config.local.js.
 
 // ==========================================
 // KREDENSIAL & URL EKSTERNAL
 // ==========================================
+const _DEFAULT_CREDENTIALS = {
+  googleSheetUrl: "",
+  googleClientId: "",
+  adminEmails: [],
+};
+
+// Override dengan secrets dari config.local.js atau window.APP_SECRETS
+const _SECRETS = window.APP_SECRETS || {};
+
 window.APP_CREDENTIALS = {
-  // Google Apps Script (sumber data Santri & Kelas — URL yang sama)
-  googleSheetUrl:
-    "https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec",
-
-  // Google OAuth Client ID (untuk login Musyrif)
-  googleClientId:
-    "336443539411-b7uv4udqqhbqpdmeuja54dhfsda4q7cm.apps.googleusercontent.com",
-
-  // Daftar email yang terdaftar sebagai Admin Musyrif (Pengelola Utama)
-  adminEmails: [
-    "andiaqillah@muallimin.sch.id"
-  ],
+  googleSheetUrl: _SECRETS.googleSheetUrl || _DEFAULT_CREDENTIALS.googleSheetUrl,
+  googleClientId: _SECRETS.googleClientId || _DEFAULT_CREDENTIALS.googleClientId,
+  adminEmails: _SECRETS.adminEmails || _DEFAULT_CREDENTIALS.adminEmails,
 };
 
 // ==========================================

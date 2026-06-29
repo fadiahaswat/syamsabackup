@@ -4,9 +4,21 @@
 // Mode localStorage only
 
 /**
+ * Guard untuk memastikan hanya admin yang bisa memanggil fungsi
+ * @throws {Error} Jika user bukan admin atau superadmin
+ * @private
+ */
+function _requireAdmin() {
+  if (appState.adminMode !== true && appState.superadminMode !== true) {
+    throw new Error('Unauthorized: Admin access required');
+  }
+}
+
+/**
  * Escape HTML entities untuk mencegah XSS
  * @param {string} str - String yang akan di-escape
  * @returns {string} - String yang sudah di-escape
+ * @private
  */
 const _escapeHtml = (str) => {
   if (str === null || str === undefined) return '';
@@ -23,6 +35,16 @@ const _escapeHtml = (str) => {
 let classUuidMap = {}; // UUID -> Class Name
 let classNameToUuidMap = {}; // Class Name -> UUID
 let studentUuidMap = {}; // UUID -> Student Info
+
+/**
+ * Guard untuk memastikan hanya admin yang bisa memanggil fungsi
+ * @throws {Error} Jika user bukan admin atau superadmin
+ */
+function _requireAdmin() {
+  if (appState.adminMode !== true && appState.superadminMode !== true) {
+    throw new Error('Unauthorized: Admin access required');
+  }
+}
 
 /**
  * Inisialisasi peta UUID Kelas - menggunakan data lokal
@@ -53,8 +75,10 @@ async function initAdminStudentMap() {
 /**
  * 1. OPERATIONS: Memuat rekap absensi harian seluruh kelas untuk 6 sesi shalat
  * Menggunakan localStorage sebagai sumber data
+ * @returns {Promise<{data: Object, error: Error|null}>}
  */
 window.loadGlobalAttendance = async function () {
+  _requireAdmin();
   try {
     await initAdminClassMap();
 
@@ -107,8 +131,10 @@ window.loadGlobalAttendance = async function () {
 /**
  * 2. PERIZINAN: Memuat riwayat izin dari semua kelas
  * Menggunakan localStorage sebagai sumber data
+ * @returns {Promise<{data: Array, error: Error|null}>}
  */
 window.loadGlobalPermits = async function () {
+  _requireAdmin();
   try {
     await initAdminStudentMap();
 
@@ -148,8 +174,10 @@ window.loadGlobalPermits = async function () {
 /**
  * 3. TAHFIZH: Memuat data setoran tahfizh global seluruh santri
  * Menggunakan localStorage sebagai sumber data
+ * @returns {Promise<{data: Array, error: Error|null}>}
  */
 window.loadGlobalTahfizh = async function () {
+  _requireAdmin();
   try {
     // Ambil setoran dari localStorage
     let allSetoran = [];
@@ -190,13 +218,17 @@ window.loadGlobalTahfizh = async function () {
 /**
  * 4. HR & WALI: Reset password kustom Wali agar kembali ke default (NIS)
  * Menggunakan localStorage
+ * @param {string} nis - NIS Wali Santri
+ * @returns {Promise<{success: boolean, error: Error|null}>}
  */
 window.resetWaliPassword = async function (nis) {
+  _requireAdmin();
   try {
     // Hapus dari local storage password wali
     const passwordKey = 'wali_passwords_db';
     const saved = localStorage.getItem(passwordKey);
-    let passwords = saved ? JSON.parse(saved) : {};
+    let passwords = {};
+    try { passwords = saved ? JSON.parse(saved) : {}; } catch { passwords = {}; }
 
     delete passwords[nis];
     localStorage.setItem(passwordKey, JSON.stringify(passwords));
@@ -215,15 +247,20 @@ window.resetWaliPassword = async function (nis) {
 /**
  * 6. HR & WALI: Ubah/Setel password Wali Santri
  * Menggunakan localStorage
+ * @param {string} nis - NIS Wali Santri
+ * @param {string} newPassword - Password baru
+ * @returns {Promise<{success: boolean, error: Error|null}>}
  */
 window.changeWaliPassword = async function (nis, newPassword) {
+  _requireAdmin();
   try {
     const hash = await window.sha256Hex(newPassword);
 
     // Simpan ke localStorage
     const passwordKey = 'wali_passwords_db';
     const saved = localStorage.getItem(passwordKey);
-    let passwords = saved ? JSON.parse(saved) : {};
+    let passwords = {};
+    try { passwords = saved ? JSON.parse(saved) : {}; } catch { passwords = {}; }
 
     passwords[nis] = {
       nis: nis,
@@ -242,12 +279,18 @@ window.changeWaliPassword = async function (nis, newPassword) {
 /**
  * 7. COMMUNICATIONS: Membuat pengumuman broadcast baru
  * Menggunakan localStorage
+ * @param {string} title - Judul pengumuman (max 200 karakter)
+ * @param {string} content - Isi pengumuman (max 5000 karakter)
+ * @param {string} target - Target: 'musyrif', 'wali', atau 'all'
+ * @returns {Promise<{success: boolean, error: Error|null}>}
  */
 window.createAnnouncement = async function (title, content, target = "musyrif") {
+  _requireAdmin();
   try {
     const announcementKey = 'local_announcements';
     const saved = localStorage.getItem(announcementKey);
-    let announcements = saved ? JSON.parse(saved) : [];
+    let announcements = [];
+    try { announcements = saved ? JSON.parse(saved) : []; } catch { announcements = []; }
 
     const newAnnouncement = {
       id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
@@ -276,12 +319,15 @@ window.createAnnouncement = async function (title, content, target = "musyrif") 
 /**
  * 8. COMMUNICATIONS: Memuat daftar pengumuman terbaru
  * Menggunakan localStorage
+ * @returns {Promise<{data: Array, error: Error|null}>}
  */
 window.loadAnnouncements = async function () {
+  _requireAdmin();
   try {
     const announcementKey = 'local_announcements';
     const saved = localStorage.getItem(announcementKey);
-    let announcements = saved ? JSON.parse(saved) : [];
+    let announcements = [];
+    try { announcements = saved ? JSON.parse(saved) : []; } catch { announcements = []; }
 
     // Urutkan dari terbaru
     announcements.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -295,12 +341,15 @@ window.loadAnnouncements = async function () {
 /**
  * 9. AUDIT LOGS: Memuat seluruh log aktivitas sistem secara global
  * Menggunakan localStorage
+ * @returns {Promise<{data: Array, error: Error|null}>}
  */
 window.loadGlobalActivityLogs = async function () {
+  _requireAdmin();
   try {
     const logsKey = 'local_activity_logs';
     const saved = localStorage.getItem(logsKey);
-    let logs = saved ? JSON.parse(saved) : [];
+    let logs = [];
+    try { logs = saved ? JSON.parse(saved) : []; } catch { logs = []; }
 
     // Urutkan dari terbaru dan ambil 100
     logs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -315,7 +364,12 @@ window.loadGlobalActivityLogs = async function () {
 // ADMIN DASHBOARD RENDERING & EVENT CONTROLLERS
 // ============================================================
 
+/**
+ * Switch sub-tab di halaman admin
+ * @param {string} subTabName - Nama sub-tab: 'operations', 'hr', 'tahfizh', 'permits', 'broadcast', 'logs'
+ */
 window.switchAdminSubTab = function (subTabName) {
+  _requireAdmin();
   // Sembunyikan semua konten subtab admin
   document.querySelectorAll(".admin-subtab-content").forEach(el => el.classList.add("hidden"));
 
@@ -350,7 +404,12 @@ window.switchAdminSubTab = function (subTabName) {
   if (window.lucide) window.lucide.createIcons();
 };
 
+/**
+ * Render matriks operasi presensi seluruh kelas
+ * Menampilkan status pengisian 5 sesi shalat per kelas
+ */
 window.renderAdminOpsMatrix = async function () {
+  _requireAdmin();
   const tbody = document.getElementById("admin-ops-matrix-body");
   const mobileList = document.getElementById("admin-ops-matrix-mobile-list");
   if (!tbody) return;
@@ -494,7 +553,13 @@ window.renderAdminOpsMatrix = async function () {
   }
 };
 
+/**
+ * Override attendance untuk kelas tertentu - buka presensi
+ * @param {string} className - Nama kelas
+ * @param {string} slotId - ID sesi: 'shubuh', 'sekolah', 'ashar', 'maghrib', 'isya'
+ */
 window.overrideAttendance = function (className, slotId) {
+  _requireAdmin();
   // Set class & update data sources
   appState.selectedClass = className;
   if (typeof MASTER_SANTRI !== "undefined") {
@@ -516,7 +581,11 @@ window.overrideAttendance = function (className, slotId) {
   window.openAttendance();
 };
 
+/**
+ * Render daftar Santri untuk manajemen HR
+ */
 window.renderAdminHRList = async function () {
+  _requireAdmin();
   const tbody = document.getElementById("admin-hr-table-body");
   const mobileList = document.getElementById("admin-hr-mobile-list");
   if (!tbody) return;
@@ -528,7 +597,8 @@ window.renderAdminHRList = async function () {
     // Ambil daftar NIS dengan password kustom dari localStorage
     const passwordKey = 'wali_passwords_db';
     const saved = localStorage.getItem(passwordKey);
-    const customPasswords = saved ? JSON.parse(saved) : {};
+    let customPasswords = {};
+    try { customPasswords = saved ? JSON.parse(saved) : {}; } catch { customPasswords = {}; }
     const customNisSet = new Set(Object.keys(customPasswords));
 
     const searchQuery = (document.getElementById("admin-hr-search")?.value || "").toLowerCase().trim();
@@ -623,7 +693,12 @@ window.renderAdminHRList = async function () {
   }
 };
 
+/**
+ * Handle reset password Wali Santri via click
+ * @param {string} nis - NIS Wali Santri
+ */
 window.handleResetPasswordClick = async function (nis) {
+  _requireAdmin();
   if (confirm(`Apakah Anda yakin ingin mereset password Wali dengan NIS ${nis}? Password akan kembali menggunakan default (NIS).`)) {
     const { success, error } = await window.resetWaliPassword(nis);
     if (success) {
@@ -635,7 +710,11 @@ window.handleResetPasswordClick = async function (nis) {
   }
 };
 
+/**
+ * Render daftar setoran Tahfizh untuk admin
+ */
 window.renderAdminTahfizhList = async function () {
+  _requireAdmin();
   const tbody = document.getElementById("admin-tahfizh-table-body");
   const mobileList = document.getElementById("admin-tahfizh-mobile-list");
   if (!tbody) return;
@@ -783,7 +862,11 @@ window.renderAdminTahfizhList = async function () {
 
 
 
+/**
+ * Render daftar perizinan untuk admin
+ */
 window.renderAdminPermits = async function () {
+  _requireAdmin();
   const tbodyDashboard = document.getElementById("admin-dashboard-permits-tbody");
   const mobileListDashboard = document.getElementById("admin-dashboard-permits-mobile-list");
   const badgeDashboard = document.getElementById("admin-pending-permits-count-badge");
@@ -1027,13 +1110,19 @@ window.renderAdminPermits = async function () {
   if (window.lucide) window.lucide.createIcons();
 };
 
+/**
+ * Paksa kembali santri dari izin
+ * @param {string} permitId - ID permit
+ */
 window.forceReturnPermit = async function (permitId) {
+  _requireAdmin();
   if (!confirm("Apakah Anda yakin ingin mematikan izin ini dan memaksa status santri kembali ke pondok?")) return;
 
   try {
     const permitKey = 'musyrif_permits_db';
     const saved = localStorage.getItem(permitKey);
-    let permits = saved ? JSON.parse(saved) : [];
+    let permits = [];
+    try { permits = saved ? JSON.parse(saved) : []; } catch { permits = []; }
 
     const permitIdx = permits.findIndex(p => String(p.id || p.nis) === String(permitId));
     if (permitIdx === -1) {
@@ -1041,24 +1130,29 @@ window.forceReturnPermit = async function (permitId) {
       return;
     }
 
-    // Update permit status to returned (is_active = false)
-    permits[permitIdx].is_active = false;
-    permits[permitIdx].tanggal_kembali = new Date().toISOString().split('T')[0] + " " + new Date().toTimeString().split(' ')[0];
-    
+    const kembaliDate = new Date().toISOString().split('T')[0] + " " + new Date().toTimeString().split(' ')[0];
+    const permit = permits[permitIdx];
+
+    // Immutable update: create new array with updated item
+    permits = permits.map((p, i) =>
+      i === permitIdx
+        ? { ...p, is_active: false, tanggal_kembali: kembaliDate }
+        : p
+    );
+
     localStorage.setItem(permitKey, JSON.stringify(permits));
 
-    // Update in appState if present
+    // Immutable update in appState if present
     if (appState.permits) {
-      const appStateIdx = appState.permits.findIndex(p => String(p.id || p.nis) === String(permitId));
-      if (appStateIdx !== -1) {
-        appState.permits[appStateIdx].is_active = false;
-        appState.permits[appStateIdx].tanggal_kembali = permits[permitIdx].tanggal_kembali;
-      }
+      appState.permits = appState.permits.map(p =>
+        String(p.id || p.nis) === String(permitId)
+          ? { ...p, is_active: false, tanggal_kembali: kembaliDate }
+          : p
+      );
     }
 
-    const permit = permits[permitIdx];
     const studentName = permit.studentName || "Santri";
-    
+
     window.logActivityAudit("Force Return", studentName, `Memaksa kembali santri dari izin ${permit.tipe_izin || 'Izin'}.`);
     window.showToast?.(`Status ${studentName} direset ke Pondok!`, "success");
 
@@ -1069,20 +1163,13 @@ window.forceReturnPermit = async function (permitId) {
   }
 };
 
-  if (filtered.length > 100) {
-    const moreText = `Menampilkan 100 dari ${filtered.length} perizinan. Silakan gunakan pencarian atau filter status untuk lebih spesifik.`;
-    tbody.innerHTML += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
-    if (mobileList) {
-      mobileList.innerHTML += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
-    }
-  }
-
-  if (window.lucide) window.lucide.createIcons();
-  
-  if (window.renderAdminSPHub) window.renderAdminSPHub();
-};
-
+/**
+ * Setujui atau tolak permohonan izin
+ * @param {string} permitId - ID permit
+ * @param {boolean} approved - true = setujui, false = tolak
+ */
 window.approveOrRejectPermit = async function (permitId, approved) {
+  _requireAdmin();
   const statusStr = approved ? "approved" : "rejected";
   const actionText = approved ? "menyetujui" : "menolak";
   const displayStatusStr = approved ? "Disetujui" : "Ditolak";
@@ -1092,24 +1179,27 @@ window.approveOrRejectPermit = async function (permitId, approved) {
       // Update di localStorage
       const permitKey = 'musyrif_permits_db';
       const saved = localStorage.getItem(permitKey);
-      let permits = saved ? JSON.parse(saved) : [];
+      let permits = [];
+      try { permits = saved ? JSON.parse(saved) : []; } catch { permits = []; }
+      const updatedAt = new Date().toISOString();
+      const approvedBy = appState.userProfile?.name || 'Admin';
 
-      const permitIndex = permits.findIndex(p => (p.id || p.nis) === permitId);
-      if (permitIndex !== -1) {
-        permits[permitIndex].status = statusStr;
-        permits[permitIndex].approved_by = appState.userProfile?.name || 'Admin';
-        permits[permitIndex].updated_at = new Date().toISOString();
-        localStorage.setItem(permitKey, JSON.stringify(permits));
+      // Immutable update
+      permits = permits.map(p =>
+        (p.id || p.nis) === permitId
+          ? { ...p, status: statusStr, approved_by: approvedBy, updated_at: updatedAt }
+          : p
+      );
 
-        // Update appState jika ada
-        if (appState.permits) {
-          const appStateIndex = appState.permits.findIndex(p => (p.id || p.nis) === permitId);
-          if (appStateIndex !== -1) {
-            appState.permits[appStateIndex].status = statusStr;
-            appState.permits[appStateIndex].approved_by = appState.userProfile?.name || 'Admin';
-            appState.permits[appStateIndex].updated_at = new Date().toISOString();
-          }
-        }
+      localStorage.setItem(permitKey, JSON.stringify(permits));
+
+      // Immutable update appState jika ada
+      if (appState.permits) {
+        appState.permits = appState.permits.map(p =>
+          (p.id || p.nis) === permitId
+            ? { ...p, status: statusStr, approved_by: approvedBy, updated_at: updatedAt }
+            : p
+        );
       }
 
       window.showToast(`Izin berhasil di-${displayStatusStr.toLowerCase()}.`, "success");
@@ -1129,7 +1219,12 @@ window.approveOrRejectPermit = async function (permitId, approved) {
 
 
 
+/**
+ * Handle submit form broadcast pengumuman
+ * @param {Event} e - Submit event
+ */
 window.handleAdminBroadcastSubmit = async function (e) {
+  _requireAdmin();
   e.preventDefault();
 
   const titleInput = document.getElementById("admin-broadcast-title");
@@ -1137,11 +1232,36 @@ window.handleAdminBroadcastSubmit = async function (e) {
   const targetInput = document.getElementById("admin-broadcast-target");
   if (!titleInput || !contentInput) return;
 
-  const title = titleInput.value.trim();
-  const content = contentInput.value.trim();
+  // Length limits and sanitization
+  const MAX_TITLE_LENGTH = 200;
+  const MAX_CONTENT_LENGTH = 5000;
+
+  let title = titleInput.value.trim().slice(0, MAX_TITLE_LENGTH);
+  let content = contentInput.value.trim().slice(0, MAX_CONTENT_LENGTH);
   const target = targetInput ? targetInput.value : "musyrif";
 
-  if (!title || !content) return;
+  // Validate required fields
+  if (!title || !content) {
+    window.showToast("Judul dan isi pengumuman wajib diisi!", "warning");
+    return;
+  }
+
+  // Sanitize: remove HTML tags and escape special characters
+  const sanitizeText = (text) => {
+    return text
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/[<>]/g, '') // Remove potential XSS chars
+      .trim();
+  };
+
+  title = sanitizeText(title);
+  content = sanitizeText(content);
+
+  // Re-validate after sanitization
+  if (!title || !content) {
+    window.showToast("Pengumuman tidak valid setelah disanitasi!", "warning");
+    return;
+  }
 
   const { success, error } = await window.createAnnouncement(title, content, target);
   if (success) {
@@ -1154,7 +1274,11 @@ window.handleAdminBroadcastSubmit = async function (e) {
   }
 };
 
+/**
+ * Render daftar broadcast terbaru
+ */
 window.renderRecentBroadcasts = async function () {
+  _requireAdmin();
   const container = document.getElementById("admin-recent-broadcasts");
   if (!container) return;
 
@@ -1217,7 +1341,11 @@ window.renderRecentBroadcasts = async function () {
 };
 
 
+/**
+ * Render log aktivitas sistem
+ */
 window.renderAdminLogs = async function () {
+  _requireAdmin();
   const tbody = document.getElementById("admin-logs-tbody");
   const mobileList = document.getElementById("admin-logs-mobile-list");
   if (!tbody) return;
@@ -1282,7 +1410,8 @@ window.logActivityAudit = async function (action, target, description) {
     // Simpan ke localStorage
     const logsKey = 'local_activity_logs';
     const saved = localStorage.getItem(logsKey);
-    let logs = saved ? JSON.parse(saved) : [];
+    let logs = [];
+    try { logs = saved ? JSON.parse(saved) : []; } catch { logs = []; }
 
     logs.unshift({
       user_name: appState.userProfile?.name || 'Admin',
@@ -1299,6 +1428,7 @@ window.logActivityAudit = async function (action, target, description) {
 };
 
 window.openAdminBroadcast = function () {
+  _requireAdmin();
   window.switchTab('profile');
   // Scroll to broadcast form
   setTimeout(() => {
@@ -1313,7 +1443,11 @@ window.openAdminBroadcast = function () {
 // CONFIGURASI GPS & GEOFENCING OVERRIDE (ADMIN ONLY)
 // ==========================================
 
+/**
+ * Render konfigurasi GPS/Geofencing
+ */
 window.renderAdminGPSConfig = function () {
+  _requireAdmin();
   const toggle = document.getElementById("admin-gps-geofencing-toggle");
   const radiusInput = document.getElementById("admin-gps-radius-input");
   const radiusVal = document.getElementById("admin-gps-radius-val");
@@ -1350,14 +1484,20 @@ window.renderAdminGPSConfig = function () {
   if (window.lucide) window.lucide.createIcons();
 };
 
+/**
+ * Simpan konfigurasi GPS
+ */
 window.saveAdminGPSConfig = function () {
+  _requireAdmin();
   const toggle = document.getElementById("admin-gps-geofencing-toggle");
   const radiusInput = document.getElementById("admin-gps-radius-input");
 
   if (!toggle || !radiusInput) return;
 
   const isChecked = toggle.checked;
-  const radius = parseInt(radiusInput.value) || 50;
+  // Validate radius: 5 to 5000 meters
+  const rawRadius = parseInt(radiusInput.value) || 50;
+  const radius = Math.max(5, Math.min(5000, rawRadius)); // Clamp between 5-5000m
 
   // Update GEO_CONFIG in memory
   GEO_CONFIG.useGeofencing = isChecked;
@@ -1375,25 +1515,39 @@ window.saveAdminGPSConfig = function () {
   window.showToast?.("Pengaturan GPS disimpan!", "success");
 };
 
+/**
+ * Tambah lokasi GPS baru
+ */
 window.addAdminGPSLocation = function () {
+  _requireAdmin();
   const nameEl = document.getElementById("admin-gps-new-name");
   const latEl = document.getElementById("admin-gps-new-lat");
   const lngEl = document.getElementById("admin-gps-new-lng");
 
   if (!nameEl || !latEl || !lngEl) return;
 
-  const name = nameEl.value.trim();
-  const lat = parseFloat(latEl.value);
-  const lng = parseFloat(lngEl.value);
+  const name = nameEl.value.trim().slice(0, 100); // Limit name length
+  const rawLat = latEl.value.trim();
+  const rawLng = lngEl.value.trim();
+  const lat = parseFloat(rawLat);
+  const lng = parseFloat(rawLng);
 
-  if (!name || isNaN(lat) || isNaN(lng)) {
-    window.showToast?.("Semua field lokasi baru wajib diisi secara valid!", "warning");
+  // Validate coordinates: lat -90 to 90, lng -180 to 180
+  if (!name) {
+    window.showToast?.("Nama lokasi wajib diisi!", "warning");
+    return;
+  }
+  if (isNaN(lat) || lat < -90 || lat > 90) {
+    window.showToast?.("Latitude tidak valid! Range: -90 s/d 90", "warning");
+    return;
+  }
+  if (isNaN(lng) || lng < -180 || lng > 180) {
+    window.showToast?.("Longitude tidak valid! Range: -180 s/d 180", "warning");
     return;
   }
 
-  // Add to locations array
-  if (!GEO_CONFIG.locations) GEO_CONFIG.locations = [];
-  GEO_CONFIG.locations.push({ name, lat, lng });
+  // Immutable update: create new array with new location
+  GEO_CONFIG.locations = [...(GEO_CONFIG.locations || []), { name, lat, lng }];
 
   // Save config
   window.saveAdminGPSConfig();
@@ -1408,11 +1562,18 @@ window.addAdminGPSLocation = function () {
   window.showToast?.("Lokasi baru ditambahkan!", "success");
 };
 
+/**
+ * Hapus lokasi GPS
+ * @param {number} idx - Index lokasi
+ */
 window.deleteAdminGPSLocation = function (idx) {
+  _requireAdmin();
   if (!GEO_CONFIG.locations || idx < 0 || idx >= GEO_CONFIG.locations.length) return;
 
   const deleted = GEO_CONFIG.locations[idx];
-  GEO_CONFIG.locations.splice(idx, 1);
+
+  // Immutable update: filter out the deleted location
+  GEO_CONFIG.locations = GEO_CONFIG.locations.filter((_, i) => i !== idx);
 
   // Save config
   window.saveAdminGPSConfig();
@@ -1426,6 +1587,10 @@ window.deleteAdminGPSLocation = function (idx) {
 // LEADERBOARD KEPATUHAN MUSYRIF (STREAK HARIAN)
 // ==========================================
 
+/**
+ * Hitung streak kepatuhan Musyrif
+ * @returns {Array} Array streak data per kelas
+ */
 window.calculateMusyrifStreaks = function () {
   const result = [];
   const slots = ['shubuh', 'sekolah', 'ashar', 'maghrib', 'isya'];
@@ -1527,7 +1692,11 @@ window.calculateMusyrifStreaks = function () {
   return result;
 };
 
+/**
+ * Render leaderboard kepatuhan Musyrif
+ */
 window.renderMusyrifLeaderboard = function () {
+  _requireAdmin();
   const tbody = document.getElementById("admin-musyrif-streak-body");
   if (!tbody) return;
 
@@ -1590,16 +1759,29 @@ const DEFAULT_VIOLATION_RULES = {
   "Lainnya": 10
 };
 
+/**
+ * Get aturan pelanggaran dari storage
+ * @returns {Object} Object dengan key nama aturan dan value poin
+ */
 window.getViolationRules = function () {
   try {
     const saved = localStorage.getItem("syamsa_violation_rules");
-    return saved ? JSON.parse(saved) : DEFAULT_VIOLATION_RULES;
+    if (!saved) return DEFAULT_VIOLATION_RULES;
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return DEFAULT_VIOLATION_RULES;
+    }
   } catch (e) {
     return DEFAULT_VIOLATION_RULES;
   }
 };
 
+/**
+ * Render form aturan pelanggaran
+ */
 window.renderAdminViolationRules = function () {
+  _requireAdmin();
   const container = document.getElementById("admin-violation-rules-list");
   if (!container) return;
 
@@ -1621,7 +1803,11 @@ window.renderAdminViolationRules = function () {
   });
 };
 
+/**
+ * Simpan aturan pelanggaran
+ */
 window.saveAdminViolationRules = function () {
+  _requireAdmin();
   const inputs = document.querySelectorAll("#admin-violation-rules-list input[type='number']");
   const rules = {};
 
@@ -1654,7 +1840,11 @@ window.saveAdminViolationRules = function () {
   window.renderAdminViolationsList();
 };
 
+/**
+ * Render leaderboard pelanggaran
+ */
 window.renderViolationLeaderboard = function () {
+  _requireAdmin();
   const tbody = document.getElementById("admin-violation-leaderboard-body");
   if (!tbody) return;
 
@@ -1742,7 +1932,11 @@ window.renderViolationLeaderboard = function () {
   });
 };
 
+/**
+ * Render daftar pelanggaran
+ */
 window.renderAdminViolationsList = function () {
+  _requireAdmin();
   const tbody = document.getElementById("admin-violations-log-body");
   if (!tbody) return;
 
@@ -1797,7 +1991,12 @@ window.renderAdminViolationsList = function () {
   if (window.lucide) window.lucide.createIcons();
 };
 
+/**
+ * Hapus pelanggaran
+ * @param {string} id - ID pelanggaran
+ */
 window.deleteAdminViolation = function (id) {
+  _requireAdmin();
   if (!appState.violations || appState.violations.length === 0) return;
 
   const targetIdx = appState.violations.findIndex(v => String(v.id) === String(id));
@@ -1807,8 +2006,10 @@ window.deleteAdminViolation = function (id) {
   const student = (typeof MASTER_SANTRI !== "undefined") ? MASTER_SANTRI.find(s => String(s.nis || s.id) === String(deleted.studentId)) : null;
   const name = student ? student.nama : `Santri ID: ${deleted.studentId}`;
 
-  appState.violations.splice(targetIdx, 1);
-  localStorage.setItem("musyrif_violations_db", JSON.stringify(appState.violations));
+  // Immutable update: filter out the deleted item
+  const updatedViolations = appState.violations.filter((_, i) => i !== targetIdx);
+  appState.violations = updatedViolations;
+  localStorage.setItem("musyrif_violations_db", JSON.stringify(updatedViolations));
 
   window.logActivityAudit("Hapus Pelanggaran", name, `Menghapus catatan pelanggaran ${deleted.type} (${deleted.points} Poin).`);
   window.showToast?.("Log pelanggaran berhasil dihapus!", "info");
@@ -1818,7 +2019,13 @@ window.deleteAdminViolation = function (id) {
   window.renderAdminViolationsList();
 };
 
+/**
+ * Rekam pembinaan langsung
+ * @param {string} studentId - ID Santri
+ * @param {string} name - Nama Santri
+ */
 window.recordCoachingDirect = function (studentId, name) {
+  _requireAdmin();
   const modal = document.getElementById("modal-input-pembinaan");
   if (!modal) {
     const action = prompt(`Masukkan tindakan pembinaan/pendampingan untuk ${name}:`);
@@ -1845,11 +2052,17 @@ window.recordCoachingDirect = function (studentId, name) {
 // SURAT PERINGATAN (SP) APPROVAL HUB & GENERATOR
 // ============================================================
 
+/**
+ * Generate draft Surat Peringatan
+ * @returns {Array} Array SP documents
+ */
 window.generateSPDrafts = function () {
+  _requireAdmin();
   try {
     const spKey = "musyrif_sp_docs";
     const saved = localStorage.getItem(spKey);
-    let spDocs = saved ? JSON.parse(saved) : [];
+    let spDocs = [];
+    try { spDocs = saved ? JSON.parse(saved) : []; } catch { spDocs = []; }
 
     // Loop all master students
     const students = typeof MASTER_SANTRI !== "undefined" ? MASTER_SANTRI : [];
@@ -1896,7 +2109,11 @@ window.generateSPDrafts = function () {
   }
 };
 
+/**
+ * Render hub Surat Peringatan
+ */
 window.renderAdminSPHub = function () {
+  _requireAdmin();
   const tbody = document.getElementById("admin-pending-sp-tbody");
   const mobileList = document.getElementById("admin-pending-sp-mobile-list");
   const badge = document.getElementById("admin-pending-sp-count-badge");
@@ -1969,7 +2186,13 @@ window.renderAdminSPHub = function () {
   if (window.lucide) window.lucide.createIcons();
 };
 
+/**
+ * Setujui atau tolak Surat Peringatan
+ * @param {string} spId - ID SP
+ * @param {boolean} approved - true = setujui, false = tolak
+ */
 window.approveOrRejectSP = async function (spId, approved) {
+  _requireAdmin();
   const actionText = approved ? "menyetujui penerbitan" : "menolak/menahan";
   const displayStatus = approved ? "approved" : "rejected";
 
@@ -1978,7 +2201,8 @@ window.approveOrRejectSP = async function (spId, approved) {
   try {
     const spKey = "musyrif_sp_docs";
     const saved = localStorage.getItem(spKey);
-    let spDocs = saved ? JSON.parse(saved) : [];
+    let spDocs = [];
+    try { spDocs = saved ? JSON.parse(saved) : []; } catch { spDocs = []; }
 
     const idx = spDocs.findIndex(d => String(d.id) === String(spId));
     if (idx !== -1) {
@@ -2003,11 +2227,17 @@ window.approveOrRejectSP = async function (spId, approved) {
   }
 };
 
+/**
+ * Buka modal SP
+ * @param {string} spDocId - ID dokumen SP
+ */
 window.openSPModal = function (spDocId) {
+  _requireAdmin();
   try {
     const spKey = "musyrif_sp_docs";
     const saved = localStorage.getItem(spKey);
-    const spDocs = saved ? JSON.parse(saved) : [];
+    let spDocs = [];
+    try { spDocs = saved ? JSON.parse(saved) : []; } catch { spDocs = []; }
     
     const doc = spDocs.find(d => String(d.id) === String(spDocId));
     if (!doc) {
@@ -2044,6 +2274,9 @@ window.openSPModal = function (spDocId) {
   }
 };
 
+/**
+ * Print Surat Peringatan
+ */
 window.printSPLetter = function () {
   const paper = document.getElementById("sp-letter-paper");
   if (!paper) return;
@@ -2100,7 +2333,11 @@ window.printSPLetter = function () {
   printWindow.document.close();
 };
 
+/**
+ * Render analytics ibadah
+ */
 window.renderAdminIbadahAnalytics = function () {
+  _requireAdmin();
   const classAveragesEl = document.getElementById("ibadah-class-averages");
   const topPerformersEl = document.getElementById("ibadah-top-performers");
   const lowPerformersEl = document.getElementById("ibadah-low-performers");
@@ -2258,12 +2495,18 @@ window.renderAdminIbadahAnalytics = function () {
   if (window.lucide) window.lucide.createIcons();
 };
 
+/**
+ * Hapus setoran Tahfizh
+ * @param {string} id - ID setoran
+ */
 window.deleteAdminTahfizh = async function (id) {
+  _requireAdmin();
   if (!confirm("Apakah Anda yakin ingin menghapus catatan setoran tahfizh ini?")) return;
 
   try {
     const saved = localStorage.getItem('tahfizh_local_setoran');
-    let list = saved ? JSON.parse(saved) : [];
+    let list = [];
+    try { list = saved ? JSON.parse(saved) : []; } catch { list = []; }
 
     const beforeLength = list.length;
     const filtered = list.filter(r => {
@@ -2289,10 +2532,16 @@ window.deleteAdminTahfizh = async function (id) {
   }
 };
 
+/**
+ * Edit setoran Tahfizh
+ * @param {string} id - ID setoran
+ */
 window.editAdminTahfizh = function (id) {
+  _requireAdmin();
   try {
     const saved = localStorage.getItem('tahfizh_local_setoran');
-    const list = saved ? JSON.parse(saved) : [];
+    let list = [];
+    try { list = saved ? JSON.parse(saved) : []; } catch { list = []; }
 
     const item = list.find(r => {
       const generatedId = `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
@@ -2319,7 +2568,12 @@ window.editAdminTahfizh = function (id) {
   }
 };
 
+/**
+ * Handle submit edit Tahfizh
+ * @param {Event} e - Submit event
+ */
 window.handleEditTahfizhSubmit = function (e) {
+  _requireAdmin();
   e.preventDefault();
 
   try {
@@ -2332,7 +2586,8 @@ window.handleEditTahfizhSubmit = function (e) {
     const surat = document.getElementById("edit-tahfizh-surat").value.trim();
 
     const saved = localStorage.getItem('tahfizh_local_setoran');
-    let list = saved ? JSON.parse(saved) : [];
+    let list = [];
+    try { list = saved ? JSON.parse(saved) : []; } catch { list = []; }
 
     const idx = list.findIndex(r => {
       const generatedId = `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
@@ -2344,15 +2599,16 @@ window.handleEditTahfizhSubmit = function (e) {
       return;
     }
 
-    list[idx].program = program;
-    list[idx].jenis = jenis;
-    list[idx].juz = juz;
-    list[idx].halaman = halaman;
-    list[idx].kualitas = kualitas;
-    list[idx].surat = surat;
-    list[idx].updated_at = new Date().toISOString();
+    const updatedAt = new Date().toISOString();
 
-    localStorage.setItem('tahfizh_local_setoran', JSON.stringify(list));
+    // Immutable update: map to new array with updated item
+    const updatedList = list.map((r, i) =>
+      i === idx
+        ? { ...r, program, jenis, juz, halaman, kualitas, surat, updated_at: updatedAt }
+        : r
+    );
+
+    localStorage.setItem('tahfizh_local_setoran', JSON.stringify(updatedList));
     window.showToast?.("Koreksi setoran berhasil disimpan!", "success");
 
     if (window.logActivityAudit) {
@@ -2370,7 +2626,11 @@ window.handleEditTahfizhSubmit = function (e) {
 // TASK 9: PLOTTING & AKUN MUSYRIF MANAGEMENT
 // ==========================================
 
+/**
+ * Tampilkan view manajemen Musyrif
+ */
 window.showAdminMusyrifView = function () {
+  _requireAdmin();
   const view = document.getElementById("view-admin-musyrif");
   if (view) {
     view.classList.remove("hidden");
@@ -2379,12 +2639,20 @@ window.showAdminMusyrifView = function () {
   }
 };
 
+/**
+ * Tutup view manajemen Musyrif
+ */
 window.closeAdminMusyrifView = function () {
+  _requireAdmin();
   const view = document.getElementById("view-admin-musyrif");
   if (view) view.classList.add("hidden");
 };
 
+/**
+ * Render daftar Musyrif
+ */
 window.renderAdminMusyrifList = function () {
+  _requireAdmin();
   const tbody = document.getElementById("admin-musyrif-table-body");
   const mobileList = document.getElementById("admin-musyrif-mobile-list");
   if (!tbody) return;
@@ -2480,7 +2748,12 @@ window.renderAdminMusyrifList = function () {
   if (window.lucide) window.lucide.createIcons();
 };
 
+/**
+ * Edit Musyrif
+ * @param {string} kelas - Nama kelas
+ */
 window.editAdminMusyrif = function (kelas) {
+  _requireAdmin();
   const classDb = window.classData || MASTER_KELAS || {};
   const info = classDb[kelas];
   if (!info) {
@@ -2498,7 +2771,12 @@ window.editAdminMusyrif = function (kelas) {
   document.getElementById("modal-edit-musyrif").classList.remove("hidden");
 };
 
+/**
+ * Handle submit edit Musyrif
+ * @param {Event} e - Submit event
+ */
 window.handleEditMusyrifSubmit = function (e) {
+  _requireAdmin();
   e.preventDefault();
   try {
     const kelas = document.getElementById("edit-musyrif-kelas").value;
@@ -2529,7 +2807,8 @@ window.handleEditMusyrifSubmit = function (e) {
 
     // Persist to local cache
     try {
-      const cached = JSON.parse(localStorage.getItem("cache_data_kelas") || "{}");
+      let cached = {};
+      try { cached = JSON.parse(localStorage.getItem("cache_data_kelas") || "{}"); } catch { cached = {}; }
       if (!cached[kelas]) cached[kelas] = {};
       cached[kelas].musyrif = nama;
       cached[kelas].email = email;
@@ -2579,7 +2858,12 @@ function _arrayToCSV(rows) {
   ).join("\n");
 }
 
+/**
+ * Export data ke CSV
+ * @param {string} type - Tipe: 'presensi', 'tahfizh', 'pelanggaran'
+ */
 window.exportAdminCSV = async function (type) {
+  _requireAdmin();
   try {
     const today = new Date().toISOString().split("T")[0];
     let rows = [];
@@ -2587,7 +2871,8 @@ window.exportAdminCSV = async function (type) {
 
     if (type === "presensi") {
       // Get attendance data
-      const attendanceRaw = JSON.parse(localStorage.getItem(APP_CONFIG.storageKey) || "{}");
+      let attendanceRaw = {};
+      try { attendanceRaw = JSON.parse(localStorage.getItem(APP_CONFIG.storageKey) || "{}"); } catch { attendanceRaw = {}; }
       rows.push(["Tanggal", "Kelas", "NIS", "Nama Santri", "Sesi", "Status", "Keterangan"]);
 
       Object.entries(attendanceRaw).forEach(([dateKey, dateData]) => {
@@ -2610,7 +2895,8 @@ window.exportAdminCSV = async function (type) {
       filename = `presensi_export_${today}.csv`;
 
     } else if (type === "tahfizh") {
-      const setoranList = JSON.parse(localStorage.getItem("tahfizh_local_setoran") || "[]");
+      let setoranList = [];
+      try { setoranList = JSON.parse(localStorage.getItem("tahfizh_local_setoran") || "[]"); } catch { setoranList = []; }
       rows.push(["Tanggal", "Kelas", "NIS", "Nama Santri", "Program", "Jenis", "Juz", "Surat/Halaman", "Kualitas", "Musyrif"]);
 
       setoranList.forEach(r => {
@@ -2674,7 +2960,11 @@ window.exportAdminCSV = async function (type) {
   }
 };
 
+/**
+ * Backup semua data ke JSON
+ */
 window.adminBackupJSON = function () {
+  _requireAdmin();
   try {
     const BACKUP_KEYS = [
       APP_CONFIG.storageKey,
@@ -2702,11 +2992,9 @@ window.adminBackupJSON = function () {
     BACKUP_KEYS.forEach(key => {
       const raw = localStorage.getItem(key);
       if (raw !== null) {
-        try {
-          backup[key] = JSON.parse(raw);
-        } catch {
-          backup[key] = raw;
-        }
+        let parsed;
+        try { parsed = JSON.parse(raw); } catch { parsed = raw; }
+        backup[key] = parsed;
       }
     });
 
@@ -2722,9 +3010,22 @@ window.adminBackupJSON = function () {
   }
 };
 
+/**
+ * Restore data dari JSON backup
+ * @param {Event} event - File input change event
+ */
 window.adminRestoreJSON = function (event) {
+  _requireAdmin();
   const file = event.target.files?.[0];
   if (!file) return;
+
+  // File size validation: max 10MB
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  if (file.size > MAX_FILE_SIZE) {
+    window.showToast?.(`File terlalu besar! Maksimal 10MB. Ukuran file: ${(file.size / (1024 * 1024)).toFixed(2)}MB`, "error");
+    event.target.value = "";
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = function (e) {

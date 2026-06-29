@@ -402,17 +402,47 @@ window.handleLogoClick = function () {
   // bypass disabled
 };
 
-// Superadmin logo click handler
+// Superadmin logo click handler with rate limiting
 let muinClickCount = 0;
 let muinClickTimeout = null;
-let superadminBtnVisible = false;
+let muinLastClickTime = 0;
+let muinFailedAttempts = 0;
+let muinLockedUntil = 0;
+const MUIN_MAX_ATTEMPTS = 5;
+const MUIN_LOCKOUT_MS = 60000; // 1 minute lockout after failed attempts
+const MUIN_CLICK_WINDOW_MS = 3000; // Reset count after 3 seconds of inactivity
 
 window.handleMuinClick = function () {
+  const now = Date.now();
+
+  // Check if locked out
+  if (muinLockedUntil > now) {
+    const remainingSecs = Math.ceil((muinLockedUntil - now) / 1000);
+    window.showToast(`Terlalu banyak percobaan. Coba lagi dalam ${remainingSecs} detik.`, "warning");
+    return;
+  }
+
+  // Reset if too much time passed since last click
+  if (now - muinLastClickTime > MUIN_CLICK_WINDOW_MS) {
+    muinClickCount = 0;
+  }
+  muinLastClickTime = now;
+
   muinClickCount++;
   clearTimeout(muinClickTimeout);
 
-  if (muinClickCount >= 5) {
+  if (muinClickCount >= MUIN_MAX_ATTEMPTS) {
     muinClickCount = 0;
+    muinFailedAttempts++;
+
+    // Lock out after multiple failed attempts (5 click sequences without successful reveal)
+    if (muinFailedAttempts >= 2) {
+      muinLockedUntil = now + MUIN_LOCKOUT_MS;
+      const lockoutSecs = Math.ceil(MUIN_LOCKOUT_MS / 1000);
+      window.showToast(`🔒 Terlalu banyak percobaan tidak valid. Kunci sementara selama ${lockoutSecs} detik.`, "error");
+      return;
+    }
+
     const container = document.getElementById("superadmin-btn-container");
     if (container) {
       if (superadminBtnVisible) {
@@ -422,25 +452,94 @@ window.handleMuinClick = function () {
       } else {
         container.classList.remove("hidden");
         superadminBtnVisible = true;
+        muinFailedAttempts = 0; // Reset on successful reveal
         window.showToast("🔐 Tombol Superadmin Muncul!", "success");
       }
     }
   } else {
     muinClickTimeout = setTimeout(() => {
       muinClickCount = 0;
-    }, 3000);
+    }, MUIN_CLICK_WINDOW_MS);
   }
 };
 
+// ==========================================
+// SUPERADMIN & SECRETS CONFIGURATION
+// ==========================================
 // Superadmin password hash - MUST be set via window.APP_SECRETS.superadminHash
-// For development, set window.APP_SECRETS = { superadminHash: 'your-hash' } in config
-const SUPERADMIN_PASSWORD_HASH = window.APP_SECRETS?.superadminHash;
+// For development, set window.APP_SECRETS = { superadminHash: 'your-hash' } in config.local.js
+//
+// SECRETS should be loaded from config.local.js which is loaded BEFORE this script.
+// See src/config/config.example.js for the template.
+const SUPERADMIN_PASSWORD_HASH = window.APP_SECRETS?.superadminHash || null;
+const IS_SUPERADMIN_CONFIGURED = Boolean(SUPERADMIN_PASSWORD_HASH);
 
-// Validate at startup - throw error if not configured
-if (!SUPERADMIN_PASSWORD_HASH) {
-  console.error('[Security] Superadmin hash not configured. Set window.APP_SECRETS.superadminHash');
-  // In production, uncomment: throw new Error('Superadmin password not configured');
+// Validate at startup - throw error if not configured (production enforcement)
+if (!IS_SUPERADMIN_CONFIGURED) {
+  const msg = '[Security] Superadmin hash NOT configured. Create config.local.js with window.APP_SECRETS = { superadminHash: "your-hash" }';
+  // Only warn if APP_SECRETS was partially defined but missing superadminHash
+  if (typeof window.APP_SECRETS !== 'undefined') {
+    console.warn(msg);
+  }
+  // In production, uncomment: throw new Error(msg);
 }
+
+// Also validate critical credentials from config
+const _creds = window.APP_CREDENTIALS || {};
+if (!_creds.googleSheetUrl) {
+  console.warn('[Config] googleSheetUrl not configured. Set window.APP_SECRETS.googleSheetUrl in config.local.js');
+}
+if (!_creds.googleClientId) {
+  console.warn('[Config] googleClientId not configured. Set window.APP_SECRETS.googleClientId in config.local.js');
+}
+if (!_creds.adminEmails || _creds.adminEmails.length === 0) {
+  console.warn('[Config] adminEmails not configured. Set window.APP_SECRETS.adminEmails in config.local.js');
+}
+
+// Handle superadmin login with proper validation
+window.handleSuperadminLogin = async function () {
+  // CRITICAL FIX: Secure superadmin login dengan SHA-256 hashing
+  const password = prompt("Masukkan password Superadmin:");
+
+  if (!password) return;
+
+  // Validate superadmin is configured
+  if (!IS_SUPERADMIN_CONFIGURED) {
+    window.showToast("⚠️ Superadmin tidak dikonfigurasi di sistem!", "error");
+    console.error('[Security] Superadmin login attempted but not configured');
+    return;
+  }
+
+  try {
+    const inputHash = await sha256(password);
+    if (inputHash === SUPERADMIN_PASSWORD_HASH) {
+      if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
+      if (window.cancelWaliLogin) window.cancelWaliLogin();
+
+      appState.superadminMode = true;
+      appState.adminMode = true; // Also set adminMode for proper UI visibility
+      appState.userProfile = {
+        name: "Superadmin",
+        given_name: "Superadmin",
+        email: "admin@syamsa.local",
+        authProvider: "superadmin",
+      };
+
+      window.showToast("🔐 Login Superadmin Berhasil!", "success");
+
+      // Tampilkan semua data
+      document.getElementById("view-login").classList.add("hidden");
+      document.getElementById("view-main").classList.remove("hidden");
+      window.updateDashboard();
+      window.updateProfileInfo();
+    } else {
+      window.showToast("Password Superadmin salah!", "error");
+    }
+  } catch (e) {
+    console.error('[Superadmin] Login error:', e);
+    window.showToast("Terjadi kesalahan sistem!", "error");
+  }
+};
 
 // Async SHA-256 hash function
 async function sha256(message) {
