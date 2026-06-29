@@ -289,7 +289,7 @@
         </section>
 
         <!-- Main Action Card (Current Slot) Wrapper -->
-        <div id="dash-main-card-wrapper" class="non-wali-only relative z-30">
+        <div id="dash-main-card-wrapper" class="musyrif-only relative z-30">
           <div
             id="dash-main-card"
             class="bg-slate-900 dark:bg-black rounded-[1.75rem] p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative z-20 overflow-hidden group animate-slide-up delay-200ms"
@@ -1022,72 +1022,11 @@
   </div>
 </div>
 
-        <!-- Admin Only: Kirim Broadcast Pengumuman -->
-        <div class="admin-only hidden bg-white dark:bg-slate-900 rounded-[1.75rem] p-4 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/30 animate-slide-up mt-4">
-          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-3">
-            <i data-lucide="megaphone" class="w-4 h-4 text-teal-500"></i> Kirim Broadcast Pengumuman
-          </h2>
-          <p class="text-xs text-slate-400 font-bold mb-4">Buat pengumuman global yang akan langsung muncul di bagian atas dashboard Musyrif.</p>
-          
-          <form id="admin-broadcast-form" onsubmit="window.handleAdminBroadcastSubmit(event)" class="space-y-4">
-            <div>
-              <label class="block text-xs font-black text-slate-500 mb-1">Judul Pengumuman</label>
-              <input type="text" id="admin-broadcast-title" required maxlength="100" placeholder="Contoh: Jadwal Piket Shalat Shubuh Baru" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500" />
-            </div>
-            <div>
-              <label class="block text-xs font-black text-slate-500 mb-1">Isi Pengumuman</label>
-              <textarea id="admin-broadcast-content" required maxlength="500" rows="3" placeholder="Tulis rincian pengumuman di sini..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500 resize-none"></textarea>
-            </div>
-            <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-black text-xs py-3.5 shadow-md shadow-teal-500/10 active:scale-[0.98] transition-all">
-              Kirim Pengumuman
-            </button>
-          </form>
-          
-          <div class="h-px w-full bg-slate-100 dark:bg-slate-800/80 my-4"></div>
-          
-          <h3 class="text-xs font-black text-slate-800 dark:text-white mb-3">Pengumuman Terbaru</h3>
-          <div id="admin-recent-broadcasts" class="space-y-3">
-            <p class="text-xs text-slate-400 font-bold">Memuat pengumuman...</p>
-          </div>
-        </div>
 
       </div> <!-- Close Right Column -->
     </div> <!-- Close Dashboard Grid Wrapper -->
 
-    <!-- Admin Only: Operations Matrix (Matriks Kehadiran) -->
-    <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-6 animate-slide-up">
-      <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
-        <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Matriks Kehadiran Harian (Operations)
-      </h2>
-      <p class="text-xs text-slate-400 font-bold mb-4">Pantau pengisian presensi harian seluruh kelas secara langsung. Klik status pengisian shalat kelas untuk mengisi/edit.</p>
-      
-      <!-- Desktop View -->
-      <div class="hidden md:block overflow-x-auto -mx-5 px-5">
-        <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
-          <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
-            <tr>
-              <th class="p-3">Kelas</th>
-              <th class="p-3 text-center">Subuh</th>
-              <th class="p-3 text-center">Sekolah</th>
-              <th class="p-3 text-center">Ashar</th>
-              <th class="p-3 text-center">Maghrib</th>
-              <th class="p-3 text-center">Isya</th>
-              <th class="p-3 text-center">Hubungi Musyrif</th>
-            </tr>
-          </thead>
-          <tbody id="admin-ops-matrix-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
-            <tr>
-              <td colspan="8" class="p-8 text-center text-slate-400">Memuat matriks presensi...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      
-      <!-- Mobile View -->
-      <div class="block md:hidden space-y-3" id="admin-ops-matrix-mobile-list">
-        <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat matriks presensi...</p>
-      </div>
-    </section>
+
 
     <!-- Admin Only: Perizinan Admin (Persetujuan) -->
     <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-6 animate-slide-up">

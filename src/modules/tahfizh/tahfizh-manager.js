@@ -323,6 +323,8 @@ function cacheTahfizhDOM() {
 window.switchTahfizhSubTab = function(subtabName) {
     if (window.isWaliMode?.()) {
         subtabName = 'analisis';
+    } else if (window.appState && window.appState.adminMode === true) {
+        subtabName = 'rekap-global';
     }
 
     document.querySelectorAll('.tahfizh-page-content').forEach(el => el.classList.add('hidden'));
@@ -364,6 +366,8 @@ async function initTahfizhTab() {
         if (typeof renderTahfizhSantriRaporDashboard === 'function') {
             renderTahfizhSantriRaporDashboard(window.getWaliPrimaryId());
         }
+    } else if (window.appState && window.appState.adminMode === true) {
+        window.switchTahfizhSubTab('rekap-global');
     }
 
     window.syncRoleModeUI?.();
@@ -794,13 +798,14 @@ function buildTahfizhClassGroups() {
         const groupName = [...group.classes].sort().join(', ') || 'Grup Khusus';
         TahfizhState.classGroups[groupName] = { santri: group.santri, musyrif: group.musyrif };
     }
-
-    TahfizhState.classGroups['Seluruh Santri'] = {
-        santri: TahfizhState.santriData,
-        musyrif: 'Semua Musyrif'
-    };
+    // Hanya Admin yang bisa melihat agregat "Seluruh Santri"
+    if (window.appState && window.appState.adminMode === true) {
+        TahfizhState.classGroups['Seluruh Santri'] = {
+            siswa: TahfizhState.santriData,
+            musyrif: 'Semua Musyrif'
+        };
+    }
 }
-
 // Rendering UI Modul Tahfizh
 function renderAllTahfizhUI() {
     renderTahfizhBeranda();

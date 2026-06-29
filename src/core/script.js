@@ -566,6 +566,14 @@ window.syncRoleModeUI = function () {
       body:not(.admin-mode) .admin-only {
         display: none !important;
       }
+      body.admin-mode #report-section,
+      body.admin-mode #analysis-section,
+      body.admin-mode #tab-report header .musyrif-only {
+        display: none !important;
+      }
+      body.admin-mode .musyrif-only {
+        display: none !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -1935,6 +1943,22 @@ window.renderWaliView = function () {
   `;
 
   if (window.lucide) window.lucide.createIcons();
+};
+
+window.showAdminHRView = function () {
+  const view = document.getElementById("view-admin-hr");
+  if (view) {
+    view.classList.remove("hidden");
+    if (window.renderAdminHRList) window.renderAdminHRList();
+    if (window.lucide) window.lucide.createIcons();
+  }
+};
+
+window.closeAdminHRView = function () {
+  const view = document.getElementById("view-admin-hr");
+  if (view) {
+    view.classList.add("hidden");
+  }
 };
 
 window.showWaliView = function (tabName = "home") {
@@ -6094,17 +6118,15 @@ window.switchTab = function (tabName) {
     bottomNav.classList.remove("nav-expanded", "nav-shrunk");
   }
 
-  // 5. Jalankan Logika Spesifik per Tab
   if (tabName === "home") {
     window.updateDashboard();
     if (appState.adminMode === true) {
-      if (window.renderAdminOpsMatrix) window.renderAdminOpsMatrix();
       if (window.renderAdminPermits) window.renderAdminPermits();
-      if (window.renderRecentAnnouncements) window.renderRecentAnnouncements();
     }
   } else if (tabName === "report") {
     window.updateReportTab();
     if (appState.adminMode === true) {
+      if (window.renderAdminOpsMatrix) window.renderAdminOpsMatrix();
       if (window.renderAdminLogs) window.renderAdminLogs();
     }
   } else if (tabName === "tahfizh") {
@@ -6119,7 +6141,7 @@ window.switchTab = function (tabName) {
     window.renderPembinaanManagement(); // Refresh list di profil
     window.renderPermitHistory();
     if (appState.adminMode === true) {
-      if (window.renderAdminHRList) window.renderAdminHRList();
+      if (window.renderRecentBroadcasts) window.renderRecentBroadcasts();
     }
   }
   // 6. Refresh Icon Lucide

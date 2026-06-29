@@ -4799,7 +4799,7 @@
         </section>
 
         <!-- Main Action Card (Current Slot) Wrapper -->
-        <div id="dash-main-card-wrapper" class="non-wali-only relative z-30">
+        <div id="dash-main-card-wrapper" class="musyrif-only relative z-30">
           <div
             id="dash-main-card"
             class="bg-slate-900 dark:bg-black rounded-[1.75rem] p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative z-20 overflow-hidden group animate-slide-up delay-200ms"
@@ -5363,72 +5363,10 @@
   </div>
 </div>
 
-        <!-- Admin Only: Kirim Broadcast Pengumuman -->
-        <div class="admin-only hidden bg-white dark:bg-slate-900 rounded-[1.75rem] p-4 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/30 animate-slide-up mt-4">
-          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-3">
-            <i data-lucide="megaphone" class="w-4 h-4 text-teal-500"></i> Kirim Broadcast Pengumuman
-          </h2>
-          <p class="text-xs text-slate-400 font-bold mb-4">Buat pengumuman global yang akan langsung muncul di bagian atas dashboard Musyrif.</p>
-          
-          <form id="admin-broadcast-form" onsubmit="window.handleAdminBroadcastSubmit(event)" class="space-y-4">
-            <div>
-              <label class="block text-xs font-black text-slate-500 mb-1">Judul Pengumuman</label>
-              <input type="text" id="admin-broadcast-title" required maxlength="100" placeholder="Contoh: Jadwal Piket Shalat Shubuh Baru" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500" />
-            </div>
-            <div>
-              <label class="block text-xs font-black text-slate-500 mb-1">Isi Pengumuman</label>
-              <textarea id="admin-broadcast-content" required maxlength="500" rows="3" placeholder="Tulis rincian pengumuman di sini..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500 resize-none"></textarea>
-            </div>
-            <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-black text-xs py-3.5 shadow-md shadow-teal-500/10 active:scale-[0.98] transition-all">
-              Kirim Pengumuman
-            </button>
-          </form>
-          
-          <div class="h-px w-full bg-slate-100 dark:bg-slate-800/80 my-4"></div>
-          
-          <h3 class="text-xs font-black text-slate-800 dark:text-white mb-3">Pengumuman Terbaru</h3>
-          <div id="admin-recent-broadcasts" class="space-y-3">
-            <p class="text-xs text-slate-400 font-bold">Memuat pengumuman...</p>
-          </div>
-        </div>
-
       </div> <!-- Close Right Column -->
     </div> <!-- Close Dashboard Grid Wrapper -->
 
-    <!-- Admin Only: Operations Matrix (Matriks Kehadiran) -->
-    <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-6 animate-slide-up">
-      <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
-        <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Matriks Kehadiran Harian (Operations)
-      </h2>
-      <p class="text-xs text-slate-400 font-bold mb-4">Pantau pengisian presensi harian seluruh kelas secara langsung. Klik status pengisian shalat kelas untuk mengisi/edit.</p>
-      
-      <!-- Desktop View -->
-      <div class="hidden md:block overflow-x-auto -mx-5 px-5">
-        <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
-          <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
-            <tr>
-              <th class="p-3">Kelas</th>
-              <th class="p-3 text-center">Subuh</th>
-              <th class="p-3 text-center">Sekolah</th>
-              <th class="p-3 text-center">Ashar</th>
-              <th class="p-3 text-center">Maghrib</th>
-              <th class="p-3 text-center">Isya</th>
-              <th class="p-3 text-center">Hubungi Musyrif</th>
-            </tr>
-          </thead>
-          <tbody id="admin-ops-matrix-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
-            <tr>
-              <td colspan="8" class="p-8 text-center text-slate-400">Memuat matriks presensi...</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      
-      <!-- Mobile View -->
-      <div class="block md:hidden space-y-3" id="admin-ops-matrix-mobile-list">
-        <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat matriks presensi...</p>
-      </div>
-    </section>
+
 
     <!-- Admin Only: Perizinan Admin (Persetujuan) -->
     <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-6 animate-slide-up">
@@ -6636,7 +6574,74 @@
               personal.
             </p>
           </div>
-        </div>
+
+        <!-- Admin Only: Operations Matrix (Matriks Kehadiran) -->
+        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
+            <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Matriks Kehadiran Harian (Operations)
+          </h2>
+          <p class="text-xs text-slate-400 font-bold mb-4">Pantau pengisian presensi harian seluruh kelas secara langsung. Klik status pengisian shalat kelas untuk mengisi/edit.</p>
+          
+          <!-- Desktop View -->
+          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
+              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                <tr>
+                  <th class="p-3">Kelas</th>
+                  <th class="p-3 text-center">Subuh</th>
+                  <th class="p-3 text-center">Sekolah</th>
+                  <th class="p-3 text-center">Ashar</th>
+                  <th class="p-3 text-center">Maghrib</th>
+                  <th class="p-3 text-center">Isya</th>
+                  <th class="p-3 text-center">Hubungi Musyrif</th>
+                </tr>
+              </thead>
+              <tbody id="admin-ops-matrix-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                <tr>
+                  <td colspan="7" class="p-8 text-center text-slate-400">Memuat matriks presensi...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Mobile View -->
+          <div class="block md:hidden space-y-3" id="admin-ops-matrix-mobile-list">
+            <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat matriks presensi...</p>
+          </div>
+        </section>
+
+        <!-- Admin Only: Global Audit Trail (Logs) -->
+        <section class="admin-only hidden bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-5 mt-4 backdrop-blur-xl animate-fade-in">
+          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+            <i data-lucide="scroll" class="w-4 h-4 text-slate-500"></i> Global Audit Trail (Logs)
+          </h2>
+          <p class="text-xs text-slate-400 font-bold mb-4">Catatan aktivitas sistem dari semua pengelola pesantren secara transparan.</p>
+          
+          <!-- Desktop View -->
+          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
+              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                <tr>
+                  <th class="p-3">Waktu</th>
+                  <th class="p-3">Aktor</th>
+                  <th class="p-3">Tindakan</th>
+                  <th class="p-3">Deskripsi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-logs-tbody" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                <tr>
+                  <td colspan="4" class="p-4 text-center text-slate-400">Memuat logs...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Mobile View -->
+          <div class="block md:hidden space-y-3" id="admin-logs-mobile-list">
+            <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat logs...</p>
+          </div>
+        </section>
+      </div>
       </div>
       </div>
 
@@ -7230,6 +7235,46 @@
             >
             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
           </button>
+          
+          <button
+            onclick="window.showAdminHRView()"
+            class="admin-only hidden w-full p-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl flex items-center justify-between font-black text-indigo-600 dark:text-indigo-400 text-sm transition-all active:scale-[0.98]"
+          >
+            <span class="flex items-center gap-3"
+              ><i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>
+              Manajemen Wali & Santri</span
+            >
+            <i data-lucide="chevron-right" class="w-4 h-4 text-indigo-300"></i>
+          </button>
+        </div>
+
+        <!-- Admin Only: Kirim Broadcast Pengumuman -->
+        <div class="admin-only hidden bg-white dark:bg-slate-900 rounded-[1.75rem] p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/30 animate-slide-up mt-4">
+          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+            <i data-lucide="megaphone" class="w-4 h-4 text-teal-500"></i> Kirim Broadcast Pengumuman
+          </h2>
+          <p class="text-xs text-slate-400 font-bold mb-4">Buat pengumuman global yang akan langsung muncul di bagian atas dashboard Musyrif.</p>
+          
+          <form id="admin-broadcast-form" onsubmit="window.handleAdminBroadcastSubmit(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Judul Pengumuman</label>
+              <input type="text" id="admin-broadcast-title" required maxlength="100" placeholder="Contoh: Jadwal Piket Shalat Shubuh Baru" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Isi Pengumuman</label>
+              <textarea id="admin-broadcast-content" required maxlength="500" rows="3" placeholder="Tulis rincian pengumuman di sini..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500 resize-none"></textarea>
+            </div>
+            <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-black text-xs py-3.5 shadow-md shadow-teal-500/10 active:scale-[0.98] transition-all">
+              Kirim Pengumuman
+            </button>
+          </form>
+          
+          <div class="h-px w-full bg-slate-100 dark:bg-slate-800/80 my-4"></div>
+          
+          <h3 class="text-xs font-black text-slate-800 dark:text-white mb-3">Pengumuman Terbaru</h3>
+          <div id="admin-recent-broadcasts" class="space-y-3">
+            <p class="text-xs text-slate-400 font-bold">Memuat pengumuman...</p>
+          </div>
         </div>
 
         <button
@@ -7239,47 +7284,7 @@
           Keluar Aplikasi
         </button>
 
-        <!-- Admin Only: Manajemen Wali & Santri (HR) -->
-        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 rounded-[1.75rem] p-4 sm:p-5 mt-6 border border-white/60 dark:border-slate-700/50 shadow-lg shadow-slate-200/40 dark:shadow-black/20 backdrop-blur-xl space-y-4 animate-slide-up">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div>
-              <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
-                <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i> Manajemen Wali & Santri
-              </h2>
-              <p class="text-xs text-slate-400 font-bold">Kelola akun Wali Santri dan lakukan reset password kustom kembali ke default (NIS).</p>
-            </div>
-            <div class="relative min-w-[200px]">
-              <input type="text" id="admin-hr-search" oninput="window.renderAdminHRList()" placeholder="Cari santri/Wali..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2.5 pl-8 text-xs focus:outline-none focus:border-indigo-500 font-bold" />
-              <i data-lucide="search" class="absolute left-3 top-3.5 w-3.5 h-3.5 text-slate-400"></i>
-            </div>
-          </div>
 
-          <!-- Desktop View -->
-          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
-            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
-              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
-                <tr>
-                  <th class="p-3">Santri</th>
-                  <th class="p-3">Kelas</th>
-                  <th class="p-3">Username (NIS)</th>
-                  <th class="p-3">Wali</th>
-                  <th class="p-3">Status Password</th>
-                  <th class="p-3 text-center">Tindakan</th>
-                </tr>
-              </thead>
-              <tbody id="admin-hr-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
-                <tr>
-                  <td colspan="6" class="p-8 text-center text-slate-400">Memuat data Santri & Wali...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Mobile View -->
-          <div class="block md:hidden space-y-3" id="admin-hr-mobile-list">
-            <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat data Santri & Wali...</p>
-          </div>
-        </section>
 
         </div> <!-- Close flex flex-col gap-6 inside Right Column -->
       </div> <!-- Close Right Column -->
@@ -9096,6 +9101,60 @@
         </div>
       </div>
     </div>
+
+    <!-- Admin Only: Manajemen Wali & Santri (HR) Fullscreen Page -->
+    <section
+      id="view-admin-hr"
+      class="fixed inset-0 z-[60] bg-slate-50 dark:bg-[#0f172a] flex flex-col hidden transition-colors overflow-y-auto"
+    >
+      <div class="page-container py-6 max-w-7xl mx-auto w-full px-4 sm:px-6">
+        <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
+          <div class="flex items-center gap-3">
+            <button onclick="window.closeAdminHRView()" class="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-300 flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-all shrink-0" aria-label="Kembali ke profil" title="Kembali">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            </button>
+            <div>
+              <h1 class="text-base sm:text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
+                <i data-lucide="users" class="w-5 h-5 text-indigo-500"></i> Manajemen Wali & Santri
+              </h1>
+              <p class="text-xs text-slate-400 font-bold">Kelola akun Wali Santri dan lakukan reset password kustom kembali ke default (NIS).</p>
+            </div>
+          </div>
+          <div class="relative min-w-[240px]">
+            <input type="text" id="admin-hr-search" oninput="window.renderAdminHRList()" placeholder="Cari nama santri, wali, NIS..." class="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 pl-9 text-xs font-bold focus:outline-none focus:border-indigo-500 shadow-sm" />
+            <i data-lucide="search" class="absolute left-3 top-3.5 w-4 h-4 text-slate-400"></i>
+          </div>
+        </header>
+
+        <main class="bg-white/80 dark:bg-slate-800/80 rounded-3xl p-4 sm:p-6 border border-white/60 dark:border-slate-700/50 shadow-xl backdrop-blur-xl space-y-4">
+          <!-- Desktop View -->
+          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
+              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                <tr>
+                  <th class="p-3">Santri</th>
+                  <th class="p-3">Kelas</th>
+                  <th class="p-3">Username (NIS)</th>
+                  <th class="p-3">Wali</th>
+                  <th class="p-3">Status Password</th>
+                  <th class="p-3 text-center">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody id="admin-hr-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                <tr>
+                  <td colspan="6" class="p-8 text-center text-slate-400">Memuat data Santri & Wali...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile View -->
+          <div class="block md:hidden space-y-3" id="admin-hr-mobile-list">
+            <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat data Santri & Wali...</p>
+          </div>
+        </main>
+      </div>
+    </section>
 
   </body>
 </html>

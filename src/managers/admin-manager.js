@@ -1120,10 +1120,12 @@ window.logActivityAudit = async function (action, target, description) {
 };
 
 window.openAdminBroadcast = function () {
-  window.switchTab('home');
+  window.switchTab('profile');
   // Scroll to broadcast form
-  const broadcastForm = document.getElementById("admin-broadcast-form");
-  if (broadcastForm) {
-    broadcastForm.scrollIntoView({ behavior: 'smooth' });
-  }
+  setTimeout(() => {
+    const broadcastForm = document.getElementById("admin-broadcast-form");
+    if (broadcastForm) {
+      broadcastForm.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, 100);
 };
