@@ -527,6 +527,10 @@ window.syncRoleModeUI = function () {
   document.body.classList.toggle("wali-mode", isWali);
   document.body.classList.toggle("admin-mode", isAdmin);
 
+  document.querySelectorAll(".admin-only").forEach(el => {
+    el.classList.toggle("hidden", !isAdmin);
+  });
+
   if (!document.getElementById("wali-mode-style")) {
     const style = document.createElement("style");
     style.id = "wali-mode-style";

@@ -12,6 +12,11 @@ window.APP_CREDENTIALS = {
   // Google OAuth Client ID (untuk login Musyrif)
   googleClientId:
     "336443539411-b7uv4udqqhbqpdmeuja54dhfsda4q7cm.apps.googleusercontent.com",
+
+  // Daftar email yang terdaftar sebagai Admin Musyrif (Pengelola Utama)
+  adminEmails: [
+    "andiaqillah@muallimin.sch.id"
+  ],
 };
 
 // ==========================================
