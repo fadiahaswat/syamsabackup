@@ -1,18 +1,8 @@
 {
   "permissions": {
     "allow": [
-      {
-        "tool": "Bash",
-        "prompt": "run tests or lint commands"
-      },
-      {
-        "tool": "Bash",
-        "prompt": "run npm commands"
-      },
-      {
-        "tool": "Read",
-        "prompt": "read project files for context"
-      }
+      "Bash(npm *)",
+      "Bash(npx *)"
     ]
   },
   "agent": {
