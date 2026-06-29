@@ -87,7 +87,12 @@
       "Bash(powershell -Command \"Get-Content 'd:/syamsa-backup/syamsabackup/src/modules/tahfizh/tahfizh-manager.js' | Select-Object -Index \\(799..806\\)\")",
       "Bash(powershell -Command \"\\(Get-Content 'd:/syamsa-backup/syamsabackup/src/modules/tahfizh/tahfizh-manager.js' -Raw\\).Substring\\(0, 100\\)\")",
       "Bash(node \"d:/syamsa-backup/syamsabackup/temp_read.js\")",
-      "Bash(node \"d:/syamsa-backup/syamsabackup/temp_fix.js\")"
+      "Bash(node \"d:/syamsa-backup/syamsabackup/temp_fix.js\")",
+      "Bash(copy icon.png icon-192.png)",
+      "Bash(copy icon.png icon-512.png)",
+      "PowerShell(Copy-Item \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon.png\" \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon-192.png\")",
+      "PowerShell(Copy-Item \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon.png\" \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon-512.png\")",
+      "PowerShell(Copy-Item \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon.png\" \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon-maskable-512.png\")"
     ],
     "additionalDirectories": [
       "d:\\syamsa-backup\\syamsabackup",

@@ -16,7 +16,7 @@ async function loadClassData() {
     if (cache) {
       window.classData = JSON.parse(cache);
       classDataDebugLog("Data Kelas dimuat dari cache lokal.");
-      
+
       // Auto-update global state & UI dropdown dari cache segera
       window.MASTER_KELAS = window.classData;
       if (typeof MASTER_KELAS !== "undefined") {
@@ -31,11 +31,22 @@ async function loadClassData() {
       return window.classData;
     }
 
+    // Skip fetch jika googleSheetUrl belum dikonfigurasi
+    if (!window.APP_CREDENTIALS?.googleSheetUrl) {
+      classDataDebugLog("loadClassData dilewati: googleSheetUrl belum dikonfigurasi");
+      return window.classData || {};
+    }
+
     // Jika tidak ada cache, ambil langsung
     const response = await fetch(
       `${window.APP_CREDENTIALS.googleSheetUrl}?type=kelas`,
     );
     if (!response.ok) throw new Error("Gagal koneksi server kelas");
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error("Response bukan JSON valid");
+    }
 
     const rawData = await response.json();
 
@@ -79,9 +90,28 @@ async function loadClassData() {
 // Fungsi update cache di background (tanpa loading screen)
 async function fetchClassBackground() {
   try {
+    // Skip if googleSheetUrl is not configured
+    if (!window.APP_CREDENTIALS?.googleSheetUrl) {
+      classDataDebugLog("Background update kelas dilewati: googleSheetUrl belum dikonfigurasi");
+      return;
+    }
+
     const response = await fetch(
       `${window.APP_CREDENTIALS.googleSheetUrl}?type=kelas`,
     );
+
+    // Check for HTTP errors
+    if (!response.ok) {
+      classDataDebugLog(`Background update kelas gagal: HTTP ${response.status}`);
+      return;
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      classDataDebugLog("Background update kelas gagal: response bukan JSON");
+      return;
+    }
+
     const rawData = await response.json();
     const newData = {};
     rawData.forEach((row) => {
@@ -106,7 +136,8 @@ async function fetchClassBackground() {
       window.populateClassDropdown();
     }
   } catch (e) {
-    console.warn("Background update kelas gagal:", e);
+    classDataDebugLog("Background update kelas gagal:", e.message);
+    // Silent fail untuk background update - jangan tampilkan error
   }
 }
 

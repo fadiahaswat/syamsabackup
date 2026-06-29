@@ -346,8 +346,7 @@ const ComponentLoader = {
       ['tab-notifications', 'notifications', 'notifications'],
       ['tab-report', 'report', 'report'],
       ['tab-profile', 'profile', 'profile'],
-      ['tab-tahfizh', 'tahfizh', 'tahfizh'],
-      ['tab-admin', 'admin', 'admin']
+      ['tab-tahfizh', 'tahfizh', 'tahfizh']
     ];
 
     await Promise.all(pages.map(([id, name, section]) => this.ensureAppPage(id, name, section)));
