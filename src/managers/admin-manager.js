@@ -2553,6 +2553,222 @@ window.handleEditMusyrifSubmit = function (e) {
   }
 };
 
+// ==========================================
+// TASK 10: GLOBAL DATA HUB (EXPORT & BACKUP)
+// ==========================================
+
+function _downloadFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+}
+
+function _arrayToCSV(rows) {
+  return rows.map(row =>
+    row.map(cell => {
+      const str = String(cell === null || cell === undefined ? "" : cell);
+      return str.includes(",") || str.includes('"') || str.includes("\n")
+        ? `"${str.replace(/"/g, '""')}"`
+        : str;
+    }).join(",")
+  ).join("\n");
+}
+
+window.exportAdminCSV = async function (type) {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    let rows = [];
+    let filename = "";
+
+    if (type === "presensi") {
+      // Get attendance data
+      const attendanceRaw = JSON.parse(localStorage.getItem(APP_CONFIG.storageKey) || "{}");
+      rows.push(["Tanggal", "Kelas", "NIS", "Nama Santri", "Sesi", "Status", "Keterangan"]);
+
+      Object.entries(attendanceRaw).forEach(([dateKey, dateData]) => {
+        if (typeof dateData !== "object") return;
+        Object.entries(dateData).forEach(([slotKey, slotData]) => {
+          if (typeof slotData !== "object") return;
+          Object.entries(slotData).forEach(([studentId, statusVal]) => {
+            const student = typeof MASTER_SANTRI !== "undefined"
+              ? MASTER_SANTRI.find(s => String(s.nis || s.id) === String(studentId))
+              : null;
+            const nama = student?.nama || studentId;
+            const kelas = student?.kelas || student?.rombel || "-";
+            const status = typeof statusVal === "object" ? (statusVal.status || "-") : String(statusVal);
+            const ket = typeof statusVal === "object" ? (statusVal.keterangan || "") : "";
+            rows.push([dateKey, kelas, studentId, nama, slotKey, status, ket]);
+          });
+        });
+      });
+
+      filename = `presensi_export_${today}.csv`;
+
+    } else if (type === "tahfizh") {
+      const setoranList = JSON.parse(localStorage.getItem("tahfizh_local_setoran") || "[]");
+      rows.push(["Tanggal", "Kelas", "NIS", "Nama Santri", "Program", "Jenis", "Juz", "Surat/Halaman", "Kualitas", "Musyrif"]);
+
+      setoranList.forEach(r => {
+        const detail = r.jenis === "Ziyadah"
+          ? `Hlm ${r.halaman || "-"}`
+          : `Surat ${r.surat || "-"}`;
+        rows.push([
+          r.tanggal || "-",
+          r.kelas || "-",
+          r.nis || r.santriId || "-",
+          r.namaSantri || "-",
+          r.program || "-",
+          r.jenis || "-",
+          r.juz || "-",
+          detail,
+          r.kualitas || "-",
+          r.musyrif || "-"
+        ]);
+      });
+
+      filename = `tahfizh_export_${today}.csv`;
+
+    } else if (type === "pelanggaran") {
+      const violations = appState.violations || [];
+      rows.push(["Tanggal", "NIS", "Nama Santri", "Kelas", "Jenis Pelanggaran", "Poin", "Sesi", "Status Pembinaan"]);
+
+      violations.forEach(v => {
+        const student = typeof MASTER_SANTRI !== "undefined"
+          ? MASTER_SANTRI.find(s => String(s.nis || s.id) === String(v.studentId))
+          : null;
+        const nama = student?.nama || v.studentId || "-";
+        const kelas = student?.kelas || student?.rombel || "-";
+        rows.push([
+          v.date || "-",
+          v.studentId || "-",
+          nama,
+          kelas,
+          v.label || "-",
+          v.points || 0,
+          v.slotLabel || "-",
+          v.isCoached ? "Sudah Dibina" : "Belum Dibina"
+        ]);
+      });
+
+      filename = `pelanggaran_export_${today}.csv`;
+    }
+
+    if (rows.length <= 1) {
+      window.showToast?.("Tidak ada data untuk diekspor.", "warning");
+      return;
+    }
+
+    const csv = "\uFEFF" + _arrayToCSV(rows); // BOM for Excel UTF-8
+    _downloadFile(filename, csv, "text/csv;charset=utf-8;");
+    window.showToast?.(`Berhasil mengekspor ${rows.length - 1} baris data!`, "success");
+    window.logActivityAudit?.("Export CSV", "Admin", `Mengekspor data ${type} ke CSV.`);
+
+  } catch (err) {
+    console.error("[ExportCSV] Error:", err);
+    window.showToast?.("Gagal mengekspor data!", "error");
+  }
+};
+
+window.adminBackupJSON = function () {
+  try {
+    const BACKUP_KEYS = [
+      APP_CONFIG.storageKey,
+      APP_CONFIG.permitKey,
+      APP_CONFIG.violationsKey,
+      APP_CONFIG.studentTargetsKey,
+      APP_CONFIG.activityLogKey,
+      APP_CONFIG.settingsKey,
+      "tahfizh_local_setoran",
+      "cache_data_kelas",
+      "musyrif_violations_db",
+      "musyrif_wali_broadcast",
+      "musyrif_sp_db",
+      "wali_passwords_db",
+    ];
+
+    const backup = {
+      _meta: {
+        created_at: new Date().toISOString(),
+        version: "syamsa_backup_v1",
+        app: "Musyrif App"
+      }
+    };
+
+    BACKUP_KEYS.forEach(key => {
+      const raw = localStorage.getItem(key);
+      if (raw !== null) {
+        try {
+          backup[key] = JSON.parse(raw);
+        } catch {
+          backup[key] = raw;
+        }
+      }
+    });
+
+    const today = new Date().toISOString().split("T")[0];
+    const filename = `syamsa_backup_${today}.json`;
+    _downloadFile(filename, JSON.stringify(backup, null, 2), "application/json");
+    window.showToast?.("✅ Super Backup berhasil diunduh!", "success");
+    window.logActivityAudit?.("Super Backup", "Admin", "Membuat backup JSON seluruh data aplikasi.");
+
+  } catch (err) {
+    console.error("[Backup] Error:", err);
+    window.showToast?.("Gagal membuat backup!", "error");
+  }
+};
+
+window.adminRestoreJSON = function (event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data._meta || data._meta.version !== "syamsa_backup_v1") {
+        window.showToast?.("File backup tidak valid atau versi tidak cocok!", "error");
+        return;
+      }
+
+      const confirmed = confirm(
+        `⚠️ Restore Backup\n\nIni akan menimpa data lokal Anda dengan backup dari:\n${data._meta.created_at}\n\nLanjutkan?`
+      );
+      if (!confirmed) return;
+
+      let restoredCount = 0;
+      Object.entries(data).forEach(([key, value]) => {
+        if (key === "_meta") return;
+        try {
+          localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+          restoredCount++;
+        } catch (storageErr) {
+          console.warn(`[Restore] Failed to restore key: ${key}`, storageErr);
+        }
+      });
+
+      window.logActivityAudit?.("Restore Backup", "Admin", `Memulihkan ${restoredCount} kunci data dari backup.`);
+      window.showToast?.(`✅ Restore berhasil! ${restoredCount} data dipulihkan. Halaman akan dimuat ulang.`, "success");
+
+      setTimeout(() => location.reload(), 2500);
+    } catch (parseErr) {
+      console.error("[Restore] Parse error:", parseErr);
+      window.showToast?.("File backup tidak valid atau rusak!", "error");
+    }
+  };
+
+  reader.onerror = () => window.showToast?.("Gagal membaca file!", "error");
+  reader.readAsText(file);
+
+  // Reset file input so user can re-upload same file
+  event.target.value = "";
+};
+
+
 
 
 
