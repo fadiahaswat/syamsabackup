@@ -215,7 +215,7 @@ window.initApp = async function () {
           document.getElementById("view-login").classList.add("hidden");
           document.getElementById("view-main").classList.remove("hidden");
           window.syncRoleModeUI();
-          window.switchTab("admin");
+          window.switchTab("home");
           window.updateProfileInfo();
           const greetName = window.getProfileDisplayName(authData.profile);
           setTimeout(
@@ -226,7 +226,7 @@ window.initApp = async function () {
           // Initialize Storage Manager
           const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
           window.initStorage?.(musyrifId);
-          window.restoreRouteAfterAuth("admin");
+          window.restoreRouteAfterAuth("home");
         } else if (authData.kelas) {
           // Tetap ijinkan login walaupun offline / MASTER_KELAS tidak ter-load sempurna
           appState.selectedClass = authData.kelas;
@@ -684,7 +684,7 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
   window.syncRoleModeUI();
   
   if (isAdmin) {
-    window.switchTab("admin");
+    window.switchTab("home");
   } else {
     window.updateDashboard();
   }
@@ -3963,7 +3963,7 @@ window.closeAttendance = function () {
     viewAttendance.classList.add("hidden");
     viewAttendance.classList.remove("animate-slide-down-custom");
     if (appState.adminMode === true) {
-      window.switchTab("admin");
+      window.switchTab("home");
       if (window.renderAdminOpsMatrix) window.renderAdminOpsMatrix();
     } else {
       window.updateDashboard();
@@ -6093,32 +6093,29 @@ window.switchTab = function (tabName) {
   // 5. Jalankan Logika Spesifik per Tab
   if (tabName === "home") {
     window.updateDashboard();
+    if (appState.adminMode === true) {
+      if (window.renderAdminOpsMatrix) window.renderAdminOpsMatrix();
+      if (window.renderAdminPermits) window.renderAdminPermits();
+      if (window.renderRecentAnnouncements) window.renderRecentAnnouncements();
+    }
   } else if (tabName === "report") {
     window.updateReportTab();
+    if (appState.adminMode === true) {
+      if (window.renderAdminLogs) window.renderAdminLogs();
+    }
   } else if (tabName === "tahfizh") {
     if (window.initTahfizhTab) window.initTahfizhTab();
+    if (appState.adminMode === true) {
+      if (window.renderAdminTahfizhList) window.renderAdminTahfizhList();
+    }
   } else if (tabName === "profile") {
     appState.timesheetViewDate = appState.date; // <--- TAMBAHKAN INI
     window.updateProfileStats();
     window.renderTimesheetCalendar();
     window.renderPembinaanManagement(); // Refresh list di profil
     window.renderPermitHistory();
-  } else if (tabName === "admin") {
-    // Guard: Only allow admin tab for Musyrif/admin users
-    if (!appState.adminMode) {
-      console.warn("Akses Admin ditolak - bukan admin");
-      // Show toast notification
-      if (window.showToast) {
-        window.showToast("Akses ditolak - hanya untuk Admin", "error");
-      }
-      // Switch back to home
-      window.switchTab("home");
-      return;
-    }
-    if (window.switchAdminSubTab) {
-      const activeBtn = document.querySelector(".admin-sub-nav-btn.active");
-      const subtab = activeBtn ? activeBtn.dataset.adminsubtab : "operations";
-      window.switchAdminSubTab(subtab);
+    if (appState.adminMode === true) {
+      if (window.renderAdminHRList) window.renderAdminHRList();
     }
   }
   // 6. Refresh Icon Lucide

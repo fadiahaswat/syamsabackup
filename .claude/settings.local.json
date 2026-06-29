@@ -77,11 +77,15 @@
       "Read(//d/syamsa-backup/syamsa-backup/src/core/**)",
       "WebFetch(domain:github.com)",
       "Bash(git clone *)",
-      "Bash(mkdir -p .claude/rules/common .claude/agents .claude/hooks .claude/skills)"
+      "Bash(mkdir -p .claude/rules/common .claude/agents .claude/hooks .claude/skills)",
+      "Bash(Get-ChildItem -Path src/components -Recurse -Include \"*.html\")",
+      "Bash(Select-Object FullName)",
+      "Bash(rm -f src/pages/admin/subtabs/*.html)"
     ],
     "additionalDirectories": [
       "d:\\syamsa-backup\\syamsabackup",
-      "D:\\syamsa-backup\\syamsabackup\\.claude\\rules"
+      "D:\\syamsa-backup\\syamsabackup\\.claude\\rules",
+      "D:\\syamsa-backup\\syamsabackup\\src\\pages\\admin\\subtabs"
     ]
   },
   "enabledMcpjsonServers": [

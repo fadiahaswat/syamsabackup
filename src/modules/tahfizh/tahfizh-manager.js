@@ -342,6 +342,10 @@ window.switchTahfizhSubTab = function(subtabName) {
     
     window.syncRoleModeUI?.();
     if (window.lucide) window.lucide.createIcons();
+
+    if (subtabName === 'rekap-global' && window.renderAdminTahfizhList) {
+        window.renderAdminTahfizhList();
+    }
 };
 
 // Main entry point dari tab-manager

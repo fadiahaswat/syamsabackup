@@ -2,10 +2,10 @@
  * Service Worker for Syriansa PWA
  * Handles offline caching and Web Push Notifications.
  *
- * @version 2.3.0
+ * @version 2.3.1
  */
 
-const CACHE_VERSION = "v250";
+const CACHE_VERSION = "v251";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Static assets to cache for offline functionality

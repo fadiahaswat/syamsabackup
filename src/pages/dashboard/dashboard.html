@@ -1,4 +1,4 @@
-﻿<div
+<div
         id="main-content"
         class="tab-content flex-1 overflow-y-auto hide-scrollbar scroll-smooth"
       >
@@ -844,6 +844,175 @@
           <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Tidak Hadir</span>
           <div class="flex items-end gap-1">
             <div id="stat-tidak-hadir" class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">0%</div>
+                <!-- WIDGET: Perizinan Wali (Hanya muncul di Wali Mode) -->
+        <div id="dashboard-wali-permit-widget" class="wali-only animate-slide-up lg:mb-6 lg:mt-4 w-full delay-250ms">
+          <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-4 shadow-lg shadow-slate-200/50 dark:shadow-black/20 border border-white dark:border-slate-700/50 flex flex-col gap-4">
+            
+            <!-- Header Section -->
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/80 dark:from-blue-500/10 dark:to-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-500/20 shadow-sm shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 12 2 2 4-4"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white leading-tight tracking-tight">
+                    Pengajuan Izin Harian
+                  </h3>
+                  <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                    Kirim permohonan izin ke Musyrif
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tombol Pengajuan -->
+            <button onclick="window.openWaliPermitModal()" class="w-full py-3 px-4 rounded-2xl bg-palette-blue hover:bg-palette-deep text-white text-xs font-black shadow-md hover:shadow-lg transition-all duration-300 active:scale-95 flex items-center justify-center gap-2" aria-label="Ajukan izin baru">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              <span>Ajukan Izin Baru</span>
+            </button>
+
+            <!-- Riwayat Pengajuan Izin -->
+            <div class="mt-2">
+              <h4 class="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 px-1">
+                Riwayat Pengajuan Izin
+              </h4>
+              <div id="wali-permit-history-list" class="flex flex-col gap-2.5 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                <!-- Diisi dinamis oleh JS -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="dashboard-pembinaan-card" class="hidden lg:mb-6 animate-slide-up w-full delay-250ms musyrif-only">
+          <!-- Container Kartu -->
+          <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[1.75rem] p-3.5 sm:p-4 border border-red-100/50 dark:border-slate-700/50 shadow-lg shadow-red-500/5 relative overflow-hidden group">
+
+            <!-- Ambient Red Glow -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-red-400/10 dark:bg-red-500/10 rounded-full blur-[40px] pointer-events-none transition-opacity duration-500"></div>
+
+            <!-- Header Section -->
+            <div class="flex justify-between items-center mb-3 relative z-10">
+              <div class="flex items-center gap-3">
+                <!-- Ikon Header -->
+                <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 flex items-center justify-center border border-red-100 dark:border-red-500/20 shadow-sm shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-octagon"><path d="M12 16h.01"/><path d="M12 8v4"/><path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688a2 2 0 0 1 8.688 2z"/></svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-800 dark:text-white leading-tight tracking-tight flex items-center gap-1.5">
+                    Pelanggaran Hari Ini
+                  </h3>
+                  <p class="text-[10px] sm:text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                    Akumulasi poin & Alpa
+                  </p>
+                </div>
+              </div>
+
+              <!-- Badge Jumlah Kasus -->
+              <span id="pembinaan-count-badge" class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold whitespace-nowrap">0 Kasus</span>
+            </div>
+
+            <!-- Content Section: Dynamic List or Empty State -->
+            <div id="dashboard-pembinaan-list" class="relative z-10 w-full">
+              <!-- Empty State dynamically loaded here -->
+            </div>
+
+            <!-- Action Button (Sleek Bottom Bar) -->
+            <button onclick="window.switchTab('profile'); window.scrollToPembinaan();" class="relative z-10 w-full mt-3 py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-700 flex items-center justify-between text-[10px] sm:text-[11px] font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-700 transition-all active:scale-95 group/btn">
+              <span>Lihat Manajemen Pembinaan</span>
+              <div class="w-6 h-6 rounded-md bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400 group-hover/btn:text-red-500 group-hover/btn:border-red-200 dark:group-hover/btn:border-red-500/30 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right group-hover/btn:translate-x-0.5 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </div>
+            </button>
+
+          </div>
+        </div>
+
+
+<div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl rounded-2xl p-4 sm:p-5 border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/40 dark:shadow-black/20 relative overflow-hidden animate-slide-up lg:mb-4 group/main delay-300ms">
+  
+  <!-- Ambient Background Glow -->
+  <div class="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-emerald-400/10 via-blue-400/5 to-transparent rounded-bl-full pointer-events-none transition-opacity duration-700"></div>
+
+  <div class="relative z-10 flex flex-col gap-4">
+    
+    <!-- Top Header & Range Selection Tabs -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-3.5">
+      
+      <!-- Titlle & Main Insight -->
+      <div class="flex flex-col gap-0.5">
+        <p class="text-[10px] sm:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-2 text-emerald-500"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+          Statistik Presensi
+        </p>
+        <div class="flex items-center gap-2.5 mt-0.5">
+          <h3 id="stats-current-percentage" class="font-black text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-500 dark:from-white dark:to-slate-400 leading-none tracking-tight">
+            99.4% <span class="text-lg sm:text-xl font-bold text-slate-400 dark:text-slate-500">Hadir</span>
+          </h3>
+          <span id="stats-comparison-badge" class="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-500/20 shadow-sm shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+            0.6% vs pekan lalu
+          </span>
+        </div>
+      </div>
+      
+      <!-- Range Selector Tabs (iOS Style Segmented Control) -->
+      <div class="flex p-0.5 bg-slate-100/80 dark:bg-slate-900/60 backdrop-blur-sm rounded-lg border border-slate-200/50 dark:border-slate-800 shadow-inner shrink-0 w-full md:w-auto" role="group" aria-label="Pilih rentang statistik">
+        <button id="stats-range-weekly" onclick="window.changeStatsRange('weekly')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] border border-slate-200/50 dark:border-slate-700/50" aria-label="Statistik mingguan">
+          Pekanan
+        </button>
+        <button id="stats-range-monthly" onclick="window.changeStatsRange('monthly')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent" aria-label="Statistik bulanan">
+          Bulanan
+        </button>
+        <button id="stats-range-semester" onclick="window.changeStatsRange('semester')" class="flex-1 md:flex-none px-3 py-1 text-[10px] sm:text-[11px] font-bold rounded-md transition-all text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 border border-transparent" aria-label="Statistik semester">
+          Semester
+        </button>
+      </div>
+    </div>
+
+    <!-- Legends Row -->
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/20 p-1.5 sm:px-2.5 rounded-lg border border-slate-100 dark:border-slate-800/80">
+      <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_6px_rgba(59,130,246,0.5)]"></span><span>Hadir</span></div>
+      <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]"></span><span>Tidak Hadir</span></div>
+    </div>
+
+    <!-- The Line Chart Canvas -->
+    <div class="relative w-full h-36 sm:h-44">
+      <canvas id="weekly-chart" class="w-full h-full" width="505" height="336"></canvas>
+    </div>
+
+    <!-- Bottom: 2 Quick Stats (Interactive Bento Mini-Grid) -->
+    <div class="grid grid-cols-2 gap-2.5 mt-0">
+      
+      <!-- 1. Hadir -->
+      <button onclick="window.showStatDetails('Hadir')" class="relative flex flex-col justify-between overflow-hidden bg-slate-50 dark:bg-slate-800/40 rounded-xl p-2.5 sm:p-3 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:bg-blue-50/80 dark:hover:bg-blue-500/10 hover:border-blue-200 dark:hover:border-blue-500/30 transition-all duration-300 group text-left active:scale-95">
+        <div class="flex items-start justify-between mb-2">
+          <div class="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm group-hover:scale-110 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div>
+          <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Hadir</span>
+          <div class="flex items-end gap-1">
+            <div id="stat-hadir" class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">0%</div>
+            <span class="text-[9px] font-semibold text-slate-400 mb-0.5">Rasio</span>
+          </div>
+        </div>
+      </button>
+
+      <!-- 2. Tidak Hadir -->
+      <button onclick="window.showStatDetails('Tidak Hadir')" class="relative flex flex-col justify-between overflow-hidden bg-slate-50 dark:bg-slate-800/40 rounded-xl p-2.5 sm:p-3 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:bg-rose-50/80 dark:hover:bg-rose-500/10 hover:border-rose-200 dark:hover:border-rose-500/30 transition-all duration-300 group text-left active:scale-95">
+        <div class="flex items-start justify-between mb-2">
+          <div class="w-7 h-7 rounded-lg bg-rose-100 dark:bg-rose-500/20 flex items-center justify-center text-rose-600 dark:rose-400 shadow-sm group-hover:scale-110 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-rose-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+        <div>
+          <span class="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Tidak Hadir</span>
+          <div class="flex items-end gap-1">
+            <div id="stat-tidak-hadir" class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight leading-none group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">0%</div>
             <span class="text-[9px] font-semibold text-slate-400 mb-0.5">Rasio</span>
           </div>
         </div>
@@ -853,9 +1022,128 @@
   </div>
 </div>
 
+        <!-- Admin Only: Kirim Broadcast Pengumuman -->
+        <div class="admin-only hidden bg-white dark:bg-slate-900 rounded-[1.75rem] p-4 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/30 animate-slide-up mt-4">
+          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+            <i data-lucide="megaphone" class="w-4 h-4 text-teal-500"></i> Kirim Broadcast Pengumuman
+          </h2>
+          <p class="text-xs text-slate-400 font-bold mb-4">Buat pengumuman global yang akan langsung muncul di bagian atas dashboard Musyrif.</p>
+          
+          <form id="admin-broadcast-form" onsubmit="window.handleAdminBroadcastSubmit(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Judul Pengumuman</label>
+              <input type="text" id="admin-broadcast-title" required maxlength="100" placeholder="Contoh: Jadwal Piket Shalat Shubuh Baru" class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-black text-slate-500 mb-1">Isi Pengumuman</label>
+              <textarea id="admin-broadcast-content" required maxlength="500" rows="3" placeholder="Tulis rincian pengumuman di sini..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-3 text-xs font-bold focus:outline-none focus:border-teal-500 resize-none"></textarea>
+            </div>
+            <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white font-black text-xs py-3.5 shadow-md shadow-teal-500/10 active:scale-[0.98] transition-all">
+              Kirim Pengumuman
+            </button>
+          </form>
+          
+          <div class="h-px w-full bg-slate-100 dark:bg-slate-800/80 my-4"></div>
+          
+          <h3 class="text-xs font-black text-slate-800 dark:text-white mb-3">Pengumuman Terbaru</h3>
+          <div id="admin-recent-broadcasts" class="space-y-3">
+            <p class="text-xs text-slate-400 font-bold">Memuat pengumuman...</p>
+          </div>
+        </div>
+
       </div> <!-- Close Right Column -->
     </div> <!-- Close Dashboard Grid Wrapper -->
+
+    <!-- Admin Only: Operations Matrix (Matriks Kehadiran) -->
+    <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-6 animate-slide-up">
+      <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
+        <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Matriks Kehadiran Harian (Operations)
+      </h2>
+      <p class="text-xs text-slate-400 font-bold mb-4">Pantau pengisian presensi harian seluruh kelas secara langsung. Klik status pengisian shalat kelas untuk mengisi/edit.</p>
+      
+      <!-- Desktop View -->
+      <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+        <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
+          <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+            <tr>
+              <th class="p-3">Kelas</th>
+              <th class="p-3 text-center">Subuh</th>
+              <th class="p-3 text-center">Sekolah</th>
+              <th class="p-3 text-center">Ashar</th>
+              <th class="p-3 text-center">Maghrib</th>
+              <th class="p-3 text-center">Isya</th>
+              <th class="p-3 text-center">Hubungi Musyrif</th>
+            </tr>
+          </thead>
+          <tbody id="admin-ops-matrix-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+            <tr>
+              <td colspan="8" class="p-8 text-center text-slate-400">Memuat matriks presensi...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Mobile View -->
+      <div class="block md:hidden space-y-3" id="admin-ops-matrix-mobile-list">
+        <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat matriks presensi...</p>
+      </div>
+    </section>
+
+    <!-- Admin Only: Perizinan Admin (Persetujuan) -->
+    <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-6 animate-slide-up">
+      <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+        <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+          <i data-lucide="shield-alert" class="w-4 h-4 text-blue-500"></i> Persetujuan Izin Santri
+        </h2>
+      </div>
+
+      <!-- List Persetujuan -->
+      <div id="admin-permit-subview-list" class="space-y-4">
+        <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+          <div class="relative w-full sm:max-w-xs">
+            <input type="text" id="admin-permit-search" oninput="window.renderAdminPermits()" placeholder="Cari nama, NIS, kelas, keperluan..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2.5 pl-8 text-xs focus:outline-none focus:border-blue-500 font-bold" />
+            <i data-lucide="search" class="absolute left-3 top-3.5 w-3.5 h-3.5 text-slate-400"></i>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <label class="text-xs text-slate-400 font-bold">Status:</label>
+            <select id="admin-permit-status-filter" onchange="window.renderAdminPermits()" class="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2.5 text-xs font-bold focus:outline-none focus:border-blue-500">
+              <option value="all">Semua Status</option>
+              <option value="pending">Diajukan (Pending)</option>
+              <option value="approved_active">Aktif (Belum Kembali)</option>
+              <option value="kembali">Kembali (Returned)</option>
+              <option value="rejected">Ditolak (Rejected)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Desktop View -->
+        <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+          <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
+            <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+              <tr>
+                <th class="p-3">Santri</th>
+                <th class="p-3">Kelas</th>
+                <th class="p-3">Tipe Izin</th>
+                <th class="p-3">Tanggal Izin</th>
+                <th class="p-3">Keperluan</th>
+                <th class="p-3 text-center">Status</th>
+                <th class="p-3 text-center">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="admin-permits-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+              <tr>
+                <td colspan="7" class="p-4 text-center text-slate-400">Memuat riwayat perizinan...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile View -->
+        <div class="block md:hidden space-y-3" id="admin-permits-mobile-list">
+          <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat riwayat perizinan...</p>
+        </div>
+      </div>
+    </section>
+
         </div> <!-- Close max-w-7xl wrapper -->
   </div>
-
-

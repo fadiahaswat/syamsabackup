@@ -3,6 +3,23 @@
 // Terinspirasi dari fungsi Operations, Communications, dan HR Admin Connecteam.
 // Mode localStorage only
 
+/**
+ * Escape HTML entities untuk mencegah XSS
+ * @param {string} str - String yang akan di-escape
+ * @returns {string} - String yang sudah di-escape
+ */
+const _escapeHtml = (str) => {
+  if (str === null || str === undefined) return '';
+  const text = String(str);
+  return text.replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+};
+
 let classUuidMap = {}; // UUID -> Class Name
 let classNameToUuidMap = {}; // Class Name -> UUID
 let studentUuidMap = {}; // UUID -> Student Info
@@ -17,7 +34,6 @@ async function initAdminClassMap() {
     classNameToUuidMap[className] = className;
     classUuidMap[className] = className;
   });
-  console.log('[AdminManager] Class map initialized:', Object.keys(classUuidMap).length, 'classes');
 }
 
 /**
@@ -32,7 +48,6 @@ async function initAdminStudentMap() {
       studentUuidMap[nis] = { nis: nis, nama: s.nama || s.name || nis };
     }
   });
-  console.log('[AdminManager] Student map initialized:', Object.keys(studentUuidMap).length, 'students');
 }
 
 /**
@@ -51,8 +66,7 @@ window.loadGlobalAttendance = async function () {
 
       rekap[k] = {
         shubuh: false,
-        syuruq: false,
-        dzuhur: false,
+        sekolah: false,
         ashar: false,
         maghrib: false,
         isya: false
@@ -60,7 +74,7 @@ window.loadGlobalAttendance = async function () {
     });
 
     // Ambil data dari localStorage untuk setiap kelas
-    const slots = ['shubuh', 'syuruq', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+    const slots = ['shubuh', 'sekolah', 'ashar', 'maghrib', 'isya'];
     const dateKey = appState.date || new Date().toISOString().split('T')[0];
 
     for (const className of Object.keys(rekap)) {
@@ -80,13 +94,12 @@ window.loadGlobalAttendance = async function () {
           }
         }
       } catch (e) {
-        console.warn('[AdminManager] Error reading attendance for', className, e);
+        // Silent fail for individual class - continue processing others
       }
     }
 
     return { data: rekap, error: null };
   } catch (error) {
-    console.error('[AdminManager] loadGlobalAttendance error:', error);
     return { data: null, error };
   }
 };
@@ -110,7 +123,7 @@ window.loadGlobalPermits = async function () {
           allPermits = window.safeJsonParse(saved, []);
         }
       } catch (e) {
-        console.warn('[AdminManager] Error reading permits from localStorage', e);
+        // Silent fail - permits may not exist yet
       }
     }
 
@@ -128,7 +141,6 @@ window.loadGlobalPermits = async function () {
 
     return { data: permits, error: null };
   } catch (error) {
-    console.error('[AdminManager] loadGlobalPermits error:', error);
     return { data: [], error };
   }
 };
@@ -147,7 +159,7 @@ window.loadGlobalTahfizh = async function () {
         ? window.getTahfizhSetoran()
         : window.safeJsonParse(localStorage.getItem('tahfizh_local_setoran'), []);
     } catch (e) {
-      console.warn('[AdminManager] Error reading tahfizh from localStorage', e);
+      // Silent fail - tahfizh data may not exist yet
     }
 
     // Transform ke format standar
@@ -171,7 +183,6 @@ window.loadGlobalTahfizh = async function () {
 
     return { data: formatted, error: null };
   } catch (error) {
-    console.error('[AdminManager] loadGlobalTahfizh error:', error);
     return { data: [], error };
   }
 };
@@ -197,7 +208,6 @@ window.resetWaliPassword = async function (nis) {
 
     return { success: true, error: null };
   } catch (error) {
-    console.error('[AdminManager] resetWaliPassword error:', error);
     return { success: false, error };
   }
 };
@@ -225,7 +235,6 @@ window.changeWaliPassword = async function (nis, newPassword) {
 
     return { success: true, error: null };
   } catch (error) {
-    console.error('[AdminManager] changeWaliPassword error:', error);
     return { success: false, error };
   }
 };
@@ -259,7 +268,6 @@ window.createAnnouncement = async function (title, content) {
 
     return { success: true, error: null };
   } catch (error) {
-    console.error('[AdminManager] createAnnouncement error:', error);
     return { success: false, error };
   }
 };
@@ -279,7 +287,6 @@ window.loadAnnouncements = async function () {
 
     return { data: announcements.slice(0, 3), error: null };
   } catch (error) {
-    console.error('[AdminManager] loadAnnouncements error:', error);
     return { data: [], error };
   }
 };
@@ -299,7 +306,6 @@ window.loadGlobalActivityLogs = async function () {
 
     return { data: logs.slice(0, 100), error: null };
   } catch (error) {
-    console.error('[AdminManager] loadGlobalActivityLogs error:', error);
     return { data: [], error };
   }
 };
@@ -345,28 +351,34 @@ window.switchAdminSubTab = function (subTabName) {
 
 window.renderAdminOpsMatrix = async function () {
   const tbody = document.getElementById("admin-ops-matrix-body");
+  const mobileList = document.getElementById("admin-ops-matrix-mobile-list");
   if (!tbody) return;
 
   tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Memuat matriks...</td></tr>`;
+  if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat matriks...</p>`;
 
   const { data: rekap, error } = await window.loadGlobalAttendance();
   if (error || !rekap) {
     tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-red-500">Gagal memuat matriks: ${error || 'Offline'}</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-red-500 font-bold p-4 text-center">Gagal memuat matriks: ${error || 'Offline'}</p>`;
     return;
   }
 
   tbody.innerHTML = "";
+  if (mobileList) mobileList.innerHTML = "";
 
   const kelasKeys = Object.keys(MASTER_KELAS).filter(k => k?.toLowerCase() !== "admin musyrif");
 
   if (kelasKeys.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Tidak ada data kelas.</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada data kelas.</p>`;
     return;
   }
 
   kelasKeys.forEach(className => {
     const classInfo = MASTER_KELAS[className];
-    const musyrifName = classInfo.musyrif || "Musyrif";
+    const safeClassName = _escapeHtml(className);
+    const musyrifName = _escapeHtml(classInfo.musyrif || "Musyrif");
 
     // Cari hp musyrif secara cerdas
     let musyrifPhone = classInfo.hp_musyrif || classInfo.phone || "";
@@ -377,9 +389,11 @@ window.renderAdminOpsMatrix = async function () {
       }
     }
 
-    const rowRekap = rekap[className] || { shubuh: false, syuruq: false, dzuhur: false, ashar: false, maghrib: false, isya: false };
+    const rowRekap = rekap[className] || { shubuh: false, sekolah: false, ashar: false, maghrib: false, isya: false };
 
-    const slots = ["shubuh", "syuruq", "dzuhur", "ashar", "maghrib", "isya"];
+    const slots = ["shubuh", "sekolah", "ashar", "maghrib", "isya"];
+    const slotLabels = { shubuh: "Subuh", sekolah: "Sekolah", ashar: "Ashar", maghrib: "Maghrib", isya: "Isya" };
+
     const slotCells = slots.map(slotId => {
       const isFilled = rowRekap[slotId];
       const colorClass = isFilled ? "bg-emerald-500 shadow-emerald-500/20" : "bg-red-500 shadow-red-500/20";
@@ -388,7 +402,7 @@ window.renderAdminOpsMatrix = async function () {
 
       return `
         <td class="p-3 text-center">
-          <button onclick="window.overrideAttendance('${className}', '${slotId}')" title="Override ${className} - ${slotId} (${title})" class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] ${colorClass} shadow-sm active:scale-95 transition-all">
+          <button onclick="window.overrideAttendance('${safeClassName}', '${slotId}')" title="Override ${safeClassName} - ${slotId} (${title})" class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] ${colorClass} shadow-sm active:scale-95 transition-all">
             <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
           </button>
         </td>
@@ -402,7 +416,7 @@ window.renderAdminOpsMatrix = async function () {
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
         <td class="p-3">
-          <div class="font-black text-slate-800 dark:text-white">${className}</div>
+          <div class="font-black text-slate-800 dark:text-white">${safeClassName}</div>
           <div class="text-[10px] text-slate-400 font-bold">${musyrifName}</div>
         </td>
         ${slotCells}
@@ -418,6 +432,46 @@ window.renderAdminOpsMatrix = async function () {
         </td>
       </tr>
     `;
+
+    // Populate mobile cards view
+    if (mobileList) {
+      const mobileSlotsHTML = slots.map(slotId => {
+        const isFilled = rowRekap[slotId];
+        const colorClass = isFilled ? "bg-emerald-500 text-white" : "bg-red-500 text-white";
+        const label = slotLabels[slotId];
+        return `
+          <div class="flex flex-col items-center gap-1">
+            <span class="text-[8px] font-black text-slate-400 uppercase">${label}</span>
+            <button onclick="window.overrideAttendance('${safeClassName}', '${slotId}')" class="w-full py-1.5 rounded-xl text-[9px] font-black ${colorClass} shadow-sm active:scale-95 transition-all">
+              ${isFilled ? 'Diisi' : 'Belum'}
+            </button>
+          </div>
+        `;
+      }).join("");
+
+      mobileList.innerHTML += `
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 shadow-sm space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeClassName}</h3>
+              <p class="text-[9px] text-slate-400 font-bold">${musyrifName}</p>
+            </div>
+            <div class="flex gap-1.5">
+              <a href="${waLink}" target="_blank" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/35 active:scale-95 transition-all" title="WhatsApp Musyrif">
+                <i data-lucide="message-square" class="w-4 h-4"></i>
+              </a>
+              <a href="${phoneLink}" class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-500 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900/35 active:scale-95 transition-all" title="Call Musyrif">
+                <i data-lucide="phone" class="w-4 h-4"></i>
+              </a>
+            </div>
+          </div>
+          <div class="h-px bg-slate-50 dark:bg-slate-800/60"></div>
+          <div class="grid grid-cols-3 gap-2">
+            ${mobileSlotsHTML}
+          </div>
+        </div>
+      `;
+    }
   });
 
   if (window.lucide) window.lucide.createIcons();
@@ -447,9 +501,11 @@ window.overrideAttendance = function (className, slotId) {
 
 window.renderAdminHRList = async function () {
   const tbody = document.getElementById("admin-hr-table-body");
+  const mobileList = document.getElementById("admin-hr-mobile-list");
   if (!tbody) return;
 
   tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Memuat data...</td></tr>`;
+  if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat data...</p>`;
 
   try {
     // Ambil daftar NIS dengan password kustom dari localStorage
@@ -461,6 +517,7 @@ window.renderAdminHRList = async function () {
     const searchQuery = (document.getElementById("admin-hr-search")?.value || "").toLowerCase().trim();
 
     tbody.innerHTML = "";
+    if (mobileList) mobileList.innerHTML = "";
 
     let filtered = MASTER_SANTRI || [];
     if (searchQuery) {
@@ -472,41 +529,80 @@ window.renderAdminHRList = async function () {
     }
 
     if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tidak ada santri ditemukan.</td></tr>`;
+      const emptyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 dark:text-slate-600"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="11" y2="11"/></svg>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center"><div class="flex flex-col items-center gap-3">${emptyIcon}<p class="text-xs text-slate-400 font-bold">Tidak ada santri ditemukan</p></div></td></tr>`;
+      if (mobileList) mobileList.innerHTML = `<div class="flex flex-col items-center gap-3 p-6"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 dark:text-slate-600"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="11" y2="11"/></svg><p class="text-xs text-slate-400 font-bold text-center">Tidak ada santri ditemukan</p></div>`;
       return;
     }
 
     filtered.slice(0, 100).forEach(s => {
       const nisStr = String(s.nis || s.id || '').trim();
+      const safeNisStr = _escapeHtml(nisStr);
+      const safeName = _escapeHtml(s.nama || s.name || '-');
+      const safeKelas = _escapeHtml(s.kelas || s.rombel || "-");
+      const safeWali = _escapeHtml(s.wali || "-");
       const hasCustom = customNisSet.has(nisStr);
       const statusBadge = hasCustom
-        ? `<span class="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[10px]">Kustom</span>`
-        : `<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 text-[10px]">Default (NIS)</span>`;
+        ? `<span class="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[10px] font-black">Kustom</span>`
+        : `<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 text-[10px] font-black">Default (NIS)</span>`;
 
       const resetBtn = hasCustom
-        ? `<button onclick="window.handleResetPasswordClick('${nisStr}')" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 text-[10px] font-black active:scale-[0.98] transition-all">Reset Password</button>`
+        ? `<button onclick="window.handleResetPasswordClick('${safeNisStr.replace(/'/g, "\\'")}')" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 text-[10px] font-black active:scale-[0.98] transition-all">Reset Password</button>`
         : `<button disabled class="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 text-slate-300 dark:text-slate-600 text-[10px] font-black cursor-not-allowed">Reset Password</button>`;
 
       tbody.innerHTML += `
         <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
           <td class="p-3">
-            <div class="font-black text-slate-800 dark:text-white">${s.nama || s.name || '-'}</div>
+            <div class="font-black text-slate-800 dark:text-white">${safeName}</div>
           </td>
-          <td class="p-3 text-slate-600 dark:text-slate-300">${s.kelas || s.rombel || "-"}</td>
-          <td class="p-3 text-slate-500 font-mono">${nisStr || '-'}</td>
-          <td class="p-3 text-slate-600 dark:text-slate-300">${s.wali || "-"}</td>
+          <td class="p-3 text-slate-600 dark:text-slate-300">${safeKelas}</td>
+          <td class="p-3 text-slate-500 font-mono">${safeNisStr || '-'}</td>
+          <td class="p-3 text-slate-600 dark:text-slate-300">${safeWali}</td>
           <td class="p-3">${statusBadge}</td>
           <td class="p-3 text-center">${resetBtn}</td>
         </tr>
       `;
+
+      if (mobileList) {
+        mobileList.innerHTML += `
+          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeName}</h3>
+                <p class="text-[9px] text-slate-400 font-mono mt-0.5">NIS: ${safeNisStr || '-'}</p>
+              </div>
+              <div>
+                ${statusBadge}
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+              <div>
+                <span class="block text-[8px] text-slate-400 uppercase">Kelas</span>
+                <span class="text-slate-700 dark:text-slate-300">${safeKelas}</span>
+              </div>
+              <div>
+                <span class="block text-[8px] text-slate-400 uppercase">Wali Santri</span>
+                <span class="text-slate-700 dark:text-slate-300">${safeWali}</span>
+              </div>
+            </div>
+            <div class="pt-2 flex justify-end border-t border-slate-50 dark:border-slate-800/80">
+              ${resetBtn}
+            </div>
+          </div>
+        `;
+      }
     });
 
     if (filtered.length > 100) {
-      tbody.innerHTML += `<tr><td colspan="6" class="p-3 text-center text-slate-400 font-bold text-[10px]">Menampilkan 100 dari ${filtered.length} santri. Silakan gunakan pencarian untuk memfilter lebih spesifik.</td></tr>`;
+      const moreText = `Menampilkan 100 dari ${filtered.length} santri. Silakan gunakan pencarian untuk memfilter lebih spesifik.`;
+      tbody.innerHTML += `<tr><td colspan="6" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
+      if (mobileList) {
+        mobileList.innerHTML += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
+      }
     }
   } catch (err) {
-    console.error('[AdminManager] renderAdminHRList error:', err);
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Error: ${err.message || err}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Error memuat data HR</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-red-500 font-bold p-4 text-center">Error memuat data HR</p>`;
   }
 };
 
@@ -524,19 +620,23 @@ window.handleResetPasswordClick = async function (nis) {
 
 window.renderAdminTahfizhList = async function () {
   const tbody = document.getElementById("admin-tahfizh-table-body");
+  const mobileList = document.getElementById("admin-tahfizh-mobile-list");
   if (!tbody) return;
 
   tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Memuat setoran tahfizh...</td></tr>`;
+  if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat setoran tahfizh...</p>`;
 
   const { data, error } = await window.loadGlobalTahfizh();
   if (error || !data) {
     tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gagal memuat tahfizh: ${error || 'Offline'}</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-red-500 font-bold p-4 text-center">Gagal memuat tahfizh: ${error || 'Offline'}</p>`;
     return;
   }
 
   const searchQuery = document.getElementById("admin-tahfizh-search")?.value?.toLowerCase().trim() || "";
 
   tbody.innerHTML = "";
+  if (mobileList) mobileList.innerHTML = "";
 
   let filtered = data;
   if (searchQuery) {
@@ -549,6 +649,7 @@ window.renderAdminTahfizhList = async function () {
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada catatan tahfizh ditemukan.</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada catatan tahfizh ditemukan.</p>`;
     return;
   }
 
@@ -578,62 +679,88 @@ window.renderAdminTahfizhList = async function () {
       ? `<span class="text-orange-500">Ziyadah: Juz ${safeJuz} (Hlm ${safeHalaman})</span>`
       : `<span class="text-indigo-500">Murojaah: Juz ${safeJuz} (Surat ${safeSurat})</span>`;
 
+    const safeNamaSantri = safeTahfizhText(r.nama_santri);
+    const safeAlias = safeTahfizhText(r.santrialias || r.santri_id);
+    const safeKelas = safeTahfizhText(r.kelas);
+    const safeProgram = safeTahfizhText(r.program, "Sabaq");
+    const safeDate = safeTahfizhText(r.tanggal ? window.formatDate(r.tanggal) : "-");
+    const safeMusyrif = safeTahfizhText(r.musyrif);
+
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
         <td class="p-3">
-          <div class="font-black text-slate-800 dark:text-white">${safeTahfizhText(r.nama_santri)}</div>
-          <div class="text-[9px] text-slate-400 font-mono">${safeTahfizhText(r.santrialias || r.santri_id)}</div>
+          <div class="font-black text-slate-800 dark:text-white">${safeNamaSantri}</div>
+          <div class="text-[9px] text-slate-400 font-mono">${safeAlias}</div>
         </td>
-        <td class="p-3 text-slate-600 dark:text-slate-300">${safeTahfizhText(r.kelas)}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${safeTahfizhText(r.program, "Sabaq")}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300">${safeKelas}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${safeProgram}</td>
         <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${setoranDesc}</td>
         <td class="p-3 text-center">
           <span class="px-2 py-0.5 rounded text-[10px] font-black ${qColor}">${safeKualitas}</span>
         </td>
-        <td class="p-3 text-slate-400 font-mono text-[10px]">${safeTahfizhText(r.tanggal ? window.formatDate(r.tanggal) : "-")}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300">${safeTahfizhText(r.musyrif)}</td>
+        <td class="p-3 text-slate-400 font-mono text-[10px]">${safeDate}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300">${safeMusyrif}</td>
       </tr>
     `;
+
+    if (mobileList) {
+      mobileList.innerHTML += `
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeNamaSantri}</h3>
+              <p class="text-[9px] text-slate-400 font-mono mt-0.5">NIS: ${safeAlias}</p>
+            </div>
+            <div>
+              <span class="px-2 py-0.5 rounded text-[9px] font-black ${qColor}">${safeKualitas}</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+            <div>
+              <span class="block text-[8px] text-slate-400 uppercase">Kelas & Program</span>
+              <span class="text-slate-700 dark:text-slate-300">${safeKelas} (${safeProgram})</span>
+            </div>
+            <div>
+              <span class="block text-[8px] text-slate-400 uppercase">Tanggal</span>
+              <span class="text-slate-700 dark:text-slate-300">${safeDate}</span>
+            </div>
+            <div class="col-span-2">
+              <span class="block text-[8px] text-slate-400 uppercase">Detail Setoran</span>
+              <span class="text-slate-700 dark:text-slate-300 font-extrabold">${setoranDesc}</span>
+            </div>
+          </div>
+          <div class="pt-2 flex justify-between items-center border-t border-slate-50 dark:border-slate-800/80 text-[10px] font-bold text-slate-400">
+            <span>Musyrif:</span>
+            <span class="text-slate-700 dark:text-slate-300 font-black">${safeMusyrif}</span>
+          </div>
+        </div>
+      `;
+    }
   });
 
   if (filtered.length > 100) {
-    tbody.innerHTML += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">Menampilkan 100 dari ${filtered.length} setoran. Silakan gunakan pencarian untuk lebih spesifik.</td></tr>`;
+    const moreText = `Menampilkan 100 dari ${filtered.length} setoran. Silakan gunakan pencarian untuk lebih spesifik.`;
+    tbody.innerHTML += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
+    if (mobileList) {
+      mobileList.innerHTML += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
+    }
   }
 };
 
-let adminPermitSubView = "list"; // list, monitor
 
-window.switchAdminPermitSubView = function (view) {
-  adminPermitSubView = view;
-  const listBtn = document.getElementById("admin-permit-subview-btn-list");
-  const monitorBtn = document.getElementById("admin-permit-subview-btn-monitor");
-  const listView = document.getElementById("admin-permit-subview-list");
-  const monitorView = document.getElementById("admin-permit-subview-monitor");
-
-  if (view === "list") {
-    if (listBtn) listBtn.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400";
-    if (monitorBtn) monitorBtn.className = "px-3 py-1.5 rounded-lg text-xs font-black text-slate-400 dark:text-slate-500";
-    if (listView) listView.classList.remove("hidden");
-    if (monitorView) monitorView.classList.add("hidden");
-    window.renderAdminPermits();
-  } else {
-    if (monitorBtn) monitorBtn.className = "px-3 py-1.5 rounded-lg text-xs font-black bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400";
-    if (listBtn) listBtn.className = "px-3 py-1.5 rounded-lg text-xs font-black text-slate-400 dark:text-slate-500";
-    if (monitorView) monitorView.classList.remove("hidden");
-    if (listView) listView.classList.add("hidden");
-    window.renderAdminDormMonitor();
-  }
-};
 
 window.renderAdminPermits = async function () {
   const tbody = document.getElementById("admin-permits-table-body");
+  const mobileList = document.getElementById("admin-permits-mobile-list");
   if (!tbody) return;
 
   tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Memuat riwayat perizinan...</td></tr>`;
+  if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat riwayat perizinan...</p>`;
 
   const { data, error } = await window.loadGlobalPermits();
   if (error || !data) {
     tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gagal memuat perizinan: ${error || 'Offline'}</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-red-500 font-bold p-4 text-center">Gagal memuat perizinan: ${error || 'Offline'}</p>`;
     return;
   }
 
@@ -641,6 +768,7 @@ window.renderAdminPermits = async function () {
   const statusFilter = document.getElementById("admin-permit-status-filter")?.value || "all";
 
   tbody.innerHTML = "";
+  if (mobileList) mobileList.innerHTML = "";
 
   // Filter search and status
   let filtered = data;
@@ -677,6 +805,7 @@ window.renderAdminPermits = async function () {
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada riwayat perizinan ditemukan.</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada riwayat perizinan ditemukan.</p>`;
     return;
   }
 
@@ -707,21 +836,34 @@ window.renderAdminPermits = async function () {
          </div>`
       : `<span class="text-slate-400 text-[10px]">-</span>`;
 
+    // Mobile Actions Layout
+    const mobileActions = (statusLower === "pending")
+      ? `<div class="flex gap-2 w-full mt-2">
+          <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="flex-1 py-2 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-black active:scale-[0.98] transition-all text-center">Setujui</button>
+          <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="flex-1 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-[10px] font-black active:scale-[0.98] transition-all text-center">Tolak</button>
+         </div>`
+      : "";
+
     // Sanitize user-provided fields to prevent XSS
     const safeStudentName = window.sanitizeHTML(p.studentName || 'Santri');
+    const safeNis = window.sanitizeHTML(p.nis || '-');
+    const safeClassName = window.sanitizeHTML(p.className || "-");
+    const safeType = window.sanitizeHTML(p.tipe_izin || p.category || "Izin");
+    const safeStartDate = window.sanitizeHTML(p.tanggal_mulai || p.start_date || "-");
+    const safeEndDate = window.sanitizeHTML(p.tanggal_selesai || p.end_date || "-");
     const safeReason = window.sanitizeHTML(p.keperluan || p.reason || '-');
 
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
         <td class="p-3">
           <div class="font-black text-slate-800 dark:text-white">${safeStudentName}</div>
-          <div class="text-[9px] text-slate-400 font-mono">${window.sanitizeHTML(p.nis || '-')}</div>
+          <div class="text-[9px] text-slate-400 font-mono">${safeNis}</div>
         </td>
-        <td class="p-3 text-slate-600 dark:text-slate-300">${window.sanitizeHTML(p.className || "-")}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${window.sanitizeHTML(p.tipe_izin || p.category || "Izin")}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300">${safeClassName}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${safeType}</td>
         <td class="p-3 text-slate-500 text-[10px]">
-          <div>Mulai: ${window.sanitizeHTML(p.tanggal_mulai || p.start_date || "-")}</div>
-          <div>Selesai: ${window.sanitizeHTML(p.tanggal_selesai || p.end_date || "-")}</div>
+          <div>Mulai: ${safeStartDate}</div>
+          <div>Selesai: ${safeEndDate}</div>
         </td>
         <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${safeReason}">${safeReason}</td>
         <td class="p-3 text-center">
@@ -730,10 +872,45 @@ window.renderAdminPermits = async function () {
         <td class="p-3 text-center">${actions}</td>
       </tr>
     `;
+
+    if (mobileList) {
+      mobileList.innerHTML += `
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeStudentName}</h3>
+              <p class="text-[9px] text-slate-400 font-mono mt-0.5">NIS: ${safeNis} (${safeClassName})</p>
+            </div>
+            <div>
+              <span class="px-2 py-0.5 rounded text-[9px] font-black ${statusClass}">${displayStatus}</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+            <div>
+              <span class="block text-[8px] text-slate-400 uppercase">Tipe Izin</span>
+              <span class="text-slate-700 dark:text-slate-300">${safeType}</span>
+            </div>
+            <div>
+              <span class="block text-[8px] text-slate-400 uppercase">Durasi Izin</span>
+              <span class="text-slate-700 dark:text-slate-300 text-[9px] leading-tight block">Mulai: ${safeStartDate}<br>Selesai: ${safeEndDate}</span>
+            </div>
+            <div class="col-span-2">
+              <span class="block text-[8px] text-slate-400 uppercase">Keperluan</span>
+              <span class="text-slate-700 dark:text-slate-300">${safeReason}</span>
+            </div>
+          </div>
+          ${mobileActions}
+        </div>
+      `;
+    }
   });
 
   if (filtered.length > 100) {
-    tbody.innerHTML += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">Menampilkan 100 dari ${filtered.length} perizinan. Silakan gunakan pencarian atau filter status untuk lebih spesifik.</td></tr>`;
+    const moreText = `Menampilkan 100 dari ${filtered.length} perizinan. Silakan gunakan pencarian atau filter status untuk lebih spesifik.`;
+    tbody.innerHTML += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
+    if (mobileList) {
+      mobileList.innerHTML += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
+    }
   }
 
   if (window.lucide) window.lucide.createIcons();
@@ -778,71 +955,13 @@ window.approveOrRejectPermit = async function (permitId, approved) {
 
       window.renderAdminPermits();
     } catch (err) {
-      console.error('[AdminManager] approveOrRejectPermit error:', err);
-      window.showToast(`Gagal memperbarui status izin: ${err.message || err}`, "error");
+      window.showToast("Gagal memperbarui status izin", "error");
     }
   }
 };
 
-window.renderAdminDormMonitor = async function () {
-  const tbody = document.getElementById("admin-dorm-monitor-body");
-  if (!tbody) return;
 
-  tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Memuat status santri di luar...</td></tr>`;
 
-  const { data, error } = await window.loadGlobalPermits();
-  if (error || !data) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500">Gagal memuat monitor: ${error || 'Offline'}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = "";
-
-  const currentDate = appState.date || new Date().toISOString().split('T')[0];
-
-  // Filter yang statusnya disetujui (approved) dan belum kembali (is_active !== false) dan sudah mulai masuk rentang izin (currentDate >= start_date)
-  const activeOut = data.filter(p => {
-    const statusLower = String(p.status || "approved").toLowerCase();
-    const isActive = p.is_active !== false;
-    const hasStarted = p.start_date && currentDate >= p.start_date;
-    return statusLower === "approved" && isActive && hasStarted;
-  });
-
-  if (activeOut.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tidak ada santri di luar asrama.</td></tr>`;
-    return;
-  }
-
-  activeOut.forEach(p => {
-    const start = new Date(p.start_date);
-    const end = p.end_date ? new Date(p.end_date) : null;
-    let durationText = "-";
-    if (end) {
-      const diffTime = Math.abs(end - start);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      durationText = `${diffDays} Hari`;
-    }
-
-    tbody.innerHTML += `
-      <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
-        <td class="p-3">
-          <div class="font-black text-slate-800 dark:text-white">${p.studentName || 'Santri'}</div>
-          <div class="text-[9px] text-slate-400 font-mono">${p.nis || '-'}</div>
-        </td>
-        <td class="p-3 text-slate-600 dark:text-slate-300">${p.className || "-"}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 font-mono text-[11px]">${p.tanggal_mulai || p.start_date || "-"}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 font-mono text-[11px]">${p.tanggal_selesai || p.end_date || "-"}</td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${p.keperluan || p.reason || '-'}">${p.keperluan || p.reason || "-"}</td>
-        <td class="p-3 text-center">
-          <div class="flex items-center justify-center gap-1.5">
-            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">${durationText}</span>
-            <span class="px-2 py-0.5 rounded text-[10px] font-black bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400">Keluar</span>
-          </div>
-        </td>
-      </tr>
-    `;
-  });
-};
 
 window.handleAdminBroadcastSubmit = async function (e) {
   e.preventDefault();
@@ -921,38 +1040,65 @@ window.renderRecentBroadcasts = async function () {
 
 window.renderAdminLogs = async function () {
   const tbody = document.getElementById("admin-logs-tbody");
+  const mobileList = document.getElementById("admin-logs-mobile-list");
   if (!tbody) return;
 
   tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Memuat logs...</td></tr>`;
+  if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat logs...</p>`;
 
   const { data, error } = await window.loadGlobalActivityLogs();
   if (error || !data) {
     tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-500">Gagal memuat logs: ${error || 'Offline'}</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-red-500 font-bold p-4 text-center">Gagal memuat logs: ${error || 'Offline'}</p>`;
     return;
   }
 
   tbody.innerHTML = "";
+  if (mobileList) mobileList.innerHTML = "";
 
   if (data.length === 0) {
     tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Tidak ada log aktivitas.</td></tr>`;
+    if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada log aktivitas.</p>`;
     return;
   }
 
   data.forEach(log => {
+    const safeUserName = _escapeHtml(log.user_name || 'System');
+    const safeAction = _escapeHtml(log.action || '-');
+    const safeDetail = _escapeHtml(log.detail || '-');
+    const formattedDate = log.created_at
+      ? new Date(log.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit'})
+      : '-';
+
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
-        <td class="p-3 text-[10px] text-slate-400 font-mono">${log.created_at ? new Date(log.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-'}</td>
-        <td class="p-3 text-slate-700 dark:text-slate-300">${log.user_name || 'System'}</td>
-        <td class="p-3 text-slate-800 dark:text-white font-bold"><span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px]">${log.action || '-'}</span></td>
-        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold max-w-[200px] truncate" title="${log.detail || ''}">${log.detail || '-'}</td>
+        <td class="p-3 text-[10px] text-slate-400 font-mono">${formattedDate}</td>
+        <td class="p-3 text-slate-700 dark:text-slate-300">${safeUserName}</td>
+        <td class="p-3 text-slate-800 dark:text-white font-bold"><span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px]">${safeAction}</span></td>
+        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold max-w-[200px] truncate" title="${safeDetail}">${safeDetail}</td>
       </tr>
     `;
+
+    if (mobileList) {
+      mobileList.innerHTML += `
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeUserName}</h3>
+              <p class="text-[9px] text-slate-400 font-mono mt-0.5">${formattedDate}</p>
+            </div>
+            <div>
+              <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-[9px] font-black">${safeAction}</span>
+            </div>
+          </div>
+          <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300 leading-relaxed">${safeDetail}</p>
+        </div>
+      `;
+    }
   });
 };
 
 window.logActivityAudit = async function (action, target, description) {
-  console.log('[AuditLog]', action, '-', target, '-', description);
-
   try {
     // Simpan ke localStorage
     const logsKey = 'local_activity_logs';
@@ -969,13 +1115,15 @@ window.logActivityAudit = async function (action, target, description) {
     // Simpan maksimal 500 log
     localStorage.setItem(logsKey, JSON.stringify(logs.slice(0, 500)));
   } catch (e) {
-    console.error('[AuditLog] Error saving to localStorage:', e);
+    // Silent fail - audit log is non-critical
   }
 };
 
 window.openAdminBroadcast = function () {
-  window.switchTab('admin');
-  if (typeof window.switchAdminSubTab === 'function') {
-    window.switchAdminSubTab('broadcast');
+  window.switchTab('home');
+  // Scroll to broadcast form
+  const broadcastForm = document.getElementById("admin-broadcast-form");
+  if (broadcastForm) {
+    broadcastForm.scrollIntoView({ behavior: 'smooth' });
   }
 };
