@@ -119,8 +119,10 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
   appState.userProfile = profile;
 
   // ========== PWA UPDATE CHECK ==========
-  // Cek update PWA setiap login untuk memastikan dapat data terbaru
-  window.checkForPWAUpdate();
+  // Skip PWA update check untuk bypass mode (supaya langsung masuk tanpa reload)
+  if (!profile?.bypassMode) {
+    window.checkForPWAUpdate();
+  }
 
   document.getElementById("view-login").classList.add("hidden");
   document.getElementById("view-main").classList.remove("hidden");

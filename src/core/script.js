@@ -2703,8 +2703,8 @@ window.updateDashboard = function () {
         isya: ["#0f172a", "#1e3a8a"]
       };
       const slotBgColors = slotBgColorMap[heroSlotId] || ["#0c4e8c", "#0c81e4"];
-      dashboardContent.style.setProperty("--dashboard-bg-from", slotBgColors[0]);
-      dashboardContent.style.setProperty("--dashboard-bg-to", slotBgColors[1]);
+      document.documentElement.style.setProperty("--dashboard-bg-from", slotBgColors[0]);
+      document.documentElement.style.setProperty("--dashboard-bg-to", slotBgColors[1]);
     }
 
     // Update badge dynamically based on whether it is today's date

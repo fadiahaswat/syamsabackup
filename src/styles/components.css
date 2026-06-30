@@ -133,9 +133,7 @@ input[placeholder*="Cari"] {
 #profile-hero-card {
   display: block;
   text-align: left;
-  background:
-    radial-gradient(circle at 82% 18%, rgba(79, 231, 175, 0.16), transparent 28%),
-    linear-gradient(155deg, #0f172a 0%, #111827 58%, #0c1f3d 100%) !important;
+  background: #0f172a !important;
   color: #ffffff !important;
   border-color: rgba(30, 41, 59, 0.7) !important;
 }

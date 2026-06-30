@@ -41,9 +41,13 @@
   --color-blue-hover: #0C4E8C;
   --color-blue-ring: rgba(12, 129, 228, 0.15);
 
-  --color-purple: #11C4D4;
-  --color-purple-hover: #0C4E8C;
-  --color-purple-ring: rgba(17, 196, 212, 0.15);
+  --color-cyan: #11C4D4;
+  --color-cyan-hover: #0C4E8C;
+  --color-cyan-ring: rgba(17, 196, 212, 0.15);
+
+  --color-purple: #A855F7;
+  --color-purple-hover: #9333EA;
+  --color-purple-ring: rgba(168, 85, 247, 0.15);
 
   --color-mint: #4FE7AF;
   --color-deep: #0C4E8C;

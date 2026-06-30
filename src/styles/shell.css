@@ -425,17 +425,11 @@
 
   /* Desktop composition */
   #view-main {
-    background:
-      radial-gradient(circle at top right, rgba(79, 231, 175, 0.10), transparent 30%),
-      radial-gradient(circle at bottom left, rgba(12, 129, 228, 0.08), transparent 34%),
-      rgba(248, 250, 252, 0.72);
+    background: rgba(248, 250, 252, 0.72);
   }
 
   .dark #view-main {
-    background:
-      radial-gradient(circle at top right, rgba(17, 196, 212, 0.08), transparent 30%),
-      radial-gradient(circle at bottom left, rgba(12, 78, 140, 0.16), transparent 34%),
-      #020617;
+    background: #020617;
   }
 
   #desktop-sidebar {
