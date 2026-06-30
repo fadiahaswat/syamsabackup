@@ -911,7 +911,8 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
     const kelasKey = String(targetClass).replace(/\s+/g, "").toLowerCase();
     window.AppStorage.setItem(`musyrif_email_${kelasKey}`, String(profile.email).trim().toLowerCase());
     // Debug only - remove in production
-    if (DEBUG_MODE) console.debug('[AuthManager] Musyrif email cached for class:', kelasKey);
+    const _isDebugMode = localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true");
+    if (_isDebugMode) console.debug('[AuthManager] Musyrif email cached for class:', kelasKey);
   }
 
   if (isAdmin) {

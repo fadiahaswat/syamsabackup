@@ -174,7 +174,8 @@ window.handleGoogleCallback = async function (response) {
   try {
     const profile = window.parseJwt(response.credential);
     // Debug only - remove in production
-    if (DEBUG_MODE) console.debug('[AuthManager] Google callback received for:', profile.email);
+    const _isDebugMode = localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true");
+    if (_isDebugMode) console.debug('[AuthManager] Google callback received for:', profile.email);
     const userEmail = profile.email;
     if (!userEmail) {
       return window.showToast("Google tidak mengirim alamat email.", "error");

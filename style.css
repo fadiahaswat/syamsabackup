@@ -1539,10 +1539,7 @@ body.qibla-browser-active.qibla-browser-green {
   color: rgba(255, 255, 255, 0.58);
 }
 
-#main-content::before,
-#tab-tahfizh::before,
-#tab-report::before,
-#tab-profile::before {
+#main-content::before {
   content: "";
   position: fixed;
   top: 0;
@@ -1556,12 +1553,66 @@ body.qibla-browser-active.qibla-browser-green {
   transform: translateZ(0);
 }
 
-.dark #main-content::before,
-.dark #tab-tahfizh::before,
-.dark #tab-report::before,
-.dark #tab-profile::before {
+.dark #main-content::before {
   background:
     linear-gradient(180deg, var(--dashboard-bg-from) 0%, var(--dashboard-bg-to) 100%);
+}
+
+#tab-tahfizh::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(21rem, 52vh);
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, #c2410c 0%, #ea580c 100%);
+  transform: translateZ(0);
+}
+
+.dark #tab-tahfizh::before {
+  background:
+    linear-gradient(180deg, #7c2d12 0%, #9a3412 100%);
+}
+
+#tab-report::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(21rem, 52vh);
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, #0c4e8c 0%, #0c81e4 100%);
+  transform: translateZ(0);
+}
+
+.dark #tab-report::before {
+  background:
+    linear-gradient(180deg, #0f172a 0%, #1e3a8a 100%);
+}
+
+#tab-profile::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(21rem, 52vh);
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, #7c3aed 0%, #a855f7 100%);
+  transform: translateZ(0);
+}
+
+.dark #tab-profile::before {
+  background:
+    linear-gradient(180deg, #4c1d95 0%, #6d28d9 100%);
 }
 
 #dashboard-slot-bg-illustration {
