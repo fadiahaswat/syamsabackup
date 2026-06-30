@@ -12,6 +12,7 @@ body {
   min-height: 100vh !important;
   min-height: 100dvh !important;
   height: 100dvh !important;
+  height: -webkit-fill-available !important;
 }
 body::after {
   content: "";
