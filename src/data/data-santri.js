@@ -27,13 +27,23 @@ async function loadSantriData() {
         window.MASTER_SANTRI = window.santriData;
       }
 
-      // Jika cache sudah kadaluarsa (lebih dari 24 jam), perbarui di background
+      // Jika cache sudah kadaluarsa (lebih dari 24 jam), perbarui di background jika bukan file://
       if (now - cachedTime > EXPIRY_MS) {
-        fetchSantriBackground();
+        if (window.location.protocol !== "file:") {
+          fetchSantriBackground();
+        } else {
+          santriDataDebugLog("Background update santri dilewati pada file://");
+        }
       }
 
       santriDataDebugLog("Data Santri dimuat dari cache lokal (Cepat).");
       return window.santriData;
+    }
+
+    // Skip fetch jika dijalankan via file://
+    if (window.location.protocol === "file:") {
+      santriDataDebugLog("loadSantriData dilewati pada file:// karena CORS");
+      return window.santriData || [];
     }
 
     // Skip fetch jika googleSheetUrl belum dikonfigurasi
@@ -82,6 +92,12 @@ async function fetchSantriBackground() {
   const CACHE_TIME = "time_data_santri";
 
   try {
+    // Skip if running on file:// protocol due to CORS
+    if (window.location.protocol === "file:") {
+      santriDataDebugLog("Background update santri dilewati pada file://");
+      return;
+    }
+
     // Skip if googleSheetUrl is not configured
     if (!window.APP_CREDENTIALS?.googleSheetUrl) {
       santriDataDebugLog("Background update santri dilewati: googleSheetUrl belum dikonfigurasi");

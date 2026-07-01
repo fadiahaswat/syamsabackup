@@ -1,4 +1,4 @@
-﻿<section
+<section
       id="view-login"
       class="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-slate-50/60 dark:bg-slate-950/80 backdrop-blur-[24px] hidden"
     >
@@ -17,16 +17,11 @@
           <div class="flex justify-center mb-6">
             <div
               id="login-logo-icon"
-              onclick="handleLogoClick()"
-              class="relative w-16 h-16 rounded-[1.35rem] bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/25 active:scale-95 transition-transform duration-300 cursor-pointer select-none"
+              class="relative w-16 h-16 rounded-[1.35rem] bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/25 select-none"
             >
               <!-- Blue glowing aura -->
               <div class="absolute inset-0 rounded-[1.35rem] bg-blue-500 blur-md opacity-30"></div>
               <img src="assets/icons/icon.webp" class="relative w-10 h-10 object-contain z-10 filter brightness-0 invert" alt="Syamsa Icon" />
-              <!-- Tap counter badge -->
-              <div id="tap-counter-badge" class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 text-white text-xs font-black flex items-center justify-center opacity-0 scale-75 transition-all duration-200 shadow-lg z-20">
-                1
-              </div>
             </div>
           </div>
           
@@ -228,15 +223,27 @@
         
         <!-- Lower Row: Institutional Logos & Testing Info -->
         <div class="mt-auto pt-8 pb-4 relative z-10 shrink-0 w-full">
-          <div class="flex items-center justify-center gap-6 sm:gap-8 opacity-50 dark:opacity-40" aria-label="Logo lembaga">
-            <img src="assets/branding/Logo%20PP%20Muhammadiyah.webp" class="h-[20px] w-auto object-contain" alt="PP Muhammadiyah" />
-            <img src="assets/branding/Logo%20Mu%27allimin.webp" class="h-[22px] w-auto object-contain" alt="Mu'allimin" />
-            <img src="assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp" class="h-[18px] w-auto object-contain" alt="Sekolah Pemimpin Bangsa" />
+          <div class="flex justify-center">
+            <div
+              id="institutional-logos"
+              onclick="handleLogoClick()"
+              class="relative flex items-center justify-center gap-6 sm:gap-8 opacity-50 dark:opacity-40 cursor-pointer active:scale-95 transition-all duration-200 select-none px-4 py-2 rounded-xl hover:bg-slate-100/50 dark:hover:bg-slate-850/30"
+              aria-label="Logo lembaga"
+            >
+              <img src="assets/branding/Logo%20PP%20Muhammadiyah.webp" class="h-[20px] w-auto object-contain" alt="PP Muhammadiyah" />
+              <img src="assets/branding/Logo%20Mu%27allimin.webp" class="h-[22px] w-auto object-contain" alt="Mu'allimin" />
+              <img src="assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp" class="h-[18px] w-auto object-contain" alt="Sekolah Pemimpin Bangsa" />
+              
+              <!-- Tap counter badge -->
+              <div id="tap-counter-badge" class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 text-white text-xs font-black flex items-center justify-center opacity-0 scale-75 transition-all duration-200 shadow-lg z-20">
+                1
+              </div>
+            </div>
           </div>
 
           <div id="testing-mode-info" class="hidden mt-4">
             <p class="text-[10px] text-amber-500 font-bold text-center uppercase tracking-wider">
-              Ketuk logo 3x (Musyrif) / 5x (Admin)
+              Ketuk logo institusi 3x (Musyrif) / 5x (Admin)
             </p>
           </div>
         </div>

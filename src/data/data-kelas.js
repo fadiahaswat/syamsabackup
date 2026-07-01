@@ -26,12 +26,21 @@ async function loadClassData() {
         window.populateClassDropdown();
       }
 
-      // Fetch background untuk update cache (silent update)
-      fetchClassBackground();
+      // Fetch background untuk update cache (silent update) jika bukan file://
+      if (window.location.protocol !== "file:") {
+        fetchClassBackground();
+      } else {
+        classDataDebugLog("Background update kelas dilewati pada file://");
+      }
       return window.classData;
     }
 
-    // Skip fetch jika googleSheetUrl belum dikonfigurasi
+    // Skip fetch jika googleSheetUrl belum dikonfigurasi atau dijalankan via file://
+    if (window.location.protocol === "file:") {
+      classDataDebugLog("loadClassData dilewati pada file:// karena CORS");
+      return window.classData || {};
+    }
+
     if (!window.APP_CREDENTIALS?.googleSheetUrl) {
       classDataDebugLog("loadClassData dilewati: googleSheetUrl belum dikonfigurasi");
       return window.classData || {};
@@ -90,6 +99,12 @@ async function loadClassData() {
 // Fungsi update cache di background (tanpa loading screen)
 async function fetchClassBackground() {
   try {
+    // Skip if running on file:// protocol due to CORS
+    if (window.location.protocol === "file:") {
+      classDataDebugLog("Background update kelas dilewati pada file://");
+      return;
+    }
+
     // Skip if googleSheetUrl is not configured
     if (!window.APP_CREDENTIALS?.googleSheetUrl) {
       classDataDebugLog("Background update kelas dilewati: googleSheetUrl belum dikonfigurasi");

@@ -4133,8 +4133,7 @@
           <div class="flex justify-center mb-6">
             <div
               id="login-logo-icon"
-              onclick="handleLogoClick()"
-              class="relative w-16 h-16 rounded-[1.35rem] bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/25 active:scale-95 transition-transform duration-300 cursor-pointer select-none"
+              class="relative w-16 h-16 rounded-[1.35rem] bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/25 select-none"
             >
               <!-- Blue glowing aura -->
               <div class="absolute inset-0 rounded-[1.35rem] bg-blue-500 blur-md opacity-30"></div>
@@ -4345,10 +4344,22 @@
         
         <!-- Lower Row: Institutional Logos & Testing Info -->
         <div class="mt-auto pt-8 pb-4 relative z-10 shrink-0 w-full">
-          <div class="flex items-center justify-center gap-6 sm:gap-8 opacity-50 dark:opacity-40" aria-label="Logo lembaga">
-            <img src="assets/branding/Logo%20PP%20Muhammadiyah.webp" class="h-[20px] w-auto object-contain" alt="PP Muhammadiyah" />
-            <img src="assets/branding/Logo%20Mu%27allimin.webp" class="h-[22px] w-auto object-contain" alt="Mu'allimin" />
-            <img src="assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp" class="h-[18px] w-auto object-contain" alt="Sekolah Pemimpin Bangsa" />
+          <div class="flex justify-center">
+            <div
+              id="institutional-logos"
+              onclick="handleLogoClick()"
+              class="relative flex items-center justify-center gap-6 sm:gap-8 opacity-50 dark:opacity-40 cursor-pointer active:scale-95 transition-all duration-200 select-none px-4 py-2 rounded-xl hover:bg-slate-100/50 dark:hover:bg-slate-850/30"
+              aria-label="Logo lembaga"
+            >
+              <img src="assets/branding/Logo%20PP%20Muhammadiyah.webp" class="h-[20px] w-auto object-contain" alt="PP Muhammadiyah" />
+              <img src="assets/branding/Logo%20Mu%27allimin.webp" class="h-[22px] w-auto object-contain" alt="Mu'allimin" />
+              <img src="assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp" class="h-[18px] w-auto object-contain" alt="Sekolah Pemimpin Bangsa" />
+              
+              <!-- Tap counter badge -->
+              <div id="tap-counter-badge" class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-emerald-500 text-white text-xs font-black flex items-center justify-center opacity-0 scale-75 transition-all duration-200 shadow-lg z-20">
+                1
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -9497,15 +9508,21 @@
               <p class="text-xs text-slate-400 font-bold">Kelola akun Wali Santri dan lakukan reset password kustom kembali ke default (NIS).</p>
             </div>
           </div>
-          <div class="relative min-w-[240px]">
-            <input type="text" id="admin-hr-search" oninput="window.renderAdminHRList()" placeholder="Cari nama santri, wali, NIS..." class="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 pl-9 text-xs font-bold focus:outline-none focus:border-indigo-500 shadow-sm" />
+          <div class="relative min-w-[280px]">
+            <input type="text" id="admin-hr-search" oninput="window.renderAdminHRList()" placeholder="Cari nama santri, wali, NIS..." class="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 pl-9 pr-9 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 shadow-sm transition-all" />
             <i data-lucide="search" class="absolute left-3 top-3.5 w-4 h-4 text-slate-400"></i>
+            <button onclick="window.setAdminHRSearch(''); window.adminHRShowAll=false; window.renderAdminHRList()" id="admin-hr-search-clear" class="absolute right-3 top-3 px-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hidden transition-colors" title="Bersihkan pencarian">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
           </div>
         </header>
 
         <main class="bg-white/80 dark:bg-slate-800/80 rounded-3xl p-4 sm:p-6 border border-white/60 dark:border-slate-700/50 shadow-xl backdrop-blur-xl space-y-4">
+          <!-- Step-by-Step Search/Filter Placeholder -->
+          <div id="admin-hr-step-filter" class="hidden"></div>
+
           <!-- Desktop View -->
-          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+          <div id="admin-hr-desktop-view" class="hidden md:block overflow-x-auto -mx-5 px-5">
             <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
               <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
                 <tr>
@@ -9731,15 +9748,21 @@
               <p class="text-xs text-slate-400 font-bold">Kelola plotting kelas musyrif dan email login Google mereka.</p>
             </div>
           </div>
-          <div class="relative min-w-[240px]">
-            <input type="text" id="admin-musyrif-search" oninput="window.renderAdminMusyrifList()" placeholder="Cari nama kelas atau musyrif..." class="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 pl-9 text-xs font-bold focus:outline-none focus:border-violet-500 shadow-sm" />
+          <div class="relative min-w-[280px]">
+            <input type="text" id="admin-musyrif-search" oninput="window.renderAdminMusyrifList()" placeholder="Cari nama kelas atau musyrif..." class="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 pl-9 pr-9 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 shadow-sm transition-all" />
             <i data-lucide="search" class="absolute left-3 top-3.5 w-4 h-4 text-slate-400"></i>
+            <button onclick="window.setAdminMusyrifSearch(''); window.adminMusyrifShowAll=false; window.renderAdminMusyrifList()" id="admin-musyrif-search-clear" class="absolute right-3 top-3 px-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hidden transition-colors" title="Bersihkan pencarian">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
           </div>
         </header>
 
         <main class="bg-white/80 dark:bg-slate-800/80 rounded-3xl p-4 sm:p-6 border border-white/60 dark:border-slate-700/50 shadow-xl backdrop-blur-xl space-y-4">
+          <!-- Step-by-Step Search/Filter Placeholder -->
+          <div id="admin-musyrif-step-filter" class="hidden"></div>
+
           <!-- Desktop View -->
-          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+          <div id="admin-musyrif-desktop-view" class="hidden md:block overflow-x-auto -mx-5 px-5">
             <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[650px]">
               <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
                 <tr>

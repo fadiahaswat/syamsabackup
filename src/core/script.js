@@ -475,12 +475,12 @@ window.handleLogoClick = function () {
   clearTimeout(loginIconClickTimeout);
 
   // Feedback visual saat mengetuk
-  const logoIcon = document.getElementById("login-logo-icon");
+  const logoIcon = document.getElementById("institutional-logos") || document.getElementById("login-logo-icon");
   const tapBadge = document.getElementById("tap-counter-badge");
 
   if (logoIcon) {
-    logoIcon.classList.add("scale-90");
-    setTimeout(() => logoIcon.classList.remove("scale-90"), 100);
+    logoIcon.classList.add("scale-[0.97]");
+    setTimeout(() => logoIcon.classList.remove("scale-[0.97]"), 100);
   }
 
   // Tampilkan badge counter
@@ -498,7 +498,7 @@ window.handleLogoClick = function () {
   }
 
   // ============================================
-  // ADMIN BYPASS: 5 ketukan
+  // ADMIN BYPASS: 5 ketukan (Langsung diproses tanpa delay)
   // ============================================
   if (loginIconClickCount >= LOGIN_BYPASS_TAPS_ADMIN) {
     loginIconClickCount = 0;
@@ -522,29 +522,24 @@ window.handleLogoClick = function () {
   }
 
   // ============================================
-  // MUSYRIF BYPASS: 3 ketukan
+  // MUSYRIF BYPASS: 3 ketukan (Menunggu 500ms jika user ingin lanjut ke 5 ketukan)
   // ============================================
-  if (loginIconClickCount >= LOGIN_BYPASS_TAPS_MUSYRIF) {
-    loginIconClickCount = 0;
-    clearTimeout(loginIconClickTimeout);
-
-    // Aktifkan bypass mode Musyrif
-    window.googleBypassActive = true;
-    window.adminBypassActive = false;
-    window.updateMusyrifBypassUI();
-
-    // Langsung buka form Musyrif dengan bypass
-    window.handleMusyrifLogin();
-    return;
-  }
-
-  // ============================================
-  // FEEDBACK: belum cukup ketukan
-  // ============================================
-  // Auto-reset setelah window timeout
   loginIconClickTimeout = setTimeout(() => {
-    loginIconClickCount = 0;
-  }, LOGIN_BYPASS_WINDOW_MS);
+    if (loginIconClickCount >= LOGIN_BYPASS_TAPS_MUSYRIF) {
+      loginIconClickCount = 0;
+
+      // Aktifkan bypass mode Musyrif
+      window.googleBypassActive = true;
+      window.adminBypassActive = false;
+      window.updateMusyrifBypassUI();
+
+      // Langsung buka form Musyrif dengan bypass
+      window.handleMusyrifLogin();
+    } else {
+      // Reset jika tidak mencapai target ketukan setelah window time selesai
+      loginIconClickCount = 0;
+    }
+  }, 500);
 };
 
 // Superadmin logo click handler with rate limiting
@@ -773,6 +768,11 @@ window.syncRoleModeUI = function () {
     el.classList.toggle("hidden", !isAdmin);
   });
 
+  const analysisSec = document.getElementById("analysis-section");
+  if (analysisSec && isAdmin) {
+    analysisSec.classList.remove("hidden");
+  }
+
   if (!document.getElementById("wali-mode-style")) {
     const style = document.createElement("style");
     style.id = "wali-mode-style";
@@ -809,7 +809,7 @@ window.syncRoleModeUI = function () {
         display: none !important;
       }
       body.admin-mode #report-section,
-      body.admin-mode #analysis-section,
+      body.admin-mode #analysis-section > :not(.admin-only),
       body.admin-mode #tab-report header .musyrif-only {
         display: none !important;
       }
@@ -2302,6 +2302,9 @@ window.showAdminHRView = function () {
   const view = document.getElementById("view-admin-hr");
   if (view) {
     view.classList.remove("hidden");
+    const searchInput = document.getElementById("admin-hr-search");
+    if (searchInput) searchInput.value = "";
+    window.adminHRShowAll = false;
     if (window.renderAdminHRList) window.renderAdminHRList();
     if (window.lucide) window.lucide.createIcons();
   }
@@ -6489,8 +6492,7 @@ window.switchTab = function (tabName) {
   } else if (tabName === "report") {
     window.updateReportTab();
     if (appState.adminMode === true) {
-      if (window.renderAdminOpsMatrix) window.renderAdminOpsMatrix();
-      if (window.renderAdminLogs) window.renderAdminLogs();
+      if (window.renderUnifiedAdminReport) window.renderUnifiedAdminReport();
     }
   } else if (tabName === "tahfizh") {
     if (window.initTahfizhTab) window.initTahfizhTab();
@@ -13770,4 +13772,175 @@ window.renderCustomHolidayList = function () {
     `;
     tbody.appendChild(tr);
   });
+};
+
+window.renderUnifiedAdminReport = async function () {
+  const tbody = document.getElementById("admin-unified-report-body");
+  if (!tbody) return;
+  
+  try {
+    const searchVal = (document.getElementById("admin-unified-search")?.value || "").toLowerCase().trim();
+    const classVal = document.getElementById("admin-unified-class-filter")?.value || "all";
+    
+    // 1. Get master data safely
+    const rawStudents = window.santriData || window.MASTER_SANTRI || (typeof MASTER_SANTRI !== "undefined" ? MASTER_SANTRI : null);
+    const students = Array.isArray(rawStudents) ? rawStudents : [];
+    const violations = (appState && appState.violations) || [];
+    
+    // Get permits
+    let allPermits = (appState && appState.permits) || [];
+    if (allPermits.length === 0) {
+      const saved = localStorage.getItem('musyrif_permits_db');
+      if (saved) allPermits = window.safeJsonParse(saved, []);
+    }
+    
+    // 2. Load all attendance databases to look up student statuses
+    const allAttendance = {};
+    const classes = [...new Set(students.map(s => s.kelas || s.rombel).filter(Boolean))];
+    classes.forEach(c => {
+      try {
+        const storageKey = `musyrif_attendance_${c.replace(/\s+/g, '_')}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) allAttendance[c] = window.safeJsonParse(saved, {});
+      } catch(e) {}
+    });
+    
+    // Populate class filter options if empty
+    const classFilterSelect = document.getElementById("admin-unified-class-filter");
+    if (classFilterSelect && classFilterSelect.options.length <= 1) {
+      classFilterSelect.innerHTML = '<option value="all">Semua Kelas</option>';
+      classes.sort().forEach(c => {
+        classFilterSelect.innerHTML += `<option value="${c}">${c}</option>`;
+      });
+    }
+    
+    // 3. Filter Students
+    let filteredStudents = students;
+    if (classVal !== "all") {
+      filteredStudents = filteredStudents.filter(s => (s.kelas || s.rombel) === classVal);
+    }
+    if (searchVal) {
+      filteredStudents = filteredStudents.filter(s => 
+        (s.nama && s.nama.toLowerCase().includes(searchVal)) ||
+        (s.kelas && s.kelas.toLowerCase().includes(searchVal)) ||
+        (s.nis && String(s.nis).includes(searchVal))
+      );
+    }
+    
+    if (filteredStudents.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada data santri ditemukan.</td></tr>`;
+      return;
+    }
+    
+    tbody.innerHTML = "";
+    
+    // Map status to visual badge/dot
+    const getSlotStatusDot = (className, studentId, slotId) => {
+      const dayData = allAttendance[className]?.[appState.date];
+      const sData = dayData?.[slotId]?.[studentId];
+      if (!sData || !sData.status || Object.keys(sData.status).length === 0) {
+        return `<span class="w-3.5 h-3.5 rounded-full bg-slate-200 dark:bg-slate-800 inline-block" title="${slotId}: Belum Diisi"></span>`;
+      }
+      
+      const statuses = Object.values(sData.status);
+      if (statuses.includes("A")) {
+        return `<span class="w-3.5 h-3.5 rounded-full bg-red-500 inline-block" title="${slotId}: Alpa"></span>`;
+      }
+      if (statuses.includes("I")) {
+        return `<span class="w-3.5 h-3.5 rounded-full bg-blue-500 inline-block" title="${slotId}: Izin"></span>`;
+      }
+      if (statuses.includes("S")) {
+        return `<span class="w-3.5 h-3.5 rounded-full bg-amber-500 inline-block" title="${slotId}: Sakit"></span>`;
+      }
+      if (statuses.includes("P")) {
+        return `<span class="w-3.5 h-3.5 rounded-full bg-purple-500 inline-block" title="${slotId}: Pulang"></span>`;
+      }
+      if (statuses.includes("T")) {
+        return `<span class="w-3.5 h-3.5 rounded-full bg-cyan-500 inline-block" title="${slotId}: Telat"></span>`;
+      }
+      return `<span class="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block" title="${slotId}: Hadir"></span>`;
+    };
+    
+    filteredStudents.forEach((student, index) => {
+      const studentId = String(student.nis || student.id).trim();
+      const className = student.kelas || student.rombel || "";
+      
+      // Calculate Violation Points
+      const studentViolations = violations.filter(v => String(v.studentId) === studentId);
+      const totalPoints = studentViolations.reduce((sum, v) => sum + (Number(v.points) || 0), 0);
+      
+      // Check Active Permit
+      const activePermit = allPermits.find(p => 
+        String(p.nis) === studentId && 
+        String(p.status).toLowerCase() === "approved" && 
+        p.is_active !== false
+      );
+      
+      // Calculate Mutabaah/Presence percentage
+      const dayData = allAttendance[className]?.[appState.date];
+      let totalAct = 0;
+      let presentAct = 0;
+      
+      ['shubuh', 'sekolah', 'ashar', 'maghrib', 'isya'].forEach(slotId => {
+        const sData = dayData?.[slotId]?.[studentId];
+        if (sData?.status) {
+          Object.values(sData.status).forEach(status => {
+            totalAct++;
+            if (status === "H" || status === "Ya" || status === "T") {
+              presentAct++;
+            }
+          });
+        }
+      });
+      
+      const presencePct = totalAct > 0 ? Math.round((presentAct / totalAct) * 100) : null;
+      
+      // Build row
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors";
+      
+      // Presensi dots
+      const dots = `
+        <div class="flex items-center justify-center gap-1.5">
+          ${getSlotStatusDot(className, studentId, 'shubuh')}
+          ${getSlotStatusDot(className, studentId, 'sekolah')}
+          ${getSlotStatusDot(className, studentId, 'ashar')}
+          ${getSlotStatusDot(className, studentId, 'maghrib')}
+          ${getSlotStatusDot(className, studentId, 'isya')}
+        </div>
+      `;
+      
+      // Violation cell
+      const violationBadge = totalPoints > 0 
+        ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-red-50 text-red-500 border border-red-100">${totalPoints} Poin</span>` 
+        : `<span class="text-slate-400 text-[10px] font-bold">-</span>`;
+        
+      // Permit cell
+      const permitText = activePermit 
+        ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-blue-50 text-blue-500 border border-blue-100" title="${activePermit.keperluan || ''}">${activePermit.tipe_izin || 'Izin'}</span>` 
+        : `<span class="text-slate-400 text-[10px] font-bold">-</span>`;
+        
+      // Mutabaah cell
+      const mutabaahText = presencePct !== null 
+        ? `<span class="font-black text-xs ${presencePct >= 80 ? 'text-emerald-500' : 'text-amber-500'}">${presencePct}%</span>` 
+        : `<span class="text-slate-400 text-[10px] font-bold">-</span>`;
+        
+      tr.innerHTML = `
+        <td class="p-3 text-center text-slate-400">${index + 1}</td>
+        <td class="p-3 font-black text-slate-800 dark:text-white text-xs">${student.nama}</td>
+        <td class="p-3 font-bold text-slate-500 dark:text-slate-400 text-xs">${className}</td>
+        <td class="p-3 text-center">${dots}</td>
+        <td class="p-3 text-center">${violationBadge}</td>
+        <td class="p-3 text-center">${permitText}</td>
+        <td class="p-3 text-center">${mutabaahText}</td>
+      `;
+      
+      tbody.appendChild(tr);
+    });
+    
+    if (window.lucide) window.lucide.createIcons();
+  } catch (error) {
+    console.error("[UnifiedReport] Error rendering report:", error);
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">Gagal memuat data: ${error.message}</td></tr>`;
+  }
 };

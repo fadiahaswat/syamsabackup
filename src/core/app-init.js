@@ -28,7 +28,7 @@ function initServiceWorker() {
     });
   } else {
     if (window.location.protocol === "file:") {
-      console.warn("[SW] Notifikasi/service worker butuh HTTPS atau localhost, bukan file://");
+      console.info("[SW] Notifikasi/service worker dinonaktifkan pada file:// (membutuhkan HTTPS atau localhost)");
     } else {
       console.warn("[SW] Service worker tidak didukung browser ini");
     }

@@ -584,11 +584,90 @@ window.overrideAttendance = function (className, slotId) {
 /**
  * Render daftar Santri untuk manajemen HR
  */
-window.renderAdminHRList = async function () {
+window.setAdminHRSearch = function (value) {
+  const input = document.getElementById("admin-hr-search");
+  if (input) {
+    input.value = value;
+    window.renderAdminHRList();
+  }
+};
+
+window.renderAdminHRList = async function (forceShowAll = false) {
   _requireAdmin();
+  if (forceShowAll) {
+    window.adminHRShowAll = true;
+  }
   const tbody = document.getElementById("admin-hr-table-body");
   const mobileList = document.getElementById("admin-hr-mobile-list");
+  const stepFilter = document.getElementById("admin-hr-step-filter");
+  const desktopView = document.getElementById("admin-hr-desktop-view");
   if (!tbody) return;
+
+  const searchQuery = (document.getElementById("admin-hr-search")?.value || "").toLowerCase().trim();
+
+  // Show/Hide search clear button
+  const clearBtn = document.getElementById("admin-hr-search-clear");
+  if (clearBtn) {
+    if (searchQuery) clearBtn.classList.remove("hidden");
+    else clearBtn.classList.add("hidden");
+  }
+
+  // If no search query and not show all, render the step filter
+  if (!searchQuery && !window.adminHRShowAll) {
+    if (stepFilter) stepFilter.classList.remove("hidden");
+    if (desktopView) desktopView.classList.add("hidden");
+    if (mobileList) mobileList.classList.add("hidden");
+
+    // Generate unique classes dynamically
+    const classes = [...new Set((MASTER_SANTRI || []).map(s => s.kelas || s.rombel).filter(Boolean))].sort();
+    const classButtons = classes.map(cls => `
+      <button onclick="window.setAdminHRSearch('${cls.replace(/'/g, "\\'")}')" class="w-full flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800/80 last:border-0 hover:bg-indigo-500/5 dark:hover:bg-indigo-400/5 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-black text-xs active:scale-[0.99] transition-all text-left">
+        <span class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-[10.5px] font-black border border-indigo-500/15">#</span>
+          Kelas ${cls}
+        </span>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+      </button>
+    `).join("");
+
+    if (stepFilter) {
+      stepFilter.innerHTML = `
+        <div class="max-w-md mx-auto space-y-6 flex flex-col items-center py-8">
+          <div class="w-20 h-20 rounded-[2rem] bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/5 animate-pulse">
+            <i data-lucide="users" class="w-8 h-8"></i>
+          </div>
+          <div class="space-y-2 text-center">
+            <h3 class="font-black text-slate-800 dark:text-white text-lg">Cari Akun Wali & Santri</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto leading-relaxed">Kelola setelan password wali murid dengan cepat. Cari berdasarkan nama, NIS terdaftar, atau pilih kelas.</p>
+          </div>
+
+          <div class="w-full space-y-3">
+            <span class="block text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider text-center">Pilih Kelas Santri</span>
+            <div class="flex flex-col border border-slate-200/60 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900/65 overflow-hidden max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 shadow-md">
+              ${classButtons || '<p class="text-xs text-slate-400 font-bold p-3 text-center">Tidak ada data kelas</p>'}
+            </div>
+          </div>
+
+          <div class="w-full flex items-center gap-3 pt-2">
+            <div class="h-[1px] bg-slate-200 dark:bg-slate-800 flex-1"></div>
+            <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500">ATAU</span>
+            <div class="h-[1px] bg-slate-200 dark:bg-slate-800 flex-1"></div>
+          </div>
+
+          <button onclick="window.renderAdminHRList(true)" class="w-full py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600 active:scale-95 text-xs font-black shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
+            Tampilkan Seluruh Santri (Maks 100)
+          </button>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+    }
+    return;
+  }
+
+  // Otherwise, show list
+  if (stepFilter) stepFilter.classList.add("hidden");
+  if (desktopView) desktopView.classList.remove("hidden");
+  if (mobileList) mobileList.classList.remove("hidden");
 
   tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Memuat data...</td></tr>`;
   if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat data...</p>`;
@@ -601,8 +680,6 @@ window.renderAdminHRList = async function () {
     try { customPasswords = saved ? JSON.parse(saved) : {}; } catch { customPasswords = {}; }
     const customNisSet = new Set(Object.keys(customPasswords));
 
-    const searchQuery = (document.getElementById("admin-hr-search")?.value || "").toLowerCase().trim();
-
     tbody.innerHTML = "";
     if (mobileList) mobileList.innerHTML = "";
 
@@ -611,14 +688,16 @@ window.renderAdminHRList = async function () {
       filtered = (MASTER_SANTRI || []).filter(s =>
         (s.nama && s.nama.toLowerCase().includes(searchQuery)) ||
         (s.nis && String(s.nis).includes(searchQuery)) ||
-        (s.wali && s.wali.toLowerCase().includes(searchQuery))
+        (s.wali && s.wali.toLowerCase().includes(searchQuery)) ||
+        (s.kelas && String(s.kelas).toLowerCase().includes(searchQuery)) ||
+        (s.rombel && String(s.rombel).toLowerCase().includes(searchQuery))
       );
     }
 
     if (filtered.length === 0) {
-      const emptyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 dark:text-slate-600"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="11" y2="11"/></svg>`;
-      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center"><div class="flex flex-col items-center gap-3">${emptyIcon}<p class="text-xs text-slate-400 font-bold">Tidak ada santri ditemukan</p></div></td></tr>`;
-      if (mobileList) mobileList.innerHTML = `<div class="flex flex-col items-center gap-3 p-6"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 dark:text-slate-600"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="11" y2="11"/></svg><p class="text-xs text-slate-400 font-bold text-center">Tidak ada santri ditemukan</p></div>`;
+      const emptyIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 dark:text-slate-600"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="11" y2="11"/></svg>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="p-12 text-center"><div class="flex flex-col items-center gap-3">${emptyIcon}<p class="text-xs text-slate-400 font-bold">Tidak ada santri ditemukan</p></div></td></tr>`;
+      if (mobileList) mobileList.innerHTML = `<div class="flex flex-col items-center gap-3 p-8 bg-slate-50 dark:bg-slate-900/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 dark:text-slate-600"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" x2="22" y1="11" y2="11"/></svg><p class="text-xs text-slate-400 font-bold text-center">Tidak ada santri ditemukan</p></div>`;
       return;
     }
 
@@ -629,22 +708,23 @@ window.renderAdminHRList = async function () {
       const safeKelas = _escapeHtml(s.kelas || s.rombel || "-");
       const safeWali = _escapeHtml(s.wali || "-");
       const hasCustom = customNisSet.has(nisStr);
+
       const statusBadge = hasCustom
-        ? `<span class="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-[10px] font-black">Kustom</span>`
-        : `<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 text-[10px] font-black">Default (NIS)</span>`;
+        ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-500 dark:bg-indigo-400/10 dark:text-indigo-400 text-[10px] font-black"><i data-lucide="key" class="w-3 h-3"></i> Kustom</span>`
+        : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-500 dark:bg-slate-400/10 dark:text-slate-400 text-[10px] font-black"><i data-lucide="lock" class="w-3 h-3"></i> Default</span>`;
 
       const resetBtn = hasCustom
-        ? `<button onclick="window.handleResetPasswordClick('${safeNisStr.replace(/'/g, "\\'")}')" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 text-[10px] font-black active:scale-[0.98] transition-all">Reset Password</button>`
-        : `<button disabled class="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 text-slate-300 dark:text-slate-600 text-[10px] font-black cursor-not-allowed">Reset Password</button>`;
+        ? `<button onclick="window.handleResetPasswordClick('${safeNisStr.replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/20 dark:hover:bg-red-900/30 dark:text-red-400 text-[10px] font-black border border-red-100 dark:border-red-900/30 active:scale-95 transition-all shadow-sm hover:shadow">Reset Password</button>`
+        : `<button disabled class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-slate-300 dark:text-slate-600 text-[10px] font-black border border-slate-100/40 dark:border-slate-800/40 cursor-not-allowed">Reset Password</button>`;
 
       tbody.innerHTML += `
-        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-colors">
           <td class="p-3">
-            <div class="font-black text-slate-800 dark:text-white">${safeName}</div>
+            <div class="font-black text-slate-800 dark:text-white text-xs">${safeName}</div>
           </td>
-          <td class="p-3 text-slate-600 dark:text-slate-300">${safeKelas}</td>
-          <td class="p-3 text-slate-500 font-mono">${safeNisStr || '-'}</td>
-          <td class="p-3 text-slate-600 dark:text-slate-300">${safeWali}</td>
+          <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${safeKelas}</td>
+          <td class="p-3 text-slate-500 font-mono text-[11px] font-bold">${safeNisStr || '-'}</td>
+          <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${safeWali}</td>
           <td class="p-3">${statusBadge}</td>
           <td class="p-3 text-center">${resetBtn}</td>
         </tr>
@@ -652,27 +732,28 @@ window.renderAdminHRList = async function () {
 
       if (mobileList) {
         mobileList.innerHTML += `
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
-            <div class="flex justify-between items-start">
+          <div class="relative bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/80 rounded-2xl p-4 shadow-sm space-y-2.5 overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 w-1 ${hasCustom ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-800'}"></div>
+            <div class="flex justify-between items-start pl-1">
               <div>
                 <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeName}</h3>
-                <p class="text-[9px] text-slate-400 font-mono mt-0.5">NIS: ${safeNisStr || '-'}</p>
+                <p class="text-[9px] text-slate-400 font-mono mt-0.5 font-bold">NIS: ${safeNisStr || '-'}</p>
               </div>
               <div>
                 ${statusBadge}
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500">
+            <div class="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-500 pl-1">
               <div>
-                <span class="block text-[8px] text-slate-400 uppercase">Kelas</span>
+                <span class="block text-[8px] text-slate-400 uppercase tracking-wider font-extrabold mb-0.5">Kelas</span>
                 <span class="text-slate-700 dark:text-slate-300">${safeKelas}</span>
               </div>
               <div>
-                <span class="block text-[8px] text-slate-400 uppercase">Wali Santri</span>
+                <span class="block text-[8px] text-slate-400 uppercase tracking-wider font-extrabold mb-0.5">Wali Santri</span>
                 <span class="text-slate-700 dark:text-slate-300">${safeWali}</span>
               </div>
             </div>
-            <div class="pt-2 flex justify-end border-t border-slate-50 dark:border-slate-800/80">
+            <div class="pt-2.5 flex justify-end border-t border-slate-50 dark:border-slate-800/80 pl-1">
               ${resetBtn}
             </div>
           </div>
@@ -2634,6 +2715,9 @@ window.showAdminMusyrifView = function () {
   const view = document.getElementById("view-admin-musyrif");
   if (view) {
     view.classList.remove("hidden");
+    const searchInput = document.getElementById("admin-musyrif-search");
+    if (searchInput) searchInput.value = "";
+    window.adminMusyrifShowAll = false;
     window.renderAdminMusyrifList();
     if (window.lucide) window.lucide.createIcons();
   }
@@ -2651,19 +2735,96 @@ window.closeAdminMusyrifView = function () {
 /**
  * Render daftar Musyrif
  */
-window.renderAdminMusyrifList = function () {
+window.setAdminMusyrifSearch = function (value) {
+  const input = document.getElementById("admin-musyrif-search");
+  if (input) {
+    input.value = value;
+    window.renderAdminMusyrifList();
+  }
+};
+
+window.renderAdminMusyrifList = function (forceShowAll = false) {
   _requireAdmin();
+  if (forceShowAll) {
+    window.adminMusyrifShowAll = true;
+  }
   const tbody = document.getElementById("admin-musyrif-table-body");
   const mobileList = document.getElementById("admin-musyrif-mobile-list");
+  const stepFilter = document.getElementById("admin-musyrif-step-filter");
+  const desktopView = document.getElementById("admin-musyrif-desktop-view");
   if (!tbody) return;
 
   const searchQuery = (document.getElementById("admin-musyrif-search")?.value || "").toLowerCase().trim();
+
+  // Show/Hide search clear button
+  const clearBtn = document.getElementById("admin-musyrif-search-clear");
+  if (clearBtn) {
+    if (searchQuery) clearBtn.classList.remove("hidden");
+    else clearBtn.classList.add("hidden");
+  }
 
   // Read from the classData cache (writable local copy)
   const classDb = window.classData || MASTER_KELAS || {};
   const entries = Object.entries(classDb).filter(([kelas]) =>
     String(kelas).toLowerCase() !== "admin musyrif"
   );
+
+  // If no search query and not show all, render the step filter
+  if (!searchQuery && !window.adminMusyrifShowAll) {
+    if (stepFilter) stepFilter.classList.remove("hidden");
+    if (desktopView) desktopView.classList.add("hidden");
+    if (mobileList) mobileList.classList.add("hidden");
+
+    // Generate unique classes dynamically
+    const classes = entries.map(([kelas]) => kelas).sort();
+    const classRows = classes.map(cls => `
+      <button onclick="window.setAdminMusyrifSearch('${cls.replace(/'/g, "\\'")}')" class="w-full flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800/80 last:border-0 hover:bg-violet-500/5 dark:hover:bg-violet-400/5 text-slate-700 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 font-black text-xs active:scale-[0.99] transition-all text-left">
+        <span class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-violet-500/10 text-violet-500 flex items-center justify-center text-[10.5px] font-black border border-violet-500/15">#</span>
+          Kelas ${cls}
+        </span>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+      </button>
+    `).join("");
+
+    if (stepFilter) {
+      stepFilter.innerHTML = `
+        <div class="max-w-md mx-auto space-y-6 flex flex-col items-center py-8">
+          <div class="w-20 h-20 rounded-[2rem] bg-gradient-to-tr from-violet-500 to-fuchsia-500 text-white flex items-center justify-center shadow-lg shadow-violet-500/20 animate-pulse">
+            <i data-lucide="user-cog" class="w-8 h-8"></i>
+          </div>
+          <div class="space-y-2 text-center">
+            <h3 class="font-black text-slate-800 dark:text-white text-lg">Plotting & Akun Musyrif</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto leading-relaxed">Kelola pemetaan kelas untuk setiap ustadz/musyrif dan tautkan akun login Google mereka dengan mudah.</p>
+          </div>
+
+          <div class="w-full space-y-3">
+            <span class="block text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider text-center">Pilih Kelas Plotting</span>
+            <div class="flex flex-col border border-slate-200/60 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900/65 overflow-hidden max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 shadow-md">
+              ${classRows || '<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada data kelas</p>'}
+            </div>
+          </div>
+
+          <div class="w-full flex items-center gap-3 pt-2">
+            <div class="h-[1px] bg-slate-200 dark:bg-slate-800 flex-1"></div>
+            <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500">ATAU</span>
+            <div class="h-[1px] bg-slate-200 dark:bg-slate-800 flex-1"></div>
+          </div>
+
+          <button onclick="window.renderAdminMusyrifList(true)" class="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 active:scale-95 text-white text-xs font-black shadow-lg shadow-violet-500/25 transition-all duration-200 flex items-center justify-center gap-2">
+            Tampilkan Semua Kelas Plotting
+          </button>
+        </div>
+      `;
+      if (window.lucide) window.lucide.createIcons();
+    }
+    return;
+  }
+
+  // Otherwise, show list
+  if (stepFilter) stepFilter.classList.add("hidden");
+  if (desktopView) desktopView.classList.remove("hidden");
+  if (mobileList) mobileList.classList.remove("hidden");
 
   const filtered = searchQuery
     ? entries.filter(([kelas, info]) =>
@@ -2697,21 +2858,21 @@ window.renderAdminMusyrifList = function () {
     const hasEmail = Boolean(info.email);
 
     const emailBadge = hasEmail
-      ? `<span class="text-emerald-600 dark:text-emerald-400 font-bold">${safeEmail}</span>`
-      : `<span class="text-red-500 dark:text-red-400 font-bold italic">Belum ada email</span>`;
+      ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black text-[10.5px] border border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ${safeEmail}</span>`
+      : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 text-red-500 dark:text-red-400 font-bold text-[10.5px] italic border border-red-500/20"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Belum ada email</span>`;
 
     // Desktop row
     tbody.innerHTML += `
-      <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-colors">
         <td class="p-3">
-          <div class="font-black text-slate-800 dark:text-white">${safeKelas}</div>
+          <div class="font-black text-slate-800 dark:text-white text-xs">${safeKelas}</div>
         </td>
-        <td class="p-3 text-slate-700 dark:text-slate-300 font-bold">${safeMusyrif}</td>
-        <td class="p-3 text-xs">${emailBadge}</td>
-        <td class="p-3 text-slate-500 dark:text-slate-400">${safeWali}</td>
+        <td class="p-3 text-slate-700 dark:text-slate-300 font-bold text-xs">${safeMusyrif}</td>
+        <td class="p-3">${emailBadge}</td>
+        <td class="p-3 text-slate-500 dark:text-slate-400 font-bold text-xs">${safeWali}</td>
         <td class="p-3 text-center">
-          <button onclick="window.editAdminMusyrif('${safeKelas}')" class="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-950/40 text-violet-500 dark:text-violet-400 flex items-center justify-center border border-violet-100 dark:border-violet-900/35 hover:scale-105 active:scale-95 transition-all mx-auto" title="Edit Musyrif">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          <button onclick="window.editAdminMusyrif('${safeKelas}')" class="w-8 h-8 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-600 dark:bg-violet-950/40 dark:hover:bg-violet-900/30 dark:text-violet-400 flex items-center justify-center border border-violet-150 dark:border-violet-900/40 hover:scale-105 active:scale-95 transition-all mx-auto shadow-sm" title="Edit Musyrif">
+            <i data-lucide="edit-2" class="w-3 h-3"></i>
           </button>
         </td>
       </tr>
@@ -2720,22 +2881,23 @@ window.renderAdminMusyrifList = function () {
     // Mobile card
     if (mobileList) {
       mobileList.innerHTML += `
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
-          <div class="flex justify-between items-start">
+        <div class="relative bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5 overflow-hidden">
+          <div class="absolute left-0 top-0 bottom-0 w-1 ${hasEmail ? 'bg-violet-500' : 'bg-red-400'}"></div>
+          <div class="flex justify-between items-start pl-1">
             <div>
-              <h3 class="font-black text-slate-800 dark:text-white text-sm">Kelas ${safeKelas}</h3>
+              <h3 class="font-black text-slate-800 dark:text-white text-xs">Kelas ${safeKelas}</h3>
               <p class="text-xs font-bold text-slate-500 mt-0.5">${safeMusyrif}</p>
             </div>
             <button onclick="window.editAdminMusyrif('${safeKelas}')" class="w-9 h-9 rounded-xl bg-violet-50 dark:bg-violet-950/40 text-violet-500 dark:text-violet-400 flex items-center justify-center border border-violet-100 dark:border-violet-900/35 active:scale-95 transition-all" title="Edit">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
             </button>
           </div>
-          <div class="space-y-1 text-[11px] font-bold">
+          <div class="space-y-1 text-[11px] font-bold pl-1">
             <div class="flex justify-between">
               <span class="text-slate-400">Wali Kelas</span>
               <span class="text-slate-700 dark:text-slate-300">${safeWali}</span>
             </div>
-            <div class="flex justify-between gap-2">
+            <div class="flex justify-between gap-2 pt-1 border-t border-slate-50 dark:border-slate-800/80 mt-1">
               <span class="text-slate-400 shrink-0">Email Login</span>
               <span class="${hasEmail ? "text-emerald-600 dark:text-emerald-400 text-right" : "text-red-500 italic"}">${hasEmail ? safeEmail : "Belum ada"}</span>
             </div>

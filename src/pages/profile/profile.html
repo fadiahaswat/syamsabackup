@@ -32,7 +32,7 @@
                     </h2>
                     <p
                       id="profile-role-tab"
-                      class="mt-2 inline-flex max-w-full items-center justify-center px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-300/20 text-[10px] font-black text-palette-mint uppercase tracking-wider truncate whitespace-nowrap"
+                      class="mt-2 inline-flex max-w-full items-center justify-center px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] font-black text-purple-500 dark:text-purple-400 uppercase tracking-wider truncate whitespace-nowrap"
                     >
                       Administrator
                     </p>
@@ -43,7 +43,7 @@
                   <button
                     onclick="window.manualSync()"
                     id="pwa-sync-btn"
-                    class="profile-sync-btn h-10 w-10 inline-flex items-center justify-center rounded-xl bg-emerald-400/10 border border-emerald-300/20 text-emerald-300 hover:bg-emerald-400/20 active:scale-95 transition-all"
+                    class="profile-sync-btn h-10 w-10 inline-flex items-center justify-center rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-500 dark:text-purple-300 hover:bg-purple-500/20 active:scale-95 transition-all"
                     title="Sinkronkan data"
                     aria-label="Sinkronkan data"
                   >
@@ -80,7 +80,7 @@
                     <p class="text-[10px] font-bold uppercase tracking-wider">Hari aktif</p>
                   </div>
                   <div
-                    class="text-2xl font-black text-palette-mint leading-none"
+                    class="text-2xl font-black text-purple-500 dark:text-purple-400 leading-none"
                     id="profile-days-count"
                   >
                     0
@@ -98,7 +98,7 @@
           <!-- Wali-Only Info Card & Contact Musyrif -->
           <div class="wali-only bg-white dark:bg-slate-900 p-5 rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-black/20 flex flex-col gap-5">
             <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-500/20 shadow-sm shrink-0">
+              <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center border border-purple-100 dark:border-purple-500/20 shadow-sm shrink-0">
                 <i data-lucide="contact-2" class="w-5 h-5"></i>
               </div>
               <div>
@@ -153,7 +153,7 @@
           <!-- Combined Header -->
           <div id="timesheet-secret-trigger" class="flex items-center justify-between gap-2 mb-5 select-none">
             <div class="flex items-center gap-2 px-1 min-w-0">
-              <div class="w-8 h-8 rounded-xl bg-palette-blue/10 dark:bg-palette-blue/20 flex items-center justify-center text-palette-blue shrink-0">
+              <div class="w-8 h-8 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400 shrink-0">
                 <i data-lucide="calendar-check-2" class="w-4 h-4"></i>
               </div>
               <div class="min-w-0">
@@ -168,7 +168,7 @@
           <div class="flex items-center justify-between w-full mb-6 gap-3">
             <button
               onclick="window.goToToday()"
-              class="h-10 flex items-center justify-center px-4 text-xs font-black text-blue-600 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 rounded-xl transition-all dark:text-blue-400 flex-shrink-0 shadow-sm"
+              class="h-10 flex items-center justify-center px-4 text-xs font-black text-purple-600 bg-purple-55 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 hover:bg-purple-100 dark:hover:bg-purple-500/20 rounded-xl transition-all dark:text-purple-400 flex-shrink-0 shadow-sm"
               title="Kembali ke Hari Ini"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 mr-2"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>
@@ -328,13 +328,13 @@
           <div
             class="bg-white/80 dark:bg-slate-800/80 rounded-[1.75rem] p-4 md:p-5 shadow-lg shadow-slate-200/40 dark:shadow-black/20 border border-white/60 dark:border-slate-700/50 backdrop-blur-xl relative overflow-hidden"
           >
-            <div class="absolute top-0 right-0 w-44 h-44 bg-palette-blue/10 rounded-full blur-[60px] pointer-events-none"></div>
+            <div class="absolute top-0 right-0 w-44 h-44 bg-purple-500/10 rounded-full blur-[60px] pointer-events-none"></div>
             <div class="relative z-10 flex items-center justify-between mb-5">
               <div class="flex items-center gap-3">
                 <div
-                  class="flex items-center justify-center w-10 h-10 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-xl"
+                  class="flex items-center justify-center w-10 h-10 bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 rounded-xl"
                 >
-                  <i data-lucide="archive" class="w-5 h-5 text-palette-blue"></i>
+                  <i data-lucide="archive" class="w-5 h-5 text-purple-500 dark:text-purple-400"></i>
                 </div>
                 <div>
                   <h3
@@ -356,7 +356,7 @@
                 >
                   <i
                     data-lucide="search"
-                    class="w-4 h-4 text-slate-400 group-focus-within:text-palette-blue transition-colors"
+                    class="w-4 h-4 text-slate-400 group-focus-within:text-purple-500 transition-colors"
                   ></i>
                 </div>
                 <input
@@ -364,7 +364,7 @@
                   id="hist-search"
                   onkeyup="window.renderPermitHistory()"
                   placeholder="Cari santri..."
-                  class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-palette-blue/10 focus:border-palette-blue text-sm font-bold text-slate-700 dark:text-slate-200 transition-all outline-none"
+                  class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 text-sm font-bold text-slate-700 dark:text-slate-200 transition-all outline-none"
                 />
               </div>
 
@@ -374,13 +374,13 @@
                 >
                   <i
                     data-lucide="filter"
-                    class="w-3.5 h-3.5 text-palette-blue"
+                    class="w-3.5 h-3.5 text-purple-500 dark:text-purple-400"
                   ></i>
                 </div>
                 <select
                   id="hist-filter-cat"
                   onchange="window.renderPermitHistory()"
-                  class="w-full pl-9 pr-8 py-3 appearance-none rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-palette-blue dark:text-blue-300 text-xs font-black outline-none focus:ring-4 focus:ring-palette-blue/10 cursor-pointer"
+                  class="w-full pl-9 pr-8 py-3 appearance-none rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 text-purple-600 dark:text-purple-300 text-xs font-black outline-none focus:ring-4 focus:ring-purple-500/10 cursor-pointer"
                 >
                   <option value="all">Semua Data</option>
                   <option value="sakit">Sakit</option>
@@ -392,7 +392,7 @@
                 >
                   <i
                     data-lucide="chevron-down"
-                    class="w-3.5 h-3.5 text-palette-blue"
+                    class="w-3.5 h-3.5 text-purple-500 dark:text-purple-400"
                   ></i>
                 </div>
               </div>
@@ -418,7 +418,7 @@
         <div class="admin-only hidden bg-white/80 dark:bg-slate-800/80 rounded-[1.75rem] p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/20 border border-white/60 dark:border-slate-700/50 space-y-4 backdrop-blur-xl">
           <div class="flex items-start justify-between gap-3">
             <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-palette-blue flex items-center justify-center shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 text-purple-500 dark:text-purple-400 flex items-center justify-center shrink-0">
               <i data-lucide="calendar-clock" class="w-5 h-5"></i>
             </div>
             <div class="min-w-0">
@@ -442,15 +442,15 @@
           </div>
 
           <div class="relative">
-            <i data-lucide="tag" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-palette-blue"></i>
-            <input id="holiday-name-input" type="text" value="Libur Kenaikan Kelas" placeholder="Nama libur" class="w-full h-11 pl-10 pr-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-800 dark:text-slate-100 outline-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10" />
+            <i data-lucide="tag" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500 dark:text-purple-400"></i>
+            <input id="holiday-name-input" type="text" value="Libur Kenaikan Kelas" placeholder="Nama libur" class="w-full h-11 pl-10 pr-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-sm font-black text-slate-800 dark:text-slate-100 outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10" />
           </div>
 
           <div class="relative rounded-2xl bg-slate-50/90 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/60 overflow-hidden">
             <div class="absolute left-[1.68rem] top-9 bottom-9 w-px bg-slate-300 dark:bg-slate-700"></div>
             <div class="grid grid-cols-[68px_minmax(0,1fr)_78px] items-center gap-2 p-2.5 relative">
               <div class="flex items-center gap-2 min-w-0">
-                <span class="w-7 h-7 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center text-palette-blue shrink-0">
+                <span class="w-7 h-7 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 flex items-center justify-center text-purple-500 dark:text-purple-400 shrink-0">
                   <i data-lucide="plane-takeoff" class="w-3.5 h-3.5"></i>
                 </span>
                 <span class="text-xs font-black text-slate-800 dark:text-white truncate">Pulang</span>
@@ -487,7 +487,7 @@
           </div>
 
           <div class="flex gap-2">
-            <button id="holiday-countdown-save-btn" onclick="window.saveHolidayCountdownSchedule()" class="flex-1 py-2.5 px-3 rounded-xl bg-palette-blue text-white text-xs font-black shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <button id="holiday-countdown-save-btn" onclick="window.saveHolidayCountdownSchedule()" class="flex-1 py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2">
               <i data-lucide="save" class="w-4 h-4"></i>
               <span id="holiday-countdown-save-label">Simpan Rentang Libur</span>
             </button>
@@ -583,7 +583,7 @@
             class="w-full p-3 bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700 rounded-xl flex items-center justify-between font-black text-slate-700 dark:text-white text-sm active:scale-[0.99] transition-all"
           >
             <span class="flex items-center gap-3"
-              ><i data-lucide="download" class="w-4 h-4 text-blue-500"></i>
+              ><i data-lucide="download" class="w-4 h-4 text-purple-500"></i>
               Backup JSON</span
             >
           </button>
@@ -624,7 +624,7 @@
               Gelap</span
             >
             <div
-              class="w-10 h-6 bg-slate-200 dark:bg-emerald-500 rounded-full relative transition-colors"
+              class="w-10 h-6 bg-slate-200 dark:bg-purple-500 rounded-full relative transition-colors"
             >
               <div
                 class="absolute top-1 left-1 dark:left-5 w-4 h-4 bg-white rounded-full transition-all shadow-sm"
