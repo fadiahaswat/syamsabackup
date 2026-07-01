@@ -427,7 +427,9 @@ window.renderAdminOpsMatrix = async function () {
   tbody.innerHTML = "";
   if (mobileList) mobileList.innerHTML = "";
 
-  const kelasKeys = Object.keys(MASTER_KELAS).filter(k => k?.toLowerCase() !== "admin musyrif");
+  const kelasKeys = Object.keys(MASTER_KELAS)
+    .filter(k => k?.toLowerCase() !== "admin musyrif")
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
   if (kelasKeys.length === 0) {
     tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Tidak ada data kelas.</td></tr>`;
@@ -475,10 +477,8 @@ window.renderAdminOpsMatrix = async function () {
 
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
-        <td class="p-3">
-          <div class="font-black text-slate-800 dark:text-white">${safeClassName}</div>
-          <div class="text-[10px] text-slate-400 font-bold">${musyrifName}</div>
-        </td>
+        <td class="p-3 font-black text-slate-800 dark:text-white">${safeClassName}</td>
+        <td class="p-3 text-slate-600 dark:text-slate-300 font-bold">${musyrifName}</td>
         ${slotCells}
         <td class="p-3 text-center">
           <div class="flex items-center justify-center gap-1.5">
@@ -1073,11 +1073,25 @@ window.renderAdminPermits = async function () {
       });
     }
 
+    // Sort permits: latest first (perizinan terakhir)
+    filtered.sort((a, b) => {
+      const idA = parseInt(a.id) || 0;
+      const idB = parseInt(b.id) || 0;
+      if (idA && idB && idA !== idB) return idB - idA;
+      
+      const dateA = new Date(a.tanggal_mulai || a.start_date || 0);
+      const dateB = new Date(b.tanggal_mulai || b.start_date || 0);
+      return dateB - dateA;
+    });
+
     if (filtered.length === 0) {
       tbodyReport.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada riwayat perizinan ditemukan.</td></tr>`;
       if (mobileListReport) mobileListReport.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada riwayat perizinan ditemukan.</p>`;
       return;
     }
+
+    let tbodyHtml = "";
+    let mobileListHtml = "";
 
     filtered.slice(0, 100).forEach(p => {
       const statusLower = String(p.status || "approved").toLowerCase();
@@ -1136,7 +1150,7 @@ window.renderAdminPermits = async function () {
       const safeEndDate = window.sanitizeHTML(p.tanggal_selesai || p.end_date || "-");
       const safeReason = window.sanitizeHTML(p.keperluan || p.reason || '-');
 
-      tbodyReport.innerHTML += `
+      tbodyHtml += `
         <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
           <td class="p-3">
             <div class="font-black text-slate-800 dark:text-white">${safeStudentName}</div>
@@ -1157,7 +1171,7 @@ window.renderAdminPermits = async function () {
       `;
 
       if (mobileListReport) {
-        mobileListReport.innerHTML += `
+        mobileListHtml += `
           <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
             <div class="flex justify-between items-start">
               <div>
@@ -1181,10 +1195,15 @@ window.renderAdminPermits = async function () {
 
     if (filtered.length > 100) {
       const moreText = `Menampilkan 100 dari ${filtered.length} perizinan. Silakan gunakan pencarian atau filter status untuk lebih spesifik.`;
-      tbodyReport.innerHTML += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
+      tbodyHtml += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
       if (mobileListReport) {
-        mobileListReport.innerHTML += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
+        mobileListHtml += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
       }
+    }
+
+    tbodyReport.innerHTML = tbodyHtml;
+    if (mobileListReport) {
+      mobileListReport.innerHTML = mobileListHtml;
     }
   }
 
@@ -2422,7 +2441,8 @@ window.renderAdminIbadahAnalytics = function () {
   const classAveragesEl = document.getElementById("ibadah-class-averages");
   const topPerformersEl = document.getElementById("ibadah-top-performers");
   const lowPerformersEl = document.getElementById("ibadah-low-performers");
-  if (!classAveragesEl) return;
+  const globalTableBody = document.getElementById("ibadah-global-table-body");
+  if (!classAveragesEl && !globalTableBody) return;
 
   const students = typeof MASTER_SANTRI !== "undefined" ? MASTER_SANTRI : [];
   const targetsDb = appState.studentTargets || {};
@@ -2485,92 +2505,125 @@ window.renderAdminIbadahAnalytics = function () {
     });
   });
 
+  // Menggunakan globalTableBody yang sudah di-deklarasi di atas
+  if (globalTableBody) {
+    classAverages.sort((a, b) => b.avgOverall - a.avgOverall);
+    if (classAverages.length === 0) {
+      globalTableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Tidak ada data mutabaah kelas.</td></tr>`;
+    } else {
+      let htmlContent = "";
+      classAverages.forEach((c, idx) => {
+        htmlContent += `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+            <td class="p-3 text-center text-slate-400">${idx + 1}</td>
+            <td class="p-3 font-black text-slate-800 dark:text-white">Kelas ${window.sanitizeHTML(c.className)}</td>
+            <td class="p-3 text-center text-slate-600 dark:text-slate-300 font-mono font-bold">${c.avgTahajjud} <span class="text-[9px] text-slate-400">/ 8</span></td>
+            <td class="p-3 text-center text-slate-600 dark:text-slate-300 font-mono font-bold">${c.avgPuasa} <span class="text-[9px] text-slate-400">/ 4</span></td>
+            <td class="p-3 text-center text-slate-600 dark:text-slate-300 font-mono font-bold">${c.avgTilawah} <span class="text-[9px] text-slate-400">/ 30</span></td>
+            <td class="p-3 text-center">
+              <span class="inline-flex items-center gap-1 text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded">
+                ${c.avgOverall}% Tercapai
+              </span>
+            </td>
+          </tr>
+        `;
+      });
+      globalTableBody.innerHTML = htmlContent;
+    }
+  }
+
   classAverages.sort((a, b) => b.avgOverall - a.avgOverall);
 
-  classAveragesEl.innerHTML = "";
-  if (classAverages.length === 0) {
-    classAveragesEl.innerHTML = `<p class="text-xs text-slate-400 font-bold p-2 text-center">Tidak ada data kelas.</p>`;
-  } else {
-    classAverages.forEach(c => {
-      classAveragesEl.innerHTML += `
-        <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl space-y-2">
-          <div class="flex justify-between items-center">
-            <span class="text-xs font-black text-slate-800 dark:text-white">Kelas ${window.sanitizeHTML(c.className)}</span>
-            <span class="text-[10px] font-black px-2 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">${c.avgOverall}% Tercapai</span>
+  if (classAveragesEl) {
+    classAveragesEl.innerHTML = "";
+    if (classAverages.length === 0) {
+      classAveragesEl.innerHTML = `<p class="text-xs text-slate-400 font-bold p-2 text-center">Tidak ada data kelas.</p>`;
+    } else {
+      classAverages.forEach(c => {
+        classAveragesEl.innerHTML += `
+          <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-black text-slate-800 dark:text-white">Kelas ${window.sanitizeHTML(c.className)}</span>
+              <span class="text-[10px] font-black px-2 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">${c.avgOverall}% Tercapai</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1 text-[9px] font-bold text-slate-500">
+              <div class="text-center bg-slate-50 dark:bg-slate-950 p-1 rounded">
+                <span class="block text-slate-400">Tahajjud</span>
+                <span class="text-slate-700 dark:text-slate-300 font-black">${c.avgTahajjud} / 8</span>
+              </div>
+              <div class="text-center bg-slate-50 dark:bg-slate-950/50 p-1 rounded">
+                <span class="block text-slate-400">Puasa</span>
+                <span class="text-slate-700 dark:text-slate-300 font-black">${c.avgPuasa} / 4</span>
+              </div>
+              <div class="text-center bg-slate-50 dark:bg-slate-950 p-1 rounded">
+                <span class="block text-slate-400">Tilawah</span>
+                <span class="text-slate-700 dark:text-slate-300 font-black">${c.avgTilawah} / 30</span>
+              </div>
+            </div>
           </div>
-          <div class="grid grid-cols-3 gap-1 text-[9px] font-bold text-slate-500">
-            <div class="text-center bg-slate-50 dark:bg-slate-950 p-1 rounded">
-              <span class="block text-slate-400">Tahajjud</span>
-              <span class="text-slate-700 dark:text-slate-300 font-black">${c.avgTahajjud} / 8</span>
-            </div>
-            <div class="text-center bg-slate-50 dark:bg-slate-950/50 p-1 rounded">
-              <span class="block text-slate-400">Puasa</span>
-              <span class="text-slate-700 dark:text-slate-300 font-black">${c.avgPuasa} / 4</span>
-            </div>
-            <div class="text-center bg-slate-50 dark:bg-slate-950 p-1 rounded">
-              <span class="block text-slate-400">Tilawah</span>
-              <span class="text-slate-700 dark:text-slate-300 font-black">${c.avgTilawah} / 30</span>
-            </div>
-          </div>
-        </div>
-      `;
-    });
+        `;
+      });
+    }
   }
 
   studentPerformances.sort((a, b) => b.overallPct - a.overallPct);
   const topPerformers = studentPerformances.slice(0, 5);
 
-  topPerformersEl.innerHTML = "";
-  if (topPerformers.length === 0) {
-    topPerformersEl.innerHTML = `<p class="text-xs text-slate-400 font-bold p-2 text-center">Tidak ada data santri.</p>`;
-  } else {
-    topPerformers.forEach(p => {
-      topPerformersEl.innerHTML += `
-        <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
-          <div>
-            <h4 class="text-xs font-black text-slate-800 dark:text-white">${window.sanitizeHTML(p.name)}</h4>
-            <p class="text-[9px] text-slate-400 font-bold mt-0.5">Kelas ${window.sanitizeHTML(p.className)}</p>
+  if (topPerformersEl) {
+    topPerformersEl.innerHTML = "";
+    if (topPerformers.length === 0) {
+      topPerformersEl.innerHTML = `<p class="text-xs text-slate-400 font-bold p-2 text-center">Tidak ada data santri.</p>`;
+    } else {
+      topPerformers.forEach(p => {
+        topPerformersEl.innerHTML += `
+          <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
+            <div>
+              <h4 class="text-xs font-black text-slate-800 dark:text-white">${window.sanitizeHTML(p.name)}</h4>
+              <p class="text-[9px] text-slate-400 font-bold mt-0.5">Kelas ${window.sanitizeHTML(p.className)}</p>
+            </div>
+            <div class="text-right">
+              <span class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+                ${p.overallPct}%
+              </span>
+            </div>
           </div>
-          <div class="text-right">
-            <span class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded">
-              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
-              ${p.overallPct}%
-            </span>
-          </div>
-        </div>
-      `;
-    });
+        `;
+      });
+    }
   }
 
   studentPerformances.sort((a, b) => a.overallPct - b.overallPct);
   const lowPerformers = studentPerformances.filter(p => p.overallPct < 50).slice(0, 5);
 
-  lowPerformersEl.innerHTML = "";
-  if (lowPerformers.length === 0) {
-    lowPerformersEl.innerHTML = `
-      <div class="p-4 text-center border border-dashed border-emerald-100 bg-emerald-50/20 dark:border-emerald-950/30 dark:bg-emerald-950/10 rounded-xl">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check w-6 h-6 text-emerald-500 mx-auto mb-1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-        <p class="text-[10px] font-black text-emerald-700 dark:text-emerald-400">Semua Santri Tertib</p>
-        <p class="text-[8px] text-slate-400 font-semibold mt-0.5">Tidak ada santri di bawah 50% target.</p>
-      </div>
-    `;
-  } else {
-    lowPerformers.forEach(p => {
-      lowPerformersEl.innerHTML += `
-        <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
-          <div>
-            <h4 class="text-xs font-black text-slate-800 dark:text-white">${window.sanitizeHTML(p.name)}</h4>
-            <p class="text-[9px] text-slate-400 font-bold mt-0.5">Kelas ${window.sanitizeHTML(p.className)}</p>
-          </div>
-          <div class="text-right">
-            <span class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5 rounded">
-              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>
-              ${p.overallPct}%
-            </span>
-          </div>
+  if (lowPerformersEl) {
+    lowPerformersEl.innerHTML = "";
+    if (lowPerformers.length === 0) {
+      lowPerformersEl.innerHTML = `
+        <div class="p-4 text-center border border-dashed border-emerald-100 bg-emerald-50/20 dark:border-emerald-950/30 dark:bg-emerald-950/10 rounded-xl">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check w-6 h-6 text-emerald-500 mx-auto mb-1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+          <p class="text-[10px] font-black text-emerald-700 dark:text-emerald-400">Semua Santri Tertib</p>
+          <p class="text-[8px] text-slate-400 font-semibold mt-0.5">Tidak ada santri di bawah 50% target.</p>
         </div>
       `;
-    });
+    } else {
+      lowPerformers.forEach(p => {
+        lowPerformersEl.innerHTML += `
+          <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
+            <div>
+              <h4 class="text-xs font-black text-slate-800 dark:text-white">${window.sanitizeHTML(p.name)}</h4>
+              <p class="text-[9px] text-slate-400 font-bold mt-0.5">Kelas ${window.sanitizeHTML(p.className)}</p>
+            </div>
+            <div class="text-right">
+              <span class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5 rounded">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>
+                ${p.overallPct}%
+              </span>
+            </div>
+          </div>
+        `;
+      });
+    }
   }
 
   if (window.lucide) window.lucide.createIcons();

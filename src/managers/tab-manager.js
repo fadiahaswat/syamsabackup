@@ -102,6 +102,9 @@ window.switchTab = function (tabName) {
     window.updateDashboard();
   } else if (tabName === "report") {
     window.updateReportTab();
+    if (appState.adminMode === true) {
+      if (window.resetAdminReportView) window.resetAdminReportView();
+    }
   } else if (tabName === "tahfizh") {
     if (window.initTahfizhTab) {
       window.initTahfizhTab();

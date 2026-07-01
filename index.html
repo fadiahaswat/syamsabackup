@@ -6623,151 +6623,362 @@
             </p>
           </div>
 
+        <!-- Admin Only: Menu Laporan Utama -->
+        <section id="admin-report-menu" class="admin-only hidden space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Card 1: Matriks Kehadiran -->
+            <div onclick="window.openAdminSubPage('ops-matrix')" class="cursor-pointer bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-blue-500 dark:hover:border-blue-500 shadow-sm rounded-3xl p-5 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md flex flex-col justify-between min-h-[140px]">
+              <div>
+                <div class="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-500 flex items-center justify-center mb-3">
+                  <i data-lucide="activity" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white">Matriks Kehadiran Harian</h3>
+                <p class="text-[10px] text-slate-400 font-bold mt-1">Pantau status pengisian presensi harian seluruh kelas secara langsung.</p>
+              </div>
+              <div class="flex justify-end mt-4">
+                <span class="text-[10px] font-black text-blue-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
+              </div>
+            </div>
+            
+            <!-- Card 2: Leaderboard Kepatuhan -->
+            <div onclick="window.openAdminSubPage('musyrif-streak')" class="cursor-pointer bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-amber-500 dark:hover:border-amber-500 shadow-sm rounded-3xl p-5 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md flex flex-col justify-between min-h-[140px]">
+              <div>
+                <div class="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-500 flex items-center justify-center mb-3">
+                  <i data-lucide="trophy" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white">Leaderboard Kepatuhan Musyrif</h3>
+                <p class="text-[10px] text-slate-400 font-bold mt-1">Daftar peringkat keaktifan Musyrif dalam mengisi presensi secara rutin.</p>
+              </div>
+              <div class="flex justify-end mt-4">
+                <span class="text-[10px] font-black text-amber-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
+              </div>
+            </div>
+
+            <!-- Card 3: Peringkat Pelanggaran -->
+            <div onclick="window.openAdminSubPage('violation-leaderboard')" class="cursor-pointer bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-red-500 dark:hover:border-red-500 shadow-sm rounded-3xl p-5 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md flex flex-col justify-between min-h-[140px]">
+              <div>
+                <div class="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-900/30 text-red-500 flex items-center justify-center mb-3">
+                  <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white">Peringkat Pelanggaran Santri</h3>
+                <p class="text-[10px] text-slate-400 font-bold mt-1">Daftar santri dengan akumulasi poin pelanggaran tertinggi.</p>
+              </div>
+              <div class="flex justify-end mt-4">
+                <span class="text-[10px] font-black text-red-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
+              </div>
+            </div>
+
+            <!-- Card 4: Log Pelanggaran & Poin -->
+            <div onclick="window.openAdminSubPage('violation-logs')" class="cursor-pointer bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-orange-500 dark:hover:border-orange-500 shadow-sm rounded-3xl p-5 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md flex flex-col justify-between min-h-[140px]">
+              <div>
+                <div class="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-orange-900/30 text-orange-500 flex items-center justify-center mb-3">
+                  <i data-lucide="list" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white">Log Pelanggaran & Bobot Poin</h3>
+                <p class="text-[10px] text-slate-400 font-bold mt-1">Daftar log pelanggaran kustom santri serta konfigurasi bobot poin denda.</p>
+              </div>
+              <div class="flex justify-end mt-4">
+                <span class="text-[10px] font-black text-orange-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
+              </div>
+            </div>
+
+            <!-- Card 5: Mutabaah Ibadah -->
+            <div onclick="window.openAdminSubPage('global-mutabaah')" class="cursor-pointer bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-amber-500 dark:hover:border-amber-500 shadow-sm rounded-3xl p-5 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md flex flex-col justify-between min-h-[140px]">
+              <div>
+                <div class="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-900/30 text-amber-500 flex items-center justify-center mb-3">
+                  <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white">Rekap Mutabaah Ibadah</h3>
+                <p class="text-[10px] text-slate-400 font-bold mt-1">Analitik target & pencapaian ibadah mandiri santri secara global.</p>
+              </div>
+              <div class="flex justify-end mt-4">
+                <span class="text-[10px] font-black text-amber-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
+              </div>
+            </div>
+
+            <!-- Card 6: Global Audit Logs -->
+            <div onclick="window.openAdminSubPage('admin-logs')" class="cursor-pointer bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-slate-500 dark:hover:border-slate-500 shadow-sm rounded-3xl p-5 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md flex flex-col justify-between min-h-[140px]">
+              <div>
+                <div class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-500 flex items-center justify-center mb-3">
+                  <i data-lucide="scroll" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white">Global Audit Trail (Logs)</h3>
+                <p class="text-[10px] text-slate-400 font-bold mt-1">Catatan aktivitas sistem dari semua pengelola pesantren secara transparan.</p>
+              </div>
+              <div class="flex justify-end mt-4">
+                <span class="text-[10px] font-black text-slate-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
+              </div>
+            </div>
+
+            <!-- Card 7: Arsip Perizinan -->
+            <div onclick="window.openAdminSubPage('admin-permits')" class="cursor-pointer bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-purple-500 dark:hover:border-purple-500 shadow-sm rounded-3xl p-5 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md flex flex-col justify-between min-h-[140px]">
+              <div>
+                <div class="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-500 flex items-center justify-center mb-3">
+                  <i data-lucide="archive" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white">Arsip Perizinan Santri</h3>
+                <p class="text-[10px] text-slate-400 font-bold mt-1">Arsip pencarian riwayat izin santri global beserta kontrol kepulangan.</p>
+              </div>
+              <div class="flex justify-end mt-4">
+                <span class="text-[10px] font-black text-purple-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
+              </div>
+            </div>
+
+            <!-- Card 8: Laporan Terpadu Santri -->
+            <div onclick="window.openAdminSubPage('unified-report')" class="cursor-pointer bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-blue-500 dark:hover:border-blue-500 shadow-sm rounded-3xl p-5 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md flex flex-col justify-between min-h-[140px]">
+              <div>
+                <div class="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-500 flex items-center justify-center mb-3">
+                  <i data-lucide="table-2" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-sm font-black text-slate-800 dark:text-white">Laporan Ringkasan Santri</h3>
+                <p class="text-[10px] text-slate-400 font-bold mt-1">Pantau absensi, poin, izin, dan mutabaah seluruh santri dalam satu tabel terpadu.</p>
+              </div>
+              <div class="flex justify-end mt-4">
+                <span class="text-[10px] font-black text-blue-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Admin Only: Unified Global Report Table -->
+        <section id="sub-page-unified-report" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-900/80 rounded-[1.75rem] border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-5 mt-4 backdrop-blur-xl animate-fade-in">
+          <button onclick="window.closeAdminSubPage('unified-report')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-blue-500 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
+          </button>
+          
+          <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+            <div>
+              <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                <i data-lucide="table-2" class="w-4.5 h-4.5 text-blue-500"></i> Laporan Ringkasan Santri Global
+              </h2>
+              <p class="text-[10px] text-slate-400 font-bold mt-0.5">Pantau absensi, poin kedisiplinan, status perizinan, dan mutabaah seluruh santri dalam satu tabel terpadu.</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+              <div class="relative w-full sm:w-48">
+                <input
+                  type="text"
+                  id="admin-unified-search"
+                  oninput="window.renderUnifiedAdminReport()"
+                  placeholder="Cari nama santri..."
+                  class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 py-2 pl-8 pr-3 text-[11px] focus:outline-none focus:border-blue-500 font-bold"
+                />
+                <i data-lucide="search" class="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400"></i>
+              </div>
+              <div class="relative w-full sm:w-40">
+                <select
+                  id="admin-unified-class-filter"
+                  onchange="window.renderUnifiedAdminReport()"
+                  class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 py-2 pl-3 pr-8 text-[11px] font-bold focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                >
+                  <option value="all">Semua Kelas</option>
+                </select>
+                <i data-lucide="chevron-down" class="absolute right-2.5 top-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="overflow-x-auto -mx-5 px-5">
+            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[750px]">
+              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-350 border-b border-slate-100 dark:border-slate-800">
+                <tr>
+                  <th class="p-3 w-10 text-center">No</th>
+                  <th class="p-3 min-w-[150px]">Nama Santri</th>
+                  <th class="p-3">Kelas</th>
+                  <th class="p-3 text-center">Kehadiran Hari Ini</th>
+                  <th class="p-3 text-center">Poin Pelanggaran</th>
+                  <th class="p-3 text-center">Status Izin</th>
+                  <th class="p-3 text-center">Mutabaah Ibadah</th>
+                </tr>
+              </thead>
+              <tbody id="admin-unified-report-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                <tr>
+                  <td colspan="7" class="p-4 text-center text-slate-400">Memuat data...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <!-- Admin Only: Operations Matrix (Matriks Kehadiran) -->
-        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+        <section id="sub-page-ops-matrix" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+          <button onclick="window.closeAdminSubPage('ops-matrix')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-blue-500 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
+          </button>
+          
           <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
             <i data-lucide="activity" class="w-4 h-4 text-blue-500"></i> Matriks Kehadiran Harian (Operations)
           </h2>
           <p class="text-xs text-slate-400 font-bold mb-4">Pantau pengisian presensi harian seluruh kelas secara langsung. Klik status pengisian shalat kelas untuk mengisi/edit.</p>
           
-          <!-- Desktop View -->
-          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
-            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
-              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
-                <tr>
-                  <th class="p-3">Kelas</th>
-                  <th class="p-3 text-center">Subuh</th>
-                  <th class="p-3 text-center">Sekolah</th>
-                  <th class="p-3 text-center">Ashar</th>
-                  <th class="p-3 text-center">Maghrib</th>
-                  <th class="p-3 text-center">Isya</th>
-                  <th class="p-3 text-center">Hubungi Musyrif</th>
-                </tr>
-              </thead>
-              <tbody id="admin-ops-matrix-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
-                <tr>
-                  <td colspan="7" class="p-8 text-center text-slate-400">Memuat matriks presensi...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <!-- Mobile View -->
-          <div class="block md:hidden space-y-3" id="admin-ops-matrix-mobile-list">
-            <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat matriks presensi...</p>
+          <div>
+            <!-- Desktop View -->
+            <div class="overflow-x-auto -mx-5 px-5">
+              <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
+                <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                  <tr>
+                    <th class="p-3">Kelas</th>
+                    <th class="p-3">Nama Musyrif</th>
+                    <th class="p-3 text-center">Subuh</th>
+                    <th class="p-3 text-center">Sekolah</th>
+                    <th class="p-3 text-center">Ashar</th>
+                    <th class="p-3 text-center">Maghrib</th>
+                    <th class="p-3 text-center">Isya</th>
+                    <th class="p-3 text-center">Hubungi Musyrif</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-ops-matrix-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                  <tr>
+                    <td colspan="8" class="p-8 text-center text-slate-400">Memuat matriks presensi...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Mobile View -->
+            <div class="hidden space-y-3" id="admin-ops-matrix-mobile-list">
+              <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat matriks presensi...</p>
+            </div>
           </div>
         </section>
 
         <!-- Admin Only: Leaderboard Kepatuhan Musyrif -->
-        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+        <section id="sub-page-musyrif-streak" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+          <button onclick="window.closeAdminSubPage('musyrif-streak')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-amber-500 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
+          </button>
+          
           <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
             <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i> Leaderboard Kepatuhan Musyrif (Streak Harian)
           </h2>
           <p class="text-xs text-slate-400 font-bold mb-4">Daftar peringkat keaktifan Musyrif dalam mengisi presensi secara rutin tanpa terputus.</p>
           
-          <div class="overflow-x-auto -mx-5 px-5">
-            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[500px]">
-              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
-                <tr>
-                  <th class="p-3 w-16 text-center">Rank</th>
-                  <th class="p-3">Musyrif</th>
-                  <th class="p-3">Kelas</th>
-                  <th class="p-3 text-center">Streak Harian</th>
-                  <th class="p-3 text-center">Total Terisi (Sesi)</th>
-                  <th class="p-3 text-center">Tingkat Kepatuhan</th>
-                </tr>
-              </thead>
-              <tbody id="admin-musyrif-streak-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
-                <tr>
-                  <td colspan="6" class="p-6 text-center text-slate-400">Menghitung kepatuhan Musyrif...</td>
-                </tr>
-              </tbody>
-            </table>
+          <div>
+            <div class="overflow-x-auto -mx-5 px-5">
+              <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[500px]">
+                <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                  <tr>
+                    <th class="p-3 w-16 text-center">Rank</th>
+                    <th class="p-3">Musyrif</th>
+                    <th class="p-3">Kelas</th>
+                    <th class="p-3 text-center">Streak Harian</th>
+                    <th class="p-3 text-center">Total Terisi (Sesi)</th>
+                    <th class="p-3 text-center">Tingkat Kepatuhan</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-musyrif-streak-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                  <tr>
+                    <td colspan="6" class="p-6 text-center text-slate-400">Menghitung kepatuhan Musyrif...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
         <!-- Admin Only: Leaderboard Poin Pelanggaran Santri -->
-        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+        <section id="sub-page-violation-leaderboard" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+          <button onclick="window.closeAdminSubPage('violation-leaderboard')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-red-500 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
+          </button>
+          
           <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
             <i data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i> Peringkat Poin Pelanggaran Santri
           </h2>
           <p class="text-xs text-slate-400 font-bold mb-4">Daftar santri dengan akumulasi poin pelanggaran kustom tertinggi. Klik santri untuk mencatatkan pembinaan langsung.</p>
           
-          <div class="overflow-x-auto -mx-5 px-5">
-            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[500px]">
-              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
-                <tr>
-                  <th class="p-3 w-16 text-center">Rank</th>
-                  <th class="p-3">Santri</th>
-                  <th class="p-3">Kelas</th>
-                  <th class="p-3 text-center">Total Poin</th>
-                  <th class="p-3 text-center">Tingkat Pelanggaran</th>
-                  <th class="p-3 text-center">Tindakan</th>
-                </tr>
-              </thead>
-              <tbody id="admin-violation-leaderboard-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
-                <tr>
-                  <td colspan="6" class="p-6 text-center text-slate-400">Menghitung poin pelanggaran...</td>
-                </tr>
-              </tbody>
-            </table>
+          <div>
+            <div class="overflow-x-auto -mx-5 px-5">
+              <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[500px]">
+                <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                  <tr>
+                    <th class="p-3 w-16 text-center">Rank</th>
+                    <th class="p-3">Santri</th>
+                    <th class="p-3">Kelas</th>
+                    <th class="p-3 text-center">Total Poin</th>
+                    <th class="p-3 text-center">Tingkat Pelanggaran</th>
+                    <th class="p-3 text-center">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-violation-leaderboard-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                  <tr>
+                    <td colspan="6" class="p-6 text-center text-slate-400">Menghitung poin pelanggaran...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
         <!-- Admin Only: Log Pelanggaran & Konfigurasi Poin -->
-        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Left Column: Konfigurasi Poin -->
-            <div class="lg:col-span-1 space-y-4">
-              <div>
-                <h3 class="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="sliders" class="w-3.5 h-3.5 text-teal-500"></i> Bobot Poin Pelanggaran</h3>
-                <p class="text-[10px] text-slate-400 font-bold mt-0.5">Edit bobot poin denda tipe pelanggaran secara dinamis.</p>
-              </div>
-              <div id="admin-violation-rules-list" class="space-y-3">
-                <!-- Populated by JS -->
-              </div>
-              <button type="button" onclick="window.saveAdminViolationRules()" class="w-full py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-black text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5">
-                <i data-lucide="save" class="w-3.5 h-3.5"></i> Simpan Bobot Poin
-              </button>
-            </div>
-            
-            <!-- Right Column: Log Pelanggaran -->
-            <div class="lg:col-span-2 space-y-4">
-              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <section id="sub-page-violation-logs" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+          <button onclick="window.closeAdminSubPage('violation-logs')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-orange-500 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
+          </button>
+          
+          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
+            <i data-lucide="list" class="w-4 h-4 text-orange-500"></i> Log Pelanggaran & Konfigurasi Poin
+          </h2>
+          <p class="text-xs text-slate-400 font-bold mb-4">Daftar semua log pelanggaran kustom yang diinput oleh Musyrif serta pengelolaan bobot poin denda.</p>
+          
+          <div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <!-- Left Column: Konfigurasi Poin -->
+              <div class="lg:col-span-1 space-y-4">
                 <div>
-                  <h3 class="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="list" class="w-3.5 h-3.5 text-blue-500"></i> Log Pelanggaran Santri</h3>
-                  <p class="text-[10px] text-slate-400 font-bold mt-0.5">Daftar semua log pelanggaran kustom yang diinput oleh Musyrif.</p>
+                  <h3 class="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="sliders" class="w-3.5 h-3.5 text-teal-500"></i> Bobot Poin Pelanggaran</h3>
+                  <p class="text-[10px] text-slate-400 font-bold mt-0.5">Edit bobot poin denda tipe pelanggaran secara dinamis.</p>
                 </div>
-                <div class="relative w-full sm:max-w-xs">
-                  <input type="text" id="admin-violation-search" oninput="window.renderAdminViolationsList()" placeholder="Cari santri/keterangan..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2 pl-8 text-[11px] focus:outline-none focus:border-red-500 font-bold" />
-                  <i data-lucide="search" class="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i>
+                <div id="admin-violation-rules-list" class="space-y-3">
+                  <!-- Populated by JS -->
                 </div>
+                <button type="button" onclick="window.saveAdminViolationRules()" class="w-full py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-black text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-1.5">
+                  <i data-lucide="save" class="w-3.5 h-3.5"></i> Simpan Bobot Poin
+                </button>
               </div>
               
-              <div class="overflow-x-auto -mx-4 px-4 max-h-[300px]">
-                <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[500px]">
-                  <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 sticky top-0">
-                    <tr>
-                      <th class="p-2">Santri</th>
-                      <th class="p-2">Pelanggaran</th>
-                      <th class="p-2 text-center">Poin</th>
-                      <th class="p-2">Keterangan</th>
-                      <th class="p-2 text-center">Tindakan</th>
-                    </tr>
-                  </thead>
-                  <tbody id="admin-violations-log-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
-                    <tr>
-                      <td colspan="5" class="p-6 text-center text-slate-400">Memuat log pelanggaran...</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <!-- Right Column: Log Pelanggaran -->
+              <div class="lg:col-span-2 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <h3 class="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="list" class="w-3.5 h-3.5 text-blue-500"></i> Log Pelanggaran Santri</h3>
+                    <p class="text-[10px] text-slate-400 font-bold mt-0.5">Daftar semua log pelanggaran kustom yang diinput oleh Musyrif.</p>
+                  </div>
+                  <div class="relative w-full sm:max-w-xs">
+                    <input type="text" id="admin-violation-search" oninput="window.renderAdminViolationsList()" placeholder="Cari santri/keterangan..." class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 p-2 pl-8 text-[11px] focus:outline-none focus:border-red-500 font-bold" />
+                    <i data-lucide="search" class="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400"></i>
+                  </div>
+                </div>
+                
+                <div class="overflow-x-auto -mx-4 px-4 max-h-[300px]">
+                  <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[500px]">
+                    <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 sticky top-0">
+                      <tr>
+                        <th class="p-2">Santri</th>
+                        <th class="p-2">Pelanggaran</th>
+                        <th class="p-2 text-center">Poin</th>
+                        <th class="p-2">Keterangan</th>
+                        <th class="p-2 text-center">Tindakan</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-violations-log-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                      <tr>
+                        <td colspan="5" class="p-6 text-center text-slate-400">Memuat log pelanggaran...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         <!-- Admin Only: Arsip Perizinan Seluruh Santri -->
-        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+        <section id="sub-page-admin-permits" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+          <button onclick="window.closeAdminSubPage('admin-permits')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-purple-500 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
+          </button>
+          
           <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
             <div>
               <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
@@ -6795,7 +7006,7 @@
           </div>
 
           <!-- Desktop View -->
-          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
+          <div class="overflow-x-auto -mx-5 px-5">
             <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
               <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
                 <tr>
@@ -6817,85 +7028,81 @@
           </div>
 
           <!-- Mobile View -->
-          <div class="block md:hidden space-y-3" id="admin-permits-mobile-list">
+          <div class="hidden space-y-3" id="admin-permits-mobile-list">
             <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat riwayat perizinan...</p>
           </div>
         </section>
 
         <!-- Admin Only: Rekap Global Mutabaah Ibadah Mandiri -->
-        <section class="admin-only hidden bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
-          <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
-            <div>
-              <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
-                <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Rekap Global Mutabaah Ibadah Mandiri
-              </h2>
-              <p class="text-xs text-slate-400 font-bold mt-0.5">Analitik target & pencapaian ibadah mandiri santri (Tahajjud, Puasa, Tilawah).</p>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- 1. Skor Rerata Kelas -->
-            <div class="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
-              <h3 class="text-xs font-black text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
-                <i data-lucide="layers" class="w-3.5 h-3.5 text-blue-500"></i> Rerata Pencapaian Kelas
-              </h3>
-              <div id="ibadah-class-averages" class="space-y-3">
-                <p class="text-xs text-slate-400 font-bold">Memuat rekap kelas...</p>
-              </div>
-            </div>
-
-            <!-- 2. Konsistensi Terbaik -->
-            <div class="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
-              <h3 class="text-xs font-black text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
-                <i data-lucide="trophy" class="w-3.5 h-3.5 text-yellow-500"></i> Konsistensi Terbaik
-              </h3>
-              <div id="ibadah-top-performers" class="space-y-3">
-                <p class="text-xs text-slate-400 font-bold">Memuat santri terbaik...</p>
-              </div>
-            </div>
-
-            <!-- 3. Keaktifan Terendah -->
-            <div class="bg-slate-50/50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
-              <h3 class="text-xs font-black text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-1.5">
-                <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-red-500"></i> Keaktifan Terendah
-              </h3>
-              <div id="ibadah-low-performers" class="space-y-3">
-                <p class="text-xs text-slate-400 font-bold">Memuat evaluasi...</p>
-              </div>
+        <section id="sub-page-global-mutabaah" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
+          <button onclick="window.closeAdminSubPage('global-mutabaah')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-amber-500 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
+          </button>
+          
+          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
+            <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Rekap Global Mutabaah Ibadah Mandiri
+          </h2>
+          <p class="text-xs text-slate-400 font-bold mb-4">Analitik target & pencapaian ibadah mandiri santri (Tahajjud, Puasa, Tilawah).</p>
+          
+          <div>
+            <div class="overflow-x-auto -mx-5 px-5">
+              <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
+                <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-350 border-b border-slate-100 dark:border-slate-800">
+                  <tr>
+                    <th class="p-3 w-10 text-center">No</th>
+                    <th class="p-3">Kelas</th>
+                    <th class="p-3 text-center">Rerata Tahajjud</th>
+                    <th class="p-3 text-center">Rerata Puasa</th>
+                    <th class="p-3 text-center">Rerata Tilawah</th>
+                    <th class="p-3 text-center">Rerata Pencapaian</th>
+                  </tr>
+                </thead>
+                <tbody id="ibadah-global-table-body" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                  <tr>
+                    <td colspan="6" class="p-4 text-center text-slate-400">Memuat rekap mutabaah kelas...</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
 
         
         <!-- Admin Only: Global Audit Trail (Logs) -->
-        <section class="admin-only hidden bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-5 mt-4 backdrop-blur-xl animate-fade-in">
-          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-3">
+        <section id="sub-page-admin-logs" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-5 mt-4 backdrop-blur-xl animate-fade-in">
+          <button onclick="window.closeAdminSubPage('admin-logs')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-slate-500 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
+          </button>
+          
+          <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
             <i data-lucide="scroll" class="w-4 h-4 text-slate-500"></i> Global Audit Trail (Logs)
           </h2>
           <p class="text-xs text-slate-400 font-bold mb-4">Catatan aktivitas sistem dari semua pengelola pesantren secara transparan.</p>
           
-          <!-- Desktop View -->
-          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
-            <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
-              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
-                <tr>
-                  <th class="p-3">Waktu</th>
-                  <th class="p-3">Aktor</th>
-                  <th class="p-3">Tindakan</th>
-                  <th class="p-3">Deskripsi</th>
-                </tr>
-              </thead>
-              <tbody id="admin-logs-tbody" class="divide-y divide-slate-50 dark:divide-slate-800/40">
-                <tr>
-                  <td colspan="4" class="p-4 text-center text-slate-400">Memuat logs...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          <!-- Mobile View -->
-          <div class="block md:hidden space-y-3" id="admin-logs-mobile-list">
-            <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat logs...</p>
+          <div>
+            <!-- Desktop View -->
+            <div class="overflow-x-auto -mx-5 px-5">
+              <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
+                <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                  <tr>
+                    <th class="p-3">Waktu</th>
+                    <th class="p-3">Aktor</th>
+                    <th class="p-3">Tindakan</th>
+                    <th class="p-3">Deskripsi</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-logs-tbody" class="divide-y divide-slate-50 dark:divide-slate-800/40">
+                  <tr>
+                    <td colspan="4" class="p-4 text-center text-slate-400">Memuat logs...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Mobile View -->
+            <div class="hidden space-y-3" id="admin-logs-mobile-list">
+              <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat logs...</p>
+            </div>
           </div>
         </section>
       </div>

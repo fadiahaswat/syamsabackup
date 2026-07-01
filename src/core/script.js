@@ -816,6 +816,9 @@ window.syncRoleModeUI = function () {
       body.admin-mode .musyrif-only {
         display: none !important;
       }
+      .hidden-sub {
+        display: none !important;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -6492,7 +6495,7 @@ window.switchTab = function (tabName) {
   } else if (tabName === "report") {
     window.updateReportTab();
     if (appState.adminMode === true) {
-      if (window.renderUnifiedAdminReport) window.renderUnifiedAdminReport();
+      if (window.resetAdminReportView) window.resetAdminReportView();
     }
   } else if (tabName === "tahfizh") {
     if (window.initTahfizhTab) window.initTahfizhTab();
@@ -12672,6 +12675,76 @@ window.switchReportView = function (view) {
     window.runAnalysis();
   }
   window.syncRoleModeUI();
+};
+
+let adminReportScrollPos = 0;
+
+window.toggleAdminSection = function (id) {
+  window.openAdminSubPage(id);
+};
+
+window.openAdminSubPage = function (pageId) {
+  const reportTab = document.getElementById("tab-report");
+  if (reportTab) {
+    adminReportScrollPos = reportTab.scrollTop;
+  } else {
+    adminReportScrollPos = window.scrollY;
+  }
+
+  const menu = document.getElementById("admin-report-menu");
+  if (menu) menu.classList.add("hidden-sub");
+  
+  const targetPage = document.getElementById(`sub-page-${pageId}`);
+  if (targetPage) targetPage.classList.remove("hidden-sub");
+  
+  // Reset scroll to top for the subpage contents
+  if (reportTab) reportTab.scrollTop = 0;
+  window.scrollTo(0, 0);
+
+  // Lazy rendering based on the clicked sub-page card
+  if (pageId === 'ops-matrix' && window.renderAdminOpsMatrix) {
+    window.renderAdminOpsMatrix();
+  } else if (pageId === 'admin-permits' && window.renderAdminPermits) {
+    window.renderAdminPermits();
+  } else if (pageId === 'global-mutabaah' && window.renderAdminIbadahAnalytics) {
+    window.renderAdminIbadahAnalytics();
+  } else if (pageId === 'admin-logs' && window.renderAdminLogs) {
+    window.renderAdminLogs();
+  } else if (pageId === 'violation-leaderboard' && window.renderAdminViolationLeaderboard) {
+    window.renderAdminViolationLeaderboard();
+  } else if (pageId === 'violation-logs') {
+    if (window.renderAdminViolationRules) window.renderAdminViolationRules();
+    if (window.renderAdminViolationsList) window.renderAdminViolationsList();
+  } else if (pageId === 'musyrif-streak' && window.renderAdminMusyrifStreak) {
+    window.renderAdminMusyrifStreak();
+  } else if (pageId === 'unified-report' && window.renderUnifiedAdminReport) {
+    window.renderUnifiedAdminReport();
+  }
+};
+
+window.closeAdminSubPage = function (pageId) {
+  const targetPage = document.getElementById(`sub-page-${pageId}`);
+  if (targetPage) targetPage.classList.add("hidden-sub");
+  
+  const menu = document.getElementById("admin-report-menu");
+  if (menu) menu.classList.remove("hidden-sub");
+
+  // Restore scroll position to where the card was clicked
+  const reportTab = document.getElementById("tab-report");
+  if (reportTab) {
+    reportTab.scrollTop = adminReportScrollPos;
+  } else {
+    window.scrollTo(0, adminReportScrollPos);
+  }
+};
+
+window.resetAdminReportView = function () {
+  const menu = document.getElementById("admin-report-menu");
+  if (menu) menu.classList.remove("hidden-sub");
+  
+  document.querySelectorAll(".admin-sub-page").forEach(page => {
+    page.classList.add("hidden-sub");
+  });
 };
 
 window.parseSalatTimeToMinutes = function (timeStr) {
