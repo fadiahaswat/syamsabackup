@@ -202,6 +202,76 @@
   }
 }
 
+@media (min-width: 768px) {
+  .tab-content header {
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100% !important;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid rgba(226, 232, 240, 0.78) !important;
+    border-radius: 1.25rem !important;
+    background: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    box-shadow: 0 14px 38px -30px rgba(15, 23, 42, 0.45) !important;
+  }
+
+  .tab-content header button[onclick*="switchTab('home')"] {
+    display: none !important;
+  }
+
+  .tab-content header h1 {
+    color: #0c1f3d !important;
+  }
+
+  .tab-content header span:not(.countdown-time),
+  .tab-content header p {
+    color: #5b7099 !important;
+  }
+
+  .tab-content header .bg-white\/20 {
+    background-color: rgba(12, 129, 228, 0.08) !important;
+    border-color: rgba(12, 129, 228, 0.2) !important;
+  }
+  
+  .tab-content header .bg-white\/20 span {
+    color: #0c81e4 !important;
+  }
+
+  .tab-content header .countdown-time {
+    color: #0c81e4 !important;
+  }
+
+  /* Dark mode overrides */
+  .dark .tab-content header {
+    border-color: rgba(30, 41, 59, 0.9) !important;
+    background: rgba(15, 23, 42, 0.72) !important;
+  }
+
+  .dark .tab-content header h1 {
+    color: #ffffff !important;
+  }
+
+  .dark .tab-content header span:not(.countdown-time),
+  .dark .tab-content header p {
+    color: #94a3b8 !important;
+  }
+
+  .dark .tab-content header .bg-white\/20 {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  .dark .tab-content header .bg-white\/20 span {
+    color: #67dff0 !important;
+  }
+
+  .dark .tab-content header .countdown-time {
+    color: #67dff0 !important;
+  }
+}
+
 @media (min-width: 768px) and (max-width: 1023px) {
   body {
     background-color: #f1f5f9;
@@ -289,11 +359,38 @@
     --page-padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
   }
 
-  /* Unified container paddings handle screen edge spacing */
-
   #view-main > nav {
     max-width: 34rem !important;
     margin-inline: auto !important;
+  }
+
+  /* 2-Column layout adjustments for tablet */
+  #main-content > .page-container > .grid.lg\:grid-cols-12,
+  #tab-report > .page-container > .grid.lg\:grid-cols-12,
+  #tab-profile > .grid.lg\:grid-cols-12 {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr) !important;
+    gap: 1.25rem !important;
+    align-items: start;
+    margin-top: 0 !important;
+  }
+
+  #tab-report > .page-container > .grid.lg\:grid-cols-12 {
+    grid-template-columns: minmax(280px, 0.38fr) minmax(0, 0.62fr) !important;
+  }
+
+  #main-content > .page-container > .grid.lg\:grid-cols-12 > div {
+    min-width: 0;
+    grid-column: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+
+  #tab-report > .page-container > .grid.lg\:grid-cols-12 > div,
+  #tab-profile > .grid.lg\:grid-cols-12 > div {
+    min-width: 0;
+    grid-column: auto !important;
   }
 }
 
@@ -346,6 +443,14 @@
   /* Reset mobile safe-area padding on desktop */
   .pt-safe {
     padding-top: 1.5rem !important;
+  }
+
+  /* Adjust ::before backgrounds on desktop to match sidebar layout */
+  #main-content::before,
+  #tab-tahfizh::before,
+  #tab-report::before,
+  #tab-profile::before {
+    left: clamp(232px, 18vw, 280px) !important;
   }
 
   /* Prevent tab overflow from causing double scrollbar */

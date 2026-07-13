@@ -3331,37 +3331,114 @@
         }
       }
 
+      @media (min-width: 768px) {
+        .tab-content header {
+          margin-top: 0 !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+          max-width: 100% !important;
+          padding: 0.5rem 0.625rem;
+          border: 1px solid rgba(226, 232, 240, 0.78) !important;
+          border-radius: 1.25rem !important;
+          background: rgba(255, 255, 255, 0.78) !important;
+          backdrop-filter: blur(18px) !important;
+          -webkit-backdrop-filter: blur(18px) !important;
+          box-shadow: 0 14px 38px -30px rgba(15, 23, 42, 0.45) !important;
+        }
+
+        .tab-content header button[onclick*="switchTab('home')"] {
+          display: none !important;
+        }
+
+        .tab-content header h1 {
+          color: #0c1f3d !important;
+        }
+
+        .tab-content header span:not(.countdown-time),
+        .tab-content header p {
+          color: #5b7099 !important;
+        }
+
+        .tab-content header .bg-white\/20 {
+          background-color: rgba(12, 129, 228, 0.08) !important;
+          border-color: rgba(12, 129, 228, 0.2) !important;
+        }
+        
+        .tab-content header .bg-white\/20 span {
+          color: #0c81e4 !important;
+        }
+
+        .tab-content header .countdown-time {
+          color: #0c81e4 !important;
+        }
+
+        /* Dark mode overrides */
+        .dark .tab-content header {
+          border-color: rgba(30, 41, 59, 0.9) !important;
+          background: rgba(15, 23, 42, 0.72) !important;
+        }
+
+        .dark .tab-content header h1 {
+          color: #ffffff !important;
+        }
+
+        .dark .tab-content header span:not(.countdown-time),
+        .dark .tab-content header p {
+          color: #94a3b8 !important;
+        }
+
+        .dark .tab-content header .bg-white\/20 {
+          background-color: rgba(255, 255, 255, 0.08) !important;
+          border-color: rgba(255, 255, 255, 0.15) !important;
+        }
+
+        .dark .tab-content header .bg-white\/20 span {
+          color: #67dff0 !important;
+        }
+
+        .dark .tab-content header .countdown-time {
+          color: #67dff0 !important;
+        }
+      }
+
       @media (min-width: 768px) and (max-width: 1023px) {
         #view-main .tab-content {
           --page-padding-x: 1.5rem;
           --page-padding-bottom: calc(7.5rem + env(safe-area-inset-bottom));
         }
 
-        .page-container > header {
-          margin-left: 1rem !important;
-          margin-right: 1rem !important;
-          max-width: calc(100% - 2rem) !important;
-        }
-
-        #main-content > .page-container > .grid.lg\:grid-cols-12 > div > :not(#dashboard-greeting-panel) {
-          width: auto !important;
-          max-width: calc(100% - 2rem) !important;
-          margin-left: 1rem !important;
-          margin-right: 1rem !important;
-        }
-
-        #tab-report > .page-container > :not(header),
-        #tab-tahfizh > .page-container > :not(header),
-        #tab-profile > :not(style) {
-          width: auto !important;
-          max-width: calc(100% - 2rem) !important;
-          margin-left: 1rem !important;
-          margin-right: 1rem !important;
-        }
-
         #view-main > nav {
           max-width: 34rem !important;
           margin-inline: auto !important;
+        }
+
+        /* 2-Column layout adjustments for tablet */
+        #main-content > .page-container > .grid.lg\:grid-cols-12,
+        #tab-report > .page-container > .grid.lg\:grid-cols-12,
+        #tab-profile > .grid.lg\:grid-cols-12 {
+          display: grid !important;
+          grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr) !important;
+          gap: 1.25rem !important;
+          align-items: start;
+          margin-top: 0 !important;
+        }
+
+        #tab-report > .page-container > .grid.lg\:grid-cols-12 {
+          grid-template-columns: minmax(280px, 0.38fr) minmax(0, 0.62fr) !important;
+        }
+
+        #main-content > .page-container > .grid.lg\:grid-cols-12 > div {
+          min-width: 0;
+          grid-column: auto !important;
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 1rem !important;
+        }
+
+        #tab-report > .page-container > .grid.lg\:grid-cols-12 > div,
+        #tab-profile > .grid.lg\:grid-cols-12 > div {
+          min-width: 0;
+          grid-column: auto !important;
         }
       }
 
@@ -3390,6 +3467,14 @@
 
         #att-bottom-bar {
           bottom: 1.5rem !important;
+        }
+
+        /* Adjust ::before backgrounds on desktop to match sidebar layout */
+        #main-content::before,
+        #tab-tahfizh::before,
+        #tab-report::before,
+        #tab-profile::before {
+          left: clamp(232px, 18vw, 280px) !important;
         }
       }
 
@@ -4531,10 +4616,10 @@
           </div>
 
         <!-- Dashboard Grid Layout on Desktop -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 !mt-5">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 !mt-5">
           
           <!-- LEFT COLUMN: Sesi Utama & Jadwal -->
-          <div class="lg:col-span-7 lg:space-y-6 max-lg:contents">
+          <div class="md:col-span-7 md:space-y-6 max-md:contents">
 
             <section id="dashboard-greeting-panel" class="animate-slide-up delay-100ms text-white pl-3 sm:pl-5">
               <div class="max-w-[240px] sm:max-w-sm overflow-hidden mb-1">
@@ -4988,7 +5073,7 @@
 
 
       <!-- RIGHT COLUMN: GPS, Stats, Pembinaan, and Graphs -->
-      <div class="lg:col-span-5 lg:space-y-6 max-lg:contents">
+      <div class="md:col-span-5 md:space-y-6 max-md:contents">
 
         <!-- Salat widget has been moved to accordion under hero card -->
 
@@ -6143,11 +6228,11 @@
 
         <div
           id="analysis-section"
-          class="hidden animate-fade-in flex flex-col lg:grid lg:grid-cols-12 lg:gap-5 lg:items-start"
+          class="hidden animate-fade-in flex flex-col md:grid md:grid-cols-12 md:gap-5 md:items-start"
         >
           <!-- Control Card (Wadah Utama) -->
           <div
-            class="mb-5 lg:mb-0 lg:col-span-4 bg-white/90 dark:bg-slate-900/90 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col backdrop-blur-xl"
+            class="mb-5 md:mb-0 md:col-span-4 bg-white/90 dark:bg-slate-900/90 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col backdrop-blur-xl"
           >
             <!-- 1. Search Section -->
             <div class="p-5 pb-4">
@@ -6260,7 +6345,7 @@
 
           <div
             id="analysis-result"
-            class="hidden animate-slide-up lg:col-span-8 flex flex-col gap-5"
+            class="hidden animate-slide-up md:col-span-8 flex flex-col gap-5"
           >
             <div class="bg-white/90 dark:bg-slate-900/90 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 backdrop-blur-xl">
               <div class="flex items-start justify-between gap-3">
@@ -7202,9 +7287,9 @@
           </section>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
           <!-- Left Column: Profile Card & Calendar -->
-          <div class="lg:col-span-5 space-y-5">
+          <div class="md:col-span-5 space-y-5">
           
           <!-- Wali-Only Info Card & Contact Musyrif -->
           <div class="wali-only bg-white dark:bg-slate-900 p-5 rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-black/20 flex flex-col gap-5">
@@ -7357,7 +7442,7 @@
       </div> <!-- Close Left Column -->
 
       <!-- Right Column: Pembinaan & Permits & Settings -->
-      <div class="lg:col-span-7 space-y-5">
+      <div class="md:col-span-7 space-y-5">
         <div class="flex flex-col gap-6">
           <div
   id="pembinaan-section"
