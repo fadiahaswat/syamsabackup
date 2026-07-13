@@ -463,6 +463,16 @@ window.resetBypassState = function () {
  * 5 ketukan → bypass Admin (langsung masuk semua akses)
  */
 window.handleLogoClick = function () {
+  // Nonaktifkan bypass jika dideploy di luar localhost / domain development
+  const isLocal = window.location.hostname === "localhost" || 
+                  window.location.hostname === "127.0.0.1" || 
+                  window.location.hostname === "" ||
+                  window.location.hostname.startsWith("192.168.");
+  if (!isLocal) {
+    console.warn("Bypass login dinonaktifkan di lingkungan produksi.");
+    return;
+  }
+
   const now = Date.now();
 
   // Reset counter jika waktu antar ketukan terlalu lama
@@ -686,42 +696,6 @@ async function sha256(message) {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
-
-window.handleSuperadminLogin = async function () {
-  // CRITICAL FIX: Secure superadmin login dengan SHA-256 hashing
-  const password = prompt("Masukkan password Superadmin:");
-
-  if (!password) return;
-
-  try {
-    const inputHash = await sha256(password);
-    if (inputHash === SUPERADMIN_PASSWORD_HASH) {
-      if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
-      if (window.cancelWaliLogin) window.cancelWaliLogin();
-
-      appState.superadminMode = true;
-      appState.userProfile = {
-        name: "Superadmin",
-        given_name: "Superadmin",
-        email: "admin@syamsa.local",
-        authProvider: "superadmin",
-      };
-
-      window.showToast("🔐 Login Superadmin Berhasil!", "success");
-
-      // Tampilkan semua data
-      document.getElementById("view-login").classList.add("hidden");
-      document.getElementById("view-main").classList.remove("hidden");
-      window.updateDashboard();
-      window.updateProfileInfo();
-    } else {
-      window.showToast("Password Superadmin salah!", "error");
-    }
-  } catch (e) {
-    console.error('[Superadmin] Login error:', e);
-    window.showToast("Terjadi kesalahan sistem!", "error");
-  }
-};
 
 window.toggleGoogleBypassMode = function () {
   // bypass disabled
@@ -2888,18 +2862,6 @@ window.handleLocationCardClick = function () {
       window.showToast("Mode Testing GPS Dinonaktifkan", "info");
     }
     locationCardClickCount = 0;
-    window.updateLocationStatus();
-    return;
-  }
-
-  if (locationCardClickCount >= 5) {
-    window.gpsBypassEnabled = !window.gpsBypassEnabled;
-    locationCardClickCount = 0;
-    if (window.gpsBypassEnabled) {
-      window.showToast("Bypass GPS Aktif (Mode Testing) ⚠️", "warning");
-    } else {
-      window.showToast("Bypass GPS Dinonaktifkan", "info");
-    }
     window.updateLocationStatus();
   } else {
     locationCardClickTimeout = setTimeout(() => {
@@ -12620,8 +12582,8 @@ window.verifyLocationCached = async function () {
   // Cek apakah GPS sudah pernah ditolak di session ini
   const gpsPermissionKey = "gps_permission_denied_" + APP_CONFIG?.appName?.replace(/\s+/g, "_").toLowerCase() || "syamsa_app";
   if (sessionStorage.getItem(gpsPermissionKey)) {
-    // Skip GPS verification jika sudah pernah ditolak
-    return true;
+    // Jika izin lokasi ditolak, tolak akses dan instruksikan untuk mengaktifkan kembali
+    throw "Izin lokasi (GPS) ditolak. Silakan aktifkan izin lokasi di browser Anda untuk melakukan presensi.";
   }
 
   const cache = JSON.parse(localStorage.getItem(GPS_CACHE_KEY) || "null");
