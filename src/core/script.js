@@ -463,11 +463,13 @@ window.resetBypassState = function () {
  * 5 ketukan → bypass Admin (langsung masuk semua akses)
  */
 window.handleLogoClick = function () {
-  // Nonaktifkan bypass jika dideploy di luar localhost / domain development
-  const isLocal = window.location.hostname === "localhost" || 
-                  window.location.hostname === "127.0.0.1" || 
-                  window.location.hostname === "" ||
-                  window.location.hostname.startsWith("192.168.");
+  // Nonaktifkan bypass jika dideploy di luar localhost / domain development (mendukung protokol file:// dan semua private IP range)
+  const isLocal = window.location.protocol === "file:" ||
+                  /^(localhost|::1|)$/.test(window.location.hostname) ||
+                  /^127\./.test(window.location.hostname) ||
+                  /^10\./.test(window.location.hostname) ||
+                  /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(window.location.hostname) ||
+                  /^192\.168\./.test(window.location.hostname);
   if (!isLocal) {
     console.warn("Bypass login dinonaktifkan di lingkungan produksi.");
     return;
