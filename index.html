@@ -4680,10 +4680,9 @@
     </div>
 
     <!-- Supabase Cloud Sync Status Indicator -->
-    <div id="supabase-sync-status" class="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm rounded-full px-3 py-2 cursor-pointer focus:outline-none" onclick="if (window.supabaseSync) window.supabaseSync.syncAll()" title="Klik untuk sinkronisasi manual">
-      <i data-lucide="cloud" class="w-4 h-4"></i>
-      <span>Lokal Only</span>
-    </div>
+    <button id="supabase-sync-status" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 focus:outline-none" onclick="if (window.supabaseSync) window.supabaseSync.syncAll()" title="Lokal Only (Klik untuk sinkronisasi)">
+      <i data-lucide="cloud" class="w-5 h-5 block"></i>
+    </button>
 
     <!-- Standalone Notification Bell Button -->
     <button onclick="window.switchTab('notifications')" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-500 dark:text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue" aria-label="Buka notifikasi" title="Notifikasi">

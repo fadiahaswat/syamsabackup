@@ -92,8 +92,9 @@ class SupabaseSync {
         colorClass = 'text-amber-500';
       }
 
-      indicator.className = `flex items-center gap-1.5 text-xs font-medium ${colorClass}`;
-      indicator.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i> <span>${text}</span>`;
+      indicator.className = `relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm hover:scale-105 active:scale-95 transition-all duration-300 focus:outline-none ${colorClass}`;
+      indicator.title = `${text} (Klik untuk sinkronisasi)`;
+      indicator.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 block"></i>`;
       if (window.lucide) window.lucide.createIcons();
     }
   }
