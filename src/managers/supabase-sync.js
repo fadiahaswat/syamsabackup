@@ -249,8 +249,9 @@ class SupabaseSync {
       // Re-trigger UI Update setelah inbound sync selesai
       if (window.stateManager) {
         await window.stateManager._loadPersistedState();
-        window.stateManager.emit('attendanceData');
-        window.stateManager.emit('permits');
+        if (typeof window.stateManager._emit === 'function') {
+          window.stateManager._emit('change', ['attendanceData', 'permits']);
+        }
       }
 
     } catch (err) {
@@ -378,9 +379,9 @@ class SupabaseSync {
               // Re-trigger UI Update
               if (window.stateManager) {
                 await window.stateManager._loadPersistedState();
-                window.stateManager.emit('attendanceData');
-                window.stateManager.emit('permits');
-                window.stateManager.emit('settings');
+                if (typeof window.stateManager._emit === 'function') {
+                  window.stateManager._emit('change', ['attendanceData', 'permits', 'settings']);
+                }
               }
               
               console.log(`[SupabaseSync] Realtime update applied for ${table}`);
