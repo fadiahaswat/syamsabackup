@@ -850,6 +850,12 @@ async function initDatabase() {
     await localDB.init();
     console.log('[Database] IndexedDB initialized');
 
+    // Initialize SyncQueue explicitly
+    if (window.syncQueue) {
+      await window.syncQueue.init(localDB);
+      console.log('[Database] SyncQueue initialized with LocalDB');
+    }
+
     // 2. Initialize repositories
     await initRepositories();
     const repos = getRepositories();
