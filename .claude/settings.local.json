@@ -94,7 +94,10 @@
       "PowerShell(Copy-Item \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon.png\" \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon-512.png\")",
       "PowerShell(Copy-Item \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon.png\" \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon-maskable-512.png\")",
       "Bash(node --check src/managers/data-migrator.js)",
-      "Bash(node --check src/managers/database-schema.js)"
+      "Bash(node --check src/managers/database-schema.js)",
+      "Bash(cd \"d:/syamsa-backup/syamsabackup\" && cat src/pages/report/report.html | head -n 792 > /tmp/report_part1.html && cat src/pages/report/report.html | tail -n +1611 > /tmp/report_part2.html && cat /tmp/report_part1.html /tmp/report_part2.html > src/pages/report/report.html && echo \"Done. Now checking...\" && grep -c 'admin-report-menu' src/pages/report/report.html)",
+      "Skill(code-review)",
+      "Skill(code-review:*)"
     ],
     "additionalDirectories": [
       "d:\\syamsa-backup\\syamsabackup",

@@ -126,13 +126,45 @@ window.updatePermitCount = function () {
   if (el) el.textContent = checked;
 };
 
-window.persistPermits = window.persistPermits || function () {
-  // Save to localStorage as primary storage
-  localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(appState.permits || []));
+window.persistPermits = window.persistPermits || async function () {
+  const permits = appState.permits || [];
+
+  // Save to localStorage as primary storage (synchronous fallback)
+  try {
+    localStorage.setItem(APP_CONFIG.permitKey, JSON.stringify(permits));
+  } catch (e) {
+    console.error('[PermitManager] localStorage write failed:', e);
+  }
 
   // Use storage manager if available
   if (window.storageManager) {
-    window.storageManager.savePermits(appState.permits || []);
+    window.storageManager.savePermits(permits);
+  }
+
+  // CRITICAL FIX: Also persist to IndexedDB via repository
+  if (window._repos?.permit && !window.isWaliMode?.()) {
+    try {
+      const repos = window._repos;
+      // Sync all permits to IndexedDB - create or update each
+      await Promise.allSettled(
+        permits.map(permit => {
+          // Check if record exists in IndexedDB
+          return repos.permit.get(permit.id).then(existing => {
+            if (existing) {
+              // Update existing record
+              return repos.permit.update(permit.id, permit);
+            } else {
+              // Create new record
+              return repos.permit.create(permit);
+            }
+          }).catch(err => {
+            console.warn('[PermitManager] Failed to sync permit to IndexedDB:', permit.id, err);
+          });
+        })
+      );
+    } catch (err) {
+      console.warn('[PermitManager] IndexedDB sync failed:', err);
+    }
   }
 };
 
@@ -195,6 +227,15 @@ window.deletePermit = function (id) {
 
   if (window.storageManager) {
     window.storageManager.deletePermit(id);
+  }
+
+  // CRITICAL FIX: Also delete from IndexedDB
+  if (window._repos?.permit) {
+    try {
+      await window._repos.permit.delete(id);
+    } catch (err) {
+      console.warn('[PermitManager] Failed to delete permit from IndexedDB:', id, err);
+    }
   }
 
   window.persistPermits();
@@ -1594,6 +1635,14 @@ window.approvePermit = function(id) {
       by: "Musyrif " + (window.getCurrentActorName ? window.getCurrentActorName() : "Admin"),
       time: new Date().toISOString()
     });
+
+    // CRITICAL FIX: Also persist to IndexedDB
+    if (window._repos?.permit) {
+      window._repos.permit.update(id, permit).catch(err => {
+        console.warn('[PermitManager] Failed to update permit in IndexedDB:', id, err);
+      });
+    }
+
     window.persistPermits();
 
     // Trigger notification to Wali
@@ -1640,6 +1689,14 @@ window.rejectPermit = function(id) {
       by: "Musyrif " + (window.getCurrentActorName ? window.getCurrentActorName() : "Admin"),
       time: new Date().toISOString()
     });
+
+    // CRITICAL FIX: Also persist to IndexedDB
+    if (window._repos?.permit) {
+      window._repos.permit.update(id, permit).catch(err => {
+        console.warn('[PermitManager] Failed to update permit in IndexedDB:', id, err);
+      });
+    }
+
     window.persistPermits();
 
     // Trigger notification to Wali

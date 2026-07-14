@@ -5949,13 +5949,21 @@ window.toggleNotifications = async function () {
   }
 };
 
+/**
+ * Save attendance data to storage
+ * CRITICAL FIX: Removed double debounce, consolidated to single write path
+ * - localStorage as primary (synchronous, fast)
+ * - IndexedDB as secondary (async, via repository)
+ */
 window.saveData = async function () {
   if (window.isWaliMode()) {
     console.warn("Save ignored - Wali mode is active.");
     return;
   }
-  clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(async () => {
+
+  // CRITICAL FIX: Single debounce only (removed nested 500ms delay)
+  clearTimeout(window.saveTimeout);
+  window.saveTimeout = setTimeout(async () => {
     try {
       const dataStr = JSON.stringify(appState.attendanceData);
 
@@ -5971,50 +5979,47 @@ window.saveData = async function () {
       }
 
       const indicator = document.getElementById("save-indicator");
-      if (appState.settings.autoSave && indicator) {
-        const reviewStatus =
-          indicator.dataset.attendanceReviewStatus === "idle"
-            ? ""
-            : indicator.dataset.attendanceReviewStatus;
+
+      // Show saving indicator
+      if (indicator && appState.settings.autoSave) {
+        const reviewStatus = indicator.dataset.attendanceReviewStatus === "idle"
+          ? "" : indicator.dataset.attendanceReviewStatus;
         if (!reviewStatus) {
           indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-amber-500"></i>';
           if (window.lucide) window.lucide.createIcons();
         }
+      }
 
-        setTimeout(async () => {
-          try {
-            // Save to localStorage
-            window.AppStorage.setItem(APP_CONFIG.storageKey, dataStr);
+      // PRIMARY: Save to localStorage (synchronous, fast)
+      window.AppStorage.setItem(APP_CONFIG.storageKey, dataStr);
 
-            // Use StorageManager
-            if (window.storageManager) {
-              await window.storageManager.saveAttendance(dateKey, slotId, slotData);
+      // SECONDARY: Save to IndexedDB via repository (async, non-blocking)
+      if (window._repos?.attendance && !window.isWaliMode?.()) {
+        // Async save to IndexedDB - don't block UI
+        window._repos.attendance.save(dateKey, slotId, slotData, appState.selectedClass)
+          .catch(err => {
+            console.warn('[saveData] IndexedDB save failed:', err);
+          });
+      }
+
+      // StorageManager as fallback
+      if (window.storageManager) {
+        window.storageManager.saveAttendance(dateKey, slotId, slotData);
+      }
+
+      // Show saved indicator
+      if (indicator) {
+        if (indicator.dataset.attendanceReviewStatus) {
+          window.setAttendanceSaveIndicator?.(indicator.dataset.attendanceReviewStatus);
+        } else {
+          indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-emerald-400"></i>';
+          if (window.lucide) window.lucide.createIcons();
+          setTimeout(() => {
+            if (indicator && !indicator.dataset.attendanceReviewStatus) {
+              indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-slate-400"></i>';
+              if (window.lucide) window.lucide.createIcons();
             }
-
-            if (indicator) {
-              if (indicator.dataset.attendanceReviewStatus) {
-                const latestReviewStatus = indicator.dataset.attendanceReviewStatus;
-                window.setAttendanceSaveIndicator?.(latestReviewStatus);
-              } else {
-                indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-emerald-400"></i>';
-                if (window.lucide) window.lucide.createIcons();
-                setTimeout(() => {
-                  if (indicator && !indicator.dataset.attendanceReviewStatus) {
-                    indicator.innerHTML = '<i data-lucide="save" class="w-3.5 h-3.5 text-slate-400"></i>';
-                    if (window.lucide) window.lucide.createIcons();
-                  }
-                }, 1500);
-              }
-            }
-          } catch (innerErr) {
-            console.error("Inner save error:", innerErr);
-          }
-        }, 500);
-      } else {
-        // No autoSave mode - just save to localStorage
-        window.AppStorage.setItem(APP_CONFIG.storageKey, dataStr);
-        if (window.storageManager) {
-          await window.storageManager.saveAttendance(dateKey, slotId, slotData);
+          }, 1500);
         }
       }
     } catch (e) {
@@ -6025,7 +6030,7 @@ window.saveData = async function () {
       }
       console.error("Save error:", e);
     }
-  }, 500); // Debounce for better batching
+  }, 300); // CRITICAL FIX: Single debounce 300ms (reduced from 1000ms)
 };
 
 window.changeStatsRange = function (range) {

@@ -28,7 +28,8 @@ class DataMigrator {
    * Check if migration is needed
    */
   async isMigrationNeeded() {
-    const migrationVersion = await this.db.getMeta(this.migrationKey);
+    // LOW FIX: Use centralized storage keys
+    const migrationVersion = await this.db.getMeta(window.STORAGE_KEYS?.migrationVersion || this.migrationKey);
     return migrationVersion !== 'completed';
   }
 
@@ -36,7 +37,8 @@ class DataMigrator {
    * Check if migration was done in this version
    */
   async isMigrationDone() {
-    const migrationVersion = await this.db.getMeta(this.migrationKey);
+    // LOW FIX: Use centralized storage keys
+    const migrationVersion = await this.db.getMeta(window.STORAGE_KEYS?.migrationVersion || this.migrationKey);
     return migrationVersion === 'completed';
   }
 
@@ -86,8 +88,11 @@ class DataMigrator {
       }
 
       // Mark migration complete only after verification
-      await this.db.setMeta(this.migrationKey, 'completed');
-      await this.db.setMeta('migration_date', new Date().toISOString());
+      // LOW FIX: Use centralized storage keys
+      const migrationKey = window.STORAGE_KEYS?.migrationVersion || this.migrationKey;
+      const migrationDateKey = window.STORAGE_KEYS?.migrationDate || 'migration_date';
+      await this.db.setMeta(migrationKey, 'completed');
+      await this.db.setMeta(migrationDateKey, new Date().toISOString());
 
       console.log('[DataMigrator] Migration completed successfully!', this._phaseResults);
       return { success: true, results: this._phaseResults, verification };
@@ -105,28 +110,52 @@ class DataMigrator {
 
   /**
    * Rollback all migrated data
+   * HIGH FIX: Sequential clear with verification
    */
   async rollback() {
+    const stores = ['attendances', 'permits', 'settings', 'activity_logs'];
+    const results = {};
+    let hasFailure = false;
+
+    console.log('[DataMigrator] Rolling back migrated data...');
+
+    // HIGH FIX: Sequential clear with verification instead of Promise.all
+    for (const store of stores) {
+      try {
+        const countBefore = await this.db.count(store);
+        await this.db.clear(store);
+        const countAfter = await this.db.count(store);
+
+        if (countAfter !== 0) {
+          console.error(`[DataMigrator] Rollback: ${store} still has ${countAfter} records after clear`);
+          hasFailure = true;
+        }
+
+        results[store] = { cleared: countAfter === 0, countBefore, countAfter };
+        console.log(`[DataMigrator] Cleared ${store}: ${countBefore} -> ${countAfter}`);
+      } catch (error) {
+        console.error(`[DataMigrator] Rollback failed for ${store}:`, error);
+        hasFailure = true;
+        results[store] = { error: error.message };
+      }
+    }
+
+    // Clear migration markers
     try {
-      console.log('[DataMigrator] Rolling back migrated data...');
-
-      await Promise.all([
-        this.db.clear('attendances'),
-        this.db.clear('permits'),
-        this.db.clear('settings'),
-        this.db.clear('activity_logs'),
-      ]);
-
-      // Clear migration markers
       await this.db.setMeta(this.migrationKey, null);
       await this.db.setMeta('migration_date', null);
-
-      console.log('[DataMigrator] Rollback completed');
-      return { success: true };
     } catch (error) {
-      console.error('[DataMigrator] Rollback failed:', error);
-      return { success: false, error: error.message };
+      console.error('[DataMigrator] Failed to clear migration markers:', error);
+      hasFailure = true;
     }
+
+    if (hasFailure) {
+      console.warn('[DataMigrator] Rollback completed with some failures');
+      return { success: false, error: 'Partial rollback failure', results };
+    }
+
+    console.log('[DataMigrator] Rollback completed successfully');
+    return { success: true, results };
   }
 
   /**
@@ -154,7 +183,9 @@ class DataMigrator {
     const result = { success: 0, failed: 0 };
 
     // Get old attendance data from LocalStorage
-    const oldData = localStorage.getItem('musyrif_app_v5_fix');
+    // LOW FIX: Use centralized storage keys
+    const attendanceKey = window.STORAGE_KEYS?.attendance || 'musyrif_app_v5_fix';
+    const oldData = localStorage.getItem(attendanceKey);
     if (!oldData) {
       console.log('[DataMigrator] No old attendance data found');
       return result;
@@ -164,15 +195,66 @@ class DataMigrator {
       const attendanceData = JSON.parse(oldData);
       const records = [];
 
-      // Get current class from storage or session
+      // CRITICAL FIX: Try multiple sources for kelas
+      let defaultKelas = null;
+      const kelasSources = [];
+
+      // Source 1: Google auth session
       const authData = localStorage.getItem('musyrif_google_session');
-      let kelas = 'Unknown';
       if (authData) {
         try {
           const auth = JSON.parse(authData);
-          kelas = auth.kelas || 'Unknown';
+          if (auth.kelas) {
+            kelasSources.push(`auth: ${auth.kelas}`);
+            defaultKelas = auth.kelas;
+          }
         } catch (e) {}
       }
+
+      // Source 2: APP_CONFIG.currentClass
+      if (!defaultKelas && window.APP_CONFIG?.currentClass) {
+        defaultKelas = window.APP_CONFIG.currentClass;
+        kelasSources.push(`APP_CONFIG: ${defaultKelas}`);
+      }
+
+      // Source 3: sessionStorage
+      if (!defaultKelas) {
+        try {
+          const sessionClass = sessionStorage.getItem('currentClass');
+          if (sessionClass) {
+            defaultKelas = sessionClass;
+            kelasSources.push(`sessionStorage: ${defaultKelas}`);
+          }
+        } catch (e) {}
+      }
+
+      // Source 4: appState.selectedClass
+      if (!defaultKelas && window.appState?.selectedClass) {
+        defaultKelas = window.appState.selectedClass;
+        kelasSources.push(`appState: ${defaultKelas}`);
+      }
+
+      console.log('[DataMigrator] Kelas sources checked:', kelasSources);
+
+      // Build student to kelas mapping from cached data
+      const studentKelasMap = new Map();
+      try {
+        const cachedSantri = localStorage.getItem('cache_data_santri_full');
+        if (cachedSantri) {
+          const santris = JSON.parse(cachedSantri);
+          if (Array.isArray(santris)) {
+            santris.forEach(s => {
+              if (s.nis && s.kelas) {
+                studentKelasMap.set(String(s.nis), s.kelas);
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[DataMigrator] Could not build student-kelas map:', e);
+      }
+
+      console.log(`[DataMigrator] Student-kelas map has ${studentKelasMap.size} entries`);
 
       // Iterate through all dates
       for (const [date, slots] of Object.entries(attendanceData)) {
@@ -182,12 +264,20 @@ class DataMigrator {
           for (const [studentId, data] of Object.entries(students)) {
             if (studentId.startsWith('_')) continue; // Skip meta fields
 
+            // CRITICAL FIX: Get kelas from student data, not hardcoded default
+            let recordKelas = studentKelasMap.get(studentId) || defaultKelas;
+
+            if (!recordKelas) {
+              console.warn(`[DataMigrator] No kelas found for student ${studentId}, using 'Unknown'`);
+              recordKelas = 'Unknown';
+            }
+
             records.push({
               id: `${date}_${slot}_${studentId}`,
               date,
               slot,
               studentId,
-              kelas,
+              kelas: recordKelas,
               status: data.status || {},
               note: data.note || '',
               timestamps: data.timestamps || {},
@@ -203,7 +293,7 @@ class DataMigrator {
       if (records.length > 0) {
         await this.db.bulkPut('attendances', records);
         result.success = records.length;
-        console.log(`[DataMigrator] Migrated ${records.length} attendance records`);
+        console.log(`[DataMigrator] Migrated ${records.length} attendance records with kelas from student data`);
       }
     } catch (error) {
       console.error('[DataMigrator] Attendance migration failed:', error);
@@ -230,7 +320,9 @@ class DataMigrator {
     const result = { success: 0, failed: 0 };
 
     // Get old permits data from LocalStorage
-    const oldData = localStorage.getItem('musyrif_permits_db');
+    // LOW FIX: Use centralized storage keys
+    const permitsKey = window.STORAGE_KEYS?.permits || 'musyrif_permits_db';
+    const oldData = localStorage.getItem(permitsKey);
     if (!oldData) {
       console.log('[DataMigrator] No old permits data found');
       return result;
@@ -245,15 +337,43 @@ class DataMigrator {
         permits = Object.values(permits);
       }
 
-      // Get current class
+      // CRITICAL FIX: Try multiple sources for default kelas
+      let defaultKelas = null;
+
+      // Source 1: Google auth session
       const authData = localStorage.getItem('musyrif_google_session');
-      let kelas = 'Unknown';
       if (authData) {
         try {
           const auth = JSON.parse(authData);
-          kelas = auth.kelas || 'Unknown';
+          if (auth.kelas) defaultKelas = auth.kelas;
         } catch (e) {}
       }
+
+      // Source 2: APP_CONFIG.currentClass
+      if (!defaultKelas && window.APP_CONFIG?.currentClass) {
+        defaultKelas = window.APP_CONFIG.currentClass;
+      }
+
+      // Source 3: appState.selectedClass
+      if (!defaultKelas && window.appState?.selectedClass) {
+        defaultKelas = window.appState.selectedClass;
+      }
+
+      // Build student to kelas mapping from cached data
+      const studentKelasMap = new Map();
+      try {
+        const cachedSantri = localStorage.getItem('cache_data_santri_full');
+        if (cachedSantri) {
+          const santris = JSON.parse(cachedSantri);
+          if (Array.isArray(santris)) {
+            santris.forEach(s => {
+              if (s.nis && s.kelas) {
+                studentKelasMap.set(String(s.nis), s.kelas);
+              }
+            });
+          }
+        }
+      } catch (e) {}
 
       const records = [];
 
@@ -261,10 +381,13 @@ class DataMigrator {
         // Generate proper ID if missing
         const id = permit.id || `p_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+        // CRITICAL FIX: Get kelas from student data first, then fall back to default
+        const recordKelas = permit.kelas || studentKelasMap.get(String(permit.nis)) || defaultKelas || 'Unknown';
+
         records.push({
           ...permit,
           id,
-          kelas: permit.kelas || kelas,
+          kelas: recordKelas,
           audit_trail: permit.audit_trail || [
             { action: 'migrated', at: new Date().toISOString() }
           ],
@@ -275,7 +398,7 @@ class DataMigrator {
       if (records.length > 0) {
         await this.db.bulkPut('permits', records);
         result.success = records.length;
-        console.log(`[DataMigrator] Migrated ${records.length} permit records`);
+        console.log(`[DataMigrator] Migrated ${records.length} permit records with proper kelas assignment`);
       }
     } catch (error) {
       console.error('[DataMigrator] Permits migration failed:', error);
@@ -292,7 +415,9 @@ class DataMigrator {
     const result = { success: 0, failed: 0 };
 
     // Get old settings from LocalStorage
-    const oldData = localStorage.getItem('musyrif_settings');
+    // LOW FIX: Use centralized storage keys
+    const settingsKey = window.STORAGE_KEYS?.settings || 'musyrif_settings';
+    const oldData = localStorage.getItem(settingsKey);
     if (!oldData) {
       console.log('[DataMigrator] No old settings data found');
       return result;
@@ -324,7 +449,9 @@ class DataMigrator {
     const result = { success: 0, failed: 0 };
 
     // Get old logs from LocalStorage
-    const oldData = localStorage.getItem('musyrif_activity_log');
+    // LOW FIX: Use centralized storage keys
+    const activityLogKey = window.STORAGE_KEYS?.activityLog || 'musyrif_activity_log';
+    const oldData = localStorage.getItem(activityLogKey);
     if (!oldData) {
       console.log('[DataMigrator] No old activity logs found');
       return result;
@@ -373,8 +500,12 @@ class DataMigrator {
    * Get migration status
    */
   async getStatus() {
-    const migrationVersion = await this.db.getMeta(this.migrationKey);
-    const migrationDate = await this.db.getMeta('migration_date');
+    // LOW FIX: Use centralized storage keys
+    const migrationKey = window.STORAGE_KEYS?.migrationVersion || this.migrationKey;
+    const migrationDateKey = window.STORAGE_KEYS?.migrationDate || 'migration_date';
+
+    const migrationVersion = await this.db.getMeta(migrationKey);
+    const migrationDate = await this.db.getMeta(migrationDateKey);
 
     const counts = {
       attendances: await this.db.count('attendances'),
@@ -393,16 +524,22 @@ class DataMigrator {
 
   /**
    * Verify data integrity after migration
+   * MEDIUM FIX: Add spot-check validation of actual record contents
    */
   async verify() {
     const results = {
-      attendance: { localCount: 0, indexedCount: 0, match: false },
-      permits: { localCount: 0, indexedCount: 0, match: false },
+      attendance: { localCount: 0, indexedCount: 0, match: false, spotCheck: null },
+      permits: { localCount: 0, indexedCount: 0, match: false, spotCheck: null },
       settings: { localCount: 0, indexedCount: 0, match: false },
     };
 
+    // LOW FIX: Use centralized storage keys
+    const attendanceKey = window.STORAGE_KEYS?.attendance || 'musyrif_app_v5_fix';
+    const permitsKey = window.STORAGE_KEYS?.permits || 'musyrif_permits_db';
+    const settingsKey = window.STORAGE_KEYS?.settings || 'musyrif_settings';
+
     // Count attendance
-    const attendanceLocal = localStorage.getItem('musyrif_app_v5_fix');
+    const attendanceLocal = localStorage.getItem(attendanceKey);
     if (attendanceLocal) {
       try {
         const data = JSON.parse(attendanceLocal);
@@ -418,8 +555,41 @@ class DataMigrator {
     results.attendance.indexedCount = await this.db.count('attendances');
     results.attendance.match = results.attendance.localCount === results.attendance.indexedCount;
 
+    // MEDIUM FIX: Spot-check attendance records
+    if (attendanceLocal && results.attendance.indexedCount > 0) {
+      try {
+        const data = JSON.parse(attendanceLocal);
+        // Get first record from localStorage
+        let sampleLocal = null;
+        outer: for (const [date, slots] of Object.entries(data)) {
+          for (const [slot, students] of Object.entries(slots)) {
+            for (const [studentId, studentData] of Object.entries(students)) {
+              if (!studentId.startsWith('_')) {
+                sampleLocal = { date, slot, studentId, data: studentData };
+                break outer;
+              }
+            }
+          }
+        }
+
+        if (sampleLocal) {
+          const sampleId = `${sampleLocal.date}_${sampleLocal.slot}_${sampleLocal.studentId}`;
+          const sampleIndexed = await this.db.get('attendances', sampleId);
+
+          results.attendance.spotCheck = {
+            id: sampleId,
+            localHasRequired: sampleLocal.data.status !== undefined,
+            indexedFound: sampleIndexed !== null,
+            indexedHasKelas: sampleIndexed?.kelas !== 'Unknown',
+          };
+        }
+      } catch (e) {
+        console.warn('[DataMigrator] Attendance spot-check failed:', e);
+      }
+    }
+
     // Count permits
-    const permitsLocal = localStorage.getItem('musyrif_permits_db');
+    const permitsLocal = localStorage.getItem(permitsKey);
     if (permitsLocal) {
       try {
         const data = JSON.parse(permitsLocal);
@@ -429,8 +599,29 @@ class DataMigrator {
     results.permits.indexedCount = await this.db.count('permits');
     results.permits.match = results.permits.localCount === results.permits.indexedCount;
 
+    // MEDIUM FIX: Spot-check permit records
+    if (permitsLocal && results.permits.indexedCount > 0) {
+      try {
+        const data = JSON.parse(permitsLocal);
+        const sampleLocal = Array.isArray(data) ? data[0] : Object.values(data)[0];
+
+        if (sampleLocal) {
+          const sampleIndexed = await this.db.get('permits', sampleLocal.id);
+
+          results.permits.spotCheck = {
+            id: sampleLocal.id,
+            localHasNis: !!sampleLocal.nis,
+            indexedFound: sampleIndexed !== null,
+            indexedHasKelas: sampleIndexed?.kelas !== 'Unknown',
+          };
+        }
+      } catch (e) {
+        console.warn('[DataMigrator] Permit spot-check failed:', e);
+      }
+    }
+
     // Check settings
-    const settingsLocal = localStorage.getItem('musyrif_settings');
+    const settingsLocal = localStorage.getItem(settingsKey);
     results.settings.localCount = settingsLocal ? 1 : 0;
     results.settings.indexedCount = await this.db.count('settings');
     results.settings.match = results.settings.localCount === results.settings.indexedCount;

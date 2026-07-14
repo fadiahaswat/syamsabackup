@@ -78,10 +78,16 @@ class StorageManager {
   /**
    * Initialize the storage manager
    * @param {string} musyrifId - Unique identifier for the musyrif/class
+   * MEDIUM FIX: Validate musyrifId and warn if not provided
    */
   init(musyrifId) {
+    // MEDIUM FIX: Warn if musyrifId is null/undefined
+    if (!musyrifId) {
+      console.warn('[StorageManager] Warning: musyrifId is null or undefined. Audit trails will have no attribution.');
+    }
+
     storageDebugLog('[StorageManager] Initializing with musyrifId:', musyrifId);
-    this.musyrifId = musyrifId;
+    this.musyrifId = musyrifId || null;
 
     // Load data from localStorage into appState
     this._loadFromStorage();
@@ -346,13 +352,27 @@ class StorageManager {
 
   /**
    * Force immediate save (no debounce)
+   * MEDIUM FIX: Add force parameter to bypass change detection
    */
-  saveNow() {
+  saveNow(force = true) {
     if (this._saveTimer) {
       clearTimeout(this._saveTimer);
       this._saveTimer = null;
     }
-    this._performAutoSave();
+
+    if (force) {
+      // MEDIUM FIX: Temporarily bypass version check for force save
+      const savedData = this._lastSavedData;
+      const savedVersion = this._lastSavedVersion;
+      this._lastSavedData = null;
+      this._lastSavedVersion = -1;
+      this._performAutoSave();
+      // Restore for next change detection
+      this._lastSavedData = savedData;
+      this._lastSavedVersion = savedVersion;
+    } else {
+      this._performAutoSave();
+    }
   }
 
   /**

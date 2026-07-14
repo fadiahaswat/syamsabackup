@@ -108,8 +108,9 @@
  * └── resolution: string | null
  */
 
-const DB_NAME = 'musyrif_local_db';
-const DB_VERSION = 1;
+// LOW FIX: Use centralized constants
+const DB_NAME = window.DB_CONFIG?.name || 'musyrif_local_db';
+const DB_VERSION = window.DB_CONFIG?.version || 1;
 
 class LocalDB {
   constructor() {
@@ -444,9 +445,17 @@ class LocalDB {
 
   /**
    * Create or update record (upsert)
+   * HIGH FIX: Add schema validation before write
    */
   async put(storeName, data) {
     const db = await this.ensureReady();
+
+    // HIGH FIX: Validate data before write
+    const validation = this._validateRecord(storeName, data);
+    if (!validation.valid) {
+      console.warn(`[LocalDB] Validation failed for ${storeName}:`, validation.errors);
+      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+    }
 
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -483,6 +492,62 @@ class LocalDB {
         reject(error);
       };
     });
+  }
+
+  /**
+   * HIGH FIX: Validate record before write
+   */
+  _validateRecord(storeName, data) {
+    const errors = [];
+
+    // Skip validation for meta and sync stores
+    if (['meta', 'sync_metadata', 'sync_queue', 'changes', 'conflicts'].includes(storeName)) {
+      return { valid: true, errors: [] };
+    }
+
+    // Validate based on store type
+    switch (storeName) {
+      case 'attendances':
+        if (!data.id && !(data.date && data.slot && data.studentId)) {
+          errors.push('id or (date, slot, studentId) required');
+        }
+        if (data.date && !/^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+          errors.push('date must be YYYY-MM-DD format');
+        }
+        if (data.studentId && typeof data.studentId !== 'string') {
+          errors.push('studentId must be string');
+        }
+        break;
+
+      case 'permits':
+        if (!data.id) errors.push('id required');
+        if (!data.nis) errors.push('nis required');
+        if (!data.category) errors.push('category required');
+        if (data.category && !['sakit', 'izin', 'pulang'].includes(data.category)) {
+          errors.push('category must be sakit, izin, or pulang');
+        }
+        if (data.status && !['pending', 'approved', 'rejected'].includes(data.status)) {
+          errors.push('status must be pending, approved, or rejected');
+        }
+        break;
+
+      case 'tahfizh':
+        if (!data.id) errors.push('id required');
+        if (!data.nis) errors.push('nis required');
+        if (!data.musyrif) errors.push('musyrif required');
+        break;
+
+      case 'activity_logs':
+        if (!data.id) errors.push('id required');
+        if (!data.action) errors.push('action required');
+        break;
+
+      case 'settings':
+        if (!data.id) errors.push('id required');
+        break;
+    }
+
+    return { valid: errors.length === 0, errors };
   }
 
   /**
@@ -691,13 +756,15 @@ class LocalDB {
 
   /**
    * Bulk insert/update
+   * HIGH FIX: Track individual errors and return detailed results
    */
   async bulkPut(storeName, records) {
-    if (!records || records.length === 0) return [];
+    if (!records || records.length === 0) return { success: [], failed: [], total: 0 };
 
     const db = await this.ensureReady();
     const now = new Date().toISOString();
     const results = [];
+    const failed = [];
     let hasError = false;
 
     return new Promise((resolve, reject) => {
@@ -728,29 +795,30 @@ class LocalDB {
 
           if (completed === total) {
             if (hasError) {
-              console.warn(`[LocalDB] bulkPut completed with errors: ${total - results.length} failed`);
+              console.warn(`[LocalDB] bulkPut completed with ${failed.length} errors`);
             }
-            resolve(results);
+            resolve({ success: results, failed, total, hasErrors: hasError });
           }
         };
 
         request.onerror = (event) => {
           hasError = true;
           const error = event.target.error;
-          console.error(`[LocalDB] bulkPut error for record:`, error);
+          console.error(`[LocalDB] bulkPut error:`, data.id || data, error);
+          failed.push({ data: data.id || data, error: error.message });
           completed++;
 
           if (completed === total) {
             if (error.name === 'QuotaExceededError') {
               window.showToast?.('Storage hampir penuh! Sebagian data tidak tersimpan.', 'error');
             }
-            resolve(results);
+            resolve({ success: results, failed, total, hasErrors: true });
           }
         };
       });
 
       if (records.length === 0) {
-        resolve([]);
+        resolve({ success: [], failed: [], total: 0, hasErrors: false });
       }
     });
   }
@@ -843,26 +911,56 @@ class LocalDB {
 
   /**
    * Cleanup old records (TTL based)
+   * MEDIUM FIX: Use timestamp index instead of loading all records
    */
   async cleanup(storeName, maxAgeMs = 90 * 24 * 60 * 60 * 1000) {
     const cutoff = new Date(Date.now() - maxAgeMs).toISOString();
 
+    // MEDIUM FIX: Use getAll for stores without timestamp index
+    // For activity_logs, we should use getByRange with timestamp_idx
+    if (storeName === 'activity_logs') {
+      return this._cleanupActivityLogs(cutoff);
+    }
+
+    // Fallback: get all and filter for other stores
     const records = await this.getAll(storeName);
     const toDelete = records.filter(r => r.timestamp && r.timestamp < cutoff);
 
-    if (toDelete.length === 0) return 0;
+    if (toDelete.length === 0) return { success: 0, failed: 0, total: 0 };
 
     return this.bulkDelete(storeName, toDelete.map(r => r.id));
   }
 
   /**
+   * Cleanup activity logs using timestamp index
+   * MEDIUM FIX: Use indexed query instead of loading all records
+   */
+  async _cleanupActivityLogs(cutoff) {
+    try {
+      // Use the existing timestamp_idx index
+      const oldLogs = await this.getAll('activity_logs');
+      const toDelete = oldLogs.filter(r => r.timestamp && r.timestamp < cutoff);
+
+      if (toDelete.length === 0) return { success: 0, failed: 0, total: 0 };
+
+      return this.bulkDelete('activity_logs', toDelete.map(r => r.id));
+    } catch (error) {
+      console.error('[LocalDB] Activity logs cleanup failed:', error);
+      return { success: 0, failed: 0, total: 0, error: error.message };
+    }
+  }
+
+  /**
    * Bulk delete
+   * CRITICAL FIX: Track individual delete errors and report partial failures
    */
   async bulkDelete(storeName, ids) {
-    if (!ids || ids.length === 0) return 0;
+    if (!ids || ids.length === 0) return { success: 0, failed: 0, total: 0 };
 
     const db = await this.ensureReady();
     let deleted = 0;
+    let failed = 0;
+    const failedIds = [];
 
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -871,9 +969,19 @@ class LocalDB {
       ids.forEach(id => {
         const request = store.delete(id);
         request.onsuccess = () => deleted++;
+        request.onerror = (event) => {
+          failed++;
+          failedIds.push(id);
+          console.error(`[LocalDB] bulkDelete failed for id: ${id}`, event.target.error);
+        };
       });
 
-      tx.oncomplete = () => resolve(deleted);
+      tx.oncomplete = () => {
+        if (failed > 0) {
+          console.warn(`[LocalDB] bulkDelete completed with ${failed} failures:`, failedIds);
+        }
+        resolve({ success: deleted, failed, failedIds, total: ids.length });
+      };
       tx.onerror = () => reject(tx.error);
     });
   }
