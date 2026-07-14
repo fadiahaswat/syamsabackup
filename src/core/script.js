@@ -6443,9 +6443,11 @@ window.switchTab = function (tabName) {
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     if (btn.dataset.target === tabName) {
       btn.classList.add("active");
+      btn.setAttribute("aria-current", "page");
       btn.classList.remove("text-emerald-500", "text-orange-500", "text-slate-400");
     } else {
       btn.classList.remove("active", "text-emerald-500", "text-orange-500");
+      btn.setAttribute("aria-current", "false");
       btn.classList.add("text-slate-400");
     }
   });

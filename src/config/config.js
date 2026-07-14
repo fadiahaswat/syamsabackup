@@ -24,6 +24,8 @@ const _DEFAULT_CREDENTIALS = {
   googleSheetUrl: "",
   googleClientId: "",
   adminEmails: [],
+  supabaseUrl: "",
+  supabaseAnonKey: "",
 };
 
 // Override dengan secrets dari config.local.js atau window.APP_SECRETS
@@ -33,6 +35,8 @@ window.APP_CREDENTIALS = {
   googleSheetUrl: _SECRETS.googleSheetUrl || _DEFAULT_CREDENTIALS.googleSheetUrl,
   googleClientId: _SECRETS.googleClientId || _DEFAULT_CREDENTIALS.googleClientId,
   adminEmails: _SECRETS.adminEmails || _DEFAULT_CREDENTIALS.adminEmails,
+  supabaseUrl: _SECRETS.supabaseUrl || _DEFAULT_CREDENTIALS.supabaseUrl,
+  supabaseAnonKey: _SECRETS.supabaseAnonKey || _DEFAULT_CREDENTIALS.supabaseAnonKey,
 };
 
 // ==========================================
@@ -154,8 +158,8 @@ window.APP_STORAGE = {
   // Storage version for future migrations
   version: 3,
 
-  // Storage mode: 'local-only' - semua data disimpan di browser localStorage
-  mode: 'local-only',
+  // Storage mode: 'supabase-sync' jika kredensial diatur, jika tidak fall back ke 'local-only'
+  mode: (window.APP_CREDENTIALS?.supabaseUrl && window.APP_CREDENTIALS?.supabaseAnonKey) ? 'supabase-sync' : 'local-only',
 
   // Data storage keys
   keys: {

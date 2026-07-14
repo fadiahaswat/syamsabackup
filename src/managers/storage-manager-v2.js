@@ -74,6 +74,11 @@ class StorageManagerV2 {
       // Setup state subscriptions
       this._setupStateSubscriptions();
 
+      // Initialize Supabase Sync
+      if (window.supabaseSync) {
+        window.supabaseSync.init(this._db, this._repos);
+      }
+
       this._initialized = true;
       console.log('[StorageManagerV2] Initialized with IndexedDB');
 
@@ -605,8 +610,9 @@ if (typeof module !== 'undefined' && module.exports) {
 
 window.StorageManagerV2 = StorageManagerV2;
 window.storageManagerV2 = storageManagerV2;
+window.storageManager = storageManagerV2; // Override legacy manager with V2
 
 // Also create global alias for easy access
 window.newStorageManager = storageManagerV2;
 
-console.log('[StorageManagerV2] Module loaded');
+console.log('[StorageManagerV2] Module loaded and assigned to window.storageManager');

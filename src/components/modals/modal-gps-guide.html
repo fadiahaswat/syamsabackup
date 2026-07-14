@@ -37,6 +37,7 @@
           onclick="window.setGpsTab('android')"
           id="gps-tab-btn-android"
           class="gps-tab-btn flex-1 py-2 rounded-lg text-[11px] font-black transition-all bg-white dark:bg-slate-700 shadow-sm text-palette-blue dark:text-palette-cyan"
+          aria-label="Panduan Android"
         >
           Android (Chrome)
         </button>
@@ -44,6 +45,7 @@
           onclick="window.setGpsTab('ios')"
           id="gps-tab-btn-ios"
           class="gps-tab-btn flex-1 py-2 rounded-lg text-[11px] font-black transition-all text-slate-500 dark:text-slate-400"
+          aria-label="Panduan iOS"
         >
           iOS (Safari)
         </button>
@@ -51,6 +53,7 @@
           onclick="window.setGpsTab('pc')"
           id="gps-tab-btn-pc"
           class="gps-tab-btn flex-1 py-2 rounded-lg text-[11px] font-black transition-all text-slate-500 dark:text-slate-400"
+          aria-label="Panduan Desktop"
         >
           PC / Laptop
         </button>
@@ -118,12 +121,14 @@
       <button
         onclick="document.getElementById('modal-gps-guide').classList.add('hidden')"
         class="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+        aria-label="Tutup panduan GPS"
       >
         Tutup
       </button>
       <button
         onclick="window.recheckGpsFromModal()"
         class="flex-1 py-3 rounded-xl bg-palette-blue text-white font-black text-xs hover:bg-opacity-90 transition-all active:scale-95 shadow-lg shadow-palette-blue/20"
+        aria-label="Coba periksa GPS lagi"
       >
         Coba Lagi
       </button>

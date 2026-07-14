@@ -4679,6 +4679,12 @@
       </div>
     </div>
 
+    <!-- Supabase Cloud Sync Status Indicator -->
+    <div id="supabase-sync-status" class="flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm rounded-full px-3 py-2 cursor-pointer focus:outline-none" onclick="if (window.supabaseSync) window.supabaseSync.syncAll()" title="Klik untuk sinkronisasi manual">
+      <i data-lucide="cloud" class="w-4 h-4"></i>
+      <span>Lokal Only</span>
+    </div>
+
     <!-- Standalone Notification Bell Button -->
     <button onclick="window.switchTab('notifications')" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-500 dark:text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue" aria-label="Buka notifikasi" title="Notifikasi">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg>
@@ -8066,6 +8072,8 @@
             <button
               onclick="window.switchTab('home')"
               data-target="home"
+              aria-label="Dashboard"
+              aria-current="page"
               class="nav-btn active group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
             >
               <div
@@ -8081,6 +8089,8 @@
             <button
               onclick="window.switchTab('tahfizh')"
               data-target="tahfizh"
+              aria-label="Tahfizh"
+              aria-current="false"
               class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
             >
               <div
@@ -8096,6 +8106,8 @@
             <button
               onclick="window.switchTab('report')"
               data-target="report"
+              aria-label="Laporan"
+              aria-current="false"
               class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
             >
               <div
@@ -8112,6 +8124,8 @@
             <button
               onclick="window.switchTab('profile')"
               data-target="profile"
+              aria-label="Profil"
+              aria-current="false"
               class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
             >
               <div
@@ -9750,7 +9764,16 @@
     <script src="src/data/data-kelas.js"></script>
     <script src="src/data/data-santri.js"></script>
     <script src="src/managers/santri-manager.js"></script>
-    <script src="src/managers/storage-manager.js"></script>
+    <!-- Supabase JS SDK & Integration -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="src/platform/supabase-client.js"></script>
+    <script src="src/managers/database-schema.js"></script>
+    <script src="src/managers/repository.js"></script>
+    <script src="src/managers/sync-queue.js"></script>
+    <script src="src/managers/state-manager.js"></script>
+    <script src="src/managers/data-migrator.js"></script>
+    <script src="src/managers/supabase-sync.js"></script>
+    <script src="src/managers/storage-manager-v2.js"></script>
     <script src="src/managers/file-upload.js"></script>
     <script src="src/shared/utils.js"></script>
     <script src="src/platform/storage-service.js"></script>

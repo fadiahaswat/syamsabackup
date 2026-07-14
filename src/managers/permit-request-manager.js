@@ -358,10 +358,11 @@
 
     if (list.length === 0) {
       container.innerHTML = `
-        <div class="flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-slate-50 dark:bg-slate-900/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-2 opacity-60"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <p class="text-xs font-bold">Belum Ada Pengajuan Izin</p>
-          <p class="text-[10px] text-slate-400 mt-0.5">Semua riwayat pengajuan Anda akan muncul di sini.</p>
+        <div class="empty-state text-center py-8">
+          <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mx-auto mb-3 flex items-center justify-center">
+            <i data-lucide="inbox" class="w-6 h-6 text-slate-400"></i>
+          </div>
+          <p class="text-[10px] text-slate-500 font-medium">Belum ada pengajuan izin</p>
         </div>
       `;
       return;

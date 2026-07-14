@@ -118,6 +118,7 @@ class LocalDB {
     this.isReady = false;
     this.isInitializing = false;
     this.readyPromise = null;
+    this.isSyncing = false;
   }
 
   /**
@@ -479,6 +480,20 @@ class LocalDB {
       const request = store.put(record);
 
       request.onsuccess = () => {
+        // Auto-sync ke Supabase jika aktif dan perubahan berasal dari user (bukan sinkronisasi masuk)
+        if (!this.isSyncing && window.isSupabaseEnabled && window.syncQueue && !['sync_queue', 'conflicts', 'sync_metadata'].includes(storeName)) {
+          window.syncQueue.add({
+            entityType: storeName,
+            entityId: record.id,
+            operation: 'upsert',
+            payload: record,
+            priority: storeName === 'attendances' ? 8 : (storeName === 'permits' ? 7 : (storeName === 'tahfizh' ? 7 : 5))
+          }).then(() => {
+            if (window.supabaseSync && navigator.onLine) {
+              window.supabaseSync.syncOutbound();
+            }
+          });
+        }
         resolve(record);
       };
 
@@ -705,6 +720,20 @@ class LocalDB {
       const request = store.delete(id);
 
       request.onsuccess = () => {
+        // Auto-sync delete ke Supabase jika aktif
+        if (!this.isSyncing && window.isSupabaseEnabled && window.syncQueue && !['sync_queue', 'conflicts', 'sync_metadata'].includes(storeName)) {
+          window.syncQueue.add({
+            entityType: storeName,
+            entityId: id,
+            operation: 'delete',
+            payload: null,
+            priority: 7
+          }).then(() => {
+            if (window.supabaseSync && navigator.onLine) {
+              window.supabaseSync.syncOutbound();
+            }
+          });
+        }
         resolve(true);
       };
 
@@ -793,7 +822,21 @@ class LocalDB {
           results.push(request.result);
           completed++;
 
+          // Auto-sync ke Supabase
+          if (!this.isSyncing && window.isSupabaseEnabled && window.syncQueue && !['sync_queue', 'conflicts', 'sync_metadata'].includes(storeName)) {
+            window.syncQueue.add({
+              entityType: storeName,
+              entityId: record.id,
+              operation: 'upsert',
+              payload: record,
+              priority: storeName === 'attendances' ? 8 : (storeName === 'permits' ? 7 : (storeName === 'tahfizh' ? 7 : 5))
+            });
+          }
+
           if (completed === total) {
+            if (window.supabaseSync && navigator.onLine && !this.isSyncing && window.isSupabaseEnabled) {
+              window.supabaseSync.syncOutbound();
+            }
             if (hasError) {
               console.warn(`[LocalDB] bulkPut completed with ${failed.length} errors`);
             }

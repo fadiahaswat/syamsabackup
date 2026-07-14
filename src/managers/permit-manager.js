@@ -638,26 +638,44 @@ window.setPermitTab = function (tab) {
 
 // 3. Logic Simpan Data (Advanced)
 window.savePermitLogic = async function () {
+  // Clear previous errors
+  window.clearAllInputErrors('form-permit-container');
+
   const checkboxes = document.querySelectorAll(
     'input[name="permit_santri_select"]:checked',
   );
   const selectedNis = Array.from(checkboxes).map((cb) => cb.value);
 
-  if (selectedNis.length === 0)
-    return window.showToast("Pilih minimal 1 santri", "warning");
+  if (selectedNis.length === 0) {
+    window.showToast("Pilih minimal 1 santri", "warning");
+    return;
+  }
 
   const reason = document.getElementById("permit-reason").value;
   const startDate = document.getElementById("permit-start-date").value;
   const startSession = document.getElementById("permit-start-session").value;
   const todayStr = window.getLocalDateStr();
 
-  if (!reason) return window.showToast("Isi alasannya dulu", "warning");
-  if (!startDate)
-    return window.showToast("Tanggal mulai wajib diisi", "warning");
+  // Validation flags
+  let isValid = true;
+
+  if (!reason) {
+    window.showInputError("permit-reason", "Alasan wajib diisi");
+    isValid = false;
+  }
+
+  if (!startDate) {
+    window.showInputError("permit-start-date", "Tanggal mulai wajib diisi");
+    isValid = false;
+  }
+
+  if (!isValid) return;
 
   // VALIDASI: Sakit tidak bisa direncanakan untuk masa depan
   if (currentPermitTab === "sakit" && startDate > todayStr) {
-    return window.showToast("Sakit tidak bisa direncanakan! Input untuk hari ini atau sebelumnya.", "warning");
+    window.showInputError("permit-start-date", "Sakit tidak bisa direncanakan untuk masa depan");
+    window.showToast("Sakit tidak bisa direncanakan! Input untuk hari ini atau sebelumnya.", "warning");
+    return;
   }
 
   let permitData = {
@@ -684,7 +702,17 @@ window.savePermitLogic = async function () {
     if (diffDays > 2) {
       const suratDokterFile = document.getElementById("permit-surat-dokter")?.files[0];
       if (!suratDokterFile) {
-        return window.showToast("Sakit lebih dari 2 hari wajib upload surat dokter!", "warning");
+        // Show error state on file input
+        const fileLabel = document.querySelector('label[for="permit-surat-dokter"]');
+        if (fileLabel) {
+          fileLabel.classList.add('input-error');
+        }
+        const errorMsg = document.getElementById("surat-dokter-error");
+        if (errorMsg) {
+          errorMsg.classList.remove("hidden");
+        }
+        window.showToast("Sakit lebih dari 2 hari wajib upload surat dokter!", "warning");
+        return;
       }
       // Upload using FileUploadManager (local storage fallback)
       try {
@@ -703,7 +731,8 @@ window.savePermitLogic = async function () {
           suratDokterUrl = await window.fileToBase64(suratDokterFile);
         }
       } catch (e) {
-        return window.showToast("Gagal upload surat dokter. Coba lagi.", "error");
+        window.showToast("Gagal upload surat dokter. Coba lagi.", "error");
+        return;
       }
     }
 
@@ -718,10 +747,16 @@ window.savePermitLogic = async function () {
     const endDate = document.getElementById("permit-end-date").value;
     const endTime = document.getElementById("permit-end-time").value;
 
-    if (!endDate)
-      return window.showToast("Tanggal selesai wajib diisi", "warning");
-    if (endDate < startDate)
-      return window.showToast("Tanggal selesai error", "error");
+    if (!endDate) {
+      window.showInputError("permit-end-date", "Tanggal selesai wajib diisi");
+      isValid = false;
+    } else if (endDate < startDate) {
+      window.showInputError("permit-end-date", "Tanggal selesai tidak boleh sebelum tanggal mulai");
+      window.showToast("Tanggal selesai error", "error");
+      isValid = false;
+    }
+
+    if (!isValid) return;
 
     permitData.end_date = endDate;
     permitData.end_time_limit = endTime;
@@ -1349,6 +1384,11 @@ window.openEditHistory = function (id) {
   const permit = appState.permits.find((p) => p.id === id);
   if (!permit) return window.showToast("Data tidak ditemukan", "error");
 
+  // Clear previous errors
+  window.clearAllInputErrors('field-edit-reason');
+  window.clearAllInputErrors('field-edit-start');
+  window.clearAllInputErrors('field-edit-end');
+
   // Isi Form Modal dengan Data Lama
   document.getElementById("edit-permit-id").value = permit.id;
   document.getElementById("edit-permit-reason").value = permit.reason || "";
@@ -1363,17 +1403,37 @@ window.openEditHistory = function (id) {
 
 // 4. Fungsi Simpan Edit
 window.savePermitEdit = function () {
+  // Clear previous errors
+  window.clearAllInputErrors('field-edit-reason');
+  window.clearAllInputErrors('field-edit-start');
+  window.clearAllInputErrors('field-edit-end');
+
   const id = document.getElementById("edit-permit-id").value;
   const reason = document.getElementById("edit-permit-reason").value;
   const start = document.getElementById("edit-permit-start").value;
   const end = document.getElementById("edit-permit-end").value;
   const isActive = document.getElementById("edit-permit-active").checked;
 
-  if (!reason || !start)
-    return window.showToast("Alasan dan Tanggal Mulai wajib diisi", "warning");
+  // Validation flags
+  let isValid = true;
 
-  if (end && end < start)
-    return window.showToast("Tanggal selesai error", "error");
+  if (!reason) {
+    window.showInputError("edit-permit-reason", "Alasan wajib diisi");
+    isValid = false;
+  }
+
+  if (!start) {
+    window.showInputError("edit-permit-start", "Tanggal mulai wajib diisi");
+    isValid = false;
+  }
+
+  if (end && end < start) {
+    window.showInputError("edit-permit-end", "Tanggal selesai tidak boleh sebelum tanggal mulai");
+    window.showToast("Tanggal selesai error", "error");
+    isValid = false;
+  }
+
+  if (!isValid) return;
 
   // Cari index data di array
   const index = appState.permits.findIndex((p) => p.id === id);

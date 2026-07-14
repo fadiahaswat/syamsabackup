@@ -158,6 +158,169 @@
     return R * c;
   };
 
+  // ============================================================
+  // FORM INPUT ERROR STATE UTILITIES
+  // ============================================================
+
+  /**
+   * Show error state on an input element
+   * @param {string} inputId - The ID of the input element
+   * @param {string} message - Error message to display
+   */
+  const showInputError = function (inputId, message) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.classList.add('input-error');
+    input.setAttribute('aria-invalid', 'true');
+
+    // Find or create error message element
+    const container = input.closest('div') || input.parentElement;
+    let errorEl = container?.querySelector('.input-error-message');
+
+    if (!errorEl) {
+      errorEl = document.createElement('span');
+      errorEl.className = 'input-error-message';
+      input.insertAdjacentElement('afterend', errorEl);
+    }
+
+    errorEl.textContent = message;
+    errorEl.setAttribute('role', 'alert');
+  };
+
+  /**
+   * Clear error state from an input element
+   * @param {string} inputId - The ID of the input element
+   */
+  const clearInputError = function (inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.classList.remove('input-error');
+    input.removeAttribute('aria-invalid');
+
+    // Remove error message element
+    const container = input.closest('div') || input.parentElement;
+    const errorEl = container?.querySelector('.input-error-message');
+    if (errorEl) {
+      errorEl.remove();
+    }
+  };
+
+  /**
+   * Clear all input errors within a container
+   * @param {string} containerId - The ID of the container element
+   */
+  const clearAllInputErrors = function (containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const errorInputs = container.querySelectorAll('.input-error');
+    errorInputs.forEach(input => {
+      input.classList.remove('input-error');
+      input.removeAttribute('aria-invalid');
+    });
+
+    const errorMessages = container.querySelectorAll('.input-error-message');
+    errorMessages.forEach(el => el.remove());
+  };
+
+  /**
+   * Validate that a field has value
+   * @param {string} inputId - The ID of the input element
+   * @param {string} fieldName - Human-readable field name for error message
+   * @returns {boolean} - True if valid
+   */
+  const validateRequired = function (inputId, fieldName) {
+    const input = document.getElementById(inputId);
+    if (!input) return true;
+
+    const value = input.value?.trim();
+    if (!value) {
+      showInputError(inputId, `${fieldName} wajib diisi`);
+      return false;
+    }
+    clearInputError(inputId);
+    return true;
+  };
+
+  /**
+   * Validate date is not in the future (for sick permits)
+   * @param {string} inputId - The ID of the date input element
+   * @param {string} errorMessage - Custom error message
+   * @returns {boolean} - True if valid
+   */
+  const validateDateNotFuture = function (inputId, errorMessage = "Tanggal tidak boleh di masa depan") {
+    const input = document.getElementById(inputId);
+    if (!input || !input.value) return true;
+
+    const today = getLocalDateStr();
+    if (input.value > today) {
+      showInputError(inputId, errorMessage);
+      return false;
+    }
+    clearInputError(inputId);
+    return true;
+  };
+
+  /**
+   * Validate end date is after or equal to start date
+   * @param {string} startInputId - Start date input ID
+   * @param {string} endInputId - End date input ID
+   * @returns {boolean} - True if valid
+   */
+  const validateDateRange = function (startInputId, endInputId) {
+    const startInput = document.getElementById(startInputId);
+    const endInput = document.getElementById(endInputId);
+    if (!startInput || !endInput || !startInput.value || !endInput.value) return true;
+
+    if (endInput.value < startInput.value) {
+      showInputError(endInputId, "Tanggal selesai tidak boleh sebelum tanggal mulai");
+      return false;
+    }
+    clearInputError(endInputId);
+    return true;
+  };
+
+  /**
+   * Show error state on a radio button group
+   * @param {string} groupName - The name attribute of the radio inputs
+   * @param {string} message - Error message to display
+   */
+  const showRadioGroupError = function (groupName, message) {
+    const radios = document.querySelectorAll(`input[name="${groupName}"]`);
+    if (radios.length === 0) return;
+
+    const container = radios[0].closest('div');
+    if (container) {
+      container.classList.add('radio-group-error');
+      let errorEl = container.querySelector('.input-error-message');
+      if (!errorEl) {
+        errorEl = document.createElement('span');
+        errorEl.className = 'input-error-message';
+        container.appendChild(errorEl);
+      }
+      errorEl.textContent = message;
+      errorEl.setAttribute('role', 'alert');
+    }
+  };
+
+  /**
+   * Clear error state from a radio button group
+   * @param {string} groupName - The name attribute of the radio inputs
+   */
+  const clearRadioGroupError = function (groupName) {
+    const radios = document.querySelectorAll(`input[name="${groupName}"]`);
+    if (radios.length === 0) return;
+
+    const container = radios[0].closest('div');
+    if (container) {
+      container.classList.remove('radio-group-error');
+      const errorEl = container.querySelector('.input-error-message');
+      if (errorEl) errorEl.remove();
+    }
+  };
+
   window.SharedUtils = {
     DAYS_ID,
     MONTHS_SHORT_ID,
@@ -179,6 +342,14 @@
     getPredikatMeaning,
     deg2rad,
     getDistanceFromLatLonInMeters,
+    showInputError,
+    clearInputError,
+    clearAllInputErrors,
+    validateRequired,
+    validateDateNotFuture,
+    validateDateRange,
+    showRadioGroupError,
+    clearRadioGroupError,
   };
 
   window.DAYS_ID = window.DAYS_ID || DAYS_ID;
@@ -202,4 +373,14 @@
   window.deg2rad = window.deg2rad || deg2rad;
   window.getDistanceFromLatLonInMeters =
     window.getDistanceFromLatLonInMeters || getDistanceFromLatLonInMeters;
+
+  // Form validation utilities exposed to window
+  window.showInputError = window.showInputError || showInputError;
+  window.clearInputError = window.clearInputError || clearInputError;
+  window.clearAllInputErrors = window.clearAllInputErrors || clearAllInputErrors;
+  window.validateRequired = window.validateRequired || validateRequired;
+  window.validateDateNotFuture = window.validateDateNotFuture || validateDateNotFuture;
+  window.validateDateRange = window.validateDateRange || validateDateRange;
+  window.showRadioGroupError = window.showRadioGroupError || showRadioGroupError;
+  window.clearRadioGroupError = window.clearRadioGroupError || clearRadioGroupError;
 })();

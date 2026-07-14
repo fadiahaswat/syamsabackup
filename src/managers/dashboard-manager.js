@@ -1238,12 +1238,12 @@ window.renderDashboardPembinaan = function () {
 
   if (violationList.length === 0) {
     container.innerHTML = `
-            <div class="text-center py-8">
-                <div class="inline-flex p-3 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 mb-2 border border-emerald-100 dark:border-emerald-800">
-                    <i data-lucide="shield-check" class="w-6 h-6"></i>
-                </div>
-                <p class="text-[10px] font-bold text-slate-400">Nihil pelanggaran hari ini</p>
-            </div>`;
+      <div class="empty-state text-center py-6">
+        <div class="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 mx-auto mb-2 flex items-center justify-center">
+          <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+        </div>
+        <p class="text-[10px] text-slate-400 font-medium">Nihil pelanggaran hari ini</p>
+      </div>`;
   } else {
     // SORTING: Yang BELUM DIBINA taruh paling atas
     violationList.sort((a, b) =>
@@ -1524,9 +1524,14 @@ window.renderKBMBanner = function () {
 window.renderActivePermitsWidget = function () {
   const container = document.getElementById("dashboard-active-permits-list");
   const badgeCount = document.getElementById("active-permit-count");
+  const skeletonEl = container?.querySelector(".permit-skeleton");
+  const emptyEl = container?.querySelector(".empty-state");
 
   if (!container) return;
-  container.innerHTML = "";
+
+  // Show skeleton, hide empty state initially
+  if (skeletonEl) skeletonEl.classList.remove("hidden");
+  if (emptyEl) emptyEl.classList.add("hidden");
 
   const combinedList = [];
   const processedNis = new Set(); // Hanya mencatat NIS yang AKTIF sakitnya
@@ -1632,9 +1637,19 @@ window.renderActivePermitsWidget = function () {
 
   // Render HTML
   if (combinedList.length === 0) {
-    container.innerHTML = `<div class="text-center py-6 text-slate-400 text-[10px] font-bold">Semua santri lengkap / Hadir</div>`;
+    // Hide skeleton, show empty state
+    if (skeletonEl) skeletonEl.classList.add("hidden");
+    if (emptyEl) emptyEl.classList.remove("hidden");
+    if (window.lucide) window.lucide.createIcons();
     return;
   }
+
+  // Hide skeleton and empty state, render data
+  if (skeletonEl) skeletonEl.classList.add("hidden");
+  if (emptyEl) emptyEl.classList.add("hidden");
+
+  // Clear any existing rendered items (but keep skeleton and empty state)
+  container.querySelectorAll(".permit-item").forEach(el => el.remove());
 
   combinedList.forEach((item) => {
     const santri = FILTERED_SANTRI.find(
@@ -1692,7 +1707,7 @@ window.renderActivePermitsWidget = function () {
     }
 
     const div = document.createElement("div");
-    div.className = `flex items-center justify-between p-3 rounded-2xl border transition-all mb-2 ${item.isActive ? "bg-white dark:bg-slate-800 shadow-sm" : "bg-slate-50 dark:bg-slate-900 opacity-60 grayscale"}`;
+    div.className = `permit-item flex items-center justify-between p-3 rounded-2xl border transition-all mb-2 ${item.isActive ? "bg-white dark:bg-slate-800 shadow-sm" : "bg-slate-50 dark:bg-slate-900 opacity-60 grayscale"}`;
     div.innerHTML = `
             <div class="flex items-center gap-3 min-w-0">
                 <div class="w-9 h-9 rounded-xl ${colorClass} flex items-center justify-center flex-shrink-0 border shadow-sm"><i data-lucide="${iconName}" class="w-4 h-4"></i></div>

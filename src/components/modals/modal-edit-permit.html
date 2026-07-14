@@ -13,6 +13,7 @@
       <button
         onclick="window.closeModal('modal-edit-permit')"
         class="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200"
+        aria-label="Tutup form edit izin"
       >
         <i data-lucide="x" class="w-5 h-5 text-slate-500"></i>
       </button>
@@ -21,7 +22,7 @@
     <input type="hidden" id="edit-permit-id" />
 
     <div class="space-y-4">
-      <div>
+      <div id="field-edit-reason">
         <label class="block text-xs font-bold text-slate-500 mb-1">
           Alasan / Keterangan
         </label>
@@ -29,11 +30,13 @@
           type="text"
           id="edit-permit-reason"
           class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+          aria-describedby="edit-permit-reason-error"
         />
+        <span id="edit-permit-reason-error" class="input-error-message hidden" role="alert"></span>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
-        <div>
+        <div id="field-edit-start">
           <label class="block text-xs font-bold text-slate-500 mb-1">
             Mulai
           </label>
@@ -41,9 +44,11 @@
             type="date"
             id="edit-permit-start"
             class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold"
+            aria-describedby="edit-permit-start-error"
           />
+          <span id="edit-permit-start-error" class="input-error-message hidden" role="alert"></span>
         </div>
-        <div>
+        <div id="field-edit-end">
           <label class="block text-xs font-bold text-slate-500 mb-1">
             Selesai (Opsional)
           </label>
@@ -51,7 +56,9 @@
             type="date"
             id="edit-permit-end"
             class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold"
+            aria-describedby="edit-permit-end-error"
           />
+          <span id="edit-permit-end-error" class="input-error-message hidden" role="alert"></span>
         </div>
       </div>
 
@@ -80,12 +87,14 @@
       <button
         onclick="window.closeModal('modal-edit-permit')"
         class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm"
+        aria-label="Batal edit izin"
       >
         Batal
       </button>
       <button
         onclick="window.savePermitEdit()"
         class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-500/30"
+        aria-label="Simpan perubahan izin"
       >
         Simpan Perubahan
       </button>
