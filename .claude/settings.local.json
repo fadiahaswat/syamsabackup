@@ -92,7 +92,9 @@
       "Bash(copy icon.png icon-512.png)",
       "PowerShell(Copy-Item \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon.png\" \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon-192.png\")",
       "PowerShell(Copy-Item \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon.png\" \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon-512.png\")",
-      "PowerShell(Copy-Item \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon.png\" \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon-maskable-512.png\")"
+      "PowerShell(Copy-Item \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon.png\" \"d:\\\\syamsa-backup\\\\syamsabackup\\\\assets\\\\icons\\\\icon-maskable-512.png\")",
+      "Bash(node --check src/managers/data-migrator.js)",
+      "Bash(node --check src/managers/database-schema.js)"
     ],
     "additionalDirectories": [
       "d:\\syamsa-backup\\syamsabackup",

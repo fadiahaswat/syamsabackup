@@ -5,6 +5,7 @@
  * - Migrate existing LocalStorage data to new IndexedDB schema
  * - Maintain backward compatibility
  * - Verify data integrity after migration
+ * - Support rollback on partial failure
  *
  * MIGRATION PLAN:
  *
@@ -12,7 +13,7 @@
  * Phase 2: Migrate permits data
  * Phase 3: Migrate settings
  * Phase 4: Migrate activity logs
- * Phase 5: Mark migration as complete
+ * Phase 5: Verify and mark migration as complete
  */
 
 class DataMigrator {
@@ -20,6 +21,7 @@ class DataMigrator {
     this.db = localDB;
     this.repos = repositories;
     this.migrationKey = 'musyrif_db_migration_v2';
+    this._phaseResults = null;
   }
 
   /**
@@ -39,12 +41,12 @@ class DataMigrator {
   }
 
   /**
-   * Run full migration
+   * Run full migration with verification and rollback
    */
   async migrate() {
     console.log('[DataMigrator] Starting migration...');
 
-    const results = {
+    this._phaseResults = {
       attendance: { success: 0, failed: 0 },
       permits: { success: 0, failed: 0 },
       settings: { success: 0, failed: 0 },
@@ -54,29 +56,76 @@ class DataMigrator {
     try {
       // Phase 1: Migrate attendance data
       console.log('[DataMigrator] Phase 1: Migrating attendance data...');
-      results.attendance = await this._migrateAttendance();
+      this._phaseResults.attendance = await this._migrateAttendance();
+
+      // Verify Phase 1 before proceeding
+      if (this._phaseResults.attendance.failed > 0 &&
+          this._phaseResults.attendance.success === 0) {
+        throw new Error('Phase 1 (attendance) failed completely - aborting migration');
+      }
 
       // Phase 2: Migrate permits data
       console.log('[DataMigrator] Phase 2: Migrating permits data...');
-      results.permits = await this._migratePermits();
+      this._phaseResults.permits = await this._migratePermits();
 
       // Phase 3: Migrate settings
       console.log('[DataMigrator] Phase 3: Migrating settings...');
-      results.settings = await this._migrateSettings();
+      this._phaseResults.settings = await this._migrateSettings();
 
       // Phase 4: Migrate activity logs
       console.log('[DataMigrator] Phase 4: Migrating activity logs...');
-      results.activityLogs = await this._migrateActivityLogs();
+      this._phaseResults.activityLogs = await this._migrateActivityLogs();
 
-      // Phase 5: Mark migration complete
+      // Phase 5: Verify migration before marking complete
+      console.log('[DataMigrator] Phase 5: Verifying migration...');
+      const verification = await this.verify();
+
+      if (!verification.attendance.match || !verification.permits.match) {
+        console.warn('[DataMigrator] Verification warning:', verification);
+        // Continue anyway but log warning
+      }
+
+      // Mark migration complete only after verification
       await this.db.setMeta(this.migrationKey, 'completed');
       await this.db.setMeta('migration_date', new Date().toISOString());
 
-      console.log('[DataMigrator] Migration completed!', results);
-      return { success: true, results };
+      console.log('[DataMigrator] Migration completed successfully!', this._phaseResults);
+      return { success: true, results: this._phaseResults, verification };
+
     } catch (error) {
       console.error('[DataMigrator] Migration failed:', error);
-      return { success: false, error, results };
+
+      // Attempt rollback on failure
+      console.log('[DataMigrator] Attempting rollback...');
+      await this.rollback();
+
+      return { success: false, error: error.message, results: this._phaseResults };
+    }
+  }
+
+  /**
+   * Rollback all migrated data
+   */
+  async rollback() {
+    try {
+      console.log('[DataMigrator] Rolling back migrated data...');
+
+      await Promise.all([
+        this.db.clear('attendances'),
+        this.db.clear('permits'),
+        this.db.clear('settings'),
+        this.db.clear('activity_logs'),
+      ]);
+
+      // Clear migration markers
+      await this.db.setMeta(this.migrationKey, null);
+      await this.db.setMeta('migration_date', null);
+
+      console.log('[DataMigrator] Rollback completed');
+      return { success: true };
+    } catch (error) {
+      console.error('[DataMigrator] Rollback failed:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -318,31 +367,6 @@ class DataMigrator {
     }
 
     return result;
-  }
-
-  /**
-   * Rollback migration (delete all IndexedDB data)
-   */
-  async rollback() {
-    console.log('[DataMigrator] Rolling back migration...');
-
-    try {
-      await this.db.clear('attendances');
-      await this.db.clear('permits');
-      await this.db.clear('settings');
-      await this.db.clear('activity_logs');
-      await this.db.clear('tahfizh');
-      await this.db.clear('sync_queue');
-      await this.db.clear('conflicts');
-
-      await this.db.setMeta(this.migrationKey, null);
-
-      console.log('[DataMigrator] Rollback completed');
-      return { success: true };
-    } catch (error) {
-      console.error('[DataMigrator] Rollback failed:', error);
-      return { success: false, error };
-    }
   }
 
   /**

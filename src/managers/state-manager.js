@@ -378,26 +378,33 @@ class StateManager {
    * Update attendance status
    */
   async updateAttendance(date, slot, studentId, activityId, newStatus, actorName) {
-    // Update local state
-    if (!this._state.attendanceData[date]) {
-      this._state.attendanceData[date] = {};
-    }
-    if (!this._state.attendanceData[date][slot]) {
-      this._state.attendanceData[date][slot] = {};
-    }
-    if (!this._state.attendanceData[date][slot][studentId]) {
-      this._state.attendanceData[date][slot][studentId] = {
-        status: {},
-        note: '',
-      };
-    }
+    const now = new Date().toISOString();
+    const existingRecord = this._state.attendanceData[date]?.[slot]?.[studentId];
+    const oldStatus = existingRecord?.status?.[activityId];
 
-    // Update the status
-    const oldStatus = this._state.attendanceData[date][slot][studentId].status[activityId];
-    this._state.attendanceData[date][slot][studentId].status[activityId] = newStatus;
-    this._state.attendanceData[date][slot][studentId].timestamps = {
-      ...this._state.attendanceData[date][slot][studentId].timestamps,
-      [activityId]: new Date().toISOString(),
+    // Immutable update - create new nested objects
+    const updatedRecord = {
+      status: {
+        ...(existingRecord?.status || {}),
+        [activityId]: newStatus,
+      },
+      timestamps: {
+        ...(existingRecord?.timestamps || {}),
+        [activityId]: now,
+      },
+      note: existingRecord?.note || '',
+    };
+
+    // Immutable update at each level
+    this._state.attendanceData = {
+      ...this._state.attendanceData,
+      [date]: {
+        ...(this._state.attendanceData[date] || {}),
+        [slot]: {
+          ...(this._state.attendanceData[date]?.[slot] || {}),
+          [studentId]: updatedRecord,
+        },
+      },
     };
 
     // Mark dirty and increment version
@@ -413,7 +420,7 @@ class StateManager {
       date,
       slot,
       studentId,
-      this._state.attendanceData[date][slot][studentId],
+      updatedRecord,
       this._state.selectedClass
     );
 
@@ -425,19 +432,36 @@ class StateManager {
       this._state.selectedClass
     );
 
-    return this._state.attendanceData[date][slot][studentId];
+    return updatedRecord;
   }
 
   /**
    * Update note
    */
   async updateNote(date, slot, studentId, note, actorName) {
-    if (!this._state.attendanceData[date]?.[slot]?.[studentId]) {
+    const existingRecord = this._state.attendanceData[date]?.[slot]?.[studentId];
+    if (!existingRecord) {
       return null;
     }
 
-    const oldNote = this._state.attendanceData[date][slot][studentId].note;
-    this._state.attendanceData[date][slot][studentId].note = note;
+    const oldNote = existingRecord.note;
+
+    // Immutable update
+    const updatedRecord = {
+      ...existingRecord,
+      note,
+    };
+
+    this._state.attendanceData = {
+      ...this._state.attendanceData,
+      [date]: {
+        ...(this._state.attendanceData[date] || {}),
+        [slot]: {
+          ...(this._state.attendanceData[date]?.[slot] || {}),
+          [studentId]: updatedRecord,
+        },
+      },
+    };
 
     // Persist
     await this._repos.attendance.updateNote(
@@ -459,7 +483,7 @@ class StateManager {
 
     this._emit('change', ['attendanceData']);
 
-    return this._state.attendanceData[date][slot][studentId];
+    return updatedRecord;
   }
 
   /**

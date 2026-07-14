@@ -1,15 +1,17 @@
 /**
- * SyncQueue - IndexedDB-based Offline Sync Queue
+ * SyncQueue - Unified IndexedDB-based Offline Sync Queue
  *
- * Menyimpan perubahan offline di IndexedDB dan memprosesnya
- * saat koneksi internet tersedia kembali.
+ * Uses LocalDB (musyrif_local_db) instead of separate database.
+ * Stores changes in 'changes' store and conflicts in 'conflicts' store.
+ *
+ * NOTE: This module now uses the shared LocalDB from database-schema.js
+ * Instead of creating its own IndexedDB connection.
  */
 
 class SyncQueue {
   constructor() {
-    this.dbName = 'syamsa_sync_queue';
-    this.dbVersion = 1;
-    this.db = null;
+    // Use shared LocalDB instance instead of separate database
+    this._db = null;
     this.isReady = false;
 
     // Pending sync count (for UI)
@@ -20,80 +22,34 @@ class SyncQueue {
     this.onSyncComplete = null;
     this.onSyncError = null;
     this.onQueueChange = null;
-
-    // Initialize
-    this._initDB();
   }
 
   /**
-   * Initialize IndexedDB
+   * Initialize with shared LocalDB
    */
-  async _initDB() {
-    return new Promise((resolve, reject) => {
-      if (typeof indexedDB === 'undefined') {
-        console.warn('[SyncQueue] IndexedDB not available');
-        resolve();
-        return;
-      }
+  async init(localDB) {
+    if (!localDB) {
+      throw new Error('SyncQueue requires LocalDB instance');
+    }
 
-      const request = indexedDB.open(this.dbName, this.dbVersion);
+    this._db = localDB;
+    await this._db.ensureReady();
+    this.isReady = true;
 
-      request.onerror = () => {
-        console.error('[SyncQueue] Failed to open IndexedDB:', request.error);
-        reject(request.error);
-      };
+    console.log('[SyncQueue] Initialized with shared LocalDB');
+    await this._updatePendingCount();
 
-      request.onsuccess = () => {
-        this.db = request.result;
-        this.isReady = true;
-        console.log('[SyncQueue] IndexedDB ready');
-        this._updatePendingCount();
-        resolve();
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        console.log('[SyncQueue] Upgrading database to version', event.newVersion);
-
-        // Changes store - main queue
-        if (!db.objectStoreNames.contains('changes')) {
-          const changesStore = db.createObjectStore('changes', {
-            keyPath: 'id',
-            autoIncrement: false,
-          });
-          changesStore.createIndex('status', 'status');
-          changesStore.createIndex('entityType', 'entityType');
-          changesStore.createIndex('timestamp', 'timestamp');
-          changesStore.createIndex('priority', 'priority');
-        }
-
-        // Conflicts store - for conflict resolution
-        if (!db.objectStoreNames.contains('conflicts')) {
-          const conflictsStore = db.createObjectStore('conflicts', {
-            keyPath: 'id',
-          });
-          conflictsStore.createIndex('entityType', 'entityType');
-          conflictsStore.createIndex('createdAt', 'createdAt');
-        }
-
-        // Metadata store - for sync state
-        if (!db.objectStoreNames.contains('metadata')) {
-          const metadataStore = db.createObjectStore('metadata', {
-            keyPath: 'key',
-          });
-          metadataStore.createIndex('lastSync', 'lastSync');
-        }
-      };
-    });
+    return this;
   }
 
   /**
    * Ensure DB is ready
    */
   async _ensureReady() {
-    if (!this.isReady) {
-      await this._initDB();
+    if (!this.isReady || !this._db) {
+      throw new Error('SyncQueue not initialized. Call init(localDB) first.');
     }
+    await this._db.ensureReady();
   }
 
   /**
@@ -117,25 +73,15 @@ class SyncQueue {
       retries: 0,
     };
 
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readwrite');
-      const store = tx.objectStore('changes');
-      const request = store.add(record);
+    const saved = await this._db.put('sync_queue', record);
+    console.log('[SyncQueue] Added change:', record.id, record.entityType);
+    await this._updatePendingCount();
 
-      request.onsuccess = () => {
-        console.log('[SyncQueue] Added change:', record.id, record.entityType);
-        this._updatePendingCount();
-        if (this.onQueueChange) {
-          this.onQueueChange(this.pendingCount);
-        }
-        resolve(record.id);
-      };
+    if (this.onQueueChange) {
+      this.onQueueChange(this.pendingCount);
+    }
 
-      request.onerror = () => {
-        console.error('[SyncQueue] Failed to add change:', request.error);
-        reject(request.error);
-      };
-    });
+    return saved.id;
   }
 
   /**
@@ -187,31 +133,18 @@ class SyncQueue {
   async getPending(limit = 50) {
     await this._ensureReady();
 
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readonly');
-      const store = tx.objectStore('changes');
-      const index = store.index('status');
-      const request = index.getAll(IDBKeyRange.only('pending'));
+    // Get all pending records
+    const results = await this._db.getByIndex('sync_queue', 'status', 'pending');
 
-      request.onsuccess = () => {
-        let results = request.result || [];
-
-        // Sort by priority (desc) then timestamp (asc)
-        results.sort((a, b) => {
-          if (b.priority !== a.priority) {
-            return b.priority - a.priority;
-          }
-          return a.timestamp - b.timestamp;
-        });
-
-        resolve(results.slice(0, limit));
-      };
-
-      request.onerror = () => {
-        console.error('[SyncQueue] Failed to get pending:', request.error);
-        reject(request.error);
-      };
+    // Sort by priority (desc) then timestamp (asc)
+    results.sort((a, b) => {
+      if (b.priority !== a.priority) {
+        return b.priority - a.priority;
+      }
+      return a.timestamp - b.timestamp;
     });
+
+    return results.slice(0, limit);
   }
 
   /**
@@ -219,21 +152,7 @@ class SyncQueue {
    */
   async getPendingCount() {
     await this._ensureReady();
-
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readonly');
-      const store = tx.objectStore('changes');
-      const index = store.index('status');
-      const request = index.count(IDBKeyRange.only('pending'));
-
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    return this._db.countByIndex('sync_queue', 'status', 'pending');
   }
 
   /**
@@ -252,20 +171,7 @@ class SyncQueue {
    */
   async getChange(id) {
     await this._ensureReady();
-
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readonly');
-      const store = tx.objectStore('changes');
-      const request = store.get(id);
-
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    return this._db.get('sync_queue', id);
   }
 
   /**
@@ -274,45 +180,28 @@ class SyncQueue {
   async updateStatus(id, status, extra = {}) {
     await this._ensureReady();
 
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readwrite');
-      const store = tx.objectStore('changes');
-      const getRequest = store.get(id);
+    const record = await this._db.get('sync_queue', id);
+    if (!record) {
+      console.warn('[SyncQueue] Record not found:', id);
+      return null;
+    }
 
-      getRequest.onsuccess = () => {
-        const record = getRequest.result;
-        if (!record) {
-          resolve();
-          return;
-        }
+    const updated = {
+      ...record,
+      status,
+      lastUpdated: Date.now(),
+      ...(status === 'failed' ? { attempts: (record.attempts || 0) + 1 } : {}),
+      ...extra,
+    };
 
-        record.status = status;
-        record.lastUpdated = Date.now();
+    await this._db.put('sync_queue', updated);
+    await this._updatePendingCount();
 
-        if (status === 'failed') {
-          record.attempts = (record.attempts || 0) + 1;
-        }
+    if (this.onQueueChange) {
+      this.onQueueChange(this.pendingCount);
+    }
 
-        Object.assign(record, extra);
-
-        const updateRequest = store.put(record);
-        updateRequest.onsuccess = () => {
-          this._updatePendingCount();
-          if (this.onQueueChange) {
-            this.onQueueChange(this.pendingCount);
-          }
-          resolve();
-        };
-
-        updateRequest.onerror = () => {
-          reject(updateRequest.error);
-        };
-      };
-
-      getRequest.onerror = () => {
-        reject(getRequest.error);
-      };
-    });
+    return updated;
   }
 
   /**
@@ -369,23 +258,12 @@ class SyncQueue {
   async deleteChange(id) {
     await this._ensureReady();
 
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readwrite');
-      const store = tx.objectStore('changes');
-      const request = store.delete(id);
+    await this._db.delete('sync_queue', id);
+    await this._updatePendingCount();
 
-      request.onsuccess = () => {
-        this._updatePendingCount();
-        if (this.onQueueChange) {
-          this.onQueueChange(this.pendingCount);
-        }
-        resolve();
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    if (this.onQueueChange) {
+      this.onQueueChange(this.pendingCount);
+    }
   }
 
   /**
@@ -394,27 +272,11 @@ class SyncQueue {
   async clearSynced() {
     await this._ensureReady();
 
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readwrite');
-      const store = tx.objectStore('changes');
-      const index = store.index('status');
-      const request = index.openCursor(IDBKeyRange.only('synced'));
+    const synced = await this._db.getByIndex('sync_queue', 'status', 'synced');
+    const ids = synced.map(r => r.id);
 
-      request.onsuccess = (event) => {
-        const cursor = event.target.result;
-        if (cursor) {
-          cursor.delete();
-          cursor.continue();
-        } else {
-          console.log('[SyncQueue] Cleared synced changes');
-          resolve();
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    await this._db.bulkDelete('sync_queue', ids);
+    console.log('[SyncQueue] Cleared', ids.length, 'synced changes');
   }
 
   /**
@@ -423,28 +285,18 @@ class SyncQueue {
   async clearAll() {
     await this._ensureReady();
 
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readwrite');
-      const store = tx.objectStore('changes');
-      const request = store.clear();
+    await this._db.clear('sync_queue');
+    this.pendingCount = 0;
 
-      request.onsuccess = () => {
-        console.log('[SyncQueue] Cleared all changes');
-        this.pendingCount = 0;
-        if (this.onQueueChange) {
-          this.onQueueChange(0);
-        }
-        resolve();
-      };
+    if (this.onQueueChange) {
+      this.onQueueChange(0);
+    }
 
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    console.log('[SyncQueue] Cleared all changes');
   }
 
   // ============================================================
-  // CONFLICTS STORE
+  // CONFLICTS STORE (using unified LocalDB)
   // ============================================================
 
   /**
@@ -453,14 +305,18 @@ class SyncQueue {
   async addConflict(conflict) {
     await this._ensureReady();
 
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['conflicts'], 'readwrite');
-      const store = tx.objectStore('conflicts');
-      const request = store.add(conflict);
+    const record = {
+      id: this._generateId(),
+      entityType: conflict.entityType || conflict.entity_type || 'unknown',
+      entityId: conflict.entityId || conflict.entity_id || '',
+      localData: conflict.localData || conflict.local_data || {},
+      serverData: conflict.serverData || conflict.server_data || {},
+      createdAt: conflict.createdAt || new Date().toISOString(),
+      resolved: false,
+      resolution: null,
+    };
 
-      request.onsuccess = () => resolve(conflict.id);
-      request.onerror = () => reject(request.error);
-    });
+    return this._db.put('conflicts', record);
   }
 
   /**
@@ -468,15 +324,8 @@ class SyncQueue {
    */
   async getConflicts() {
     await this._ensureReady();
-
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['conflicts'], 'readonly');
-      const store = tx.objectStore('conflicts');
-      const request = store.getAll();
-
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
+    const all = await this._db.getAll('conflicts');
+    return all.filter(c => !c.resolved);
   }
 
   /**
@@ -485,29 +334,20 @@ class SyncQueue {
   async resolveConflict(id, resolution) {
     await this._ensureReady();
 
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['conflicts'], 'readwrite');
-      const store = tx.objectStore('conflicts');
-      const getRequest = store.get(id);
+    const conflict = await this._db.get('conflicts', id);
+    if (!conflict) {
+      console.warn('[SyncQueue] Conflict not found:', id);
+      return null;
+    }
 
-      getRequest.onsuccess = () => {
-        const conflict = getRequest.result;
-        if (!conflict) {
-          resolve();
-          return;
-        }
+    const updated = {
+      ...conflict,
+      resolved: true,
+      resolution,
+      resolvedAt: Date.now(),
+    };
 
-        conflict.resolved = true;
-        conflict.resolution = resolution;
-        conflict.resolvedAt = Date.now();
-
-        const updateRequest = store.put(conflict);
-        updateRequest.onsuccess = () => resolve();
-        updateRequest.onerror = () => reject(updateRequest.error);
-      };
-
-      getRequest.onerror = () => reject(getRequest.error);
-    });
+    return this._db.put('conflicts', updated);
   }
 
   /**
@@ -515,19 +355,11 @@ class SyncQueue {
    */
   async deleteConflict(id) {
     await this._ensureReady();
-
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['conflicts'], 'readwrite');
-      const store = tx.objectStore('conflicts');
-      const request = store.delete(id);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+    return this._db.delete('conflicts', id);
   }
 
   // ============================================================
-  // METADATA STORE
+  // METADATA STORE (using unified LocalDB)
   // ============================================================
 
   /**
@@ -535,15 +367,8 @@ class SyncQueue {
    */
   async getMetadata(key) {
     await this._ensureReady();
-
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['metadata'], 'readonly');
-      const store = tx.objectStore('metadata');
-      const request = store.get(key);
-
-      request.onsuccess = () => resolve(request.result?.value);
-      request.onerror = () => reject(request.error);
-    });
+    const record = await this._db.get('sync_metadata', key);
+    return record?.value;
   }
 
   /**
@@ -551,14 +376,10 @@ class SyncQueue {
    */
   async setMetadata(key, value) {
     await this._ensureReady();
-
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['metadata'], 'readwrite');
-      const store = tx.objectStore('metadata');
-      const request = store.put({ key, value, lastSync: Date.now() });
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
+    return this._db.put('sync_metadata', {
+      key,
+      value,
+      lastSync: Date.now(),
     });
   }
 
@@ -586,7 +407,7 @@ class SyncQueue {
   _generateId() {
     const timestamp = Date.now().toString(36);
     const randomPart = Math.random().toString(36).substring(2, 10);
-    return `${timestamp}_${randomPart}`;
+    return `sync_${timestamp}_${randomPart}`;
   }
 
   /**
@@ -595,40 +416,20 @@ class SyncQueue {
   async getStats() {
     await this._ensureReady();
 
-    const statuses = ['pending', 'synced', 'failed', 'conflict'];
+    const [pending, synced, failed, conflict] = await Promise.all([
+      this._db.countByIndex('sync_queue', 'status', 'pending'),
+      this._db.countByIndex('sync_queue', 'status', 'synced'),
+      this._db.countByIndex('sync_queue', 'status', 'failed'),
+      this._db.countByIndex('sync_queue', 'status', 'conflict'),
+    ]);
 
-    const stats = {
-      pending: 0,
-      synced: 0,
-      failed: 0,
-      conflict: 0,
-      total: 0,
+    return {
+      pending,
+      synced,
+      failed,
+      conflict,
+      total: pending + synced + failed + conflict,
     };
-
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readonly');
-      const store = tx.objectStore('changes');
-      let completed = 0;
-
-      statuses.forEach((status) => {
-        const index = store.index('status');
-        const request = index.count(IDBKeyRange.only(status));
-
-        request.onsuccess = () => {
-          stats[status] = request.result;
-          stats.total += request.result;
-          completed++;
-
-          if (completed === statuses.length) {
-            resolve(stats);
-          }
-        };
-
-        request.onerror = () => {
-          reject(request.error);
-        };
-      });
-    });
   }
 
   /**
@@ -636,20 +437,7 @@ class SyncQueue {
    */
   async export() {
     await this._ensureReady();
-
-    return new Promise((resolve, reject) => {
-      const tx = this.db.transaction(['changes'], 'readonly');
-      const store = tx.objectStore('changes');
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        resolve(request.result || []);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    return this._db.getAll('sync_queue');
   }
 }
 
@@ -659,6 +447,11 @@ class SyncQueue {
 
 const syncQueue = new SyncQueue();
 
+// Backward compatibility - old initialization
+if (typeof localDB !== 'undefined' && localDB.isReady) {
+  syncQueue.init(localDB);
+}
+
 // Export
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = SyncQueue;
@@ -667,4 +460,4 @@ if (typeof module !== 'undefined' && module.exports) {
 window.SyncQueue = SyncQueue;
 window.syncQueue = syncQueue;
 
-console.log('[SyncQueue] Module loaded');
+console.log('[SyncQueue] Module loaded - using unified LocalDB');

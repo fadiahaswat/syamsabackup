@@ -2657,7 +2657,7 @@
         stroke-width: 0 !important;
       }
       .tahfizh-sub-nav-btn {
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.75);
         background: transparent;
         transition:
           background-color 0.22s ease,
@@ -2666,13 +2666,13 @@
           transform 0.22s ease;
       }
       .tahfizh-sub-nav-btn:hover {
-        color: #ea580c;
-        background: rgba(249, 115, 22, 0.08);
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.15);
       }
       .tahfizh-sub-nav-btn.active {
-        color: #ffffff !important;
-        background: #f97316 !important;
-        box-shadow: 0 8px 18px -12px rgba(249, 115, 22, 0.85);
+        color: #ea580c !important;
+        background: #ffffff !important;
+        box-shadow: 0 8px 18px -12px rgba(0, 0, 0, 0.25);
         animation: tahfizh-tab-pop 0.28s ease-out;
       }
       .tahfizh-sub-nav-btn {
@@ -2682,14 +2682,14 @@
         stroke-width: 2.2px;
       }
       .dark .tahfizh-sub-nav-btn {
-        color: #94a3b8;
+        color: rgba(255, 255, 255, 0.65);
       }
       .dark .tahfizh-sub-nav-btn:hover {
-        color: #fdba74;
-        background: rgba(249, 115, 22, 0.12);
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.12);
       }
       .report-sub-nav-btn {
-        color: #64748b;
+        color: rgba(255, 255, 255, 0.75);
         background: transparent;
         transition:
           background-color 0.22s ease,
@@ -2698,13 +2698,13 @@
           transform 0.22s ease;
       }
       .report-sub-nav-btn:hover {
-        color: #2563eb;
-        background: rgba(59, 130, 246, 0.08);
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.15);
       }
       .report-sub-nav-btn.active {
-        color: #ffffff !important;
-        background: #3b82f6 !important;
-        box-shadow: 0 8px 18px -12px rgba(59, 130, 246, 0.85);
+        color: #2563eb !important;
+        background: #ffffff !important;
+        box-shadow: 0 8px 18px -12px rgba(0, 0, 0, 0.25);
         animation: report-tab-pop 0.28s ease-out;
       }
       @keyframes report-tab-pop {
@@ -2717,11 +2717,11 @@
         stroke-width: 2.2px;
       }
       .dark .report-sub-nav-btn {
-        color: #94a3b8;
+        color: rgba(255, 255, 255, 0.65);
       }
       .dark .report-sub-nav-btn:hover {
-        color: #93c5fd;
-        background: rgba(59, 130, 246, 0.12);
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.12);
       }
       .tahfizh-header-icon-glow {
         width: 2.75rem;
@@ -3435,6 +3435,28 @@
         .dark .tab-content header .bg-white\/20 span {
           color: #ffffff !important;
         }
+
+        /* Active sub-nav btn: counteract global white text override */
+        .tab-content header .tahfizh-sub-nav-btn.active,
+        .tab-content header .tahfizh-sub-nav-btn.active span,
+        .tab-content header .tahfizh-sub-nav-btn.active i {
+          color: #ea580c !important;
+        }
+        .tab-content header .report-sub-nav-btn.active,
+        .tab-content header .report-sub-nav-btn.active span,
+        .tab-content header .report-sub-nav-btn.active i {
+          color: #2563eb !important;
+        }
+        .dark .tab-content header .tahfizh-sub-nav-btn.active,
+        .dark .tab-content header .tahfizh-sub-nav-btn.active span,
+        .dark .tab-content header .tahfizh-sub-nav-btn.active i {
+          color: #ea580c !important;
+        }
+        .dark .tab-content header .report-sub-nav-btn.active,
+        .dark .tab-content header .report-sub-nav-btn.active span,
+        .dark .tab-content header .report-sub-nav-btn.active i {
+          color: #2563eb !important;
+        }
       }
 
       @media (min-width: 768px) and (max-width: 1023px) {
@@ -3453,7 +3475,7 @@
         #tab-report > .page-container > .grid.lg\:grid-cols-12,
         #tab-profile > .grid.lg\:grid-cols-12 {
           display: grid !important;
-          grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr) !important;
+          grid-template-columns: 1fr 1fr !important;
           gap: 1.25rem !important;
           align-items: start;
           margin-top: 0 !important;
@@ -3752,9 +3774,8 @@
         }
 
         #tab-tahfizh .tahfizh-sub-nav-btn {
-          flex: 1 1 0;
-          height: 2.75rem;
-          padding-inline: 1rem;
+          height: 2.25rem;
+          padding-inline: 0.75rem;
         }
 
         #tahfizh-page-beranda {
@@ -3982,7 +4003,7 @@
         }
 
         #profile-hero-card-wrapper {
-          grid-column: 1 !important;
+          grid-column: 1 / -1 !important;
           max-width: none !important;
           width: 100%;
           margin: 0 !important;
@@ -4092,7 +4113,7 @@
         }
 
         #tab-profile:not(.hidden) {
-          grid-template-columns: minmax(340px, 0.95fr) minmax(0, 1.05fr);
+          grid-template-columns: 1fr 1fr;
           gap: 1.5rem;
         }
       }
@@ -5371,7 +5392,7 @@
         </div>
 
 
-<div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl rounded-2xl p-4 sm:p-5 border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/40 dark:shadow-black/20 relative overflow-hidden animate-slide-up lg:mb-4 group/main delay-300ms">
+<div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl rounded-2xl p-4 sm:p-5 border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/40 dark:shadow-black/20 relative animate-slide-up lg:mb-4 group/main delay-300ms">
   
 
 
@@ -5386,7 +5407,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-2 text-emerald-500"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
           Statistik Presensi
         </p>
-        <div class="flex items-center gap-2.5 mt-0.5">
+        <div class="flex items-center gap-2.5 mt-0.5 flex-wrap">
           <h3 id="stats-current-percentage" class="font-black text-2xl sm:text-3xl text-slate-800 dark:text-white leading-none tracking-tight">
             99.4% <span class="text-lg sm:text-xl font-bold text-slate-400 dark:text-slate-500">Hadir</span>
           </h3>
@@ -5657,13 +5678,13 @@
                 </div>
               </div>
             </div>
-            <div class="tahfizh-header-summary musyrif-only flex items-center gap-2 w-auto shrink-0">
-              <button onclick="window.switchTahfizhSubTab('analisis')" class="h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-orange-500 dark:hover:text-orange-300 border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]" title="Analisis Tahfizh" aria-label="Analisis Tahfizh">
-                <i data-lucide="user-search" class="w-4 h-4"></i>
-              </button>
-              <button onclick="window.switchTahfizhSubTab('riwayat')" class="h-10 w-10 flex items-center justify-center rounded-full bg-orange-500 text-white shadow-sm shadow-orange-500/20 transition-all duration-300 active:scale-[0.96]" title="Riwayat Tahfizh" aria-label="Riwayat Tahfizh">
-                <i data-lucide="file-text" class="w-4 h-4"></i>
-              </button>
+            <div class="musyrif-only flex p-1 bg-white/15 dark:bg-slate-900/50 rounded-full shadow-sm border border-white/20 dark:border-slate-700/60 backdrop-blur-xl w-auto shrink-0">
+              <div class="flex items-center gap-1 overflow-x-auto hide-scrollbar">
+                <button onclick="window.switchTahfizhSubTab('beranda')" data-subtab="beranda" class="tahfizh-sub-nav-btn active h-9 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold active:scale-[0.98]" aria-label="Buka beranda Tahfizh"><i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i><span class="hidden sm:inline">Beranda</span></button>
+                <button onclick="window.switchTahfizhSubTab('analisis')" data-subtab="analisis" class="tahfizh-sub-nav-btn h-9 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold active:scale-[0.98]" aria-label="Buka analisis santri"><i data-lucide="user-search" class="w-4 h-4 shrink-0"></i><span class="hidden sm:inline">Analisis</span></button>
+                <button onclick="window.switchTahfizhSubTab('riwayat')" data-subtab="riwayat" class="tahfizh-sub-nav-btn h-9 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold active:scale-[0.98]" aria-label="Buka riwayat setoran"><i data-lucide="file-text" class="w-4 h-4 shrink-0"></i><span class="hidden sm:inline">Riwayat</span></button>
+                <button onclick="window.switchTahfizhSubTab('rekap-global')" data-subtab="rekap-global" class="admin-only hidden tahfizh-sub-nav-btn h-9 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold active:scale-[0.98]" aria-label="Buka rekap global"><i data-lucide="globe" class="w-4 h-4 shrink-0"></i><span class="hidden sm:inline">Rekap Global</span></button>
+              </div>
             </div>
             <div class="wali-only flex items-center gap-2 w-auto shrink-0">
               <a
@@ -5678,15 +5699,6 @@
               </a>
             </div>
           </header>
-
-          <div class="musyrif-only flex p-1 bg-white/85 dark:bg-slate-900/80 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl w-full sm:w-auto shrink-0 animate-slide-up delay-120ms">
-            <div class="flex items-center gap-1 w-full sm:w-auto overflow-x-auto hide-scrollbar">
-              <button onclick="window.switchTahfizhSubTab('beranda')" data-subtab="beranda" class="tahfizh-sub-nav-btn active h-10 px-3 sm:px-4 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]" aria-label="Buka beranda Tahfizh"><i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i><span>Beranda</span></button>
-              <button onclick="window.switchTahfizhSubTab('analisis')" data-subtab="analisis" class="tahfizh-sub-nav-btn h-10 px-3 sm:px-4 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]" aria-label="Buka analisis santri"><i data-lucide="user-search" class="w-4 h-4 shrink-0"></i><span>Analisis</span></button>
-              <button onclick="window.switchTahfizhSubTab('riwayat')" data-subtab="riwayat" class="tahfizh-sub-nav-btn h-10 px-3 sm:px-4 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]" aria-label="Buka riwayat setoran"><i data-lucide="file-text" class="w-4 h-4 shrink-0"></i><span>Riwayat</span></button>
-              <button onclick="window.switchTahfizhSubTab('rekap-global')" data-subtab="rekap-global" class="admin-only hidden tahfizh-sub-nav-btn h-10 px-3 sm:px-4 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]" aria-label="Buka rekap global"><i data-lucide="globe" class="w-4 h-4 shrink-0"></i><span>Rekap Global</span></button>
-            </div>
-          </div>
 
           <section id="tahfizh-page-beranda" class="tahfizh-page-content space-y-4">
   <div id="tahfizh-hero-card-wrapper" class="relative z-30">
@@ -6137,46 +6149,47 @@
               </div>
           </div>
 
-          <div class="wali-only flex items-center gap-2 w-auto shrink-0">
-            <a
-              id="laporan-wali-wa-btn"
-              href="#"
-              target="_blank"
-              class="h-10 px-4 flex items-center justify-center gap-1.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-black text-xs shadow-sm shadow-blue-500/25 transition-all duration-300 active:scale-[0.96]"
-              title="Hubungi Musyrif"
-            >
-              <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
-              <span class="hidden sm:inline">Hubungi Musyrif</span>
-            </a>
+          <div class="flex items-center gap-2 w-auto shrink-0">
+            <div class="musyrif-only flex p-1 bg-white/15 dark:bg-slate-900/50 rounded-full shadow-sm border border-white/20 dark:border-slate-700/60 backdrop-blur-xl">
+              <div class="flex items-center gap-1 overflow-x-auto hide-scrollbar">
+                <button
+                  id="report-view-btn"
+                  onclick="window.switchReportView('report')"
+                  data-subtab="report"
+                  class="report-sub-nav-btn active h-9 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold active:scale-[0.98]"
+                >
+                  <i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i>
+                  <span class="hidden sm:inline">Laporan</span>
+                </button>
+                <button
+                  id="analysis-view-btn"
+                  onclick="window.switchReportView('analysis')"
+                  data-subtab="analysis"
+                  class="report-sub-nav-btn h-9 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold active:scale-[0.98]"
+                >
+                  <i data-lucide="user-search" class="w-4 h-4 shrink-0"></i>
+                  <span class="hidden sm:inline">Analisis</span>
+                </button>
+              </div>
+            </div>
+            <div class="wali-only">
+              <a
+                id="laporan-wali-wa-btn"
+                href="#"
+                target="_blank"
+                class="h-10 px-4 flex items-center justify-center gap-1.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-black text-xs shadow-sm shadow-blue-500/25 transition-all duration-300 active:scale-[0.96]"
+                title="Hubungi Musyrif"
+              >
+                <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
+                <span class="hidden sm:inline">Hubungi Musyrif</span>
+              </a>
+            </div>
           </div>
         </header>
 
-        <div class="musyrif-only flex p-1 bg-white/85 dark:bg-slate-900/80 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl w-full sm:w-auto shrink-0 animate-slide-up delay-120ms mt-4">
-          <div class="flex items-center gap-1 w-full sm:w-auto overflow-x-auto hide-scrollbar">
-            <button
-              id="report-view-btn"
-              onclick="window.switchReportView('report')"
-              data-subtab="report"
-              class="report-sub-nav-btn active h-10 px-3 sm:px-4 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]"
-            >
-              <i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i>
-              <span>Laporan</span>
-            </button>
-            <button
-              id="analysis-view-btn"
-              onclick="window.switchReportView('analysis')"
-              data-subtab="analysis"
-              class="report-sub-nav-btn h-10 px-3 sm:px-4 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]"
-            >
-              <i data-lucide="user-search" class="w-4 h-4 shrink-0"></i>
-              <span>Analisis</span>
-            </button>
-          </div>
-        </div>
-
         <div id="report-section" class="animate-fade-in space-y-4">
-          <div class="grid grid-cols-1 xl:grid-cols-[minmax(360px,1fr)_minmax(520px,1.1fr)] gap-3 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-3 backdrop-blur-xl">
-          <div class="bg-slate-100/80 dark:bg-slate-950/60 p-1 rounded-xl grid grid-cols-4 min-w-0">
+          <div class="grid grid-cols-1 xl:grid-cols-[minmax(360px,1fr)_minmax(520px,1.1fr)] gap-3 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-3 backdrop-blur-xl overflow-hidden">
+          <div class="bg-slate-100/80 dark:bg-slate-950/60 p-1 rounded-xl grid grid-cols-4 min-w-0 overflow-hidden">
             <button
               onclick="window.setReportMode('daily')"
               class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg whitespace-nowrap active-mode transition-all"

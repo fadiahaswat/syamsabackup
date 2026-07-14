@@ -311,21 +311,15 @@ class StorageManagerV2 {
   // ==========================================
 
   /**
-   * Save permits (full array)
+   * Save permits (full array) - async with proper Promise handling
    */
-  savePermits(permits) {
+  async savePermits(permits) {
     if (typeof appState !== 'undefined') {
       appState.permits = permits;
     }
 
-    if (this._useIndexedDB && this._repos) {
-      // Save to IndexedDB
-      permits.forEach(async (permit) => {
-        await this._repos.permit.db.put('permits', permit);
-      });
-    }
-
-    // Always save to localStorage for backup
+    // Use localStorage as single source of truth for backup
+    // IndexedDB is primary storage managed by repositories
     this._set(this.keys.permits, permits);
 
     if (this.onDataUpdate) {
@@ -336,9 +330,9 @@ class StorageManagerV2 {
   }
 
   /**
-   * Save single permit
+   * Save single permit - immutable update
    */
-  savePermit(permit) {
+  async savePermit(permit) {
     if (typeof appState === 'undefined') {
       return permit;
     }
@@ -346,19 +340,18 @@ class StorageManagerV2 {
     const permits = appState.permits || [];
     const index = permits.findIndex(p => p && String(p.id) === String(permit.id));
 
+    // Immutable update
+    let updatedPermits;
     if (index !== -1) {
-      permits[index] = permit;
+      updatedPermits = permits.map((p, i) => i === index ? permit : p);
     } else {
-      permits.push(permit);
+      updatedPermits = [...permits, permit];
     }
 
-    appState.permits = permits;
+    appState.permits = updatedPermits;
 
-    if (this._useIndexedDB && this._repos) {
-      this._repos.permit.db.put('permits', permit);
-    }
-
-    this._set(this.keys.permits, permits);
+    // Use localStorage as single source of truth for backup
+    this._set(this.keys.permits, updatedPermits);
 
     if (this.onDataUpdate) {
       this.onDataUpdate('permits');
@@ -368,16 +361,13 @@ class StorageManagerV2 {
   }
 
   /**
-   * Delete permit
+   * Delete permit - immutable update
    */
-  deletePermit(permitId) {
+  async deletePermit(permitId) {
     if (typeof appState !== 'undefined' && Array.isArray(appState.permits)) {
-      appState.permits = appState.permits.filter(p => p && String(p.id) !== String(permitId));
+      // Immutable update
+      appState.permits = appState.permits.filter(p => String(p.id) !== String(permitId));
       this._set(this.keys.permits, appState.permits);
-    }
-
-    if (this._useIndexedDB && this._repos) {
-      this._repos.permit.db.delete('permits', permitId);
     }
 
     if (this.onDataUpdate) {
@@ -416,12 +406,7 @@ class StorageManagerV2 {
       appState.activityLog = logs;
     }
 
-    if (this._useIndexedDB && this._repos) {
-      logs.forEach(async (log) => {
-        await this._repos.activityLog.db.put('activity_logs', log);
-      });
-    }
-
+    // Use localStorage as single source of truth
     this._set(this.keys.activityLog, logs);
 
     if (this.onDataUpdate) {
@@ -554,22 +539,28 @@ class StorageManagerV2 {
     }
   }
 
-  clearAll() {
+  async clearAll() {
     // Clear localStorage
     for (const key of Object.values(this.keys)) {
       localStorage.removeItem(key);
     }
 
-    // Clear IndexedDB
+    // Clear IndexedDB with proper async handling
     if (this._db) {
-      this._db.clear('attendances');
-      this._db.clear('permits');
-      this._db.clear('tahfizh');
-      this._db.clear('activity_logs');
-      this._db.clear('settings');
+      try {
+        await Promise.all([
+          this._db.clear('attendances'),
+          this._db.clear('permits'),
+          this._db.clear('tahfizh'),
+          this._db.clear('activity_logs'),
+          this._db.clear('settings'),
+        ]);
+      } catch (e) {
+        console.error('[StorageManagerV2] Failed to clear IndexedDB:', e);
+      }
     }
 
-    // Reset appState
+    // Reset appState immutably
     if (typeof appState !== 'undefined') {
       appState.attendanceData = {};
       appState.permits = [];

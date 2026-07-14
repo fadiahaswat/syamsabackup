@@ -267,6 +267,28 @@
   .dark .tab-content header .bg-white\/20 span {
     color: #ffffff !important;
   }
+
+  /* Active sub-nav btn: counteract global white text override */
+  .tab-content header .tahfizh-sub-nav-btn.active,
+  .tab-content header .tahfizh-sub-nav-btn.active span,
+  .tab-content header .tahfizh-sub-nav-btn.active i {
+    color: #ea580c !important;
+  }
+  .tab-content header .report-sub-nav-btn.active,
+  .tab-content header .report-sub-nav-btn.active span,
+  .tab-content header .report-sub-nav-btn.active i {
+    color: #2563eb !important;
+  }
+  .dark .tab-content header .tahfizh-sub-nav-btn.active,
+  .dark .tab-content header .tahfizh-sub-nav-btn.active span,
+  .dark .tab-content header .tahfizh-sub-nav-btn.active i {
+    color: #ea580c !important;
+  }
+  .dark .tab-content header .report-sub-nav-btn.active,
+  .dark .tab-content header .report-sub-nav-btn.active span,
+  .dark .tab-content header .report-sub-nav-btn.active i {
+    color: #2563eb !important;
+  }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
@@ -366,7 +388,7 @@
   #tab-report > .page-container > .grid.lg\:grid-cols-12,
   #tab-profile > .grid.md\:grid-cols-12 {
     display: grid !important;
-    grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr) !important;
+    grid-template-columns: 1fr 1fr !important;
     gap: 1.25rem !important;
     align-items: start;
     margin-top: 0 !important;
@@ -764,7 +786,7 @@
   }
 
   #tab-profile:not(.hidden) {
-    grid-template-columns: minmax(340px, 0.95fr) minmax(0, 1.05fr);
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
   }
 }

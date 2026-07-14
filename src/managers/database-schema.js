@@ -136,10 +136,53 @@ class LocalDB {
       return this.db;
     } catch (error) {
       console.error('[LocalDB] Failed to initialize database:', error);
+      this._handleInitError(error);
       throw error;
     } finally {
       this.isInitializing = false;
     }
+  }
+
+  /**
+   * Handle initialization errors gracefully
+   */
+  _handleInitError(error) {
+    if (error.name === 'QuotaExceededError') {
+      console.error('[LocalDB] Storage quota exceeded!');
+      window.showToast?.('Storage hampir penuh! Hapus data lama untuk melanjutkan.', 'error');
+    } else if (error.name === 'VersionError') {
+      console.error('[LocalDB] Database version error - may need to clear old data');
+      this._offerClearOldData();
+    } else if (error.name === 'NotAllowedError') {
+      console.error('[LocalDB] IndexedDB not allowed - check browser settings');
+      window.showToast?.('IndexedDB tidak tersedia. Gunakan browser lain.', 'error');
+    }
+  }
+
+  /**
+   * Offer to clear old database data
+   */
+  _offerClearOldData() {
+    const msg = 'Database lama perlu dihapus untuk upgrade. Lanjutkan?';
+    if (typeof window !== 'undefined' && window.confirm?.(msg)) {
+      this._clearOldDatabase().then(() => {
+        window.location.reload();
+      });
+    }
+  }
+
+  /**
+   * Clear old database
+   */
+  async _clearOldDatabase() {
+    return new Promise((resolve, reject) => {
+      const deleteReq = indexedDB.deleteDatabase(DB_NAME);
+      deleteReq.onsuccess = () => {
+        console.log('[LocalDB] Old database cleared');
+        resolve();
+      };
+      deleteReq.onerror = () => reject(deleteReq.error);
+    });
   }
 
   /**
@@ -155,7 +198,8 @@ class LocalDB {
       };
 
       request.onblocked = () => {
-        console.warn('[LocalDB] Database blocked - may need to close other tabs');
+        console.warn('[LocalDB] Database blocked - another tab may have it open');
+        window.showToast?.('Buka tab lain yang menggunakan aplikasi ini terlebih dahulu.', 'warning');
       };
 
       request.onsuccess = () => {
@@ -163,7 +207,8 @@ class LocalDB {
 
         // Handle version change
         db.onversionchange = () => {
-          console.log('[LocalDB] Database version change detected');
+          console.log('[LocalDB] Database version change detected - reloading...');
+          window.location.reload();
         };
 
         resolve(db);
@@ -293,7 +338,7 @@ class LocalDB {
     }
 
     // ==========================================
-    // STORE: sync_queue (for future cloud sync)
+    // STORE: sync_queue (renamed to 'changes' for unified SyncQueue)
     // ==========================================
     if (!db.objectStoreNames.contains('sync_queue')) {
       const store = db.createObjectStore('sync_queue', { keyPath: 'id' });
@@ -307,6 +352,29 @@ class LocalDB {
       store.createIndex('status_priority', ['status', 'priority'], { unique: false });
 
       console.log('[LocalDB] Created store: sync_queue');
+    }
+
+    // ==========================================
+    // STORE: changes (unified with SyncQueue)
+    // ==========================================
+    if (!db.objectStoreNames.contains('changes')) {
+      const store = db.createObjectStore('changes', { keyPath: 'id', autoIncrement: false });
+
+      store.createIndex('status', 'status', { unique: false });
+      store.createIndex('entityType', 'entityType', { unique: false });
+      store.createIndex('timestamp', 'timestamp', { unique: false });
+      store.createIndex('priority', 'priority', { unique: false });
+
+      console.log('[LocalDB] Created store: changes');
+    }
+
+    // ==========================================
+    // STORE: sync_metadata (for sync state)
+    // ==========================================
+    if (!db.objectStoreNames.contains('sync_metadata')) {
+      const store = db.createObjectStore('sync_metadata', { keyPath: 'key' });
+      store.createIndex('lastSync', 'lastSync', { unique: false });
+      console.log('[LocalDB] Created store: sync_metadata');
     }
 
     // ==========================================
@@ -405,9 +473,14 @@ class LocalDB {
         resolve(record);
       };
 
-      request.onerror = () => {
-        console.error(`[LocalDB] Error putting in ${storeName}:`, request.error);
-        reject(request.error);
+      request.onerror = (event) => {
+        const error = event.target.error;
+        console.error(`[LocalDB] Error putting in ${storeName}:`, error);
+
+        if (error.name === 'QuotaExceededError') {
+          window.showToast?.('Storage hampir penuh! Data tidak tersimpan.', 'error');
+        }
+        reject(error);
       };
     });
   }
@@ -504,45 +577,27 @@ class LocalDB {
 
   /**
    * Get records by multiple values (IN query)
+   * Uses batching with Promise.all for better performance
    */
   async getByIndexIn(storeName, indexName, values) {
     if (!values || values.length === 0) return [];
 
     const db = await this.ensureReady();
+    const BATCH_SIZE = 10; // Process in batches to avoid overwhelming the system
     const results = [];
 
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readonly');
-      const store = tx.objectStore(storeName);
-      const index = store.index(indexName);
+    // Process in batches
+    for (let i = 0; i < values.length; i += BATCH_SIZE) {
+      const batch = values.slice(i, i + BATCH_SIZE);
 
-      let completed = 0;
+      const batchResults = await Promise.all(
+        batch.map(value => this.getByIndex(storeName, indexName, value))
+      );
 
-      values.forEach(value => {
-        const request = index.getAll(value);
+      results.push(...batchResults.flat());
+    }
 
-        request.onsuccess = () => {
-          results.push(...(request.result || []));
-          completed++;
-
-          if (completed === values.length) {
-            resolve(results);
-          }
-        };
-
-        request.onerror = () => {
-          completed++;
-          if (completed === values.length) {
-            resolve(results);
-          }
-        };
-      });
-
-      // Handle empty values
-      if (values.length === 0) {
-        resolve([]);
-      }
-    });
+    return results;
   }
 
   /**
@@ -643,12 +698,14 @@ class LocalDB {
     const db = await this.ensureReady();
     const now = new Date().toISOString();
     const results = [];
+    let hasError = false;
 
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
       const store = tx.objectStore(storeName);
 
       let completed = 0;
+      const total = records.length;
 
       records.forEach(data => {
         const record = {
@@ -669,14 +726,24 @@ class LocalDB {
           results.push(request.result);
           completed++;
 
-          if (completed === records.length) {
+          if (completed === total) {
+            if (hasError) {
+              console.warn(`[LocalDB] bulkPut completed with errors: ${total - results.length} failed`);
+            }
             resolve(results);
           }
         };
 
-        request.onerror = () => {
+        request.onerror = (event) => {
+          hasError = true;
+          const error = event.target.error;
+          console.error(`[LocalDB] bulkPut error for record:`, error);
           completed++;
-          if (completed === records.length) {
+
+          if (completed === total) {
+            if (error.name === 'QuotaExceededError') {
+              window.showToast?.('Storage hampir penuh! Sebagian data tidak tersimpan.', 'error');
+            }
             resolve(results);
           }
         };

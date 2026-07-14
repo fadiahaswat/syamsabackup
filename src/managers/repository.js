@@ -163,21 +163,34 @@ class AttendanceRepository {
     }
 
     const oldStatus = existing.status?.[activityId];
+    const now = new Date().toISOString();
 
-    // Update existing record
-    existing.status[activityId] = newStatus;
-    existing.timestamps[activityId] = new Date().toISOString();
-    existing.auditTrail.push({
-      action: 'status_change',
-      activityId,
-      from: oldStatus,
-      to: newStatus,
-      at: new Date().toISOString(),
-      by: actorName,
-    });
-    existing._syncedAt = null;
+    // Immutable update - create new object with spread
+    const updated = {
+      ...existing,
+      status: {
+        ...existing.status,
+        [activityId]: newStatus,
+      },
+      timestamps: {
+        ...existing.timestamps,
+        [activityId]: now,
+      },
+      auditTrail: [
+        ...(existing.auditTrail || []),
+        {
+          action: 'status_change',
+          activityId,
+          from: oldStatus,
+          to: newStatus,
+          at: now,
+          by: actorName,
+        },
+      ],
+      _syncedAt: null,
+    };
 
-    return this.db.put(this.storeName, existing);
+    return this.db.put(this.storeName, updated);
   }
 
   /**
@@ -185,6 +198,7 @@ class AttendanceRepository {
    */
   async updateNote(date, slot, studentId, note, actorName, kelas) {
     const existing = await this.get(date, slot, studentId);
+    const now = new Date().toISOString();
 
     if (!existing) {
       return this.save(date, slot, studentId, {
@@ -192,23 +206,30 @@ class AttendanceRepository {
         auditTrail: [{
           action: 'note_added',
           note,
-          at: new Date().toISOString(),
+          at: now,
           by: actorName,
         }]
       }, kelas);
     }
 
-    existing.note = note;
-    existing.auditTrail.push({
-      action: 'note_updated',
-      from: existing.note,
-      to: note,
-      at: new Date().toISOString(),
-      by: actorName,
-    });
-    existing._syncedAt = null;
+    // Immutable update - create new object with spread
+    const updated = {
+      ...existing,
+      note,
+      auditTrail: [
+        ...(existing.auditTrail || []),
+        {
+          action: 'note_updated',
+          from: existing.note,
+          to: note,
+          at: now,
+          by: actorName,
+        },
+      ],
+      _syncedAt: null,
+    };
 
-    return this.db.put(this.storeName, existing);
+    return this.db.put(this.storeName, updated);
   }
 
   /**
