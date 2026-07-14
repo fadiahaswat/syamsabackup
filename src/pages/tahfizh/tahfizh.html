@@ -75,8 +75,6 @@
       id="tahfizh-hero-card"
       class="bg-slate-900 dark:bg-black rounded-[1.75rem] p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative z-20 overflow-hidden group animate-slide-up delay-200ms"
     >
-
-      
       <!-- Premium background logo decoration -->
       <img src="assets/icons/icon.webp" class="absolute -right-10 -top-10 w-60 h-60 opacity-[0.06] dark:opacity-[0.03] pointer-events-none select-none z-0 rotate-[15deg] transition-all duration-700 group-hover:rotate-[25deg] group-hover:scale-105" alt="" />
 
@@ -235,64 +233,6 @@
                   </div>
                 </div>
                   <button type="button" onclick="window.switchTahfizhSubTab('beranda')" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 flex items-center justify-center active:scale-95 transition-all" aria-label="Kembali ke beranda Tahfizh" title="Kembali ke beranda Tahfizh">
-                    <i data-lucide="x" class="w-4 h-4"></i>
-                  </button>
-                </div>
-              </div>
-              <div class="p-4 space-y-3">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div><label for="tahfizh-tanggal" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Waktu</label><div class="flex gap-2 mt-1"><input id="tahfizh-tanggal" type="datetime-local" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><button id="tahfizh-nowBtn" type="button" class="h-12 px-3 rounded-xl bg-orange-500 text-white font-black text-xs shadow-sm shadow-orange-500/20 active:scale-95 transition-all">Kini</button></div><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-                <div><label for="tahfizh-musyrif" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Musyrif</label><select id="tahfizh-musyrif" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-                <div><label for="tahfizh-namaSantri" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Santri</label><select id="tahfizh-namaSantri" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-                <div><label for="tahfizh-kelas" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Kelas</label><input id="tahfizh-kelas" readonly class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/70 p-3 text-sm font-bold"><input id="tahfizh-santriId" type="hidden"><input id="tahfizh-program" type="hidden"></div>
-                <div><label for="tahfizh-jenis" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Jenis</label><select id="tahfizh-jenis" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-                <div><label for="tahfizh-juz" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Juz</label><select id="tahfizh-juz" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-              </div>
-              <div id="tahfizh-halaman-container" class="hidden"><label for="tahfizh-halaman" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Halaman</label><input id="tahfizh-halaman" type="number" step="0.5" min="0" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-              <div id="tahfizh-surat-container" class="hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50 p-4"><p class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 mb-2">Pilih Surat</p><div id="tahfizh-surat-checklist-area" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto"></div><p class="form-error hidden text-xs font-bold text-red-500 mt-2"></p></div>
-              <button id="tahfizh-submit-button" type="submit" class="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-400 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-orange-500/20 active:scale-95 transition-all"><i id="tahfizh-submit-button-icon" data-lucide="save" class="w-4 h-4"></i><span id="tahfizh-submit-button-text">Simpan Setoran</span><span id="tahfizh-submit-spinner" class="hidden w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></span></button>
-              </div>
-            </form>
-          </section>
-
-          <section id="tahfizh-page-analisis" class="tahfizh-page-content hidden space-y-4">
-            <div class="musyrif-only max-w-xl tahfizh-card rounded-2xl overflow-hidden">
-              <div class="p-5">
-                <label class="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 mb-2.5 ml-1">Pilih Santri</label>
-                <div class="relative flex items-center h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 group focus-within:ring-4 focus-within:ring-orange-500/10 focus-within:border-orange-500 transition-all">
-                  <div class="w-11 h-full flex items-center justify-center shrink-0 pointer-events-none">
-                    <i data-lucide="search" class="w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors"></i>
-                  </div>
-                  <select id="tahfizh-santri-select-analisis" class="flex-1 h-full bg-transparent pl-0 pr-12 text-sm font-bold text-slate-700 dark:text-slate-200 appearance-none outline-none cursor-pointer truncate"></select>
-                  <div class="absolute right-3 pointer-events-none">
-                    <div class="w-6 h-6 rounded-md bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center">
-                      <i data-lucide="chevron-down" class="w-3 h-3 text-slate-500"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div id="tahfizh-analisis-content-container"></div>
-          </section>
-
-          <section id="tahfizh-page-riwayat" class="tahfizh-page-content hidden space-y-4">
-            <div class="grid grid-cols-1 xl:grid-cols-[minmax(320px,1fr)_minmax(520px,1.4fr)] gap-2 tahfizh-card rounded-2xl p-2.5">
-              <div class="relative min-w-0 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/70 dark:border-slate-700 flex items-center gap-2 h-11">
-                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
-                <input id="tahfizh-search-riwayat" placeholder="Cari nama santri..." class="flex-1 bg-transparent outline-none text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 placeholder:text-slate-400">
-                <div id="tahfizh-suggestions-container" class="hidden absolute left-0 right-0 top-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-20 overflow-hidden"></div>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 min-w-0">
-                <input id="tahfizh-filter-tanggal-mulai" type="date" class="h-11 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-3 text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 outline-none focus:border-orange-500">
-                <input id="tahfizh-filter-tanggal-akhir" type="date" class="h-11 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-3 text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 outline-none focus:border-orange-500">
-                <select id="tahfizh-filter-kelas" class="h-11 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/70 px-3 text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 outline-none focus:border-orange-500"><option>Semua</option></select>
-              </div>
-            </div>
-            <div class="tahfizh-card rounded-2xl overflow-hidden">
-              <div class="px-3 py-2.5 bg-white/80 dark:bg-slate-900/80 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-[10px] text-slate-400 font-medium">
-                <span class="inline-flex items-center gap-2"><i data-lucide="info" class="w-3 h-3"></i> Riwayat perangkat ini</span>
-                <span id="tahfizh-history-mode-label" class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Lokal</span>
-              </div>
                     <i data-lucide="x" class="w-4 h-4"></i>
                   </button>
                 </div>
@@ -541,5 +481,4 @@
           </div>
         </div>
       </div>
-
-
+

@@ -2688,6 +2688,41 @@
         color: #fdba74;
         background: rgba(249, 115, 22, 0.12);
       }
+      .report-sub-nav-btn {
+        color: #64748b;
+        background: transparent;
+        transition:
+          background-color 0.22s ease,
+          color 0.22s ease,
+          box-shadow 0.22s ease,
+          transform 0.22s ease;
+      }
+      .report-sub-nav-btn:hover {
+        color: #2563eb;
+        background: rgba(59, 130, 246, 0.08);
+      }
+      .report-sub-nav-btn.active {
+        color: #ffffff !important;
+        background: #3b82f6 !important;
+        box-shadow: 0 8px 18px -12px rgba(59, 130, 246, 0.85);
+        animation: report-tab-pop 0.28s ease-out;
+      }
+      @keyframes report-tab-pop {
+        0% { transform: scale(0.96); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+      }
+      .report-sub-nav-btn.active i {
+        color: currentColor;
+        stroke-width: 2.2px;
+      }
+      .dark .report-sub-nav-btn {
+        color: #94a3b8;
+      }
+      .dark .report-sub-nav-btn:hover {
+        color: #93c5fd;
+        background: rgba(59, 130, 246, 0.12);
+      }
       .tahfizh-header-icon-glow {
         width: 2.75rem;
         height: 2.75rem;
@@ -2953,6 +2988,10 @@
           overflow: hidden;
           height: 100vh;
           height: 100dvh;
+        }
+
+        .syamsa-header-logo {
+          display: none !important;
         }
 
         #view-login,
@@ -3337,67 +3376,64 @@
           margin-left: 0 !important;
           margin-right: 0 !important;
           max-width: 100% !important;
-          padding: 0.5rem 0.625rem;
-          border: 1px solid rgba(226, 232, 240, 0.78) !important;
-          border-radius: 1.25rem !important;
-          background: rgba(255, 255, 255, 0.78) !important;
-          backdrop-filter: blur(18px) !important;
-          -webkit-backdrop-filter: blur(18px) !important;
-          box-shadow: 0 14px 38px -30px rgba(15, 23, 42, 0.45) !important;
+          padding: 0.75rem 0.5rem 0.25rem !important;
+          border: none !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          box-shadow: none !important;
+          align-items: flex-start !important;
+        }
+
+        .dark .tab-content header {
+          border-color: transparent !important;
+          background: transparent !important;
         }
 
         .tab-content header button[onclick*="switchTab('home')"] {
           display: none !important;
         }
 
-        .tab-content header h1 {
-          color: #0c1f3d !important;
+        .tab-content header h1,
+        .tab-content header h1 span,
+        .tab-content header .countdown-time {
+          color: #ffffff !important;
         }
 
         .tab-content header span:not(.countdown-time),
         .tab-content header p {
-          color: #5b7099 !important;
+          color: rgba(255, 255, 255, 0.75) !important;
         }
 
         .tab-content header .bg-white\/20 {
-          background-color: rgba(12, 129, 228, 0.08) !important;
-          border-color: rgba(12, 129, 228, 0.2) !important;
+          background-color: rgba(255, 255, 255, 0.2) !important;
+          border-color: rgba(255, 255, 255, 0.25) !important;
         }
         
         .tab-content header .bg-white\/20 span {
-          color: #0c81e4 !important;
-        }
-
-        .tab-content header .countdown-time {
-          color: #0c81e4 !important;
+          color: #ffffff !important;
         }
 
         /* Dark mode overrides */
-        .dark .tab-content header {
-          border-color: rgba(30, 41, 59, 0.9) !important;
-          background: rgba(15, 23, 42, 0.72) !important;
-        }
-
-        .dark .tab-content header h1 {
+        .dark .tab-content header h1,
+        .dark .tab-content header h1 span,
+        .dark .tab-content header .countdown-time {
           color: #ffffff !important;
         }
 
         .dark .tab-content header span:not(.countdown-time),
         .dark .tab-content header p {
-          color: #94a3b8 !important;
+          color: rgba(255, 255, 255, 0.75) !important;
         }
 
         .dark .tab-content header .bg-white\/20 {
-          background-color: rgba(255, 255, 255, 0.08) !important;
-          border-color: rgba(255, 255, 255, 0.15) !important;
+          background-color: rgba(255, 255, 255, 0.15) !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
         }
 
         .dark .tab-content header .bg-white\/20 span {
-          color: #67dff0 !important;
-        }
-
-        .dark .tab-content header .countdown-time {
-          color: #67dff0 !important;
+          color: #ffffff !important;
         }
       }
 
@@ -3457,7 +3493,8 @@
         #main-content > div,
         #tab-report > div,
         #tab-profile > div,
-        #tab-analysis > div {
+        #tab-analysis > div,
+        #tab-tahfizh > div {
           max-width: min(1280px, 100%) !important;
         }
 
@@ -3531,24 +3568,6 @@
           gap: 1.25rem;
         }
 
-        #main-content header {
-          margin-top: 0 !important;
-          margin-left: 0 !important;
-          margin-right: 0 !important;
-          max-width: 100% !important;
-          padding: 0.5rem 0.625rem;
-          border: 1px solid rgba(226, 232, 240, 0.78);
-          border-radius: 1.25rem;
-          background: rgba(255, 255, 255, 0.78);
-          backdrop-filter: blur(18px);
-          -webkit-backdrop-filter: blur(18px);
-          box-shadow: 0 14px 38px -30px rgba(15, 23, 42, 0.45);
-        }
-
-        .dark #main-content header {
-          border-color: rgba(30, 41, 59, 0.9);
-          background: rgba(15, 23, 42, 0.72);
-        }
 
         #main-content > .page-container > .grid.lg\:grid-cols-12 {
           grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr) !important;
@@ -3600,25 +3619,36 @@
 
         #tab-report .overflow-x-auto,
         #tab-tahfizh .overflow-x-auto {
-          border-radius: 9999px;
+          border-radius: 1rem;
         }
 
         #desktop-sidebar .sidebar-nav-list {
+          display: flex;
+          flex-direction: column;
           gap: 0.5rem;
-          padding: 1rem;
+          padding: 1.25rem 1rem;
         }
 
-        #desktop-sidebar .sidebar-nav-btn,
-        #desktop-sidebar .sidebar-nav-btn.active {
+        #desktop-sidebar .sidebar-nav-btn {
           flex: 0 0 auto !important;
           width: 100% !important;
           min-height: 2.875rem;
           justify-content: flex-start;
-          padding: 0.75rem 0.875rem !important;
-          border-radius: 9999px;
+          padding: 0.75rem 1rem !important;
+          border-radius: 1rem;
           overflow: visible;
           transform: none !important;
           opacity: 1 !important;
+          border: 1px solid transparent !important;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          font-weight: 700 !important;
+          font-size: 0.875rem !important;
+          color: #64748b !important; /* text-slate-500 */
+          background: transparent !important;
+        }
+
+        .dark #desktop-sidebar .sidebar-nav-btn {
+          color: #94a3b8 !important; /* text-slate-400 */
         }
 
         #desktop-sidebar .sidebar-nav-btn span {
@@ -3628,9 +3658,54 @@
           white-space: nowrap;
         }
 
-        #desktop-sidebar .sidebar-nav-btn.active {
-          box-shadow: inset 3px 0 0 var(--color-brand), 0 10px 24px -20px rgba(12, 129, 228, 0.55);
-          border: 1px solid rgba(12, 129, 228, 0.12);
+        #desktop-sidebar .sidebar-nav-btn:hover {
+          background: rgba(241, 245, 249, 0.8) !important; /* hover background light */
+          color: #0f172a !important; /* slate-900 */
+          transform: translateX(4px) !important;
+        }
+
+        .dark #desktop-sidebar .sidebar-nav-btn:hover {
+          background: rgba(30, 41, 59, 0.6) !important; /* hover background dark */
+          color: #f8fafc !important; /* slate-50 */
+        }
+
+        /* Distinct tab-themed active button styles */
+        
+        /* Home / Dashboard -> Emerald */
+        #desktop-sidebar .sidebar-nav-btn[data-target="home"].active {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+          color: #ffffff !important;
+          box-shadow: 0 8px 20px -6px rgba(16, 185, 129, 0.45) !important;
+          border: 1px solid rgba(16, 185, 129, 0.2) !important;
+        }
+        
+        /* Tahfizh -> Orange */
+        #desktop-sidebar .sidebar-nav-btn[data-target="tahfizh"].active {
+          background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+          color: #ffffff !important;
+          box-shadow: 0 8px 20px -6px rgba(249, 115, 22, 0.45) !important;
+          border: 1px solid rgba(249, 115, 22, 0.2) !important;
+        }
+
+        /* Report -> Blue */
+        #desktop-sidebar .sidebar-nav-btn[data-target="report"].active {
+          background: linear-gradient(135deg, #0c81e4 0%, #0c4e8c 100%) !important;
+          color: #ffffff !important;
+          box-shadow: 0 8px 20px -6px rgba(12, 129, 228, 0.45) !important;
+          border: 1px solid rgba(12, 129, 228, 0.2) !important;
+        }
+
+        /* Profile -> Purple */
+        #desktop-sidebar .sidebar-nav-btn[data-target="profile"].active {
+          background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%) !important;
+          color: #ffffff !important;
+          box-shadow: 0 8px 20px -6px rgba(168, 85, 247, 0.45) !important;
+          border: 1px solid rgba(168, 85, 247, 0.2) !important;
+        }
+
+        #desktop-sidebar .sidebar-nav-btn.active i {
+          color: #ffffff !important;
+          stroke-width: 2.5px;
         }
 
         #desktop-sidebar .sidebar-nav-btn.active .nav-label,
@@ -3645,7 +3720,7 @@
         }
 
         #desktop-sidebar > div:last-child > div {
-          border-radius: 9999px;
+          border-radius: 1rem;
           border: 1px solid rgba(226, 232, 240, 0.72);
         }
 
@@ -3659,7 +3734,7 @@
         #tab-tahfizh > .page-container {
           display: grid;
           grid-template-columns: minmax(0, 1fr);
-          gap: 1rem;
+          gap: 1.25rem;
         }
 
         #tab-tahfizh .tahfizh-page-header {
@@ -3832,17 +3907,11 @@
           display: grid;
         }
 
-        #tahfizh-page-riwayat {
-          grid-column: 2;
+        #tahfizh-page-riwayat:not(.hidden) {
           display: flex !important;
           flex-direction: column;
           gap: 1rem;
           min-width: 0;
-        }
-
-        #tahfizh-page-riwayat > .grid {
-          grid-template-columns: minmax(0, 1fr) !important;
-          gap: 1rem !important;
         }
 
         #tahfizh-page-riwayat .overflow-x-auto table {
@@ -3876,7 +3945,7 @@
           display: none !important;
         }
 
-        #tab-profile > .grid.lg\:grid-cols-12 {
+        #tab-profile > .grid.md\:grid-cols-12 {
           max-width: 1240px !important;
           margin-left: auto;
           margin-right: auto;
@@ -3886,27 +3955,27 @@
           align-items: start;
         }
 
-        #tab-profile > .grid.lg\:grid-cols-12 > div {
+        #tab-profile > .grid.md\:grid-cols-12 > div {
           min-width: 0;
           grid-column: auto !important;
         }
 
-        #tab-profile > .grid.lg\:grid-cols-12 > div:first-child,
-        #tab-profile > .grid.lg\:grid-cols-12 > div:last-child,
+        #tab-profile > .grid.md\:grid-cols-12 > div:first-child,
+        #tab-profile > .grid.md\:grid-cols-12 > div:last-child,
         #tahfizh-page-beranda > .grid > .tahfizh-card,
         #tahfizh-page-beranda > .grid > .space-y-3,
-        #tahfizh-page-riwayat,
+        #tahfizh-page-riwayat:not(.hidden),
         #main-content > .page-container > .grid.lg\:grid-cols-12 > div {
           display: flex !important;
           flex-direction: column !important;
           gap: 1rem !important;
         }
 
-        #tab-profile > .grid.lg\:grid-cols-12 > div:first-child > *,
-        #tab-profile > .grid.lg\:grid-cols-12 > div:last-child > *,
+        #tab-profile > .grid.md\:grid-cols-12 > div:first-child > *,
+        #tab-profile > .grid.md\:grid-cols-12 > div:last-child > *,
         #tahfizh-page-beranda > .grid > .tahfizh-card > *,
         #tahfizh-page-beranda > .grid > .space-y-3 > *,
-        #tahfizh-page-riwayat > *,
+        #tahfizh-page-riwayat:not(.hidden) > *,
         #main-content > .page-container > .grid.lg\:grid-cols-12 > div > * {
           margin-top: 0 !important;
           margin-bottom: 0 !important;
@@ -3939,11 +4008,11 @@
           display: none;
         }
 
-        #tab-profile > .grid.lg\:grid-cols-12 > div:first-child {
+        #tab-profile > .grid.md\:grid-cols-12 > div:first-child {
           grid-column: 1 !important;
         }
 
-        #tab-profile > .grid.lg\:grid-cols-12 > div:last-child {
+        #tab-profile > .grid.md\:grid-cols-12 > div:last-child {
           grid-column: 2 !important;
         }
 
@@ -4458,85 +4527,80 @@
       <!-- Desktop Sidebar Navigation (hidden on mobile/tablet, shown on desktop via CSS) -->
       <aside id="desktop-sidebar" class="hidden">
         <!-- Brand -->
-        <div
-          class="p-5 flex items-center gap-3 border-t-4 border-t-palette-blue border-b border-slate-100 dark:border-slate-800 relative overflow-hidden"
-        >
-          <div class="relative z-10">
-            <p class="text-base font-black text-slate-800 dark:text-white">SYAMSA</p>
-            <p
-               class="text-[7.5px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight leading-none mt-0.5"
-             >
-               Student Activity Attendance & Monitoring System
-             </p>
-             <p
-               class="text-[6.5px] font-bold text-slate-500/80 dark:text-slate-500/60 uppercase tracking-widest leading-none mt-0.5"
-             >
-               Illuminate Every Presence
-             </p>
+        <div class="p-6 flex flex-col items-center border-b border-slate-100 dark:border-slate-800/60 relative overflow-hidden">
+          <!-- Main Brand Logo -->
+          <div class="w-full flex justify-center py-2">
+            <img
+              src="assets/branding/Primary Logo.webp"
+              class="h-10 w-auto object-contain dark:brightness-200 dark:contrast-125 transition-all duration-300 hover:scale-105"
+              alt="Syamsa Logo"
+            />
           </div>
         </div>
 
         <!-- Nav items -->
-        <div class="sidebar-nav-list flex-1 p-3 overflow-y-auto">
+        <div class="sidebar-nav-list flex-1 p-4 flex flex-col gap-2 overflow-y-auto">
           <button
             onclick="window.switchTab('home')"
             data-target="home"
-            class="nav-btn active sidebar-nav-btn"
+            class="nav-btn active sidebar-nav-btn group"
           >
-            <i data-lucide="home" class="w-5 h-5 flex-shrink-0"></i>
+            <i data-lucide="home" class="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110"></i>
             <span>Dashboard</span>
           </button>
           <button
             onclick="window.switchTab('tahfizh')"
             data-target="tahfizh"
-            class="nav-btn sidebar-nav-btn"
+            class="nav-btn sidebar-nav-btn group"
           >
-            <i data-lucide="book-open-check" class="w-5 h-5 flex-shrink-0"></i>
+            <i data-lucide="book-open-check" class="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110"></i>
             <span>Tahfizh</span>
           </button>
           <button
             onclick="window.switchTab('report')"
             data-target="report"
-            class="nav-btn sidebar-nav-btn"
+            class="nav-btn sidebar-nav-btn group"
           >
-            <i data-lucide="file-bar-chart" class="w-5 h-5 flex-shrink-0"></i>
+            <i data-lucide="file-bar-chart" class="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110"></i>
             <span>Laporan</span>
           </button>
           <button
             onclick="window.switchTab('profile')"
             data-target="profile"
-            class="nav-btn sidebar-nav-btn"
+            class="nav-btn sidebar-nav-btn group"
           >
-            <i data-lucide="user" class="w-5 h-5 flex-shrink-0"></i>
+            <i data-lucide="user" class="w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110"></i>
             <span>Profil</span>
           </button>
         </div>
 
         <!-- User info -->
-        <div class="p-4 border-t border-slate-100 dark:border-slate-800">
+        <div class="p-4 border-t border-slate-100 dark:border-slate-800/60">
           <div
-            class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800"
+            onclick="window.switchTab('profile')"
+            class="flex items-center gap-3 p-3 rounded-2xl bg-white/60 dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-slate-100 dark:border-slate-800/50 shadow-sm cursor-pointer transition-all duration-300 group"
           >
             <div
-              class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0"
+              class="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0 transition-transform group-hover:scale-105"
               id="sidebar-avatar"
             >
               <i data-lucide="user" class="w-4 h-4"></i>
             </div>
             <div class="min-w-0 flex-1">
               <p
-                class="font-bold text-sm text-slate-800 dark:text-white truncate leading-tight"
+                class="font-bold text-xs text-slate-800 dark:text-white truncate leading-tight group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors"
                 id="sidebar-user-name"
               >
                 -
               </p>
               <p
-                class="text-[11px] font-bold text-emerald-500 truncate"
+                class="text-[10px] font-bold text-emerald-500 dark:text-emerald-400 truncate mt-0.5"
                 id="sidebar-class-name"
               >
                 -
               </p>
             </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 dark:text-slate-600 transition-transform group-hover:translate-x-0.5"></i>
           </div>
         </div>
       </aside>
@@ -4551,17 +4615,39 @@
         </div>
         <div class="page-container page-container-spacious">
           <!-- Header -->
-<header class="flex justify-between items-center gap-3 sm:gap-4 animate-slide-up relative z-40 w-full delay-100ms">
+<header class="flex justify-between items-start gap-3 sm:gap-4 animate-slide-up relative z-40 w-full delay-100ms">
   
-  <div class="flex items-center h-11 gap-3 min-w-0 self-center pl-1.5 sm:pl-3">
-    <img
-      src="assets/branding/Primary Logo.webp"
-      alt="Syamsa"
-      class="syamsa-header-logo"
-    />
+  <div class="flex flex-col gap-2 min-w-0">
+    <div class="flex items-center h-11 gap-3 min-w-0 self-start pl-1.5 sm:pl-3 lg:hidden">
+      <img
+        src="assets/branding/Primary Logo.webp"
+        alt="Syamsa"
+        class="syamsa-header-logo"
+      />
+    </div>
+
+    <!-- Move Greeting panel up to header -->
+    <section id="dashboard-greeting-panel" class="animate-slide-up delay-100ms text-white pl-1.5 sm:pl-3">
+      <div class="max-w-[240px] sm:max-w-sm overflow-hidden mb-1">
+        <span id="dash-title-sub-greeting" class="text-sm sm:text-base font-normal text-white/75 leading-tight transition-opacity duration-500 block whitespace-nowrap font-rubik">
+          Masa al-khair
+        </span>
+      </div>
+
+      <h1 id="dash-title-greeting" class="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight pb-0.5 mb-2 truncate">
+        <span class="text-white">
+          Ustadz Andi Aqillah!
+        </span>
+      </h1>
+
+      <div id="header-prayer-countdown" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/20 border border-white/25 text-white text-[9px] w-fit shadow-sm backdrop-blur-sm">
+        <span class="countdown-label opacity-80 font-bold uppercase tracking-widest text-[8px]">Ke Syuruq</span>
+        <span class="countdown-time font-black tracking-wider">07:07:35</span>
+      </div>
+    </section>
   </div>
 
-  <div class="header-actions-flex-container flex items-center gap-2 sm:gap-3 shrink-0 self-center">
+  <div class="header-actions-flex-container flex items-center gap-2 sm:gap-3 shrink-0 self-start mt-1.5 lg:ml-auto">
     
     <!-- Clock (desktop only) -->
     <div class="hidden sm:flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm">
@@ -4620,25 +4706,6 @@
           
           <!-- LEFT COLUMN: Sesi Utama & Jadwal -->
           <div class="md:col-span-7 md:space-y-6 max-md:contents">
-
-            <section id="dashboard-greeting-panel" class="animate-slide-up delay-100ms text-white pl-3 sm:pl-5">
-              <div class="max-w-[240px] sm:max-w-sm overflow-hidden mb-1">
-                <span id="dash-title-sub-greeting" class="text-sm sm:text-base font-normal text-white/75 leading-tight transition-opacity duration-500 block whitespace-nowrap font-rubik">
-                  Masa al-khair
-                </span>
-              </div>
-
-              <h1 id="dash-title-greeting" class="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight pb-0.5 mb-2 truncate">
-                <span class="text-white">
-                  Ustadz Andi Aqillah!
-                </span>
-              </h1>
-
-              <div id="header-prayer-countdown" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/20 border border-white/25 text-white text-[9px] w-fit shadow-sm backdrop-blur-sm">
-                <span class="countdown-label opacity-80 font-bold uppercase tracking-widest text-[8px]">Ke Syuruq</span>
-                <span class="countdown-time font-black tracking-wider">07:07:35</span>
-              </div>
-            </section>
 
             <!-- COUNTDOWN WIDGET: Libur Kenaikan Kelas -->
             <div id="countdown-libur-widget" class="hidden animate-slide-up delay-150ms">
@@ -6070,26 +6137,6 @@
               </div>
           </div>
 
-          <div class="musyrif-only flex items-center gap-2 w-auto shrink-0">
-          <button
-            id="report-view-btn"
-            onclick="window.switchReportView('report')"
-            class="h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.96]"
-            aria-label="Tampilkan laporan"
-            title="Laporan"
-          >
-            <i data-lucide="layout-grid" class="w-4 h-4"></i>
-          </button>
-          <button
-            id="analysis-view-btn"
-            onclick="window.switchReportView('analysis')"
-            class="h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-blue-500 dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]"
-            aria-label="Tampilkan analisis"
-            title="Analisis"
-          >
-            <i data-lucide="user-search" class="w-4 h-4"></i>
-          </button>
-          </div>
           <div class="wali-only flex items-center gap-2 w-auto shrink-0">
             <a
               id="laporan-wali-wa-btn"
@@ -6103,6 +6150,29 @@
             </a>
           </div>
         </header>
+
+        <div class="musyrif-only flex p-1 bg-white/85 dark:bg-slate-900/80 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-xl w-full sm:w-auto shrink-0 animate-slide-up delay-120ms mt-4">
+          <div class="flex items-center gap-1 w-full sm:w-auto overflow-x-auto hide-scrollbar">
+            <button
+              id="report-view-btn"
+              onclick="window.switchReportView('report')"
+              data-subtab="report"
+              class="report-sub-nav-btn active h-10 px-3 sm:px-4 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]"
+            >
+              <i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i>
+              <span>Laporan</span>
+            </button>
+            <button
+              id="analysis-view-btn"
+              onclick="window.switchReportView('analysis')"
+              data-subtab="analysis"
+              class="report-sub-nav-btn h-10 px-3 sm:px-4 flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-xl text-xs font-semibold active:scale-[0.98]"
+            >
+              <i data-lucide="user-search" class="w-4 h-4 shrink-0"></i>
+              <span>Analisis</span>
+            </button>
+          </div>
+        </div>
 
         <div id="report-section" class="animate-fade-in space-y-4">
           <div class="grid grid-cols-1 xl:grid-cols-[minmax(360px,1fr)_minmax(520px,1.1fr)] gap-3 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-3 backdrop-blur-xl">
@@ -6685,7 +6755,7 @@
 
           <div
             id="analysis-empty"
-            class="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[1.75rem] bg-slate-50/50 dark:bg-slate-800/20"
+            class="md:col-span-8 flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[1.75rem] bg-slate-50/50 dark:bg-slate-800/20"
           >
             <div
               class="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100 dark:border-slate-700"

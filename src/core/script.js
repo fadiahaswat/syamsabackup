@@ -7769,6 +7769,7 @@ window.updateReportTab = function () {
 
   tbody.appendChild(fragment);
   if (window.lucide) window.lucide.createIcons();
+  if (window.populateAnalysisDropdown) window.populateAnalysisDropdown();
 };
 
 window.updateProfileStats = function () {
@@ -8553,11 +8554,27 @@ window.populateAnalysisDropdown = function () {
   // Simpan value lama jika ada
   const oldVal = select.value;
 
-  select.innerHTML = '<option value="">-- Pilih Santri --</option>';
+  select.innerHTML = '<option value="">Pilih Santri</option>';
 
-  // Sort nama santri
-  const sorted = [...FILTERED_SANTRI].sort((a, b) =>
-    a.nama.localeCompare(b.nama),
+  // Fallback ke MASTER_SANTRI jika Admin atau FILTERED_SANTRI kosong
+  let rawList = FILTERED_SANTRI;
+  if (appState.adminMode || !rawList || rawList.length === 0) {
+    rawList = window.santriData || window.MASTER_SANTRI || (typeof MASTER_SANTRI !== "undefined" ? MASTER_SANTRI : null);
+  }
+  // Ultimate fallback: Baca langsung dari localStorage jika data memori kosong
+  if (!rawList || rawList.length === 0) {
+    try {
+      const cached = localStorage.getItem("cache_data_santri_full");
+      if (cached) rawList = JSON.parse(cached);
+    } catch (e) {
+      console.error("Gagal membaca cache santri:", e);
+    }
+  }
+  const sourceList = Array.isArray(rawList) ? rawList : [];
+
+  // Sort nama santri secara aman
+  const sorted = [...sourceList].sort((a, b) =>
+    (a.nama || "").localeCompare(b.nama || "")
   );
 
   sorted.forEach((s) => {
@@ -12619,21 +12636,17 @@ window.switchReportView = function (view) {
   const analysis = document.getElementById("analysis-section");
   const btnReport = document.getElementById("report-view-btn");
   const btnAnalysis = document.getElementById("analysis-view-btn");
-  const activeClass =
-    "h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.96]";
-  const inactiveClass =
-    "h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-blue-500 dark:hover:text-blue-300 border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]";
 
   if (view === "report") {
     report.classList.remove("hidden");
     analysis.classList.add("hidden");
-    if (btnReport) btnReport.className = activeClass;
-    if (btnAnalysis) btnAnalysis.className = inactiveClass;
+    if (btnReport) btnReport.classList.add("active");
+    if (btnAnalysis) btnAnalysis.classList.remove("active");
   } else {
     report.classList.add("hidden");
     analysis.classList.remove("hidden");
-    if (btnAnalysis) btnAnalysis.className = activeClass;
-    if (btnReport) btnReport.className = inactiveClass;
+    if (btnAnalysis) btnAnalysis.classList.add("active");
+    if (btnReport) btnReport.classList.remove("active");
 
     window.populateAnalysisDropdown();
     window.runAnalysis();
@@ -13856,6 +13869,11 @@ window.renderUnifiedAdminReport = async function () {
     if (classVal !== "all") {
       filteredStudents = filteredStudents.filter(s => (s.kelas || s.rombel) === classVal);
     }
+
+    // Perbarui FILTERED_SANTRI agar dropdown Analisis sinkron dengan kelas yang dipilih Admin
+    FILTERED_SANTRI = filteredStudents;
+    if (window.populateAnalysisDropdown) window.populateAnalysisDropdown();
+
     if (searchVal) {
       filteredStudents = filteredStudents.filter(s => 
         (s.nama && s.nama.toLowerCase().includes(searchVal)) ||

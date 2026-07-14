@@ -454,12 +454,15 @@ window.renderAttendanceReviewGate = function (
   const existingBanner = document.getElementById("attendance-review-banner");
   if (existingBanner) existingBanner.remove();
 
-  if (scrollContainer && scrollContainer._attendanceReviewScrollHandler) {
-    scrollContainer.removeEventListener(
-      "scroll",
-      scrollContainer._attendanceReviewScrollHandler,
-    );
-    delete scrollContainer._attendanceReviewScrollHandler;
+  if (scrollContainer) {
+    if (scrollContainer._attendanceReviewScrollHandler) {
+      scrollContainer.removeEventListener(
+        "scroll",
+        scrollContainer._attendanceReviewScrollHandler,
+      );
+      delete scrollContainer._attendanceReviewScrollHandler;
+    }
+    delete scrollContainer._isAttendanceConfirming;
   }
 
   const slotData = window.getAttendanceSlotData(dateKey, slotId);
@@ -481,10 +484,10 @@ window.renderAttendanceReviewGate = function (
             </div>
             <div class="min-w-0">
               <p class="text-xs font-black text-amber-900 dark:text-amber-100">Default hadir belum dikonfirmasi</p>
-              <p class="mt-0.5 text-[11px] font-semibold leading-relaxed text-amber-700 dark:text-amber-200">Periksa santri yang sakit, izin, pulang, telat, atau alpa. Setelah sesuai, tekan tombol konfirmasi.</p>
+              <p class="mt-0.5 text-[11px] font-semibold leading-relaxed text-amber-700 dark:text-amber-200">Periksa santri yang sakit, izin, pulang, telat, atau alpa. Setelah sesuai, gulir sampai bawah untuk konfirmasi otomatis.</p>
             </div>
           </div>
-          <button type="button" onclick="window.markAttendanceReviewConfirmed('${dateKey}', '${slotId}'); document.getElementById('attendance-review-banner')?.remove();" class="shrink-0 rounded-xl bg-amber-600 px-3 py-2 text-[10px] font-black text-white shadow-sm active:scale-95">
+          <button type="button" onclick="window.markAttendanceReviewConfirmed('${dateKey}', '${slotId}'); document.getElementById('attendance-review-banner')?.remove(); window.showToast?.('Presensi berhasil dikonfirmasi! 🎉', 'success');" class="shrink-0 rounded-xl bg-amber-600 px-3 py-2 text-[10px] font-black text-white shadow-sm active:scale-95">
             Sudah dicek
           </button>
         </div>
@@ -493,7 +496,23 @@ window.renderAttendanceReviewGate = function (
       if (window.refreshIcons) window.refreshIcons();
 
       const confirmWhenAtBottom = () => {
-        if (scrollContainer.scrollTop > 12) {
+        const scrollTop = scrollContainer.scrollTop;
+        const scrollHeight = scrollContainer.scrollHeight;
+        const clientHeight = scrollContainer.clientHeight;
+
+        // Cek jika sudah mendekati paling bawah (toleransi 15px)
+        const isAtBottom = (scrollHeight - scrollTop - clientHeight) <= 15;
+
+        if (isAtBottom && scrollHeight > clientHeight + 10) {
+          // Cegah eksekusi ganda
+          if (scrollContainer._isAttendanceConfirming) return;
+          scrollContainer._isAttendanceConfirming = true;
+
+          // Konfirmasi otomatis presensi
+          window.markAttendanceReviewConfirmed(dateKey, slotId);
+          document.getElementById('attendance-review-banner')?.remove();
+          window.showToast?.('Presensi berhasil dikonfirmasi otomatis! 🎉', 'success');
+        } else if (scrollTop > 12) {
           window.setAttendanceSaveIndicator("pending");
         }
       };
@@ -511,12 +530,15 @@ window.clearAttendanceReviewGate = function () {
   document.getElementById("attendance-review-banner")?.remove();
 
   const container = document.getElementById("attendance-list-container");
-  if (container && container._attendanceReviewScrollHandler) {
-    container.removeEventListener(
-      "scroll",
-      container._attendanceReviewScrollHandler,
-    );
-    delete container._attendanceReviewScrollHandler;
+  if (container) {
+    if (container._attendanceReviewScrollHandler) {
+      container.removeEventListener(
+        "scroll",
+        container._attendanceReviewScrollHandler,
+      );
+      delete container._attendanceReviewScrollHandler;
+    }
+    delete container._isAttendanceConfirming;
   }
   const indicator = document.getElementById("save-indicator");
   if (indicator) {
