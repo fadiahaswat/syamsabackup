@@ -201,6 +201,7 @@ class SupabaseSync {
       // 1. Sync Tabel Attendances
       const { data: cloudAttendances, error: errAtt } = await window.supabaseClient
         .from('attendances')
+        .select('*')
         .eq('kelas', kelas);
 
       if (errAtt) throw errAtt;
@@ -216,6 +217,7 @@ class SupabaseSync {
       // 2. Sync Tabel Permits
       const { data: cloudPermits, error: errPerm } = await window.supabaseClient
         .from('permits')
+        .select('*')
         .eq('kelas', kelas);
 
       if (errPerm) throw errPerm;
@@ -231,6 +233,7 @@ class SupabaseSync {
       // 3. Sync Tabel Tahfizh
       const { data: cloudTahfizh, error: errTah } = await window.supabaseClient
         .from('tahfizh')
+        .select('*')
         .eq('kelas', kelas);
 
       if (errTah) throw errTah;
