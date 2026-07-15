@@ -546,12 +546,17 @@ window.renderSlotList = function () {
       }
 
       let percent = 0;
+      const isAdmin = appState.adminMode === true || appState.superadminMode === true;
 
-      const totalStatus =
-        stats.h + stats.t + stats.i + stats.s + stats.p + stats.a;
+      if (isAdmin) {
+        percent = window.calculateSlotFillPercentage(s.id, appState.date);
+      } else {
+        const totalStatus =
+          stats.h + stats.t + stats.i + stats.s + stats.p + stats.a;
 
-      if (totalStatus > 0) {
-        percent = Math.round(((stats.h + stats.t) / totalStatus) * 100);
+        if (totalStatus > 0) {
+          percent = Math.round(((stats.h + stats.t) / totalStatus) * 100);
+        }
       }
 
       // Terapkan persentase DAN paksa suntikkan warna Hex Code-nya
@@ -562,6 +567,10 @@ window.renderSlotList = function () {
       if (progressText) progressText.textContent = `${percent}%`;
 
       item.onclick = () => {
+        if (isAdmin) {
+          window.showSlotFillDetails(s.id);
+          return;
+        }
         appState.currentSlotId = s.id;
         if (isToday && s.id === window.determineCurrentSlot()) {
           window.updateDashboard();

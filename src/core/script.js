@@ -3898,6 +3898,9 @@ window.renderSlotList = function () {
       if (isWali) {
         return window.switchTab?.("report");
       }
+      if (isAdmin) {
+        return window.showSlotFillDetails(s.id);
+      }
       window.openBentoModal(s, access, stats);
     };
 
