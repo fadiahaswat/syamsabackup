@@ -561,7 +561,7 @@
     z-index: 20;
     overflow: hidden;
     /* iOS Glass Material \u2014 Thick Material untuk persistent sidebar */
-    background: var(--surface-strong) !important;
+    background: rgba(255, 255, 255, 0.78) !important;
     backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
     -webkit-backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
     border-right: 1px solid var(--border-soft) !important;
@@ -570,7 +570,7 @@
   }
 
   .dark #desktop-sidebar {
-    background: var(--surface-strong) !important;
+    background: rgba(15, 23, 42, 0.78) !important;
   }
 
   #desktop-sidebar > div:first-child {

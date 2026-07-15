@@ -12,19 +12,52 @@
  * - Event emission for UI reactivity
  */
 
+// Centralized ID Generator Fallbacks (if storage-constants.js is cached/missing)
+if (typeof window.generateId !== 'function') {
+  window.generateId = function (prefix = '') {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substring(2, 10);
+    return prefix ? `${prefix}_${timestamp}_${random}` : `${timestamp}_${random}`;
+  };
+}
+
+if (typeof window.generateAttendanceId !== 'function') {
+  window.generateAttendanceId = function (date, slot, studentId) {
+    return `att_${date}_${slot}_${studentId}`;
+  };
+}
+
+if (typeof window.generatePermitId !== 'function') {
+  window.generatePermitId = function () {
+    return window.generateId('p');
+  };
+}
+
+if (typeof window.generateTahfizhId !== 'function') {
+  window.generateTahfizhId = function (kelas, nis, rowNumber = null) {
+    const suffix = rowNumber !== null ? `row_${rowNumber}` : `rnd_${Date.now().toString(36)}`;
+    return `tahfizh_${kelas.replace(/\s+/g, '_')}_${nis}_${suffix}`;
+  };
+}
+
+if (typeof window.generateLogId !== 'function') {
+  window.generateLogId = function () {
+    return window.generateId('log');
+  };
+}
+
 class AttendanceRepository {
   constructor(db) {
     this.db = db;
     this.storeName = window.DB_STORES?.attendances || 'attendances';
+    this._logger = window.RepositoryLogger || console;
   }
 
   /**
-   * Generate composite ID
-   * LOW FIX: Use centralized ID generator
+   * Generate composite ID using centralized generator
    */
   _createId(date, slot, studentId) {
-    return window.generateAttendanceId?.(date, slot, studentId)
-      || `${date}_${slot}_${studentId}`;
+    return window.generateAttendanceId(date, slot, studentId);
   }
 
   /**
@@ -305,14 +338,14 @@ class PermitRepository {
   constructor(db) {
     this.db = db;
     this.storeName = window.DB_STORES?.permits || 'permits';
+    this._logger = window.RepositoryLogger || console;
   }
 
   /**
-   * Generate permit ID
-   * LOW FIX: Use centralized ID generator
+   * Generate permit ID using centralized generator
    */
   _generateId() {
-    return window.generatePermitId?.() || 'p_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+    return window.generatePermitId();
   }
 
   /**
@@ -601,15 +634,14 @@ class TahfizhRepository {
   constructor(db) {
     this.db = db;
     this.storeName = window.DB_STORES?.tahfizh || 'tahfizh';
+    this._logger = window.RepositoryLogger || console;
   }
 
   /**
-   * Generate ID
-   * LOW FIX: Use centralized ID generator
+   * Generate ID using centralized generator
    */
   _generateId(kelas, nis, rowNumber) {
-    return window.generateTahfizhId?.(kelas, nis, rowNumber)
-      || `t_${kelas}_${nis}_${rowNumber || Date.now().toString(36)}`;
+    return window.generateTahfizhId(kelas, nis, rowNumber);
   }
 
   /**
@@ -806,6 +838,7 @@ class SettingsRepository {
   constructor(db) {
     this.db = db;
     this.storeName = 'settings';
+    this._logger = window.RepositoryLogger || console;
   }
 
   /**
@@ -906,27 +939,23 @@ class SettingsRepository {
 class ActivityLogRepository {
   constructor(db) {
     this.db = db;
-    this.storeName = window.DB_STORES?.activityLogs || 'activity_logs';
+    this.storeName = window.DB_STORES?.activity_logs || 'activity_logs';
     this.maxEntries = 1000;
     this.maxAgeDays = 90;
+    this._logger = window.RepositoryLogger || console;
   }
 
   /**
-   * Generate ID
-   * LOW FIX: Use centralized ID generator
+   * Generate ID using centralized generator
    */
   _generateId() {
-    return window.generateLogId?.() || 'log_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+    return window.generateLogId();
   }
 
   /**
-   * Get recent logs
-   * HIGH FIX: Note - IndexedDB doesn't support ORDER BY, so in-memory sort is still needed
-   * but we limit results to improve performance
+   * Get recent logs (in-memory sort since IndexedDB doesn't support ORDER BY)
    */
   async getRecent(limit = 50) {
-    // Note: IndexedDB doesn't support ORDER BY, so sort is done in memory
-    // We still use getAll but could optimize with cursor-based pagination
     const all = await this.db.getAll(this.storeName);
     return all
       .sort((a, b) => {
@@ -1052,6 +1081,12 @@ class RepositoryFactory {
     this._tahfizh = null;
     this._settings = null;
     this._activityLog = null;
+    this._logger = window.RepositoryLogger || {
+      debug: (...args) => window.Logger?.debug('Repository', ...args),
+      info: (...args) => window.Logger?.info('Repository', ...args),
+      warn: (...args) => window.Logger?.warn('Repository', ...args),
+      error: (...args) => window.Logger?.error('Repository', ...args),
+    };
   }
 
   get attendance() {

@@ -8,17 +8,19 @@
  * - Data disimpan di localStorage dengan key yang terstruktur
  * - Auto-save dengan debounce untuk mencegah excessive writes
  * - Online/offline detection untuk UI indicators
- *
- * Storage Keys (Canonical):
- * - attendance: 'musyrif_app_v5_fix'
- * - permits: 'musyrif_permits_db'
- * - settings: 'musyrif_settings'
- * - activityLog: 'musyrif_activity_log'
- * - googleAuth: 'musyrif_google_session'
  */
+
+// Use centralized logger
+const _storageLogger = window.StorageLogger || {
+  debug: (...args) => window.Logger?.debug('Storage', ...args),
+  info: (...args) => window.Logger?.info('Storage', ...args),
+  warn: (...args) => window.Logger?.warn('Storage', ...args),
+  error: (...args) => window.Logger?.error('Storage', ...args),
+};
+
 const storageDebugLog = (...args) => {
   if (localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true")) {
-    console.log(...args);
+    _storageLogger.debug(...args);
   }
 };
 
@@ -60,7 +62,7 @@ class StorageManager {
   _setupConnectionListeners() {
     window.addEventListener('online', () => {
       this.isOnline = true;
-      console.info('[StorageManager] Connection restored');
+      _storageLogger.info('[StorageManager] Connection restored');
       if (this.onOnlineStatusChange) {
         this.onOnlineStatusChange(true);
       }
@@ -68,7 +70,7 @@ class StorageManager {
 
     window.addEventListener('offline', () => {
       this.isOnline = false;
-      console.warn('[StorageManager] Connection lost - offline mode');
+      _storageLogger.warn('[StorageManager] Connection lost - offline mode');
       if (this.onOnlineStatusChange) {
         this.onOnlineStatusChange(false);
       }
@@ -83,7 +85,7 @@ class StorageManager {
   init(musyrifId) {
     // MEDIUM FIX: Warn if musyrifId is null/undefined
     if (!musyrifId) {
-      console.warn('[StorageManager] Warning: musyrifId is null or undefined. Audit trails will have no attribution.');
+      _storageLogger.warn('[StorageManager] Warning: musyrifId is null or undefined. Audit trails will have no attribution.');
     }
 
     storageDebugLog('[StorageManager] Initializing with musyrifId:', musyrifId);
@@ -147,7 +149,7 @@ class StorageManager {
       const data = localStorage.getItem(key);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error(`[StorageManager] Error reading ${key}:`, error);
+      _storageLogger.error(`[StorageManager] Error reading ${key}:`, error);
       return null;
     }
   }
@@ -160,7 +162,7 @@ class StorageManager {
       localStorage.setItem(key, JSON.stringify(data));
       return true;
     } catch (error) {
-      console.error(`[StorageManager] Error writing ${key}:`, error);
+      _storageLogger.error(`[StorageManager] Error writing ${key}:`, error);
       if (error.name === 'QuotaExceededError') {
         window.showToast?.('Storage hampir penuh!', 'error');
       }
@@ -176,7 +178,7 @@ class StorageManager {
       localStorage.removeItem(key);
       return true;
     } catch (error) {
-      console.error(`[StorageManager] Error removing ${key}:`, error);
+      _storageLogger.error(`[StorageManager] Error removing ${key}:`, error);
       return false;
     }
   }

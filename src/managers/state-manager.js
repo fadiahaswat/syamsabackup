@@ -19,6 +19,14 @@
 
 class StateManager {
   constructor() {
+    // Logger
+    this._logger = window.StateLogger || {
+      debug: (...args) => window.Logger?.debug('StateManager', ...args),
+      info: (...args) => window.Logger?.info('StateManager', ...args),
+      warn: (...args) => window.Logger?.warn('StateManager', ...args),
+      error: (...args) => window.Logger?.error('StateManager', ...args),
+    };
+
     // Internal state
     this._state = {
       // User session
@@ -76,7 +84,7 @@ class StateManager {
     await this._loadPersistedState();
 
     this._initialized = true;
-    console.log('[StateManager] Initialized');
+    this._logger.info('[StateManager] Initialized');
   }
 
   /**
@@ -109,13 +117,13 @@ class StateManager {
       const logs = await this._repos.activityLog.getRecent(50);
       this._state.activityLog = logs || [];
 
-      console.log('[StateManager] Loaded persisted state:', {
+      this._logger.info('[StateManager] Loaded persisted state:', {
         settings: Object.keys(this._state.settings).length,
         permits: this._state.permits.length,
         attendanceRecords: Object.keys(this._state.attendanceData).length,
       });
     } catch (error) {
-      console.error('[StateManager] Failed to load persisted state:', error);
+      this._logger.error('[StateManager] Failed to load persisted state:', error);
     }
   }
 
@@ -159,7 +167,7 @@ class StateManager {
 
       this._state.attendanceData = attendanceData;
     } catch (error) {
-      console.error('[StateManager] Failed to load attendance:', error);
+      this._logger.error('[StateManager] Failed to load attendance:', error);
       this._state.attendanceData = {};
     }
   }
@@ -251,7 +259,7 @@ class StateManager {
         try {
           callback(data);
         } catch (error) {
-          console.error(`[StateManager] Listener error for ${event}:`, error);
+          this._logger.error(`[StateManager] Listener error for ${event}:`, error);
         }
       });
     }
@@ -292,9 +300,9 @@ class StateManager {
       this._state._lastSync = new Date().toISOString();
       this._state._isDirty = false;
 
-      console.log('[StateManager] State persisted to IndexedDB');
+      this._logger.info('[StateManager] State persisted to IndexedDB');
     } catch (error) {
-      console.error('[StateManager] Failed to persist state:', error);
+      this._logger.error('[StateManager] Failed to persist state:', error);
     }
   }
 

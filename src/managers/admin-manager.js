@@ -97,28 +97,47 @@ window.loadGlobalAttendance = async function () {
       };
     });
 
-    // Ambil data dari localStorage untuk setiap kelas
     const slots = ['shubuh', 'sekolah', 'ashar', 'maghrib', 'isya'];
     const dateKey = appState.date || new Date().toISOString().split('T')[0];
 
-    for (const className of Object.keys(rekap)) {
+    const useIndexedDB = window.storageManager?.getStatus()?.useIndexedDB && window._repos?.attendance;
+
+    if (useIndexedDB) {
       try {
-        const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
-        const savedData = localStorage.getItem(storageKey);
-        if (savedData) {
-          const attendanceData = window.safeJsonParse(savedData, {});
-          if (!attendanceData) continue;
-          const dayData = attendanceData[dateKey];
-          if (dayData) {
-            slots.forEach(slotId => {
-              if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
-                rekap[className][slotId] = true;
-              }
-            });
+        const allDateRecords = await window._repos.attendance.getByDate(dateKey);
+        allDateRecords.forEach(record => {
+          const className = record.kelas;
+          const slotId = record.slot;
+          if (rekap[className] && rekap[className].hasOwnProperty(slotId)) {
+            if (record.status && Object.keys(record.status).length > 0) {
+              rekap[className][slotId] = true;
+            }
           }
+        });
+      } catch (err) {
+        console.error('[AdminManager] Failed to load global attendance from IndexedDB, falling back:', err);
+      }
+    } else {
+      // Fallback ke LocalStorage (cara lama)
+      for (const className of Object.keys(rekap)) {
+        try {
+          const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+          const savedData = localStorage.getItem(storageKey);
+          if (savedData) {
+            const attendanceData = window.safeJsonParse(savedData, {});
+            if (!attendanceData) continue;
+            const dayData = attendanceData[dateKey];
+            if (dayData) {
+              slots.forEach(slotId => {
+                if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
+                  rekap[className][slotId] = true;
+                }
+              });
+            }
+          }
+        } catch (e) {
+          // Silent fail for individual class - continue processing others
         }
-      } catch (e) {
-        // Silent fail for individual class - continue processing others
       }
     }
 
@@ -1757,7 +1776,7 @@ window.deleteAdminGPSLocation = function (idx) {
  * Hitung streak kepatuhan Musyrif
  * @returns {Array} Array streak data per kelas
  */
-window.calculateMusyrifStreaks = function () {
+window.calculateMusyrifStreaks = async function () {
   const result = [];
   const slots = ['shubuh', 'sekolah', 'ashar', 'maghrib', 'isya'];
   const todayStr = window.getLocalDateStr ? window.getLocalDateStr() : new Date().toISOString().split('T')[0];
@@ -1769,41 +1788,64 @@ window.calculateMusyrifStreaks = function () {
     return d.toISOString().split('T')[0];
   };
 
-  Object.keys(MASTER_KELAS).forEach(className => {
-    if (className.toLowerCase() === 'admin musyrif') return;
+  const useIndexedDB = window.storageManager?.getStatus()?.useIndexedDB && window._repos?.attendance;
+  let allRecords = [];
+
+  if (useIndexedDB) {
+    try {
+      allRecords = await window._repos.attendance.db.getAll('attendances');
+    } catch (err) {
+      console.error('[AdminManager] Failed to get all attendance records from IndexedDB:', err);
+    }
+  }
+
+  const classNames = Object.keys(MASTER_KELAS);
+
+  for (const className of classNames) {
+    if (className.toLowerCase() === 'admin musyrif') continue;
 
     const classInfo = MASTER_KELAS[className];
-    const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
-    const savedData = localStorage.getItem(storageKey);
-    
     let totalSlotsFilled = 0;
     let filledDatesSet = new Set();
 
-    if (savedData) {
-      const attendanceData = window.safeJsonParse(savedData, {});
-      if (attendanceData) {
-        Object.keys(attendanceData).forEach(dateKey => {
-          const dayData = attendanceData[dateKey];
-          if (dayData) {
-            let dayHasData = false;
-            slots.forEach(slotId => {
-              if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
-                totalSlotsFilled++;
-                dayHasData = true;
+    if (useIndexedDB) {
+      const classRecords = allRecords.filter(r => r.kelas === className);
+      classRecords.forEach(record => {
+        const dateKey = record.date;
+        const slotId = record.slot;
+        if (slots.includes(slotId) && record.status && Object.keys(record.status).length > 0) {
+          totalSlotsFilled++;
+          filledDatesSet.add(dateKey);
+        }
+      });
+    } else {
+      const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+      const savedData = localStorage.getItem(storageKey);
+      
+      if (savedData) {
+        const attendanceData = window.safeJsonParse(savedData, {});
+        if (attendanceData) {
+          Object.keys(attendanceData).forEach(dateKey => {
+            const dayData = attendanceData[dateKey];
+            if (dayData) {
+              let dayHasData = false;
+              slots.forEach(slotId => {
+                if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
+                  totalSlotsFilled++;
+                  dayHasData = true;
+                }
+              });
+              if (dayHasData) {
+                filledDatesSet.add(dateKey);
               }
-            });
-            if (dayHasData) {
-              filledDatesSet.add(dateKey);
             }
-          }
-        });
+          });
+        }
       }
     }
 
     // Compute current streak
     let currentStreak = 0;
-    
-    // If today is not filled, check yesterday. If yesterday is also not filled, streak is 0
     const todayFilled = filledDatesSet.has(todayStr);
     const yesterdayStr = subtractDays(todayStr, 1);
     const yesterdayFilled = filledDatesSet.has(yesterdayStr);
@@ -1851,7 +1893,7 @@ window.calculateMusyrifStreaks = function () {
       totalSlots: totalSlotsFilled,
       compliance: complianceRate
     });
-  });
+  }
 
   // Sort by streak desc, then by compliance desc, then by totalSlots desc
   result.sort((a, b) => b.streak - a.streak || b.compliance - a.compliance || b.totalSlots - a.totalSlots);
@@ -1861,12 +1903,12 @@ window.calculateMusyrifStreaks = function () {
 /**
  * Render leaderboard kepatuhan Musyrif
  */
-window.renderMusyrifLeaderboard = function () {
+window.renderMusyrifLeaderboard = async function () {
   _requireAdmin();
   const tbody = document.getElementById("admin-musyrif-streak-body");
   if (!tbody) return;
 
-  const data = window.calculateMusyrifStreaks();
+  const data = await window.calculateMusyrifStreaks();
 
   tbody.innerHTML = "";
   if (data.length === 0) {

@@ -70,11 +70,11 @@
         --color-brand-ring: rgba(12, 129, 228, 0.15);
         
         /* Permukaan Kaca Baru (iOS Light Materials) */
-        --surface: rgba(255, 255, 255, 0.60);        /* Regular Material */
-        --surface-strong: rgba(255, 255, 255, 0.78); /* Thick Material */
+        --surface: rgba(255, 255, 255, 0.88);        /* Regular surfaces: mostly solid */
+        --surface-strong: rgba(255, 255, 255, 0.94); /* Strong surfaces: solid by default */
         --surface-muted: #F1F5F9;
-        --surface-subtle: rgba(255, 255, 255, 0.40); /* Thin Material */
-        --border-soft: rgba(255, 255, 255, 0.45);    /* Fine translucent border */
+        --surface-subtle: rgba(255, 255, 255, 0.72); /* Subtle surfaces */
+        --border-soft: rgba(148, 163, 184, 0.28);    /* Neutral edge, less glassy */
         
         /* Shadow dengan Inset Bevel (Pantulan Cahaya Atas) */
         --shadow-card: 0 12px 32px -12px rgba(15, 23, 42, 0.08), 
@@ -87,6 +87,13 @@
         --radius-panel: 1rem;
         --radius-control: 0.75rem;
         --radius-full: 999px;
+
+        /* Glass reserved for floating chrome, not every card */
+        --blur-regular: 0px;
+        --blur-thick: 12px;
+        --blur-chrome: 16px;
+        --glass-saturate: 120%;
+        --glass-brightness: 1.02;
 
         --color-blue: #0C81E4;
         --color-blue-hover: #0C4E8C;
@@ -125,11 +132,12 @@
 
       html.dark {
         /* Permukaan Kaca Baru (iOS Dark Materials) */
-        --surface: rgba(15, 23, 42, 0.55);
-        --surface-strong: rgba(15, 23, 42, 0.75);
+        --surface: rgba(15, 23, 42, 0.88);
+        --surface-strong: rgba(15, 23, 42, 0.94);
         --surface-muted: rgba(30, 41, 59, 0.58);
-        --surface-subtle: rgba(15, 23, 42, 0.35);
-        --border-soft: rgba(255, 255, 255, 0.08);
+        --surface-subtle: rgba(30, 41, 59, 0.82);
+        --border-soft: rgba(148, 163, 184, 0.24);
+        --glass-brightness: 0.96;
         
         /* Shadow dengan Inset Bevel Gelap */
         --shadow-card: 0 16px 40px -16px rgba(0, 0, 0, 0.45), 
@@ -4932,6 +4940,55 @@
           </div>
         </section>
 
+        <!-- Admin Only: Hero Monitoring Pusat -->
+        <section id="admin-dashboard-hero" class="admin-only hidden bg-indigo-950 dark:bg-indigo-950 rounded-[1.75rem] p-5 sm:p-7 text-white shadow-2xl shadow-indigo-950/20 relative overflow-hidden animate-slide-up delay-200ms">
+          <div class="absolute -right-10 -top-12 w-56 h-56 rounded-full bg-indigo-400/20 blur-3xl pointer-events-none"></div>
+          <div class="absolute -left-16 -bottom-20 w-48 h-48 rounded-full bg-violet-400/10 blur-3xl pointer-events-none"></div>
+          <div class="relative z-10"><div class="flex items-start justify-between gap-4"><div><div class="flex items-center gap-2 mb-2"><span class="px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-indigo-300 animate-pulse"></span>Admin</span></div><h2 class="text-2xl sm:text-3xl font-black tracking-tight leading-none">Pusat Monitoring</h2><p class="mt-1 text-indigo-200 text-xs font-bold">Pantau operasional pesantren secara menyeluruh</p></div><div class="w-11 h-11 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0"><i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-200"></i></div></div><div class="h-px w-full bg-white/10 my-4"></div><div class="grid grid-cols-4 gap-1.5 sm:gap-3"><button onclick="window.switchTab('report')" class="min-w-0 flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-indigo-500/30 transition-all active:scale-95"><i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-200"></i><span class="text-[8px] sm:text-[9px] font-bold text-indigo-200 uppercase truncate">Monitoring</span></button><button onclick="window.switchTab('tahfizh'); setTimeout(() => window.switchTahfizhSubTab?.('rekap-global'), 100)" class="min-w-0 flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-orange-500/30 transition-all active:scale-95"><i data-lucide="book-open-check" class="w-5 h-5 text-orange-200"></i><span class="text-[8px] sm:text-[9px] font-bold text-orange-100 uppercase truncate">Tahfizh</span></button><button onclick="window.switchTab('report'); setTimeout(() => window.openAdminReportSubPage?.('admin-permits'), 100)" class="min-w-0 flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-amber-500/30 transition-all active:scale-95"><i data-lucide="file-check-2" class="w-5 h-5 text-amber-200"></i><span class="text-[8px] sm:text-[9px] font-bold text-amber-100 uppercase truncate">Perizinan</span></button><button onclick="window.switchTab('report'); setTimeout(() => window.openAdminReportSubPage?.('admin-logs'), 100)" class="min-w-0 flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-violet-500/30 transition-all active:scale-95"><i data-lucide="scroll-text" class="w-5 h-5 text-violet-200"></i><span class="text-[8px] sm:text-[9px] font-bold text-violet-100 uppercase truncate">Audit Log</span></button></div></div>
+        </section>
+
+        <script>
+          (() => {
+            const hero = document.getElementById('admin-dashboard-hero');
+            if (!hero) return;
+            hero.className = 'admin-only hidden bg-slate-900 dark:bg-black rounded-[1.75rem] p-6 sm:p-8 text-white shadow-2xl shadow-slate-900/20 relative overflow-hidden group animate-slide-up delay-200ms';
+            if (!hero.querySelector('img')) {
+              const logo = document.createElement('img');
+              logo.src = 'assets/icons/icon.webp';
+              logo.className = 'absolute -right-10 -top-10 w-60 h-60 opacity-[0.06] dark:opacity-[0.03] pointer-events-none select-none z-0 rotate-[15deg]';
+              logo.alt = '';
+              hero.prepend(logo);
+            }
+            hero.innerHTML = `<img src="assets/icons/icon.webp" class="absolute -right-10 -top-10 w-60 h-60 opacity-[0.06] dark:opacity-[0.03] pointer-events-none select-none z-0 rotate-[15deg]" alt="" />
+              <div class="relative z-10 flex flex-col h-full">
+                <div class="flex justify-between items-start mb-6">
+                  <div>
+                    <div class="flex items-center gap-2 mb-2"><span class="px-2.5 py-1 rounded-full bg-white/10 border border-white/5 text-[10px] font-bold backdrop-blur-md uppercase tracking-wider flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-palette-mint animate-pulse"></span>Hari Ini</span></div>
+                    <h2 class="text-3xl sm:text-4xl font-black tracking-tight leading-none mb-1">Presensi Musyrif</h2>
+                    <div class="text-palette-mint text-sm font-bold flex items-center gap-1.5 opacity-90"><i data-lucide="clock" class="w-3.5 h-3.5"></i><span>Cek status semua kelas</span></div>
+                  </div>
+                  <button onclick="window.openAdminSubPage?.('ops-matrix')" class="w-14 h-14 rounded-2xl bg-white text-slate-900 flex items-center justify-center shadow-lg shadow-white/10 hover:scale-110 hover:rotate-3 active:scale-95 transition-all duration-300"><i data-lucide="arrow-right" class="w-6 h-6"></i></button>
+                </div>
+                <div class="h-px w-full bg-white/10 my-4"></div>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 text-center sm:text-left">Akses Cepat</p>
+                <div class="grid grid-cols-5 gap-2 sm:gap-3">${[['Subuh','shubuh','sunrise','bg-palette-mint/20','text-palette-mint'],['Sekolah','sekolah','graduation-cap','bg-cyan-500/20','text-cyan-400'],['Ashar','ashar','sun','bg-orange-500/20','text-orange-400'],['Maghrib','maghrib','sunset','bg-rose-500/20','text-rose-400'],['Isya','isya','moon','bg-violet-500/20','text-violet-400']].map(([label,slot,icon,bg,color]) => `<button onclick="window.showSlotFillDetails('${slot}')" class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-95 group/item"><div class="w-8 h-8 rounded-lg ${bg} flex items-center justify-center ${color}"><i data-lucide="${icon}" class="w-4 h-4"></i></div><span class="text-[10px] font-bold text-slate-300">${label}</span></button>`).join('')}</div>
+              </div>`;
+            if (window.lucide) window.lucide.createIcons();
+            const slots = [['Subuh', 'shubuh'], ['Sekolah', 'sekolah'], ['Ashar', 'ashar'], ['Maghrib', 'maghrib'], ['Isya', 'isya']];
+            hero.querySelector('h2').textContent = 'Kontrol Presensi Musyrif';
+            hero.querySelector('p').textContent = 'Cek kelas yang sudah mengisi presensi hari ini';
+            if (typeof window.updateAdminDashboardHero === "function") {
+              window.updateAdminDashboardHero();
+            } else {
+              const grid = hero.querySelector('.grid');
+              if (grid) {
+                grid.innerHTML = slots.map(([label, slot]) => `<button onclick="window.showSlotFillDetails('${slot}')" class="flex flex-col items-center gap-2 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-95 group/item"><div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-palette-mint"><i data-lucide="circle" class="w-4 h-4"></i></div><span class="text-[10px] font-bold text-slate-300">${label}</span></button>`).join('');
+                if (window.lucide) window.lucide.createIcons();
+              }
+            }
+          })();
+        </script>
+
         <!-- Main Action Card (Current Slot) Wrapper -->
         <div id="dash-main-card-wrapper" class="musyrif-only relative z-30">
           <div
@@ -6907,6 +6964,10 @@
               <div class="flex justify-end mt-4">
                 <span class="text-[10px] font-black text-blue-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
               </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Admin Only: Unified Global Report Table -->
         <section id="sub-page-unified-report" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-900/80 rounded-[1.75rem] border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-5 mt-4 backdrop-blur-xl animate-fade-in">
           <button onclick="window.closeAdminSubPage('unified-report')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-blue-500 hover:-translate-x-0.5 transition-all">
@@ -7270,6 +7331,22 @@
             <div class="hidden space-y-3" id="admin-logs-mobile-list">
               <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat logs...</p>
             </div>
+        </section>
+
+        <!-- Admin Only: Detail Status Pengisian Slot Presensi -->
+        <section id="sub-page-slot-fill-details" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-900/80 rounded-3xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-5 mt-4 backdrop-blur-xl animate-fade-in">
+          <button id="btn-back-slot-fill" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-slate-500 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+            Kembali
+          </button>
+          
+          <h2 id="slot-fill-page-title" class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2 mb-1">
+            Status Pengisian
+          </h2>
+          <p id="slot-fill-page-subtitle" class="text-xs text-slate-400 font-bold mb-4">Status pengisian presensi harian oleh Musyrif Kelas.</p>
+          
+          <div id="slot-fill-page-container">
+            <!-- Dynamic search, filter, and class items list will render here -->
           </div>
         </section>
       </div>
@@ -7279,6 +7356,8 @@
       </div>
       </div>
       </div>
+
+
 
 
       <!-- Tab: Profile -->
@@ -9267,7 +9346,7 @@
       ></div>
 
       <div
-        class="absolute bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full max-w-md bg-white dark:bg-slate-900 rounded-t-[1.75rem] sm:rounded-[1.75rem] p-6 shadow-2xl animate-slide-up border border-white/10 max-h-[85vh] flex flex-col"
+        class="absolute bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full max-w-xl bg-white dark:bg-slate-900 rounded-t-[1.75rem] sm:rounded-[1.75rem] p-6 shadow-2xl animate-slide-up border border-white/10 max-h-[85vh] flex flex-col"
       >
         <div class="flex justify-between items-center mb-6">
           <div>
@@ -9765,16 +9844,23 @@
     <!-- Supabase JS SDK & Integration -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/platform/supabase-client.js"></script>
+
+    <!-- Database & Storage -->
+    <script src="src/core/storage-constants.js"></script>
+    <script src="src/shared/logger.js"></script>
+    <script src="src/shared/utils.js"></script>
     <script src="src/managers/database-schema.js"></script>
     <script src="src/managers/repository.js"></script>
     <script src="src/managers/sync-queue.js"></script>
     <script src="src/managers/state-manager.js"></script>
+    <script src="src/managers/sync-manager.js"></script>
     <script src="src/managers/data-migrator.js"></script>
     <script src="src/managers/supabase-sync.js"></script>
     <script src="src/managers/storage-manager-v2.js"></script>
     <script src="src/managers/file-upload.js"></script>
-    <script src="src/shared/utils.js"></script>
     <script src="src/platform/storage-service.js"></script>
+
+    <!-- Core App -->
     <script src="src/core/app-core.js"></script>
     <script src="src/core/templates.js"></script>
     <script src="src/managers/notification-manager.js"></script>

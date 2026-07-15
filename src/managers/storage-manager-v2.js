@@ -96,6 +96,11 @@ class StorageManagerV2 {
       isOnline: this.isOnline,
       musyrifId: this.musyrifId
     });
+
+    // Auto-trigger dashboard refresh once initialization is complete (so async repos are ready)
+    if (typeof window.updateDashboard === 'function') {
+      window.updateDashboard();
+    }
   }
 
   /**
@@ -130,6 +135,27 @@ class StorageManagerV2 {
         changedKeys.forEach(key => {
           this.onDataUpdate(key);
         });
+      }
+
+      // Auto-refresh dashboard and leaderboard on inbound sync updates
+      if (changedKeys.includes('attendanceData') || changedKeys.includes('permits') || changedKeys.includes('attendance')) {
+        if (typeof window.updateDashboard === 'function') {
+          if (typeof appState !== 'undefined' && (appState.adminMode || appState.superadminMode)) {
+            if (window._repos?.attendance) {
+              window._repos.attendance.getByDate(appState.date).then(records => {
+                window.adminAttendanceCache = records;
+                window.updateDashboard();
+                if (typeof window.renderMusyrifLeaderboard === 'function') {
+                  window.renderMusyrifLeaderboard();
+                }
+              }).catch(err => console.warn('[StorageManagerV2] Failed to refresh admin attendance cache:', err));
+            } else {
+              window.updateDashboard();
+            }
+          } else {
+            window.updateDashboard();
+          }
+        }
       }
     });
   }
@@ -327,6 +353,21 @@ class StorageManagerV2 {
     // IndexedDB is primary storage managed by repositories
     this._set(this.keys.permits, permits);
 
+    if (this._useIndexedDB && this._repos?.permit) {
+      try {
+        for (const permit of permits) {
+          const existing = await this._repos.permit.get(permit.id);
+          if (existing) {
+            await this._repos.permit.update(permit.id, permit);
+          } else {
+            await this._repos.permit.create(permit);
+          }
+        }
+      } catch (err) {
+        console.error('[StorageManagerV2] Failed to bulk save permits to IndexedDB:', err);
+      }
+    }
+
     if (this.onDataUpdate) {
       this.onDataUpdate('permits');
     }
@@ -358,6 +399,19 @@ class StorageManagerV2 {
     // Use localStorage as single source of truth for backup
     this._set(this.keys.permits, updatedPermits);
 
+    if (this._useIndexedDB && this._repos?.permit) {
+      try {
+        const existing = await this._repos.permit.get(permit.id);
+        if (existing) {
+          await this._repos.permit.update(permit.id, permit);
+        } else {
+          await this._repos.permit.create(permit);
+        }
+      } catch (err) {
+        console.error('[StorageManagerV2] Failed to save permit to IndexedDB:', err);
+      }
+    }
+
     if (this.onDataUpdate) {
       this.onDataUpdate('permits');
     }
@@ -373,6 +427,14 @@ class StorageManagerV2 {
       // Immutable update
       appState.permits = appState.permits.filter(p => String(p.id) !== String(permitId));
       this._set(this.keys.permits, appState.permits);
+    }
+
+    if (this._useIndexedDB && this._repos?.permit) {
+      try {
+        await this._repos.permit.delete(permitId);
+      } catch (err) {
+        console.error('[StorageManagerV2] Failed to delete permit from IndexedDB:', err);
+      }
     }
 
     if (this.onDataUpdate) {

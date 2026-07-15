@@ -1,8 +1,15 @@
 // File: activity-logger.js
 
 // ==========================================
-// 8. LOG & MISC
+// LOG & MISC
 // ==========================================
+
+const ActivityLogger$Logger = {
+  debug: (...args) => window.Logger?.debug('ActivityLogger', ...args),
+  info: (...args) => window.Logger?.info('ActivityLogger', ...args),
+  warn: (...args) => window.Logger?.warn('ActivityLogger', ...args),
+  error: (...args) => window.Logger?.error('ActivityLogger', ...args),
+};
 
 // CRITICAL FIX: Tambahkan cleanup function untuk mencegah memory leak
 // Cleanup berdasarkan age (max 90 hari) dan max entries (1000)
@@ -19,7 +26,6 @@ window.cleanupActivityLogs = function (maxDays = 90, maxEntries = 1000) {
       const logTimestamp = new Date(log.timestamp).getTime();
       return logTimestamp >= cutoffTimestamp;
     } catch (e) {
-      // Invalid timestamp, hapus entry ini
       return false;
     }
   });
@@ -38,9 +44,9 @@ window.cleanupActivityLogs = function (maxDays = 90, maxEntries = 1000) {
         APP_CONFIG.activityLogKey,
         JSON.stringify(appState.activityLog),
       );
-      console.log(`[ActivityLogger] Cleanup: removed ${removedCount} old entries, ${appState.activityLog.length} remaining`);
+      ActivityLogger$Logger.info(`Cleanup: removed ${removedCount} old entries, ${appState.activityLog.length} remaining`);
     } catch (e) {
-      console.error('[ActivityLogger] Failed to save cleaned logs:', e);
+      ActivityLogger$Logger.error('Failed to save cleaned logs:', e);
     }
   }
 

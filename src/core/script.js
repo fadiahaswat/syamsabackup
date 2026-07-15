@@ -2676,7 +2676,18 @@ window.startGreetingLoop = function () {
   runStep();
 };
 
-window.updateDashboard = function () {
+window.updateDashboard = async function () {
+  // Caching admin attendance records if admin mode
+  if (typeof appState !== 'undefined' && (appState.adminMode || appState.superadminMode)) {
+    if (window._repos?.attendance) {
+      try {
+        window.adminAttendanceCache = await window._repos.attendance.getByDate(appState.date);
+      } catch (e) {
+        console.warn("[updateDashboard] Failed to fill adminAttendanceCache:", e);
+      }
+    }
+  }
+
   // Render announcement banner if function exists
   if (window.renderDashboardAnnouncementBanner) {
     window.renderDashboardAnnouncementBanner();
@@ -3619,24 +3630,37 @@ window.calculateSlotFillPercentage = function (slotId, dateKey) {
   if (classes.length === 0) return 0;
   
   let filledCount = 0;
-  classes.forEach(className => {
-    try {
-      const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
-      const savedData = localStorage.getItem(storageKey);
-      if (savedData) {
-        const attendanceData = window.safeJsonParse(savedData, {});
-        if (attendanceData && attendanceData[dateKey]) {
-          const dayData = attendanceData[dateKey];
-          if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
-            filledCount++;
+  const useIndexedDB = window.storageManager?.getStatus()?.useIndexedDB && window._repos?.attendance;
+
+  if (useIndexedDB && window.adminAttendanceCache && dateKey === appState.date) {
+    const slotsRecords = window.adminAttendanceCache.filter(r => r.slot === slotId);
+    classes.forEach(className => {
+      const isClassFilled = slotsRecords.some(r => r.kelas === className && r.status && Object.keys(r.status).length > 0);
+      if (isClassFilled) {
+        filledCount++;
+      }
+    });
+  } else {
+    classes.forEach(className => {
+      try {
+        const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+        const savedData = localStorage.getItem(storageKey);
+        if (savedData) {
+          const attendanceData = window.safeJsonParse(savedData, {});
+          if (attendanceData && attendanceData[dateKey]) {
+            const dayData = attendanceData[dateKey];
+            if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
+              filledCount++;
+            }
           }
         }
+      } catch (e) {
+        // ignore
       }
-    } catch (e) {
-      // ignore
-    }
-  });
+    });
+  }
   
+  console.log(`[calculateSlotFillPercentage] Slot: ${slotId}, Filled: ${filledCount}/${classes.length}, useIndexedDB: ${useIndexedDB}, hasCache: ${!!window.adminAttendanceCache}`);
   return Math.round((filledCount / classes.length) * 100);
 };
 
@@ -3660,26 +3684,34 @@ window.showSlotFillDetails = function (slotId) {
   
   // Read attendance state
   let html = `<div class="space-y-3.5 mt-2">`;
+  const useIndexedDB = window.storageManager?.getStatus()?.useIndexedDB && window._repos?.attendance;
   
   classes.forEach(className => {
     const classInfo = MASTER_KELAS[className];
     const musyrifName = classInfo.musyrif || "Musyrif";
     let isFilled = false;
     
-    try {
-      const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
-      const savedData = localStorage.getItem(storageKey);
-      if (savedData) {
-        const attendanceData = window.safeJsonParse(savedData, {});
-        if (attendanceData && attendanceData[appState.date]) {
-          const dayData = attendanceData[appState.date];
-          if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
-            isFilled = true;
+    if (useIndexedDB && window.adminAttendanceCache) {
+      const records = window.adminAttendanceCache.filter(r => r.slot === slotId && r.kelas === className);
+      if (records.length > 0 && records.some(r => r.status && Object.keys(r.status).length > 0)) {
+        isFilled = true;
+      }
+    } else {
+      try {
+        const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+        const savedData = localStorage.getItem(storageKey);
+        if (savedData) {
+          const attendanceData = window.safeJsonParse(savedData, {});
+          if (attendanceData && attendanceData[appState.date]) {
+            const dayData = attendanceData[appState.date];
+            if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
+              isFilled = true;
+            }
           }
         }
+      } catch (e) {
+        // ignore
       }
-    } catch (e) {
-      // ignore
     }
 
     const statusBadge = isFilled 
@@ -3714,6 +3746,282 @@ window.showSlotFillDetails = function (slotId) {
 
   html += `</div>`;
   container.innerHTML = html;
+};
+
+window.calculateSlotFillPercentage = function (slotId, dateKey) {
+  const classes = Object.keys(MASTER_KELAS || {}).filter(k => k?.toLowerCase() !== 'admin musyrif');
+  if (classes.length === 0) return 0;
+  
+  let filledCount = 0;
+  const useIndexedDB = window.storageManager?.getStatus()?.useIndexedDB && window._repos?.attendance;
+
+  if (useIndexedDB && window.adminAttendanceCache && dateKey === appState.date) {
+    const slotsRecords = window.adminAttendanceCache.filter(r => r.slot === slotId);
+    classes.forEach(className => {
+      const isClassFilled = slotsRecords.some(r => r.kelas === className && r.status && Object.keys(r.status).length > 0);
+      if (isClassFilled) {
+        filledCount++;
+      }
+    });
+  } else {
+    classes.forEach(className => {
+      try {
+        const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+        const savedData = localStorage.getItem(storageKey);
+        if (savedData) {
+          const attendanceData = window.safeJsonParse(savedData, {});
+          if (attendanceData && attendanceData[dateKey]) {
+            const dayData = attendanceData[dateKey];
+            if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
+              filledCount++;
+            }
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    });
+  }
+  
+  console.log(`[calculateSlotFillPercentage] Slot: ${slotId}, Filled: ${filledCount}/${classes.length}, useIndexedDB: ${useIndexedDB}, hasCache: ${!!window.adminAttendanceCache}`);
+  return Math.round((filledCount / classes.length) * 100);
+};
+
+window.showSlotFillDetails = function (slotId) {
+  const container = document.getElementById("slot-fill-page-container");
+  const title = document.getElementById("slot-fill-page-title");
+  const subtitle = document.getElementById("slot-fill-page-subtitle");
+
+  if (!container) return;
+
+  // 1. Simpan asal tab navigasi dan alihkan tab ke Laporan
+  const originTab = document.getElementById("main-content").classList.contains("hidden") ? "report" : "home";
+  
+  window.switchTab('report');
+  window.openAdminSubPage('slot-fill-details');
+
+  // Atur arah klik tombol Kembali secara dinamis
+  const backBtn = document.getElementById("btn-back-slot-fill");
+  if (backBtn) {
+    backBtn.onclick = () => {
+      window.closeAdminSubPage('slot-fill-details');
+      if (originTab === 'home') {
+        window.switchTab('home');
+      }
+    };
+  }
+
+  // Update Judul & Subjudul Subpage Laporan
+  if (title) {
+    title.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2 text-blue-500 mr-2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      Status Pengisian ${SLOT_WAKTU[slotId]?.label || slotId}
+    `;
+  }
+  if (subtitle) {
+    subtitle.textContent = `Rincian status laporan kehadiran harian oleh seluruh Musyrif Kelas pada tanggal ${appState.date}.`;
+  }
+
+  // Ambil Data Master
+  const classes = Object.keys(MASTER_KELAS || {}).filter(k => k?.toLowerCase() !== 'admin musyrif');
+  
+  // Kalkulasi data pengisian
+  let filledCount = 0;
+  const useIndexedDB = window.storageManager?.getStatus()?.useIndexedDB && window._repos?.attendance;
+
+  const classStatusList = classes.map(className => {
+    const classInfo = MASTER_KELAS[className];
+    const musyrifName = classInfo.musyrif || "Musyrif";
+    let isFilled = false;
+    
+    if (useIndexedDB && window.adminAttendanceCache) {
+      const records = window.adminAttendanceCache.filter(r => r.slot === slotId && r.kelas === className);
+      if (records.length > 0 && records.some(r => r.status && Object.keys(r.status).length > 0)) {
+        isFilled = true;
+        filledCount++;
+      }
+    } else {
+      try {
+        const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+        const savedData = localStorage.getItem(storageKey);
+        if (savedData) {
+          const attendanceData = window.safeJsonParse(savedData, {});
+          if (attendanceData && attendanceData[appState.date]) {
+            const dayData = attendanceData[appState.date];
+            if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
+              isFilled = true;
+              filledCount++;
+            }
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    let musyrifPhone = classInfo.hp_musyrif || classInfo.phone || "";
+    if (!musyrifPhone && typeof MASTER_SANTRI !== "undefined") {
+      const sampleSantri = MASTER_SANTRI.find(s => String(s.kelas || s.rombel || "").trim() === className);
+      if (sampleSantri && sampleSantri.hp_musyrif) {
+        musyrifPhone = sampleSantri.hp_musyrif;
+      }
+    }
+
+    return { className, musyrifName, isFilled, musyrifPhone };
+  });
+
+  const emptyCount = classes.length - filledCount;
+
+  // Render Template Kontrol Pencarian & Filter Pills
+  let controlsHtml = `
+    <div class="space-y-3 mb-4 mt-2">
+      <!-- Search Input -->
+      <div class="relative w-full">
+        <input
+          type="text"
+          id="slot-fill-search"
+          placeholder="Cari kelas atau nama musyrif..."
+          class="w-full rounded-2xl bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/80 py-2.5 pl-10 pr-4 text-xs focus:outline-none focus:border-blue-500 font-bold text-slate-800 dark:text-white"
+        />
+        <div class="absolute left-3.5 top-3 w-4 h-4 text-slate-400">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+      </div>
+      
+      <!-- Filter Pills -->
+      <div class="flex flex-wrap gap-1.5 text-[10px] font-black">
+        <button id="pill-all" class="flex items-center gap-1 px-3 py-1.5 rounded-full border border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 transition-all">
+          Semua <span class="bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full ml-1">${classes.length}</span>
+        </button>
+        <button id="pill-empty" class="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+          Belum <span class="bg-rose-500 text-white text-[8px] px-1.5 py-0.5 rounded-full ml-1">${emptyCount}</span>
+        </button>
+        <button id="pill-filled" class="flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all">
+          Selesai <span class="bg-emerald-500 text-white text-[8px] px-1.5 py-0.5 rounded-full ml-1">${filledCount}</span>
+        </button>
+      </div>
+    </div>
+    
+    <div id="slot-fill-items-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1 hide-scrollbar"></div>
+  `;
+
+  container.innerHTML = controlsHtml;
+
+  let currentFilter = 'all';
+  let currentSearch = '';
+
+  window.goToMusyrifAttendance = function (className) {
+    appState.selectedClass = className;
+    appState.currentSlotId = slotId;
+    window.closeAdminSubPage('slot-fill-details');
+    // Jika asal dari Home tab, kembalikan navigasi ke Home agar antarmuka absensi termuat dengan benar
+    if (originTab === 'home') {
+      window.switchTab('home');
+    }
+    window.openAttendance();
+  };
+
+  const renderItems = () => {
+    const listContainer = document.getElementById("slot-fill-items-container");
+    if (!listContainer) return;
+
+    let filtered = classStatusList;
+
+    if (currentFilter === 'filled') {
+      filtered = filtered.filter(x => x.isFilled);
+    } else if (currentFilter === 'empty') {
+      filtered = filtered.filter(x => !x.isFilled);
+    }
+
+    if (currentSearch) {
+      filtered = filtered.filter(x => 
+        x.className.toLowerCase().includes(currentSearch) || 
+        x.musyrifName.toLowerCase().includes(currentSearch)
+      );
+    }
+
+    if (filtered.length === 0) {
+      listContainer.innerHTML = `
+        <div class="col-span-full text-center py-12">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info w-8 h-8 text-slate-300 mx-auto mb-2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <p class="text-xs text-slate-400 font-bold">Tidak ada kelas yang cocok</p>
+        </div>
+      `;
+      return;
+    }
+
+    listContainer.innerHTML = filtered.map(x => {
+      const statusBadge = x.isFilled 
+        ? `<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Selesai</span>`
+        : `<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">Belum Diisi</span>`;
+
+      const waLink = x.musyrifPhone 
+        ? `https://wa.me/${x.musyrifPhone.replace(/[^0-9]/g, "")}?text=Assalamu'alaikum%20Ustadz%20${encodeURIComponent(x.musyrifName)},%20mohon%20segera%20mengisi%20presensi%20shalat%20untuk%20kelas%20${encodeURIComponent(x.className)}` 
+        : "#";
+
+      return `
+        <div class="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 hover:shadow-sm">
+          <div class="min-w-0 flex-1 pr-3">
+            <h4 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white truncate">${x.className}</h4>
+            <p class="text-[10px] sm:text-xs text-slate-400 font-bold truncate mt-0.5">${x.musyrifName}</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            ${statusBadge}
+            
+            <!-- Tombol Edit Presensi Musyrif -->
+            <button onclick="window.goToMusyrifAttendance('${x.className}')" class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/25 hover:bg-blue-500 hover:text-white hover:scale-105 active:scale-95 transition-all" title="Buka Presensi Kelas">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-edit-3"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+
+            <!-- Tombol WhatsApp Musyrif -->
+            <a href="${waLink}" target="_blank" class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/25 hover:bg-emerald-500 hover:text-white hover:scale-105 active:scale-95 transition-all ${x.musyrifPhone ? '' : 'opacity-30 cursor-not-allowed pointer-events-none'}" title="WhatsApp Musyrif">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </a>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  // Event Listeners
+  const searchInput = document.getElementById("slot-fill-search");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      currentSearch = e.target.value.toLowerCase().trim();
+      renderItems();
+    });
+  }
+
+  const setPillActive = (activeId) => {
+    const pills = ['pill-all', 'pill-empty', 'pill-filled'];
+    pills.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (id === activeId) {
+        el.className = "flex items-center gap-1 px-3 py-1.5 rounded-full border border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400 transition-all";
+      } else {
+        el.className = "flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all";
+      }
+    });
+  };
+
+  document.getElementById("pill-all")?.addEventListener("click", () => {
+    currentFilter = 'all';
+    setPillActive('pill-all');
+    renderItems();
+  });
+  document.getElementById("pill-empty")?.addEventListener("click", () => {
+    currentFilter = 'empty';
+    setPillActive('pill-empty');
+    renderItems();
+  });
+  document.getElementById("pill-filled")?.addEventListener("click", () => {
+    currentFilter = 'filled';
+    setPillActive('pill-filled');
+    renderItems();
+  });
+
+  renderItems();
 };
 
 window.renderSlotList = function () {
@@ -3893,6 +4201,9 @@ window.renderSlotList = function () {
       }
 
       const isCurrentRunningSlot = isToday && s.id === window.determineCurrentSlot();
+      let finalBadgeHtml = "";
+      let finalBadgeClass = "";
+      
       if (isWali) {
         const badgeIcon = {
           check: `<path d="M20 6 9 17l-5-5"/>`,
@@ -3903,39 +4214,62 @@ window.renderSlotList = function () {
           "file-text": `<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>`,
           home: `<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>`,
         }[waliMeta.icon] || `<path d="M20 6 9 17l-5-5"/>`;
-        badge.innerHTML = `<span class="flex items-center gap-1">
+        finalBadgeHtml = `<span class="flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide text-current">${badgeIcon}</svg>
           ${waliBadgeLabel}
         </span>`;
-        badge.className = `slot-status-badge text-[8px] sm:text-[9px] font-black px-1.5 sm:px-2 py-0.5 rounded-full max-w-[76px] sm:max-w-none truncate ${waliMeta.badge}`;
+        finalBadgeClass = `slot-status-badge text-[8px] sm:text-[9px] font-black px-1.5 sm:px-2 py-0.5 rounded-full max-w-[76px] sm:max-w-none truncate ${waliMeta.badge}`;
         if (progressStatusEl) progressStatusEl.textContent = waliMeta.progress;
         if (progressTextEl) progressTextEl.textContent = waliMeta.percent;
         if (progressBar) progressBar.style.width = waliMeta.percent;
+      } else if (isAdmin) {
+        if (timeProgressPercent === 100) {
+          finalBadgeHtml = `<span class="flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check text-current"><path d="M20 6 9 17l-5-5"/></svg>
+            Selesai
+          </span>`;
+          finalBadgeClass = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-white/90 text-emerald-950 border border-white/30 shadow-sm";
+        } else if (timeProgressPercent > 0) {
+          finalBadgeHtml = `<span class="flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            Proses
+          </span>`;
+          finalBadgeClass = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-white border border-amber-300 shadow-md";
+        } else {
+          finalBadgeHtml = `<span class="flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x text-current"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            Belum Diisi
+          </span>`;
+          finalBadgeClass = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-red-600 text-white border border-red-500 shadow-md";
+        }
       } else if (stats.isFilled) {
-        badge.innerHTML = `<span class="flex items-center gap-1">
+        finalBadgeHtml = `<span class="flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check text-current"><path d="M20 6 9 17l-5-5"/></svg>
           Selesai
         </span>`;
-        badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-white/90 text-emerald-950 border border-white/30 shadow-sm";
+        finalBadgeClass = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-white/90 text-emerald-950 border border-white/30 shadow-sm";
       } else if (isPresenceInProgress) {
-        badge.innerHTML = `<span class="flex items-center gap-1">
+        finalBadgeHtml = `<span class="flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
           Proses
         </span>`;
-        badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-white border border-amber-300 shadow-md";
+        finalBadgeClass = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-400 text-white border border-amber-300 shadow-md";
       } else if (isCurrentRunningSlot) {
-        badge.innerHTML = `<span class="flex items-center gap-1">
+        finalBadgeHtml = `<span class="flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-unlock text-current"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
           Terbuka
         </span>`;
-        badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-white border border-emerald-400 shadow-md";
+        finalBadgeClass = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-white border border-emerald-400 shadow-md";
       } else {
-        badge.innerHTML = `<span class="flex items-center gap-1">
+        finalBadgeHtml = `<span class="flex items-center gap-1">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x text-current"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           Belum Diisi
         </span>`;
-        badge.className = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-red-600 text-white border border-red-500 shadow-md";
+        finalBadgeClass = "slot-status-badge text-[9px] font-black px-2 py-0.5 rounded-full bg-red-600 text-white border border-red-500 shadow-md";
       }
+      
+      badge.innerHTML = finalBadgeHtml;
+      badge.className = finalBadgeClass;
 
       if (progressBar) {
         progressBar.className = "slot-progress-bar h-full rounded-full bg-white/70 animate-pulse-subtle transition-all duration-500 shadow-[0_0_8px_rgba(255,255,255,0.8)]";
@@ -6262,11 +6596,22 @@ window.saveData = async function () {
 
       // SECONDARY: Save to IndexedDB via repository (async, non-blocking)
       if (window._repos?.attendance && !window.isWaliMode?.()) {
-        // Async save to IndexedDB - don't block UI
-        window._repos.attendance.save(dateKey, slotId, slotData, appState.selectedClass)
-          .catch(err => {
-            console.warn('[saveData] IndexedDB save failed:', err);
-          });
+        // Transform slotData to array format for bulkSave
+        // slotData format: { studentId1: {status, note, ...}, studentId2: {...}, ... }
+        const records = Object.entries(slotData)
+          .filter(([key]) => !key.startsWith('_')) // Skip meta fields
+          .map(([studentId, data]) => ({
+            studentId: String(studentId), // Ensure studentId is string
+            ...data
+          }));
+
+        if (records.length > 0) {
+          // Async bulk save to IndexedDB - don't block UI
+          window._repos.attendance.bulkSave(dateKey, slotId, records, appState.selectedClass)
+            .catch(err => {
+              console.warn('[saveData] IndexedDB bulk save failed:', err);
+            });
+        }
       }
 
       // StorageManager as fallback
@@ -14135,13 +14480,35 @@ window.renderUnifiedAdminReport = async function () {
     // 2. Load all attendance databases to look up student statuses
     const allAttendance = {};
     const classes = [...new Set(students.map(s => s.kelas || s.rombel).filter(Boolean))];
-    classes.forEach(c => {
+    const useIndexedDB = window.storageManager?.getStatus()?.useIndexedDB && window._repos?.attendance;
+
+    if (useIndexedDB) {
       try {
-        const storageKey = `musyrif_attendance_${c.replace(/\s+/g, '_')}`;
-        const saved = localStorage.getItem(storageKey);
-        if (saved) allAttendance[c] = window.safeJsonParse(saved, {});
-      } catch(e) {}
-    });
+        const records = await window._repos.attendance.db.getAll('attendances');
+        records.forEach(r => {
+          const c = r.kelas;
+          if (!allAttendance[c]) allAttendance[c] = {};
+          if (!allAttendance[c][r.date]) allAttendance[c][r.date] = {};
+          if (!allAttendance[c][r.date][r.slot]) allAttendance[c][r.date][r.slot] = {};
+          
+          allAttendance[c][r.date][r.slot][r.studentId] = {
+            status: r.status || {},
+            note: r.note || '',
+            timestamps: r.timestamps || {},
+          };
+        });
+      } catch (err) {
+        console.error('[AdminReport] Failed to query all attendances from IndexedDB:', err);
+      }
+    } else {
+      classes.forEach(c => {
+        try {
+          const storageKey = `musyrif_attendance_${c.replace(/\s+/g, '_')}`;
+          const saved = localStorage.getItem(storageKey);
+          if (saved) allAttendance[c] = window.safeJsonParse(saved, {});
+        } catch(e) {}
+      });
+    }
     
     // Populate class filter options if empty
     const classFilterSelect = document.getElementById("admin-unified-class-filter");

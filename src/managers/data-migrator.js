@@ -20,16 +20,25 @@ class DataMigrator {
   constructor(localDB, repositories) {
     this.db = localDB;
     this.repos = repositories;
-    this.migrationKey = 'musyrif_db_migration_v2';
-    this._phaseResults = null;
+    this._logger = window.MigratorLogger || console;
+  }
+
+  /**
+   * Get migration keys from centralized constants
+   */
+  get _migrationKey() {
+    return window.STORAGE_KEYS?.migrationVersion || 'musyrif_db_migration_v2';
+  }
+
+  get _migrationDateKey() {
+    return window.STORAGE_KEYS?.migrationDate || 'musyrif_db_migration_date';
   }
 
   /**
    * Check if migration is needed
    */
   async isMigrationNeeded() {
-    // LOW FIX: Use centralized storage keys
-    const migrationVersion = await this.db.getMeta(window.STORAGE_KEYS?.migrationVersion || this.migrationKey);
+    const migrationVersion = await this.db.getMeta(this._migrationKey);
     return migrationVersion !== 'completed';
   }
 
@@ -37,8 +46,7 @@ class DataMigrator {
    * Check if migration was done in this version
    */
   async isMigrationDone() {
-    // LOW FIX: Use centralized storage keys
-    const migrationVersion = await this.db.getMeta(window.STORAGE_KEYS?.migrationVersion || this.migrationKey);
+    const migrationVersion = await this.db.getMeta(this._migrationKey);
     return migrationVersion === 'completed';
   }
 
@@ -46,7 +54,7 @@ class DataMigrator {
    * Run full migration with verification and rollback
    */
   async migrate() {
-    console.log('[DataMigrator] Starting migration...');
+    this._logger.info('Starting migration...');
 
     this._phaseResults = {
       attendance: { success: 0, failed: 0 },
@@ -57,7 +65,7 @@ class DataMigrator {
 
     try {
       // Phase 1: Migrate attendance data
-      console.log('[DataMigrator] Phase 1: Migrating attendance data...');
+      this._logger.info('Phase 1: Migrating attendance data...');
       this._phaseResults.attendance = await this._migrateAttendance();
 
       // Verify Phase 1 before proceeding
@@ -67,41 +75,37 @@ class DataMigrator {
       }
 
       // Phase 2: Migrate permits data
-      console.log('[DataMigrator] Phase 2: Migrating permits data...');
+      this._logger.info('Phase 2: Migrating permits data...');
       this._phaseResults.permits = await this._migratePermits();
 
       // Phase 3: Migrate settings
-      console.log('[DataMigrator] Phase 3: Migrating settings...');
+      this._logger.info('Phase 3: Migrating settings...');
       this._phaseResults.settings = await this._migrateSettings();
 
       // Phase 4: Migrate activity logs
-      console.log('[DataMigrator] Phase 4: Migrating activity logs...');
+      this._logger.info('Phase 4: Migrating activity logs...');
       this._phaseResults.activityLogs = await this._migrateActivityLogs();
 
       // Phase 5: Verify migration before marking complete
-      console.log('[DataMigrator] Phase 5: Verifying migration...');
+      this._logger.info('Phase 5: Verifying migration...');
       const verification = await this.verify();
 
       if (!verification.attendance.match || !verification.permits.match) {
-        console.warn('[DataMigrator] Verification warning:', verification);
-        // Continue anyway but log warning
+        this._logger.warn('Verification warning:', verification);
       }
 
       // Mark migration complete only after verification
-      // LOW FIX: Use centralized storage keys
-      const migrationKey = window.STORAGE_KEYS?.migrationVersion || this.migrationKey;
-      const migrationDateKey = window.STORAGE_KEYS?.migrationDate || 'migration_date';
-      await this.db.setMeta(migrationKey, 'completed');
-      await this.db.setMeta(migrationDateKey, new Date().toISOString());
+      await this.db.setMeta(this._migrationKey, 'completed');
+      await this.db.setMeta(this._migrationDateKey, new Date().toISOString());
 
-      console.log('[DataMigrator] Migration completed successfully!', this._phaseResults);
+      this._logger.info('Migration completed successfully!', this._phaseResults);
       return { success: true, results: this._phaseResults, verification };
 
     } catch (error) {
-      console.error('[DataMigrator] Migration failed:', error);
+      this._logger.error('Migration failed:', error);
 
       // Attempt rollback on failure
-      console.log('[DataMigrator] Attempting rollback...');
+      this._logger.info('Attempting rollback...');
       await this.rollback();
 
       return { success: false, error: error.message, results: this._phaseResults };
@@ -109,17 +113,15 @@ class DataMigrator {
   }
 
   /**
-   * Rollback all migrated data
-   * HIGH FIX: Sequential clear with verification
+   * Rollback all migrated data with sequential clear and verification
    */
   async rollback() {
     const stores = ['attendances', 'permits', 'settings', 'activity_logs'];
     const results = {};
     let hasFailure = false;
 
-    console.log('[DataMigrator] Rolling back migrated data...');
+    this._logger.info('Rolling back migrated data...');
 
-    // HIGH FIX: Sequential clear with verification instead of Promise.all
     for (const store of stores) {
       try {
         const countBefore = await this.db.count(store);
@@ -127,14 +129,14 @@ class DataMigrator {
         const countAfter = await this.db.count(store);
 
         if (countAfter !== 0) {
-          console.error(`[DataMigrator] Rollback: ${store} still has ${countAfter} records after clear`);
+          this._logger.error(`Rollback: ${store} still has ${countAfter} records after clear`);
           hasFailure = true;
         }
 
         results[store] = { cleared: countAfter === 0, countBefore, countAfter };
-        console.log(`[DataMigrator] Cleared ${store}: ${countBefore} -> ${countAfter}`);
+        this._logger.info(`Cleared ${store}: ${countBefore} -> ${countAfter}`);
       } catch (error) {
-        console.error(`[DataMigrator] Rollback failed for ${store}:`, error);
+        this._logger.error(`Rollback failed for ${store}:`, error);
         hasFailure = true;
         results[store] = { error: error.message };
       }
@@ -142,19 +144,19 @@ class DataMigrator {
 
     // Clear migration markers
     try {
-      await this.db.setMeta(this.migrationKey, null);
-      await this.db.setMeta('migration_date', null);
+      await this.db.setMeta(this._migrationKey, null);
+      await this.db.setMeta(this._migrationDateKey, null);
     } catch (error) {
-      console.error('[DataMigrator] Failed to clear migration markers:', error);
+      this._logger.error('Failed to clear migration markers:', error);
       hasFailure = true;
     }
 
     if (hasFailure) {
-      console.warn('[DataMigrator] Rollback completed with some failures');
+      this._logger.warn('Rollback completed with some failures');
       return { success: false, error: 'Partial rollback failure', results };
     }
 
-    console.log('[DataMigrator] Rollback completed successfully');
+    this._logger.info('Rollback completed successfully');
     return { success: true, results };
   }
 
@@ -183,11 +185,10 @@ class DataMigrator {
     const result = { success: 0, failed: 0 };
 
     // Get old attendance data from LocalStorage
-    // LOW FIX: Use centralized storage keys
     const attendanceKey = window.STORAGE_KEYS?.attendance || 'musyrif_app_v5_fix';
     const oldData = localStorage.getItem(attendanceKey);
     if (!oldData) {
-      console.log('[DataMigrator] No old attendance data found');
+      this._logger.info('No old attendance data found');
       return result;
     }
 
@@ -234,12 +235,12 @@ class DataMigrator {
         kelasSources.push(`appState: ${defaultKelas}`);
       }
 
-      console.log('[DataMigrator] Kelas sources checked:', kelasSources);
+      this._logger.debug('Kelas sources checked:', kelasSources);
 
       // Build student to kelas mapping from cached data
       const studentKelasMap = new Map();
       try {
-        const cachedSantri = localStorage.getItem('cache_data_santri_full');
+        const cachedSantri = localStorage.getItem(window.STORAGE_KEYS?.cacheSantri || 'cache_data_santri_full');
         if (cachedSantri) {
           const santris = JSON.parse(cachedSantri);
           if (Array.isArray(santris)) {
@@ -251,10 +252,10 @@ class DataMigrator {
           }
         }
       } catch (e) {
-        console.warn('[DataMigrator] Could not build student-kelas map:', e);
+        this._logger.warn('Could not build student-kelas map:', e);
       }
 
-      console.log(`[DataMigrator] Student-kelas map has ${studentKelasMap.size} entries`);
+      this._logger.info(`Student-kelas map has ${studentKelasMap.size} entries`);
 
       // Iterate through all dates
       for (const [date, slots] of Object.entries(attendanceData)) {
@@ -268,7 +269,7 @@ class DataMigrator {
             let recordKelas = studentKelasMap.get(studentId) || defaultKelas;
 
             if (!recordKelas) {
-              console.warn(`[DataMigrator] No kelas found for student ${studentId}, using 'Unknown'`);
+              this._logger.warn(`No kelas found for student ${studentId}, using 'Unknown'`);
               recordKelas = 'Unknown';
             }
 
@@ -293,10 +294,10 @@ class DataMigrator {
       if (records.length > 0) {
         await this.db.bulkPut('attendances', records);
         result.success = records.length;
-        console.log(`[DataMigrator] Migrated ${records.length} attendance records with kelas from student data`);
+        this._logger.info(`Migrated ${records.length} attendance records with kelas from student data`);
       }
     } catch (error) {
-      console.error('[DataMigrator] Attendance migration failed:', error);
+      this._logger.error('Attendance migration failed:', error);
       result.failed = -1;
     }
 
@@ -320,11 +321,10 @@ class DataMigrator {
     const result = { success: 0, failed: 0 };
 
     // Get old permits data from LocalStorage
-    // LOW FIX: Use centralized storage keys
     const permitsKey = window.STORAGE_KEYS?.permits || 'musyrif_permits_db';
     const oldData = localStorage.getItem(permitsKey);
     if (!oldData) {
-      console.log('[DataMigrator] No old permits data found');
+      this._logger.info('No old permits data found');
       return result;
     }
 
@@ -362,7 +362,7 @@ class DataMigrator {
       // Build student to kelas mapping from cached data
       const studentKelasMap = new Map();
       try {
-        const cachedSantri = localStorage.getItem('cache_data_santri_full');
+        const cachedSantri = localStorage.getItem(window.STORAGE_KEYS?.cacheSantri || 'cache_data_santri_full');
         if (cachedSantri) {
           const santris = JSON.parse(cachedSantri);
           if (Array.isArray(santris)) {
@@ -398,10 +398,10 @@ class DataMigrator {
       if (records.length > 0) {
         await this.db.bulkPut('permits', records);
         result.success = records.length;
-        console.log(`[DataMigrator] Migrated ${records.length} permit records with proper kelas assignment`);
+        this._logger.info(`Migrated ${records.length} permit records with proper kelas assignment`);
       }
     } catch (error) {
-      console.error('[DataMigrator] Permits migration failed:', error);
+      this._logger.error('Permits migration failed:', error);
       result.failed = -1;
     }
 
@@ -415,11 +415,10 @@ class DataMigrator {
     const result = { success: 0, failed: 0 };
 
     // Get old settings from LocalStorage
-    // LOW FIX: Use centralized storage keys
     const settingsKey = window.STORAGE_KEYS?.settings || 'musyrif_settings';
     const oldData = localStorage.getItem(settingsKey);
     if (!oldData) {
-      console.log('[DataMigrator] No old settings data found');
+      this._logger.info('No old settings data found');
       return result;
     }
 
@@ -433,9 +432,9 @@ class DataMigrator {
       });
 
       result.success = 1;
-      console.log('[DataMigrator] Migrated user settings');
+      this._logger.info('Migrated user settings');
     } catch (error) {
-      console.error('[DataMigrator] Settings migration failed:', error);
+      this._logger.error('Settings migration failed:', error);
       result.failed = 1;
     }
 
@@ -449,11 +448,10 @@ class DataMigrator {
     const result = { success: 0, failed: 0 };
 
     // Get old logs from LocalStorage
-    // LOW FIX: Use centralized storage keys
     const activityLogKey = window.STORAGE_KEYS?.activityLog || 'musyrif_activity_log';
     const oldData = localStorage.getItem(activityLogKey);
     if (!oldData) {
-      console.log('[DataMigrator] No old activity logs found');
+      this._logger.info('No old activity logs found');
       return result;
     }
 
@@ -486,10 +484,10 @@ class DataMigrator {
       if (records.length > 0) {
         await this.db.bulkPut('activity_logs', records);
         result.success = records.length;
-        console.log(`[DataMigrator] Migrated ${records.length} activity log records`);
+        this._logger.info(`Migrated ${records.length} activity log records`);
       }
     } catch (error) {
-      console.error('[DataMigrator] Activity logs migration failed:', error);
+      this._logger.error('Activity logs migration failed:', error);
       result.failed = -1;
     }
 
@@ -500,9 +498,8 @@ class DataMigrator {
    * Get migration status
    */
   async getStatus() {
-    // LOW FIX: Use centralized storage keys
-    const migrationKey = window.STORAGE_KEYS?.migrationVersion || this.migrationKey;
-    const migrationDateKey = window.STORAGE_KEYS?.migrationDate || 'migration_date';
+    const migrationKey = this._migrationKey;
+    const migrationDateKey = this._migrationDateKey;
 
     const migrationVersion = await this.db.getMeta(migrationKey);
     const migrationDate = await this.db.getMeta(migrationDateKey);
@@ -523,8 +520,7 @@ class DataMigrator {
   }
 
   /**
-   * Verify data integrity after migration
-   * MEDIUM FIX: Add spot-check validation of actual record contents
+   * Verify data integrity after migration with spot-check validation
    */
   async verify() {
     const results = {
@@ -533,7 +529,6 @@ class DataMigrator {
       settings: { localCount: 0, indexedCount: 0, match: false },
     };
 
-    // LOW FIX: Use centralized storage keys
     const attendanceKey = window.STORAGE_KEYS?.attendance || 'musyrif_app_v5_fix';
     const permitsKey = window.STORAGE_KEYS?.permits || 'musyrif_permits_db';
     const settingsKey = window.STORAGE_KEYS?.settings || 'musyrif_settings';
@@ -584,7 +579,7 @@ class DataMigrator {
           };
         }
       } catch (e) {
-        console.warn('[DataMigrator] Attendance spot-check failed:', e);
+        this._logger.warn('Attendance spot-check failed:', e);
       }
     }
 
@@ -616,7 +611,7 @@ class DataMigrator {
           };
         }
       } catch (e) {
-        console.warn('[DataMigrator] Permit spot-check failed:', e);
+        this._logger.warn('Permit spot-check failed:', e);
       }
     }
 
@@ -626,7 +621,7 @@ class DataMigrator {
     results.settings.indexedCount = await this.db.count('settings');
     results.settings.match = results.settings.localCount === results.settings.indexedCount;
 
-    console.log('[DataMigrator] Verification results:', results);
+    this._logger.debug('Verification results:', results);
     return results;
   }
 }
@@ -661,12 +656,11 @@ class CompatibilityLayer {
     const isNeeded = await migrator.isMigrationNeeded();
 
     if (isNeeded) {
-      console.log('[CompatibilityLayer] Running migration...');
+      this._logger.info('Running migration...');
       const result = await migrator.migrate();
 
       if (!result.success) {
-        console.error('[CompatibilityLayer] Migration failed:', result.error);
-        // Continue with old storage if migration fails
+        this._logger.error('Migration failed:', result.error);
         this.useNewStorage = false;
       }
     }
@@ -843,28 +837,24 @@ let compatibilityLayer = null;
  * Call this at app startup
  */
 async function initDatabase() {
-  console.log('[Database] Initializing database system...');
+  const logger = window.Logger || console;
 
   try {
     // 1. Initialize IndexedDB
     await localDB.init();
-    console.log('[Database] IndexedDB initialized');
 
     // Initialize SyncQueue explicitly
     if (window.syncQueue) {
       await window.syncQueue.init(localDB);
-      console.log('[Database] SyncQueue initialized with LocalDB');
     }
 
     // 2. Initialize repositories
     await initRepositories();
     const repos = getRepositories();
-    console.log('[Database] Repositories initialized');
 
     // 3. Initialize compatibility layer with migration
     compatibilityLayer = new CompatibilityLayer(stateManager, repos);
     await compatibilityLayer.init();
-    console.log('[Database] Compatibility layer initialized');
 
     // 4. Expose for debugging
     window._db = localDB;
@@ -872,10 +862,10 @@ async function initDatabase() {
     window._stateManager = stateManager;
     window._compatibility = compatibilityLayer;
 
-    console.log('[Database] Database system ready!');
+    logger.info('Database system ready!');
     return { localDB, repos, stateManager, compatibilityLayer };
   } catch (error) {
-    console.error('[Database] Initialization failed:', error);
+    logger.error('Initialization failed:', error);
     throw error;
   }
 }
@@ -901,7 +891,7 @@ async function forceRemigrate() {
   const repos = getRepositories();
   const migrator = new DataMigrator(localDB, repos);
 
-  console.log('[Database] Force re-migration...');
+  migrator._logger.info('Force re-migration...');
 
   // Rollback first
   await migrator.rollback();
@@ -918,5 +908,3 @@ window.getDatabaseDiagnostics = getDatabaseDiagnostics;
 window.forceRemigrate = forceRemigrate;
 window.dataMigrator = dataMigrator;
 window.compatibilityLayer = compatibilityLayer;
-
-console.log('[DataMigrator] Module loaded');

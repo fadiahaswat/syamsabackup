@@ -1,85 +1,108 @@
 /**
  * SyncQueue - Unified IndexedDB-based Offline Sync Queue
  *
- * Uses LocalDB (musyrif_local_db) instead of separate database.
- * Stores changes in 'changes' store and conflicts in 'conflicts' store.
+ * Uses LocalDB (musyrif_local_db) with snake_case schema consistency.
+ * Stores changes in 'sync_queue' store and conflicts in 'conflicts' store.
  *
- * NOTE: This module now uses the shared LocalDB from database-schema.js
- * Instead of creating its own IndexedDB connection.
+ * IMPORTANT: All field names use snake_case for IndexedDB schema consistency.
  */
 
 class SyncQueue {
   constructor() {
-    // Use shared LocalDB instance instead of separate database
     this._db = null;
+    this._readyPromise = null;
     this.isReady = false;
-
-    // Pending sync count (for UI)
     this.pendingCount = 0;
-
-    // Callbacks
-    this.onSyncStart = null;
-    this.onSyncComplete = null;
-    this.onSyncError = null;
-    this.onQueueChange = null;
+    this._logger = window.SyncQueueLogger || console;
+    this._initPromise = null;
   }
 
   /**
-   * Initialize with shared LocalDB
+   * Initialize with shared LocalDB - ensures proper initialization order
    */
   async init(localDB) {
+    if (this.isReady && this._db === localDB) return this;
+
+    // Prevent multiple simultaneous init calls
+    if (this._initPromise) {
+      return this._initPromise;
+    }
+
+    this._initPromise = this._doInit(localDB);
+    return this._initPromise;
+  }
+
+  /**
+   * Internal init - handles the actual initialization
+   */
+  async _doInit(localDB) {
     if (!localDB) {
       throw new Error('SyncQueue requires LocalDB instance');
     }
 
     this._db = localDB;
+
+    // Ensure LocalDB is ready before proceeding
+    if (!localDB.isReady) {
+      await localDB.init();
+    }
+
     await this._db.ensureReady();
     this.isReady = true;
 
-    console.log('[SyncQueue] Initialized with shared LocalDB');
+    this._logger.info('Initialized with shared LocalDB');
     await this._updatePendingCount();
 
     return this;
   }
 
   /**
-   * Ensure DB is ready
+   * Ensure queue is ready
    */
   async _ensureReady() {
     if (!this.isReady || !this._db) {
-      throw new Error('SyncQueue not initialized. Call init(localDB) first.');
+      this._logger.warn('SyncQueue not ready, attempting re-init');
+      if (window.localDB) {
+        await this.init(window.localDB);
+      } else {
+        throw new Error('SyncQueue not initialized. Call init(localDB) first.');
+      }
     }
     await this._db.ensureReady();
   }
 
   /**
-   * Add a change to the queue
+   * Generate unique ID with snake_case prefix
+   */
+  _generateId(prefix = 'sync') {
+    const timestamp = Date.now().toString(36);
+    const randomPart = Math.random().toString(36).substring(2, 10);
+    return `${prefix}_${timestamp}_${randomPart}`;
+  }
+
+  /**
+   * Add a change to the queue (snake_case fields)
    */
   async add(change) {
     await this._ensureReady();
 
     const record = {
       id: this._generateId(),
-      entityType: change.entityType || 'unknown',
-      entityId: change.entityId || '',
-      operation: change.operation || 'update', // create, update, delete
+      entity_type: change.entity_type || change.entityType || 'unknown',
+      entity_id: change.entity_id || change.entityId || '',
+      operation: change.operation || 'update',
       payload: change.payload || {},
       metadata: change.metadata || {},
       status: 'pending',
       attempts: 0,
-      lastError: null,
+      last_error: null,
       timestamp: Date.now(),
-      priority: change.priority || 5, // 1-10, higher = more urgent
-      retries: 0,
+      priority: change.priority || 5,
     };
 
     const saved = await this._db.put('sync_queue', record);
-    console.log('[SyncQueue] Added change:', record.id, record.entityType);
+    this._logger.debug('Added change:', record.id, record.entity_type);
     await this._updatePendingCount();
-
-    if (this.onQueueChange) {
-      this.onQueueChange(this.pendingCount);
-    }
 
     return saved.id;
   }
@@ -89,15 +112,11 @@ class SyncQueue {
    */
   async addAttendanceChange(dateKey, slotId, data) {
     return this.add({
-      entityType: 'attendance',
-      entityId: `${dateKey}_${slotId}`,
+      entity_type: 'attendances',
+      entity_id: `${dateKey}_${slotId}`,
       operation: 'upsert',
-      payload: {
-        dateKey,
-        slotId,
-        data,
-      },
-      priority: 8, // Higher priority for attendance
+      payload: { dateKey, slotId, data },
+      priority: 8,
     });
   }
 
@@ -106,8 +125,8 @@ class SyncQueue {
    */
   async addPermitChange(permit, operation = 'upsert') {
     return this.add({
-      entityType: 'permit',
-      entityId: permit.id,
+      entity_type: 'permits',
+      entity_id: permit.id,
       operation,
       payload: permit,
       priority: 7,
@@ -119,11 +138,11 @@ class SyncQueue {
    */
   async addSettingsChange(settings) {
     return this.add({
-      entityType: 'settings',
-      entityId: 'user_settings',
+      entity_type: 'settings',
+      entity_id: 'user_settings',
       operation: 'upsert',
       payload: settings,
-      priority: 3, // Lower priority for settings
+      priority: 3,
     });
   }
 
@@ -133,10 +152,8 @@ class SyncQueue {
   async getPending(limit = 50) {
     await this._ensureReady();
 
-    // Get all pending records
     const results = await this._db.getByIndex('sync_queue', 'status', 'pending');
 
-    // Sort by priority (desc) then timestamp (asc)
     results.sort((a, b) => {
       if (b.priority !== a.priority) {
         return b.priority - a.priority;
@@ -182,24 +199,20 @@ class SyncQueue {
 
     const record = await this._db.get('sync_queue', id);
     if (!record) {
-      console.warn('[SyncQueue] Record not found:', id);
+      this._logger.warn('Record not found:', id);
       return null;
     }
 
     const updated = {
       ...record,
       status,
-      lastUpdated: Date.now(),
+      last_updated: Date.now(),
       ...(status === 'failed' ? { attempts: (record.attempts || 0) + 1 } : {}),
       ...extra,
     };
 
     await this._db.put('sync_queue', updated);
     await this._updatePendingCount();
-
-    if (this.onQueueChange) {
-      this.onQueueChange(this.pendingCount);
-    }
 
     return updated;
   }
@@ -209,7 +222,7 @@ class SyncQueue {
    */
   async markSynced(id) {
     return this.updateStatus(id, 'synced', {
-      syncedAt: Date.now(),
+      synced_at: Date.now(),
     });
   }
 
@@ -218,7 +231,7 @@ class SyncQueue {
    */
   async markFailed(id, error) {
     return this.updateStatus(id, 'failed', {
-      lastError: error?.message || String(error),
+      last_error: error?.message || String(error),
     });
   }
 
@@ -228,18 +241,18 @@ class SyncQueue {
   async markConflict(id, serverData) {
     await this._ensureReady();
 
-    // Store the conflict
     const change = await this.getChange(id);
     if (change) {
       await this.addConflict({
-        ...change,
-        serverData,
-        createdAt: Date.now(),
+        entity_type: change.entity_type,
+        entity_id: change.entity_id,
+        local_data: change.payload,
+        server_data: serverData,
       });
     }
 
     return this.updateStatus(id, 'conflict', {
-      serverData,
+      server_data: serverData,
     });
   }
 
@@ -248,7 +261,7 @@ class SyncQueue {
    */
   async retryChange(id) {
     return this.updateStatus(id, 'pending', {
-      lastError: null,
+      last_error: null,
     });
   }
 
@@ -260,10 +273,6 @@ class SyncQueue {
 
     await this._db.delete('sync_queue', id);
     await this._updatePendingCount();
-
-    if (this.onQueueChange) {
-      this.onQueueChange(this.pendingCount);
-    }
   }
 
   /**
@@ -276,7 +285,7 @@ class SyncQueue {
     const ids = synced.map(r => r.id);
 
     await this._db.bulkDelete('sync_queue', ids);
-    console.log('[SyncQueue] Cleared', ids.length, 'synced changes');
+    this._logger.info('Cleared', ids.length, 'synced changes');
   }
 
   /**
@@ -288,30 +297,26 @@ class SyncQueue {
     await this._db.clear('sync_queue');
     this.pendingCount = 0;
 
-    if (this.onQueueChange) {
-      this.onQueueChange(0);
-    }
-
-    console.log('[SyncQueue] Cleared all changes');
+    this._logger.info('Cleared all changes');
   }
 
   // ============================================================
-  // CONFLICTS STORE (using unified LocalDB)
+  // CONFLICTS STORE
   // ============================================================
 
   /**
-   * Add a conflict record
+   * Add a conflict record (snake_case fields)
    */
   async addConflict(conflict) {
     await this._ensureReady();
 
     const record = {
-      id: this._generateId(),
-      entityType: conflict.entityType || conflict.entity_type || 'unknown',
-      entityId: conflict.entityId || conflict.entity_id || '',
-      localData: conflict.localData || conflict.local_data || {},
-      serverData: conflict.serverData || conflict.server_data || {},
-      createdAt: conflict.createdAt || new Date().toISOString(),
+      id: this._generateId('conflict'),
+      entity_type: conflict.entity_type || 'unknown',
+      entity_id: conflict.entity_id || '',
+      local_data: conflict.local_data || {},
+      server_data: conflict.server_data || {},
+      created_at: new Date().toISOString(),
       resolved: false,
       resolution: null,
     };
@@ -336,7 +341,7 @@ class SyncQueue {
 
     const conflict = await this._db.get('conflicts', id);
     if (!conflict) {
-      console.warn('[SyncQueue] Conflict not found:', id);
+      this._logger.warn('Conflict not found:', id);
       return null;
     }
 
@@ -344,7 +349,7 @@ class SyncQueue {
       ...conflict,
       resolved: true,
       resolution,
-      resolvedAt: Date.now(),
+      resolved_at: Date.now(),
     };
 
     return this._db.put('conflicts', updated);
@@ -359,7 +364,7 @@ class SyncQueue {
   }
 
   // ============================================================
-  // METADATA STORE (using unified LocalDB)
+  // METADATA STORE
   // ============================================================
 
   /**
@@ -402,15 +407,6 @@ class SyncQueue {
   // ============================================================
 
   /**
-   * Generate unique ID
-   */
-  _generateId() {
-    const timestamp = Date.now().toString(36);
-    const randomPart = Math.random().toString(36).substring(2, 10);
-    return `sync_${timestamp}_${randomPart}`;
-  }
-
-  /**
    * Get queue statistics
    */
   async getStats() {
@@ -423,13 +419,7 @@ class SyncQueue {
       this._db.countByIndex('sync_queue', 'status', 'conflict'),
     ]);
 
-    return {
-      pending,
-      synced,
-      failed,
-      conflict,
-      total: pending + synced + failed + conflict,
-    };
+    return { pending, synced, failed, conflict, total: pending + synced + failed + conflict };
   }
 
   /**
@@ -439,6 +429,16 @@ class SyncQueue {
     await this._ensureReady();
     return this._db.getAll('sync_queue');
   }
+
+  /**
+   * Wait for initialization
+   */
+  async waitForInit() {
+    if (this.isReady) return;
+    if (this._initPromise) {
+      await this._initPromise;
+    }
+  }
 }
 
 // ============================================================
@@ -446,11 +446,6 @@ class SyncQueue {
 // ============================================================
 
 const syncQueue = new SyncQueue();
-
-// Backward compatibility - old initialization
-if (typeof localDB !== 'undefined' && localDB.isReady) {
-  syncQueue.init(localDB);
-}
 
 // Export
 if (typeof module !== 'undefined' && module.exports) {
@@ -460,4 +455,9 @@ if (typeof module !== 'undefined' && module.exports) {
 window.SyncQueue = SyncQueue;
 window.syncQueue = syncQueue;
 
-console.log('[SyncQueue] Module loaded - using unified LocalDB');
+window.SyncQueueLogger = window.SyncQueueLogger || {
+  debug: (...args) => Logger?.debug('SyncQueue', ...args),
+  info: (...args) => Logger?.info('SyncQueue', ...args),
+  warn: (...args) => Logger?.warn('SyncQueue', ...args),
+  error: (...args) => Logger?.error('SyncQueue', ...args),
+};

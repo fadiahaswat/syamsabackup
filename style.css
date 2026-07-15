@@ -630,17 +630,17 @@ body {
 
 /* Glassmorphism — Fixed: webkit prefix + brightness + dark mode tidak drop backdrop-filter */
 .glass {
-  background: var(--surface-strong, rgba(255, 255, 255, 0.78));
-  backdrop-filter: blur(var(--blur-regular, 20px)) saturate(var(--glass-saturate, 180%)) brightness(var(--glass-brightness, 1.08));
-  -webkit-backdrop-filter: blur(var(--blur-regular, 20px)) saturate(var(--glass-saturate, 180%)) brightness(var(--glass-brightness, 1.08));
+  background: var(--surface-strong, rgba(255, 255, 255, 0.94));
+  backdrop-filter: blur(var(--blur-regular, 10px)) saturate(var(--glass-saturate, 120%)) brightness(var(--glass-brightness, 1.02));
+  -webkit-backdrop-filter: blur(var(--blur-regular, 10px)) saturate(var(--glass-saturate, 120%)) brightness(var(--glass-brightness, 1.02));
   border: 1px solid var(--border-soft, rgba(255, 255, 255, 0.45));
   isolation: isolate;
 }
 .dark .glass {
-  background: var(--surface-strong, rgba(15, 23, 42, 0.75));
+  background: var(--surface-strong, rgba(15, 23, 42, 0.94));
   /* brightness() sudah di-override via --glass-brightness di html.dark */
-  backdrop-filter: blur(var(--blur-regular, 20px)) saturate(var(--glass-saturate, 180%)) brightness(var(--glass-brightness, 0.92));
-  -webkit-backdrop-filter: blur(var(--blur-regular, 20px)) saturate(var(--glass-saturate, 180%)) brightness(var(--glass-brightness, 0.92));
+  backdrop-filter: blur(var(--blur-regular, 10px)) saturate(var(--glass-saturate, 120%)) brightness(var(--glass-brightness, 0.96));
+  -webkit-backdrop-filter: blur(var(--blur-regular, 10px)) saturate(var(--glass-saturate, 120%)) brightness(var(--glass-brightness, 0.96));
   border: 1px solid var(--border-soft, rgba(255, 255, 255, 0.08));
 }
 @supports not (backdrop-filter: blur(1px)) {
@@ -2307,4 +2307,3 @@ body.qibla-browser-active.qibla-browser-green {
     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
   }
 }
-

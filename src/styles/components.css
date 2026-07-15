@@ -241,8 +241,8 @@ input[placeholder*="Cari"] {
 .stat-card,
 .data-card {
   background: var(--surface) !important;
-  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
-  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border: 1px solid var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
   isolation: isolate;
@@ -255,15 +255,15 @@ input[placeholder*="Cari"] {
 .dark .stat-card,
 .dark .data-card {
   background: var(--surface) !important;
-  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
-  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border: 1px solid var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
   isolation: isolate;
 }
 
 .glass-nav {
-  background: var(--surface-strong) !important;
+  background: rgba(255, 255, 255, 0.78) !important;
   backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   -webkit-backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border-top: 1px solid var(--border-soft) !important;
@@ -271,7 +271,7 @@ input[placeholder*="Cari"] {
   isolation: isolate;
 }
 .dark .glass-nav {
-  background: var(--surface-strong) !important;
+  background: rgba(15, 23, 42, 0.78) !important;
   border-top: 1px solid var(--border-soft) !important;
 }
 
@@ -307,7 +307,7 @@ input[placeholder*="Cari"] {
 /* Modals & Dialogs (Thick Glass Material — iOS Chrome) */
 [id^="modal-"] > div:not(.absolute),
 #bento-modal-content {
-  background: var(--surface-strong) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(var(--blur-chrome)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   -webkit-backdrop-filter: blur(var(--blur-chrome)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border: 1px solid var(--border-soft) !important;
@@ -322,8 +322,8 @@ input[placeholder*="Cari"] {
 #att-summary-widget,
 #countdown-libur-widget > div {
   background-color: var(--surface) !important;
-  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
-  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border: 1px solid var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
   isolation: isolate;
@@ -331,7 +331,7 @@ input[placeholder*="Cari"] {
 
 /* Bottom Floating Navigation (iOS Tab Bar Style) */
 #bottom-nav > div {
-  background: var(--surface-strong) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
   backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   -webkit-backdrop-filter: blur(var(--blur-thick)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
   border: 1px solid var(--border-soft) !important;
@@ -341,6 +341,7 @@ input[placeholder*="Cari"] {
 }
 
 .dark #bottom-nav > div {
+  background: rgba(15, 23, 42, 0.84) !important;
   box-shadow: 0 18px 46px -12px rgba(0, 0, 0, 0.5), 
               inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
@@ -360,8 +361,8 @@ input[placeholder*="Cari"] {
 .bg-white\/90[class*="rounded-3xl"],
 .rekap-tab-content {
   background-color: var(--surface) !important;
-  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
-  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border-color: var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
   isolation: isolate;
@@ -384,8 +385,8 @@ input[placeholder*="Cari"] {
 .dark .dark\:bg-slate-950\/40[class*="rounded-3xl"],
 .dark .rekap-tab-content {
   background-color: var(--surface) !important;
-  backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
-  -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--glass-saturate)) brightness(var(--glass-brightness)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border-color: var(--border-soft) !important;
   box-shadow: var(--shadow-card) !important;
   isolation: isolate;

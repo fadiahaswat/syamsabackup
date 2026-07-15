@@ -3,7 +3,7 @@
   /* ========== iOS GLASS MATERIAL TIERS ========== */
   /* Blur — 3 tiers following Apple HIG */
   --blur-thin:    10px;   /* Thin Material — segmented control, chip */
-  --blur-regular: 20px;   /* Regular Material — cards, panels */
+  --blur-regular: 0px;    /* Solid surfaces by default; reserve glass for chrome */
   --blur-thick:   28px;   /* Thick Material — nav bar, tab bar, modal */
   --blur-chrome:  32px;   /* Chrome — overlay, fullscreen sheet */
 
@@ -19,11 +19,11 @@
   --color-brand-ring: rgba(12, 129, 228, 0.15);
   
   /* Permukaan Kaca Baru (iOS Light Materials) */
-  --surface: rgba(255, 255, 255, 0.60);        /* Regular Material */
-  --surface-strong: rgba(255, 255, 255, 0.78); /* Thick Material */
+  --surface: #ffffff;                         /* Solid cards and data panels */
+  --surface-strong: #ffffff;                  /* Solid surface; chrome overrides locally */
   --surface-muted: #F1F5F9;
-  --surface-subtle: rgba(255, 255, 255, 0.40); /* Thin Material */
-  --border-soft: rgba(255, 255, 255, 0.45);    /* Fine translucent border */
+  --surface-subtle: #f8fafc;                   /* Quiet solid surface */
+  --border-soft: #e2e8f0;                      /* Clear structural border */
   
   /* Shadow dengan Inset Bevel (Pantulan Cahaya Atas) */
   --shadow-card: 0 12px 32px -12px rgba(15, 23, 42, 0.08), 
@@ -64,11 +64,11 @@
 
 html.dark {
   /* Permukaan Kaca Baru (iOS Dark Materials) */
-  --surface: rgba(15, 23, 42, 0.55);
-  --surface-strong: rgba(15, 23, 42, 0.75);
+  --surface: #1e293b;
+  --surface-strong: #1e293b;
   --surface-muted: rgba(30, 41, 59, 0.58);
-  --surface-subtle: rgba(15, 23, 42, 0.35);
-  --border-soft: rgba(255, 255, 255, 0.08);
+  --surface-subtle: #0f172a;
+  --border-soft: #334155;
 
   /* Dark mode vibrancy override */
   --glass-brightness: var(--glass-brightness-dark);

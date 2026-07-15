@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_attendances_date_slot_kelas ON public.attendances
 
 -- 2. Tabel: permits (Data Perizinan)
 CREATE TABLE IF NOT EXISTS public.permits (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY,
     nis TEXT NOT NULL,
     kelas TEXT NOT NULL,
     category TEXT NOT NULL, -- sakit | izin | pulang
@@ -52,7 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_permits_nis_start ON public.permits(nis, start_da
 
 -- 3. Tabel: tahfizh (Data Setoran Hafalan)
 CREATE TABLE IF NOT EXISTS public.tahfizh (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY,
     nis TEXT NOT NULL,
     kelas TEXT NOT NULL,
     program TEXT NOT NULL, -- Ziyadah | Murojaah
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
 
 -- 5. Tabel: activity_logs (Log Audit Trail)
 CREATE TABLE IF NOT EXISTS public.activity_logs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id TEXT PRIMARY KEY,
     action TEXT NOT NULL,
     detail TEXT NOT NULL,
     "user" TEXT NOT NULL,

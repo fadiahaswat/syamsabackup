@@ -117,7 +117,18 @@
 // SECTION 1: DASHBOARD CORE
 // ============================================================================
 
-window.updateDashboard = function () {
+window.updateDashboard = async function () {
+  // Caching admin attendance records if admin mode
+  if (appState.adminMode || appState.superadminMode) {
+    if (window._repos?.attendance) {
+      try {
+        window.adminAttendanceCache = await window._repos.attendance.getByDate(appState.date);
+      } catch (e) {
+        console.warn("Failed to fill adminAttendanceCache:", e);
+      }
+    }
+  }
+
   // 1. Greeting
   const h = new Date().getHours();
   const greet =
@@ -198,6 +209,103 @@ window.updateDashboard = function () {
   if (typeof window.renderAgendaWidget === "function") window.renderAgendaWidget();
   if (typeof window.renderReminderWidget === "function") window.renderReminderWidget();
   if (typeof window.updateConnectionStatus === "function") window.updateConnectionStatus();
+  if (appState.adminMode === true || appState.superadminMode === true) {
+    if (typeof window.updateAdminDashboardHero === "function") {
+      window.updateAdminDashboardHero();
+    }
+  }
+};
+
+window.updateAdminDashboardHero = function () {
+  const hero = document.getElementById("admin-dashboard-hero");
+  if (!hero) return;
+
+  const grid = hero.querySelector(".grid");
+  if (!grid) return;
+
+  const slots = [
+    { label: "Subuh", id: "shubuh" },
+    { label: "Sekolah", id: "sekolah" },
+    { label: "Ashar", id: "ashar" },
+    { label: "Maghrib", id: "maghrib" },
+    { label: "Isya", id: "isya" }
+  ];
+
+  const dateKey = appState.date;
+  const classes = Object.keys(MASTER_KELAS || {}).filter(k => k?.toLowerCase() !== 'admin musyrif');
+  const useIndexedDB = window.storageManager?.getStatus()?.useIndexedDB && window._repos?.attendance;
+  
+  grid.innerHTML = slots.map(s => {
+    let filledCount = 0;
+    
+    if (useIndexedDB && window.adminAttendanceCache && dateKey === appState.date) {
+      const slotsRecords = window.adminAttendanceCache.filter(r => r.slot === s.id);
+      classes.forEach(className => {
+        const record = slotsRecords.find(r => r.kelas === className);
+        if (record && record.status && Object.keys(record.status).length > 0) {
+          filledCount++;
+        }
+      });
+    } else {
+      classes.forEach(className => {
+        try {
+          const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+          const savedData = localStorage.getItem(storageKey);
+          if (savedData) {
+            const attendanceData = window.safeJsonParse(savedData, {});
+            if (attendanceData && attendanceData[dateKey]) {
+              const dayData = attendanceData[dateKey];
+              if (dayData[s.id] && Object.keys(dayData[s.id]).length > 0) {
+                filledCount++;
+              }
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+      });
+    }
+
+    const totalCount = classes.length;
+    const isAllFilled = totalCount > 0 && filledCount === totalCount;
+    const isNoneFilled = filledCount === 0;
+
+    let iconHtml = "";
+    let borderClass = "border-white/5";
+    let bgBtnClass = "bg-white/5 hover:bg-white/10";
+    let textMutedClass = "text-slate-400";
+
+    if (isAllFilled) {
+      iconHtml = `<div class="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/30">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>`;
+      borderClass = "border-emerald-500/25";
+      bgBtnClass = "bg-emerald-500/5 hover:bg-emerald-500/10";
+      textMutedClass = "text-emerald-400/80";
+    } else if (isNoneFilled) {
+      iconHtml = `<div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 border border-white/5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle"><circle cx="12" cy="12" r="10"/></svg>
+      </div>`;
+    } else {
+      iconHtml = `<div class="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 border border-amber-500/30">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-dot"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/></svg>
+      </div>`;
+      borderClass = "border-amber-500/25";
+      bgBtnClass = "bg-amber-500/5 hover:bg-amber-500/10";
+      textMutedClass = "text-amber-400/80";
+    }
+
+    return `
+      <button onclick="window.showSlotFillDetails('${s.id}')" 
+        class="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border transition-all active:scale-95 group/item ${borderClass} ${bgBtnClass}">
+        ${iconHtml}
+        <span class="text-[10px] font-bold text-slate-300 mt-1">${s.label}</span>
+        <span class="text-[9px] font-black ${textMutedClass}">${filledCount}/${totalCount} Kelas</span>
+      </button>
+    `;
+  }).join("");
+
+  if (window.lucide) window.lucide.createIcons();
 };
 
 // ==========================================

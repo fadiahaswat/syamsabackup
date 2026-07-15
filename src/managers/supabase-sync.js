@@ -15,9 +15,18 @@ class SupabaseSync {
 
     // Realtime channel subscriptions
     this.channels = [];
+    this.isSyncingOutbound = false;
 
     // Callbacks untuk UI
     this.onStatusChange = null;
+
+    // Logger
+    this._logger = window.SupabaseSyncLogger || {
+      debug: (...args) => window.Logger?.debug('SupabaseSync', ...args),
+      info: (...args) => window.Logger?.info('SupabaseSync', ...args),
+      warn: (...args) => window.Logger?.warn('SupabaseSync', ...args),
+      error: (...args) => window.Logger?.error('SupabaseSync', ...args),
+    };
   }
 
   /**
@@ -32,7 +41,7 @@ class SupabaseSync {
     this._db = localDB;
     this._repos = repos;
 
-    console.log('[SupabaseSync] Initializing Sync Manager...');
+    this._logger.info('[SupabaseSync] Initializing Sync Manager...');
 
     // 1. Jalankan sinkronisasi awal (inbound pull & outbound push)
     if (navigator.onLine) {
@@ -46,7 +55,7 @@ class SupabaseSync {
 
     // 3. Setup event listener koneksi internet
     window.addEventListener('online', () => {
-      console.log('[SupabaseSync] Network online, starting sync...');
+      this._logger.info('[SupabaseSync] Network online, starting sync...');
       this.syncAll();
     });
 
@@ -108,7 +117,7 @@ class SupabaseSync {
     this.updateStatus('syncing');
 
     try {
-      console.log('[SupabaseSync] Starting full sync cycle...');
+      this._logger.info('[SupabaseSync] Starting full sync cycle...');
       // 1. Tarik data konfigurasi dinamis (settings) dulu agar batas-batas terupdate
       await this.syncInboundConfig();
 
@@ -119,9 +128,9 @@ class SupabaseSync {
       await this.syncInboundData();
 
       this.updateStatus('synced');
-      console.log('[SupabaseSync] Full sync cycle completed successfully');
+      this._logger.info('[SupabaseSync] Full sync cycle completed successfully');
     } catch (error) {
-      console.error('[SupabaseSync] Sync cycle failed:', error);
+      this._logger.error('[SupabaseSync] Sync cycle failed:', error);
       this.updateStatus('error');
     } finally {
       this.isSyncing = false;
@@ -133,52 +142,61 @@ class SupabaseSync {
    * Mengirim antrean perubahan dari sync_queue
    */
   async syncOutbound() {
-    if (!window.syncQueue) return;
-    const pendingChanges = await window.syncQueue.getPending(100);
+    if (this.isSyncingOutbound || !window.syncQueue) return;
+    this.isSyncingOutbound = true;
 
-    if (pendingChanges.length === 0) {
-      console.log('[SupabaseSync] No outbound changes to sync');
-      return;
-    }
+    try {
+      const pendingChanges = await window.syncQueue.getPending(100);
 
-    console.log(`[SupabaseSync] Syncing ${pendingChanges.length} outbound changes...`);
-
-    for (const change of pendingChanges) {
-      try {
-        const table = change.entityType; // Nama store di IndexedDB dipetakan ke nama tabel Supabase
-        const entityId = change.entityId;
-
-        // Skip table yang bukan milik Supabase
-        if (['sync_queue', 'conflicts', 'sync_metadata'].includes(table)) {
-          await window.syncQueue.deleteChange(change.id);
-          continue;
-        }
-
-        if (change.operation === 'upsert') {
-          const payload = change.payload;
-          const { error } = await window.supabaseClient
-            .from(table)
-            .upsert(payload);
-
-          if (error) throw error;
-        } else if (change.operation === 'delete') {
-          const { error } = await window.supabaseClient
-            .from(table)
-            .delete()
-            .eq('id', entityId);
-
-          if (error) throw error;
-        }
-
-        // Tandai sebagai sukses ter-sync
-        await window.syncQueue.markSynced(change.id);
-        // Hapus langsung dari queue jika sudah ter-sync agar queue tetap bersih
-        await window.syncQueue.deleteChange(change.id);
-
-      } catch (err) {
-        console.error(`[SupabaseSync] Failed to sync change ${change.id}:`, err);
-        await window.syncQueue.markFailed(change.id, err);
+      if (pendingChanges.length === 0) {
+        this._logger.info('[SupabaseSync] No outbound changes to sync');
+        return;
       }
+
+      this._logger.info(`[SupabaseSync] Syncing ${pendingChanges.length} outbound changes...`);
+
+      for (const change of pendingChanges) {
+        try {
+          // Support both snake_case (new) and camelCase (legacy)
+          const table = change.entity_type || change.entityType;
+          const entityId = change.entity_id || change.entityId;
+
+          // Skip table yang bukan milik Supabase (meta and sync_* stores are local-only)
+          if (['sync_queue', 'conflicts', 'sync_metadata', 'meta'].includes(table)) {
+            await window.syncQueue.deleteChange(change.id);
+            continue;
+          }
+
+          if (change.operation === 'upsert') {
+            const payload = change.payload;
+            // Clean payload to only include Supabase schema fields
+            const cleanPayload = this._stripInternalFields(payload, table);
+            const { error } = await window.supabaseClient
+              .from(table)
+              .upsert(cleanPayload);
+
+            if (error) throw error;
+          } else if (change.operation === 'delete') {
+            const { error } = await window.supabaseClient
+              .from(table)
+              .delete()
+              .eq('id', entityId);
+
+            if (error) throw error;
+          }
+
+          // Tandai sebagai sukses ter-sync
+          await window.syncQueue.markSynced(change.id);
+          // Hapus langsung dari queue jika sudah ter-sync agar queue tetap bersih
+          await window.syncQueue.deleteChange(change.id);
+
+        } catch (err) {
+          this._logger.error(`[SupabaseSync] Failed to sync change ${change.id}:`, err);
+          await window.syncQueue.markFailed(change.id, err);
+        }
+      }
+    } finally {
+      this.isSyncingOutbound = false;
     }
   }
 
@@ -187,23 +205,28 @@ class SupabaseSync {
    * Menarik data terbaru untuk kelas yang sedang aktif
    */
   async syncInboundData() {
+    const isAdmin = appState?.adminMode || appState?.superadminMode;
     const kelas = appState?.selectedClass;
-    if (!kelas) {
-      console.log('[SupabaseSync] Inbound data sync skipped: No selected class');
+    if (!kelas && !isAdmin) {
+      this._logger.info('[SupabaseSync] Inbound data sync skipped: No selected class and not admin');
       return;
     }
 
-    console.log(`[SupabaseSync] Pulling latest data for class: ${kelas}`);
+    this._logger.info(isAdmin 
+      ? '[SupabaseSync] Pulling latest data for ALL classes (Admin Mode)' 
+      : `[SupabaseSync] Pulling latest data for class: ${kelas}`
+    );
 
     // Menandai agar write ke local DB tidak di-queue ulang ke sync_queue
     this._db.isSyncing = true;
 
     try {
       // 1. Sync Tabel Attendances
-      const { data: cloudAttendances, error: errAtt } = await window.supabaseClient
-        .from('attendances')
-        .select('*')
-        .eq('kelas', kelas);
+      let queryAtt = window.supabaseClient.from('attendances').select('*');
+      if (!isAdmin) {
+        queryAtt = queryAtt.eq('kelas', kelas);
+      }
+      const { data: cloudAttendances, error: errAtt } = await queryAtt;
 
       if (errAtt) throw errAtt;
       if (cloudAttendances) {
@@ -216,10 +239,11 @@ class SupabaseSync {
       }
 
       // 2. Sync Tabel Permits
-      const { data: cloudPermits, error: errPerm } = await window.supabaseClient
-        .from('permits')
-        .select('*')
-        .eq('kelas', kelas);
+      let queryPerm = window.supabaseClient.from('permits').select('*');
+      if (!isAdmin) {
+        queryPerm = queryPerm.eq('kelas', kelas);
+      }
+      const { data: cloudPermits, error: errPerm } = await queryPerm;
 
       if (errPerm) throw errPerm;
       if (cloudPermits) {
@@ -232,10 +256,11 @@ class SupabaseSync {
       }
 
       // 3. Sync Tabel Tahfizh
-      const { data: cloudTahfizh, error: errTah } = await window.supabaseClient
-        .from('tahfizh')
-        .select('*')
-        .eq('kelas', kelas);
+      let queryTah = window.supabaseClient.from('tahfizh').select('*');
+      if (!isAdmin) {
+        queryTah = queryTah.eq('kelas', kelas);
+      }
+      const { data: cloudTahfizh, error: errTah } = await queryTah;
 
       if (errTah) throw errTah;
       if (cloudTahfizh) {
@@ -256,7 +281,7 @@ class SupabaseSync {
       }
 
     } catch (err) {
-      console.error('[SupabaseSync] Inbound data sync failed:', err);
+      this._logger.error('[SupabaseSync] Inbound data sync failed:', err);
       throw err;
     } finally {
       this._db.isSyncing = false;
@@ -268,7 +293,7 @@ class SupabaseSync {
    * Menarik konfigurasi geofencing, batas edit, deadline tahfizh, dll.
    */
   async syncInboundConfig() {
-    console.log('[SupabaseSync] Pulling app config & settings...');
+    this._logger.info('[SupabaseSync] Pulling app config & settings...');
     this._db.isSyncing = true;
 
     try {
@@ -292,7 +317,7 @@ class SupabaseSync {
         }
       }
     } catch (err) {
-      console.error('[SupabaseSync] Pulling app config failed:', err);
+      this._logger.error('[SupabaseSync] Pulling app config failed:', err);
       throw err;
     } finally {
       this._db.isSyncing = false;
@@ -303,7 +328,7 @@ class SupabaseSync {
    * Menerapkan konfigurasi dinamis dari database ke variabel global aplikasi secara runtime
    */
   _applyDynamicAppConfig(config) {
-    console.log('[SupabaseSync] Applying dynamic app_config parameters:', config);
+    this._logger.info('[SupabaseSync] Applying dynamic app_config parameters:', config);
     
     // 1. GPS Geofencing
     if (config.gps) {
@@ -349,7 +374,7 @@ class SupabaseSync {
           'postgres_changes',
           { event: '*', schema: 'public', table: table },
           async (payload) => {
-            console.log(`[SupabaseSync] Realtime change detected on ${table}:`, payload);
+            this._logger.info(`[SupabaseSync] Realtime change detected on ${table}:`, payload);
             
             // Bypass sync_queue
             this._db.isSyncing = true;
@@ -361,8 +386,9 @@ class SupabaseSync {
                 // INSERT atau UPDATE
                 const record = payload.new;
                 
-                // Khusus untuk tabel spesifik kelas, pastikan kelasnya cocok dengan kelas saat ini
-                if (table !== 'settings' && record.kelas !== appState?.selectedClass) {
+                // Khusus untuk tabel spesifik kelas, pastikan kelasnya cocok dengan kelas saat ini (kecuali jika mode Admin/Superadmin)
+                const isAdmin = appState?.adminMode || appState?.superadminMode;
+                if (table !== 'settings' && !isAdmin && record.kelas !== appState?.selectedClass) {
                   return; // Abaikan data kelas lain
                 }
 
@@ -385,9 +411,9 @@ class SupabaseSync {
                 }
               }
               
-              console.log(`[SupabaseSync] Realtime update applied for ${table}`);
+              this._logger.info(`[SupabaseSync] Realtime update applied for ${table}`);
             } catch (err) {
-              console.error(`[SupabaseSync] Failed to apply realtime change on ${table}:`, err);
+              this._logger.error(`[SupabaseSync] Failed to apply realtime change on ${table}:`, err);
             } finally {
               this._db.isSyncing = false;
             }
@@ -398,7 +424,44 @@ class SupabaseSync {
       this.channels.push(channel);
     });
 
-    console.log(`[SupabaseSync] Realtime listener subscribed to tables: ${tables.join(', ')}`);
+    this._logger.info(`[SupabaseSync] Realtime listener subscribed to tables: ${tables.join(', ')}`);
+  }
+
+  /**
+   * Whitelist of fields that exist in Supabase schema
+   * Only these fields will be synced to Supabase - everything else is local-only
+   */
+  _SUPABASE_FIELDS = {
+    attendances: ['id', 'date', 'slot', 'studentId', 'kelas', 'status', 'note'],
+    permits: ['id', 'nis', 'kelas', 'category', 'reason', 'start_date', 'end_date', 'start_session', 'end_session', 'status', 'is_active', 'document', 'audit_trail', '_version'],
+    tahfizh: ['id', 'nis', 'kelas', 'program', 'jenis', 'juz', 'halaman', 'surat', 'kualitas', 'status', 'musyrif', 'tanggal', '_version'],
+    settings: ['id', 'data', 'updated_at'],
+  };
+
+  /**
+   * Clean payload to only include fields that exist in Supabase schema
+   */
+  _stripInternalFields(payload, entityType = 'attendances') {
+    if (Array.isArray(payload)) {
+      return payload.map(item => this._stripInternalFields(item, entityType));
+    }
+
+    if (typeof payload === 'object' && payload !== null) {
+      const allowedFields = this._SUPABASE_FIELDS[entityType] || Object.keys(payload);
+      const cleaned = {};
+      for (const key of allowedFields) {
+        if (payload.hasOwnProperty(key)) {
+          cleaned[key] = payload[key];
+        }
+      }
+      // Always include 'id' field
+      if (payload.id && !cleaned.id) {
+        cleaned.id = payload.id;
+      }
+      return cleaned;
+    }
+
+    return payload;
   }
 }
 
