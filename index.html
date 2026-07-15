@@ -6133,68 +6133,64 @@
               </div>
             </button>
 
-              <div class="flex flex-col justify-center min-w-0">
-                <div class="report-lang-rotator max-w-[170px] sm:max-w-[240px] overflow-hidden h-[15px] sm:h-[18px] mb-0">
-                  <span class="report-lang-ar text-xs sm:text-[13px] font-semibold text-white/70 leading-none block whitespace-nowrap font-rubik">
-                    Taqyim al-Hudur
-                  </span>
-                  <span class="report-lang-ar-fixed text-xs sm:text-[13px] font-semibold text-white/70 leading-none block whitespace-nowrap font-rubik">
-                    &#1578;&#1602;&#1610;&#1610;&#1605; &#1575;&#1604;&#1581;&#1590;&#1608;&#1585;
-                  </span>
-                  <span class="report-lang-id text-xs sm:text-[13px] font-semibold text-white/70 leading-none block whitespace-nowrap font-rubik">
-                    Evaluasi Presensi
-                  </span>
-                </div>
-                <h1 class="text-base sm:text-lg font-semibold text-white tracking-tight leading-normal pb-[2px] truncate mb-0.5">
-                  Laporan Kelas
-                </h1>
-                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/20 border border-white/20 text-white text-[9px] w-fit">
-                  <span id="report-badge-label" class="font-bold uppercase tracking-widest text-[8px] text-white">Laporan & Analisis</span>
-                </div>
+            <div class="flex flex-col justify-center min-w-0">
+              <div class="report-lang-rotator max-w-[170px] sm:max-w-[240px] overflow-hidden h-[15px] sm:h-[18px] mb-0">
+                <span class="report-lang-ar text-xs sm:text-[13px] font-semibold text-white/70 leading-none block whitespace-nowrap font-rubik">
+                  Taqyim al-Hudur
+                </span>
+                <span class="report-lang-ar-fixed text-xs sm:text-[13px] font-semibold text-white/70 leading-none block whitespace-nowrap font-rubik">
+                  &#1578;&#1602;&#1610;&#1610;&#1605; &#1575;&#1604;&#1581;&#1590;&#1608;&#1585;
+                </span>
+                <span class="report-lang-id text-xs sm:text-[13px] font-semibold text-white/70 leading-none block whitespace-nowrap font-rubik">
+                  Evaluasi Presensi
+                </span>
               </div>
+              <h1 class="text-base sm:text-lg font-semibold text-white tracking-tight leading-normal pb-[2px] truncate mb-0.5">
+                Laporan Kelas
+              </h1>
+              <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/20 border border-white/20 text-white text-[9px] w-fit">
+                <span id="report-badge-label" class="font-bold uppercase tracking-widest text-[8px] text-white">Laporan & Analisis</span>
+              </div>
+            </div>
           </div>
 
-          <div class="flex items-center gap-2 w-auto shrink-0">
-            <div class="musyrif-only flex p-1 bg-white/15 dark:bg-slate-900/50 rounded-full shadow-sm border border-white/20 dark:border-slate-700/60 backdrop-blur-xl">
-              <div class="flex items-center gap-1 overflow-x-auto hide-scrollbar">
-                <button
-                  id="report-view-btn"
-                  onclick="window.switchReportView('report')"
-                  data-subtab="report"
-                  class="report-sub-nav-btn active h-9 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold active:scale-[0.98]"
-                >
-                  <i data-lucide="layout-grid" class="w-4 h-4 shrink-0"></i>
-                  <span class="hidden sm:inline">Laporan</span>
-                </button>
-                <button
-                  id="analysis-view-btn"
-                  onclick="window.switchReportView('analysis')"
-                  data-subtab="analysis"
-                  class="report-sub-nav-btn h-9 px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-semibold active:scale-[0.98]"
-                >
-                  <i data-lucide="user-search" class="w-4 h-4 shrink-0"></i>
-                  <span class="hidden sm:inline">Analisis</span>
-                </button>
-              </div>
-            </div>
-            <div class="wali-only">
-              <a
-                id="laporan-wali-wa-btn"
-                href="#"
-                target="_blank"
-                class="h-10 px-4 flex items-center justify-center gap-1.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-black text-xs shadow-sm shadow-blue-500/25 transition-all duration-300 active:scale-[0.96]"
-                title="Hubungi Musyrif"
-              >
-                <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
-                <span class="hidden sm:inline">Hubungi Musyrif</span>
-              </a>
-            </div>
+          <div class="musyrif-only flex items-center gap-2 w-auto shrink-0">
+          <button
+            id="report-view-btn"
+            onclick="window.switchReportView('report')"
+            class="h-10 w-10 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-sm shadow-blue-500/20 transition-all duration-300 active:scale-[0.96]"
+            aria-label="Tampilkan laporan"
+            title="Laporan"
+          >
+            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+          </button>
+          <button
+            id="analysis-view-btn"
+            onclick="window.switchReportView('analysis')"
+            class="h-10 w-10 flex items-center justify-center rounded-full bg-white/85 dark:bg-slate-900/80 text-slate-500 hover:text-blue-500 dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl transition-all duration-300 active:scale-[0.96]"
+            aria-label="Tampilkan analisis"
+            title="Analisis"
+          >
+            <i data-lucide="user-search" class="w-4 h-4"></i>
+          </button>
+          </div>
+          <div class="wali-only flex items-center gap-2 w-auto shrink-0">
+            <a
+              id="laporan-wali-wa-btn"
+              href="#"
+              target="_blank"
+              class="h-10 px-4 flex items-center justify-center gap-1.5 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-black text-xs shadow-sm shadow-blue-500/25 transition-all duration-300 active:scale-[0.96]"
+              title="Hubungi Musyrif"
+            >
+              <i data-lucide="message-circle" class="w-4 h-4 text-white"></i>
+              <span class="hidden sm:inline">Hubungi Musyrif</span>
+            </a>
           </div>
         </header>
 
         <div id="report-section" class="animate-fade-in space-y-4">
-          <div class="grid grid-cols-1 xl:grid-cols-[minmax(360px,1fr)_minmax(520px,1.1fr)] gap-3 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-3 backdrop-blur-xl overflow-hidden">
-          <div class="bg-slate-100/80 dark:bg-slate-950/60 p-1 rounded-xl grid grid-cols-4 min-w-0 overflow-hidden">
+          <div class="grid grid-cols-1 xl:grid-cols-[minmax(360px,1fr)_minmax(520px,1.1fr)] gap-3 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-slate-200/70 dark:border-slate-800 shadow-sm p-3 backdrop-blur-xl">
+          <div class="bg-slate-100/80 dark:bg-slate-950/60 p-1 rounded-xl grid grid-cols-4 min-w-0">
             <button
               onclick="window.setReportMode('daily')"
               class="rpt-btn flex-1 lg:flex-none py-2.5 px-4 text-[11px] font-black rounded-lg whitespace-nowrap active-mode transition-all"
@@ -6795,6 +6791,8 @@
               personal.
             </p>
           </div>
+        
+        
 
         <!-- Admin Only: Menu Laporan Utama -->
         <section id="admin-report-menu" class="admin-only hidden space-y-4">
@@ -6909,17 +6907,13 @@
               <div class="flex justify-end mt-4">
                 <span class="text-[10px] font-black text-blue-500 flex items-center gap-1">Buka <i data-lucide="arrow-right" class="w-3 h-3"></i></span>
               </div>
-            </div>
-          </div>
-        </section>
-
         <!-- Admin Only: Unified Global Report Table -->
         <section id="sub-page-unified-report" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-900/80 rounded-[1.75rem] border border-slate-200/70 dark:border-slate-800 shadow-sm p-4 sm:p-5 mt-4 backdrop-blur-xl animate-fade-in">
-          <button onclick="window.closeAdminSubPage('unified-report')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-blue-500 transition-colors">
+          <button onclick="window.closeAdminSubPage('unified-report')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-blue-500 hover:-translate-x-0.5 transition-all">
             <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
           </button>
           
-          <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
+          <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4 mb-4">
             <div>
               <h2 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
                 <i data-lucide="table-2" class="w-4.5 h-4.5 text-blue-500"></i> Laporan Ringkasan Santri Global
@@ -6927,33 +6921,33 @@
               <p class="text-[10px] text-slate-400 font-bold mt-0.5">Pantau absensi, poin kedisiplinan, status perizinan, dan mutabaah seluruh santri dalam satu tabel terpadu.</p>
             </div>
             
-            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <div class="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto">
               <div class="relative w-full sm:w-48">
                 <input
                   type="text"
                   id="admin-unified-search"
                   oninput="window.renderUnifiedAdminReport()"
                   placeholder="Cari nama santri..."
-                  class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 py-2 pl-8 pr-3 text-[11px] focus:outline-none focus:border-blue-500 font-bold"
+                  class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 py-2.5 pl-8 pr-3 text-[11px] focus:outline-none focus:border-blue-500 font-bold"
                 />
-                <i data-lucide="search" class="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400"></i>
+                <i data-lucide="search" class="absolute left-2.5 top-3 w-3.5 h-3.5 text-slate-400"></i>
               </div>
               <div class="relative w-full sm:w-40">
                 <select
                   id="admin-unified-class-filter"
                   onchange="window.renderUnifiedAdminReport()"
-                  class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 py-2 pl-3 pr-8 text-[11px] font-bold focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                  class="w-full rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 py-2.5 pl-3 pr-8 text-[11px] font-bold focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
                 >
                   <option value="all">Semua Kelas</option>
                 </select>
-                <i data-lucide="chevron-down" class="absolute right-2.5 top-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none"></i>
+                <i data-lucide="chevron-down" class="absolute right-2.5 top-3 w-3.5 h-3.5 text-slate-400 pointer-events-none"></i>
               </div>
             </div>
           </div>
           
           <div class="overflow-x-auto -mx-5 px-5">
             <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[750px]">
-              <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-350 border-b border-slate-100 dark:border-slate-800">
+              <thead class="bg-slate-50/50 dark:bg-slate-950/50 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800/80">
                 <tr>
                   <th class="p-3 w-10 text-center">No</th>
                   <th class="p-3 min-w-[150px]">Nama Santri</th>
@@ -6975,7 +6969,7 @@
 
         <!-- Admin Only: Operations Matrix (Matriks Kehadiran) -->
         <section id="sub-page-ops-matrix" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
-          <button onclick="window.closeAdminSubPage('ops-matrix')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-blue-500 transition-colors">
+          <button onclick="window.closeAdminSubPage('ops-matrix')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-blue-500 hover:-translate-x-0.5 transition-all">
             <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
           </button>
           
@@ -6988,7 +6982,7 @@
             <!-- Desktop View -->
             <div class="overflow-x-auto -mx-5 px-5">
               <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
-                <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                <thead class="bg-slate-50/50 dark:bg-slate-950/50 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800/80">
                   <tr>
                     <th class="p-3">Kelas</th>
                     <th class="p-3">Nama Musyrif</th>
@@ -7017,7 +7011,7 @@
 
         <!-- Admin Only: Leaderboard Kepatuhan Musyrif -->
         <section id="sub-page-musyrif-streak" class="admin-only admin-sub-page hidden-sub bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/50 shadow-sm rounded-3xl p-4 sm:p-5 mt-4 animate-slide-up">
-          <button onclick="window.closeAdminSubPage('musyrif-streak')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-amber-500 transition-colors">
+          <button onclick="window.closeAdminSubPage('musyrif-streak')" class="mb-4 flex items-center gap-1.5 text-xs font-black text-slate-400 hover:text-amber-500 hover:-translate-x-0.5 transition-all">
             <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali ke Menu Laporan
           </button>
           
@@ -7029,7 +7023,7 @@
           <div>
             <div class="overflow-x-auto -mx-5 px-5">
               <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[500px]">
-                <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
+                <thead class="bg-slate-50/50 dark:bg-slate-950/50 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800/80">
                   <tr>
                     <th class="p-3 w-16 text-center">Rank</th>
                     <th class="p-3">Musyrif</th>
@@ -7281,6 +7275,11 @@
       </div>
       </div>
       </div>
+
+      </div>
+      </div>
+      </div>
+
 
       <!-- Tab: Profile -->
 <div

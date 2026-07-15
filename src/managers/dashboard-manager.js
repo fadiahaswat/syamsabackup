@@ -959,6 +959,82 @@ window.verifyLocation = function () {
 };
 
 
+window.showSlotFillDetails = function (slotId) {
+  const modal = document.getElementById("modal-stat-detail");
+  const container = document.getElementById("stat-detail-list");
+  const title = document.getElementById("stat-detail-title");
+  const subtitle = document.getElementById("stat-detail-subtitle");
+
+  if (!modal || !container) return;
+
+  // Open modal
+  modal.classList.remove("hidden");
+  title.textContent = `Status Pengisian ${SLOT_WAKTU[slotId]?.label || slotId}`;
+  subtitle.textContent = "Status laporan kehadiran harian oleh Musyrif Kelas";
+
+  container.innerHTML = '<div class="text-center py-4"><span class="loading-spinner"></span></div>';
+
+  // Get data
+  const classes = Object.keys(MASTER_KELAS || {}).filter(k => k?.toLowerCase() !== 'admin musyrif');
+  
+  // Read attendance state
+  let html = `<div class="space-y-3.5 mt-2">`;
+  
+  classes.forEach(className => {
+    const classInfo = MASTER_KELAS[className];
+    const musyrifName = classInfo.musyrif || "Musyrif";
+    let isFilled = false;
+    
+    try {
+      const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData) {
+        const attendanceData = window.safeJsonParse(savedData, {});
+        if (attendanceData && attendanceData[appState.date]) {
+          const dayData = attendanceData[appState.date];
+          if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
+            isFilled = true;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    const statusBadge = isFilled 
+      ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">Selesai</span>`
+      : `<span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25">Belum Diisi</span>`;
+
+    let musyrifPhone = classInfo.hp_musyrif || classInfo.phone || "";
+    if (!musyrifPhone && typeof MASTER_SANTRI !== "undefined") {
+      const sampleSantri = MASTER_SANTRI.find(s => String(s.kelas || s.rombel || "").trim() === className);
+      if (sampleSantri && sampleSantri.hp_musyrif) {
+        musyrifPhone = sampleSantri.hp_musyrif;
+      }
+    }
+
+    const waLink = musyrifPhone ? `https://wa.me/${musyrifPhone.replace(/[^0-9]/g, "")}?text=Assalamu'alaikum%20Ustadz%20${encodeURIComponent(musyrifName)},%20mohon%20segera%20mengisi%20presensi%20shalat%20untuk%20kelas%20${encodeURIComponent(className)}` : "#";
+
+    html += `
+      <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/80 transition-all">
+        <div class="min-w-0 flex-1 pr-2">
+          <h4 class="text-xs font-black text-slate-800 dark:text-white truncate">${className}</h4>
+          <p class="text-[10px] text-slate-400 font-bold truncate mt-0.5">${musyrifName}</p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          ${statusBadge}
+          <a href="${waLink}" target="_blank" class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 active:scale-95 transition-all ${musyrifPhone ? '' : 'opacity-40 cursor-not-allowed pointer-events-none'}" title="WhatsApp Musyrif">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </a>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  container.innerHTML = html;
+};
+
 window.quickOpen = function (slotId) {
   if (window.isSlotHoliday(slotId, appState.date)) {
     return window.showToast(
@@ -966,6 +1042,14 @@ window.quickOpen = function (slotId) {
       "info",
     );
   }
+
+  // Jika dalam Mode Admin/Superadmin, tampilkan modal detail musyrif
+  const isAdmin = appState.adminMode === true || appState.superadminMode === true;
+  if (isAdmin) {
+    window.showSlotFillDetails(slotId);
+    return;
+  }
+
   // 1. Set slot yang dipilih ke state global
   appState.currentSlotId = slotId;
 

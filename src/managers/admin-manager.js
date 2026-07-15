@@ -458,13 +458,15 @@ window.renderAdminOpsMatrix = async function () {
 
     const slotCells = slots.map(slotId => {
       const isFilled = rowRekap[slotId];
-      const colorClass = isFilled ? "bg-emerald-500 shadow-emerald-500/20" : "bg-red-500 shadow-red-500/20";
+      const colorClass = isFilled 
+        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/20 shadow-emerald-500/5" 
+        : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 hover:bg-rose-500/20 shadow-rose-500/5";
       const icon = isFilled ? "check" : "x";
       const title = isFilled ? "Sudah Diisi" : "Belum Diisi";
 
       return `
         <td class="p-3 text-center">
-          <button onclick="window.overrideAttendance('${safeClassName}', '${slotId}')" title="Override ${safeClassName} - ${slotId} (${title})" class="inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-[10px] ${colorClass} shadow-sm active:scale-95 transition-all">
+          <button onclick="window.overrideAttendance('${safeClassName}', '${slotId}')" title="Override ${safeClassName} - ${slotId} (${title})" class="inline-flex items-center justify-center w-7 h-7 rounded-full text-white text-[10px] ${colorClass} shadow-sm active:scale-95 transition-all">
             <i data-lucide="${icon}" class="w-3.5 h-3.5"></i>
           </button>
         </td>
@@ -482,11 +484,11 @@ window.renderAdminOpsMatrix = async function () {
         ${slotCells}
         <td class="p-3 text-center">
           <div class="flex items-center justify-center gap-1.5">
-            <a href="${waLink}" target="_blank" class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/35 hover:scale-105 active:scale-95 transition-all" title="WhatsApp Musyrif">
-              <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+            <a href="${waLink}" target="_blank" class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 hover:bg-emerald-500/20 hover:scale-105 active:scale-95 transition-all" title="WhatsApp Musyrif">
+              <i data-lucide="message-square" class="w-4 h-4"></i>
             </a>
-            <a href="${phoneLink}" class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-500 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900/35 hover:scale-105 active:scale-95 transition-all" title="Call Musyrif">
-              <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+            <a href="${phoneLink}" class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 hover:bg-blue-500/20 hover:scale-105 active:scale-95 transition-all" title="Call Musyrif">
+              <i data-lucide="phone" class="w-4 h-4"></i>
             </a>
           </div>
         </td>
@@ -497,12 +499,14 @@ window.renderAdminOpsMatrix = async function () {
     if (mobileList) {
       const mobileSlotsHTML = slots.map(slotId => {
         const isFilled = rowRekap[slotId];
-        const colorClass = isFilled ? "bg-emerald-500 text-white" : "bg-red-500 text-white";
+        const colorClass = isFilled 
+          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" 
+          : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20";
         const label = slotLabels[slotId];
         return `
           <div class="flex flex-col items-center gap-1">
-            <span class="text-[8px] font-black text-slate-400 uppercase">${label}</span>
-            <button onclick="window.overrideAttendance('${safeClassName}', '${slotId}')" class="w-full py-1.5 rounded-xl text-[9px] font-black ${colorClass} shadow-sm active:scale-95 transition-all">
+            <span class="text-[8px] font-black text-slate-400 uppercase tracking-wider">${label}</span>
+            <button onclick="window.overrideAttendance('${safeClassName}', '${slotId}')" class="w-full py-2 rounded-xl text-[9px] font-black ${colorClass} shadow-sm active:scale-95 transition-all">
               ${isFilled ? 'Diisi' : 'Belum'}
             </button>
           </div>
@@ -510,23 +514,23 @@ window.renderAdminOpsMatrix = async function () {
       }).join("");
 
       mobileList.innerHTML += `
-        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 shadow-sm space-y-3">
-          <div class="flex justify-between items-start">
+        <div class="bg-white/80 dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800/80 rounded-[1.25rem] p-4 shadow-sm backdrop-blur-xl space-y-3">
+          <div class="flex justify-between items-center">
             <div>
               <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeClassName}</h3>
-              <p class="text-[9px] text-slate-400 font-bold">${musyrifName}</p>
+              <p class="text-[10px] text-slate-400 font-bold">${musyrifName}</p>
             </div>
-            <div class="flex gap-1.5">
-              <a href="${waLink}" target="_blank" class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-900/35 active:scale-95 transition-all" title="WhatsApp Musyrif">
+            <div class="flex gap-2">
+              <a href="${waLink}" target="_blank" class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 active:scale-95 transition-all" title="WhatsApp Musyrif">
                 <i data-lucide="message-square" class="w-4 h-4"></i>
               </a>
-              <a href="${phoneLink}" class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-500 dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900/35 active:scale-95 transition-all" title="Call Musyrif">
+              <a href="${phoneLink}" class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/20 active:scale-95 transition-all" title="Call Musyrif">
                 <i data-lucide="phone" class="w-4 h-4"></i>
               </a>
             </div>
           </div>
-          <div class="h-px bg-slate-50 dark:bg-slate-800/60"></div>
-          <div class="grid grid-cols-3 gap-2">
+          <div class="h-px bg-slate-100 dark:bg-slate-800/60"></div>
+          <div class="grid grid-cols-5 gap-2">
             ${mobileSlotsHTML}
           </div>
         </div>
@@ -592,18 +596,15 @@ window.setAdminHRSearch = function (value) {
   }
 };
 
-window.renderAdminHRList = async function (forceShowAll = false) {
+window.renderAdminHRList = async function () {
   _requireAdmin();
-  if (forceShowAll) {
-    window.adminHRShowAll = true;
-  }
   const tbody = document.getElementById("admin-hr-table-body");
   const mobileList = document.getElementById("admin-hr-mobile-list");
-  const stepFilter = document.getElementById("admin-hr-step-filter");
   const desktopView = document.getElementById("admin-hr-desktop-view");
   if (!tbody) return;
 
   const searchQuery = (document.getElementById("admin-hr-search")?.value || "").toLowerCase().trim();
+  const kelasFilter = (document.getElementById("admin-hr-kelas-filter")?.value || "").trim();
 
   // Show/Hide search clear button
   const clearBtn = document.getElementById("admin-hr-search-clear");
@@ -612,62 +613,34 @@ window.renderAdminHRList = async function (forceShowAll = false) {
     else clearBtn.classList.add("hidden");
   }
 
-  // If no search query and not show all, render the step filter
-  if (!searchQuery && !window.adminHRShowAll) {
-    if (stepFilter) stepFilter.classList.remove("hidden");
-    if (desktopView) desktopView.classList.add("hidden");
-    if (mobileList) mobileList.classList.add("hidden");
-
-    // Generate unique classes dynamically
-    const classes = [...new Set((MASTER_SANTRI || []).map(s => s.kelas || s.rombel).filter(Boolean))].sort();
-    const classButtons = classes.map(cls => `
-      <button onclick="window.setAdminHRSearch('${cls.replace(/'/g, "\\'")}')" class="w-full flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800/80 last:border-0 hover:bg-indigo-500/5 dark:hover:bg-indigo-400/5 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-black text-xs active:scale-[0.99] transition-all text-left">
-        <span class="flex items-center gap-2.5">
-          <span class="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-[10.5px] font-black border border-indigo-500/15">#</span>
-          Kelas ${cls}
-        </span>
-        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
-      </button>
-    `).join("");
-
-    if (stepFilter) {
-      stepFilter.innerHTML = `
-        <div class="max-w-md mx-auto space-y-6 flex flex-col items-center py-8">
-          <div class="w-20 h-20 rounded-[2rem] bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/30 text-indigo-500 dark:text-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/5 animate-pulse">
-            <i data-lucide="users" class="w-8 h-8"></i>
-          </div>
-          <div class="space-y-2 text-center">
-            <h3 class="font-black text-slate-800 dark:text-white text-lg">Cari Akun Wali & Santri</h3>
-            <p class="text-xs text-slate-400 dark:text-slate-500 max-w-xs mx-auto leading-relaxed">Kelola setelan password wali murid dengan cepat. Cari berdasarkan nama, NIS terdaftar, atau pilih kelas.</p>
-          </div>
-
-          <div class="w-full space-y-3">
-            <span class="block text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider text-center">Pilih Kelas Santri</span>
-            <div class="flex flex-col border border-slate-200/60 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900/65 overflow-hidden max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 shadow-md">
-              ${classButtons || '<p class="text-xs text-slate-400 font-bold p-3 text-center">Tidak ada data kelas</p>'}
-            </div>
-          </div>
-
-          <div class="w-full flex items-center gap-3 pt-2">
-            <div class="h-[1px] bg-slate-200 dark:bg-slate-800 flex-1"></div>
-            <span class="text-[9px] font-extrabold text-slate-400 dark:text-slate-500">ATAU</span>
-            <div class="h-[1px] bg-slate-200 dark:bg-slate-800 flex-1"></div>
-          </div>
-
-          <button onclick="window.renderAdminHRList(true)" class="w-full py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600 active:scale-95 text-xs font-black shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
-            Tampilkan Seluruh Santri (Maks 100)
-          </button>
-        </div>
-      `;
-      if (window.lucide) window.lucide.createIcons();
-    }
-    return;
-  }
-
-  // Otherwise, show list
-  if (stepFilter) stepFilter.classList.add("hidden");
+  // Always show the list area
   if (desktopView) desktopView.classList.remove("hidden");
   if (mobileList) mobileList.classList.remove("hidden");
+
+  // If no search query AND no kelas filter, show empty state with search prompt
+  if (!searchQuery && !kelasFilter) {
+    tbody.innerHTML = `
+      <tr><td colspan="6" class="p-12 text-center">
+        <div class="flex flex-col items-center gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 dark:text-slate-600">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.3-4.3"/>
+          </svg>
+          <p class="text-sm text-slate-400 font-bold">Ketik nama, NIS, atau wali untuk mencari</p>
+          <p class="text-[10px] text-slate-300 dark:text-slate-600">Maksimal 20 hasil per pencarian</p>
+        </div>
+      </td></tr>`;
+    if (mobileList) mobileList.innerHTML = `
+      <div class="flex flex-col items-center gap-3 p-12 bg-slate-50 dark:bg-slate-900/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 dark:text-slate-600">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.3-4.3"/>
+        </svg>
+        <p class="text-sm text-slate-400 font-bold text-center">Ketik nama, NIS, atau wali untuk mencari</p>
+        <p class="text-[10px] text-slate-300 dark:text-slate-600">Maksimal 20 hasil per pencarian</p>
+      </div>`;
+    return;
+  }
 
   tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Memuat data...</td></tr>`;
   if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat data...</p>`;
@@ -684,14 +657,21 @@ window.renderAdminHRList = async function (forceShowAll = false) {
     if (mobileList) mobileList.innerHTML = "";
 
     let filtered = MASTER_SANTRI || [];
-    if (searchQuery) {
-      filtered = (MASTER_SANTRI || []).filter(s =>
-        (s.nama && s.nama.toLowerCase().includes(searchQuery)) ||
-        (s.nis && String(s.nis).includes(searchQuery)) ||
-        (s.wali && s.wali.toLowerCase().includes(searchQuery)) ||
-        (s.kelas && String(s.kelas).toLowerCase().includes(searchQuery)) ||
-        (s.rombel && String(s.rombel).toLowerCase().includes(searchQuery))
-      );
+    if (searchQuery || kelasFilter) {
+      filtered = (MASTER_SANTRI || []).filter(s => {
+        const matchSearch = !searchQuery ||
+          (s.nama && s.nama.toLowerCase().includes(searchQuery)) ||
+          (s.nis && String(s.nis).includes(searchQuery)) ||
+          (s.wali && s.wali.toLowerCase().includes(searchQuery)) ||
+          (s.kelas && String(s.kelas).toLowerCase().includes(searchQuery)) ||
+          (s.rombel && String(s.rombel).toLowerCase().includes(searchQuery));
+
+        const matchKelas = !kelasFilter ||
+          (s.kelas && s.kelas === kelasFilter) ||
+          (s.rombel && s.rombel === kelasFilter);
+
+        return matchSearch && matchKelas;
+      });
     }
 
     if (filtered.length === 0) {
@@ -701,7 +681,11 @@ window.renderAdminHRList = async function (forceShowAll = false) {
       return;
     }
 
-    filtered.slice(0, 100).forEach(s => {
+    // Limit to 20 results max for search
+    const maxResults = 20;
+    const resultsToShow = filtered.slice(0, maxResults);
+
+    resultsToShow.forEach(s => {
       const nisStr = String(s.nis || s.id || '').trim();
       const safeNisStr = _escapeHtml(nisStr);
       const safeName = _escapeHtml(s.nama || s.name || '-');
@@ -761,8 +745,8 @@ window.renderAdminHRList = async function (forceShowAll = false) {
       }
     });
 
-    if (filtered.length > 100) {
-      const moreText = `Menampilkan 100 dari ${filtered.length} santri. Silakan gunakan pencarian untuk memfilter lebih spesifik.`;
+    if (filtered.length > maxResults) {
+      const moreText = `Menampilkan ${maxResults} dari ${filtered.length} hasil. Gunakan kata kunci lebih spesifik.`;
       tbody.innerHTML += `<tr><td colspan="6" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
       if (mobileList) {
         mobileList.innerHTML += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
@@ -843,7 +827,14 @@ window.renderAdminTahfizhList = async function () {
         })[char]);
   };
 
-  filtered.slice(0, 100).forEach(r => {
+  // Pagination: 50 items per page
+  const ITEMS_PER_PAGE = 50;
+  const currentPage = window.adminTahfizhPage || 1;
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedData = filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+
+  paginatedData.forEach(r => {
     const qColor = r.kualitas === "Lancar" ? "bg-emerald-50 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400" :
                    r.kualitas === "Sedang" ? "bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400" :
                    "bg-red-50 text-red-500 dark:bg-red-950/40 dark:text-red-400";
@@ -932,8 +923,42 @@ window.renderAdminTahfizhList = async function () {
     }
   });
 
-  if (filtered.length > 100) {
-    const moreText = `Menampilkan 100 dari ${filtered.length} setoran. Silakan gunakan pencarian untuk lebih spesifik.`;
+  // Pagination controls
+  if (totalPages > 1) {
+    const prevDisabled = currentPage <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-50';
+    const nextDisabled = currentPage >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-50';
+
+    const paginationHtml = `
+      <tr><td colspan="8" class="p-3">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] text-slate-400 font-bold">Menampilkan ${startIdx + 1}-${Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)} dari ${filtered.length}</span>
+          <div class="flex items-center gap-1">
+            <button onclick="window.adminTahfizhPage=Math.max(1,window.adminTahfizhPage-1);window.renderAdminTahfizhList();" class="px-2 py-1 rounded-lg ${prevDisabled} text-slate-500 font-bold text-xs transition-all ${currentPage <= 1 ? '' : 'dark:hover:bg-slate-700'}">
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <span class="px-2 py-1 text-[10px] text-slate-500 font-bold">${currentPage}/${totalPages}</span>
+            <button onclick="window.adminTahfizhPage=Math.min(${totalPages},window.adminTahfizhPage+1);window.renderAdminTahfizhList();" class="px-2 py-1 rounded-lg ${nextDisabled} text-slate-500 font-bold text-xs transition-all ${currentPage >= totalPages ? '' : 'dark:hover:bg-slate-700'}">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </td></tr>`;
+    tbody.innerHTML += paginationHtml;
+    mobileList.innerHTML += `
+      <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+        <span class="text-[10px] text-slate-400 font-bold">${startIdx + 1}-${Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)} dari ${filtered.length}</span>
+        <div class="flex items-center gap-1">
+          <button onclick="window.adminTahfizhPage=Math.max(1,window.adminTahfizhPage-1);window.renderAdminTahfizhList();" class="w-8 h-8 rounded-lg ${prevDisabled} text-slate-500 flex items-center justify-center transition-all ${currentPage <= 1 ? '' : 'dark:hover:bg-slate-700'}">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+          </button>
+          <span class="px-2 py-1 text-[10px] text-slate-500 font-bold">${currentPage}/${totalPages}</span>
+          <button onclick="window.adminTahfizhPage=Math.min(${totalPages},window.adminTahfizhPage+1);window.renderAdminTahfizhList();" class="w-8 h-8 rounded-lg ${nextDisabled} text-slate-500 flex items-center justify-center transition-all ${currentPage >= totalPages ? '' : 'dark:hover:bg-slate-700'}">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>`;
+  } else if (filtered.length > 0) {
+    const moreText = `Menampilkan ${filtered.length} setoran.`;
     tbody.innerHTML += `<tr><td colspan="8" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
     if (mobileList) {
       mobileList.innerHTML += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
@@ -1000,8 +1025,8 @@ window.renderAdminPermits = async function () {
             <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${safeReason}">${safeReason}</td>
             <td class="p-3 text-center">
               <div class="flex items-center justify-center gap-1.5">
-                <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
-                <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="px-2.5 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
+                <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black active:scale-[0.98] transition-all shadow-sm shadow-emerald-500/10">Setujui</button>
+                <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="px-2.5 py-1 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-black active:scale-[0.98] transition-all shadow-sm shadow-rose-500/10">Tolak</button>
               </div>
             </td>
           </tr>
@@ -1009,13 +1034,13 @@ window.renderAdminPermits = async function () {
 
         if (mobileListDashboard) {
           mobileListDashboard.innerHTML += `
-            <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+            <div class="bg-white/80 dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-4 shadow-sm backdrop-blur-xl space-y-2.5">
               <div class="flex justify-between items-start">
                 <div>
                   <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeStudentName}</h3>
                   <p class="text-[9px] text-slate-400 font-mono mt-0.5">${safeClassName} • NIS: ${safeNis}</p>
                 </div>
-                <span class="px-2 py-0.5 rounded text-[9px] font-black bg-amber-50 text-amber-500">Pending</span>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Pending</span>
               </div>
               <div class="text-[11px] text-slate-600 dark:text-slate-400 font-bold leading-relaxed">
                 <p><span class="text-slate-400">Tipe:</span> ${safeType}</p>
@@ -1024,7 +1049,7 @@ window.renderAdminPermits = async function () {
               </div>
               <div class="flex gap-2 w-full mt-2">
                 <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="flex-1 py-2 rounded-xl bg-emerald-500 text-white font-black text-xs active:scale-[0.98] transition-all text-center">Setujui</button>
-                <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="flex-1 py-2 rounded-xl bg-red-500 text-white font-black text-xs active:scale-[0.98] transition-all text-center">Tolak</button>
+                <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="flex-1 py-2 rounded-xl bg-rose-500 text-white font-black text-xs active:scale-[0.98] transition-all text-center">Tolak</button>
               </div>
             </div>
           `;
@@ -1078,7 +1103,7 @@ window.renderAdminPermits = async function () {
       const idA = parseInt(a.id) || 0;
       const idB = parseInt(b.id) || 0;
       if (idA && idB && idA !== idB) return idB - idA;
-      
+
       const dateA = new Date(a.tanggal_mulai || a.start_date || 0);
       const dateB = new Date(b.tanggal_mulai || b.start_date || 0);
       return dateB - dateA;
@@ -1090,53 +1115,60 @@ window.renderAdminPermits = async function () {
       return;
     }
 
+    // Pagination: 20 items per page
+    const ITEMS_PER_PAGE = 20;
+    const currentPage = window.adminPermitPage || 1;
+    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+    const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedData = filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+
     let tbodyHtml = "";
     let mobileListHtml = "";
 
-    filtered.slice(0, 100).forEach(p => {
+    paginatedData.forEach(p => {
       const statusLower = String(p.status || "approved").toLowerCase();
       const isActive = p.is_active !== false;
 
       let displayStatus = "Disetujui";
-      let statusClass = "bg-emerald-50 text-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-400";
+      let statusClass = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20";
 
       if (statusLower === "pending") {
         displayStatus = "Diajukan";
-        statusClass = "bg-amber-50 text-amber-500 dark:bg-amber-950/40 dark:text-amber-400";
+        statusClass = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20";
       } else if (statusLower === "rejected") {
         displayStatus = "Ditolak";
-        statusClass = "bg-red-50 text-red-500 dark:bg-red-950/40 dark:text-red-400";
+        statusClass = "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20";
       } else if (!isActive) {
         displayStatus = "Kembali";
-        statusClass = "bg-blue-50 text-blue-500 dark:bg-blue-950/40 dark:text-blue-400";
+        statusClass = "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20";
       }
 
       const safePermitId = String(p.id || p.nis || '').replace(/[`$\\]/g, '\\$&');
       
-      let actions = `<span class="text-slate-400 text-[10px]">-</span>`;
+      let actions = `<span class="text-slate-400 text-[10px] font-bold">-</span>`;
       let mobileActions = "";
 
       if (statusLower === "pending") {
         actions = `
-          <div class="flex items-center justify-center gap-1">
-            <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="px-2 py-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
-            <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="px-2 py-1 rounded bg-red-500 text-white hover:bg-red-600 text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
+          <div class="flex items-center justify-center gap-1.5">
+            <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black active:scale-[0.98] transition-all">Setujui</button>
+            <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="px-2 py-1 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-black active:scale-[0.98] transition-all">Tolak</button>
           </div>
         `;
         mobileActions = `
           <div class="flex gap-2 w-full mt-2">
             <button onclick="window.approveOrRejectPermit('${safePermitId}', true)" class="flex-1 py-2 rounded-xl bg-emerald-500 text-white text-[10px] font-black active:scale-[0.98] transition-all text-center">Setujui</button>
-            <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="flex-1 py-2 rounded-xl bg-red-500 text-white text-[10px] font-black active:scale-[0.98] transition-all text-center">Tolak</button>
+            <button onclick="window.approveOrRejectPermit('${safePermitId}', false)" class="flex-1 py-2 rounded-xl bg-rose-500 text-white text-[10px] font-black active:scale-[0.98] transition-all text-center">Tolak</button>
           </div>
         `;
       } else if (statusLower === "approved" && isActive) {
         actions = `
-          <button onclick="window.forceReturnPermit('${safePermitId}')" class="px-2.5 py-1 rounded-lg bg-orange-100 border border-orange-200 hover:bg-orange-200 text-orange-700 dark:bg-orange-950/40 dark:border-orange-900/35 dark:text-orange-400 text-[10px] font-black active:scale-95 transition-all">
+          <button onclick="window.forceReturnPermit('${safePermitId}')" class="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-black active:scale-95 transition-all shadow-sm">
             Paksa Kembali
           </button>
         `;
         mobileActions = `
-          <button onclick="window.forceReturnPermit('${safePermitId}')" class="w-full mt-2 py-2 rounded-xl bg-orange-100 border border-orange-200 text-orange-700 text-[10px] font-black active:scale-95 transition-all text-center">
+          <button onclick="window.forceReturnPermit('${safePermitId}')" class="w-full mt-2 py-2 rounded-xl bg-amber-500 text-white text-[10px] font-black active:scale-95 transition-all text-center shadow-sm">
             Paksa Kembali
           </button>
         `;
@@ -1164,7 +1196,7 @@ window.renderAdminPermits = async function () {
           </td>
           <td class="p-3 text-slate-600 dark:text-slate-300 max-w-[150px] truncate" title="${safeReason}">${safeReason}</td>
           <td class="p-3 text-center">
-            <span class="px-2 py-0.5 rounded text-[10px] font-black ${statusClass}">${displayStatus}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${statusClass}">${displayStatus}</span>
           </td>
           <td class="p-3 text-center">${actions}</td>
         </tr>
@@ -1172,14 +1204,14 @@ window.renderAdminPermits = async function () {
 
       if (mobileListReport) {
         mobileListHtml += `
-          <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-2.5">
+          <div class="bg-white/80 dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-4 shadow-sm backdrop-blur-xl space-y-2.5">
             <div class="flex justify-between items-start">
               <div>
                 <h3 class="font-black text-slate-800 dark:text-white text-xs">${safeStudentName}</h3>
                 <p class="text-[9px] text-slate-400 font-mono mt-0.5">NIS: ${safeNis} (${safeClassName})</p>
               </div>
               <div>
-                <span class="px-2 py-0.5 rounded text-[9px] font-black ${statusClass}">${displayStatus}</span>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-black ${statusClass}">${displayStatus}</span>
               </div>
             </div>
             <div class="text-[11px] text-slate-600 dark:text-slate-400 font-bold leading-relaxed">
@@ -1193,8 +1225,42 @@ window.renderAdminPermits = async function () {
       }
     });
 
-    if (filtered.length > 100) {
-      const moreText = `Menampilkan 100 dari ${filtered.length} perizinan. Silakan gunakan pencarian atau filter status untuk lebih spesifik.`;
+    // Pagination controls
+    if (totalPages > 1) {
+      const prevDisabled = currentPage <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-50';
+      const nextDisabled = currentPage >= totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-50';
+
+      const paginationHtml = `
+        <tr><td colspan="7" class="p-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] text-slate-400 font-bold">Menampilkan ${startIdx + 1}-${Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)} dari ${filtered.length}</span>
+            <div class="flex items-center gap-1">
+              <button onclick="window.adminPermitPage=Math.max(1,window.adminPermitPage-1);window.renderAdminPermits();" class="px-2 py-1 rounded-lg ${prevDisabled} text-slate-500 font-bold text-xs transition-all ${currentPage <= 1 ? '' : 'dark:hover:bg-slate-700'}">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+              </button>
+              <span class="px-2 py-1 text-[10px] text-slate-500 font-bold">${currentPage}/${totalPages}</span>
+              <button onclick="window.adminPermitPage=Math.min(${totalPages},window.adminPermitPage+1);window.renderAdminPermits();" class="px-2 py-1 rounded-lg ${nextDisabled} text-slate-500 font-bold text-xs transition-all ${currentPage >= totalPages ? '' : 'dark:hover:bg-slate-700'}">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </td></tr>`;
+      tbodyHtml += paginationHtml;
+      mobileListHtml += `
+        <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+          <span class="text-[10px] text-slate-400 font-bold">${startIdx + 1}-${Math.min(startIdx + ITEMS_PER_PAGE, filtered.length)} dari ${filtered.length}</span>
+          <div class="flex items-center gap-1">
+            <button onclick="window.adminPermitPage=Math.max(1,window.adminPermitPage-1);window.renderAdminPermits();" class="w-8 h-8 rounded-lg ${prevDisabled} text-slate-500 flex items-center justify-center transition-all ${currentPage <= 1 ? '' : 'dark:hover:bg-slate-700'}">
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            </button>
+            <span class="px-2 py-1 text-[10px] text-slate-500 font-bold">${currentPage}/${totalPages}</span>
+            <button onclick="window.adminPermitPage=Math.min(${totalPages},window.adminPermitPage+1);window.renderAdminPermits();" class="w-8 h-8 rounded-lg ${nextDisabled} text-slate-500 flex items-center justify-center transition-all ${currentPage >= totalPages ? '' : 'dark:hover:bg-slate-700'}">
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>`;
+    } else {
+      const moreText = `Menampilkan ${filtered.length} perizinan.`;
       tbodyHtml += `<tr><td colspan="7" class="p-3 text-center text-slate-400 font-bold text-[10px]">${moreText}</td></tr>`;
       if (mobileListReport) {
         mobileListHtml += `<p class="text-xs text-slate-400 font-bold p-3 text-center">${moreText}</p>`;
@@ -1810,22 +1876,22 @@ window.renderMusyrifLeaderboard = function () {
 
   data.forEach((row, index) => {
     const rank = index + 1;
-    const badgeColor = rank === 1 ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
-                       rank === 2 ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" :
-                       rank === 3 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" :
-                       "bg-slate-50 text-slate-500 dark:bg-slate-900/50";
+    const badgeColor = rank === 1 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25" :
+                       rank === 2 ? "bg-slate-400/10 text-slate-600 dark:text-slate-400 border border-slate-400/25" :
+                       rank === 3 ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/25" :
+                       "bg-slate-500/5 text-slate-500 dark:text-slate-400 border border-slate-500/10";
                        
-    const streakDisplay = row.streak > 0 ? `🔥 <span class="text-amber-500">${row.streak} Hari</span>` : `<span class="text-slate-400">-</span>`;
+    const streakDisplay = row.streak > 0 ? `🔥 <span class="text-amber-500 font-black">${row.streak} Hari</span>` : `<span class="text-slate-400 font-bold">-</span>`;
     
     // Compliance progress bar color
-    const progressColor = row.compliance >= 80 ? "bg-emerald-500" :
-                          row.compliance >= 50 ? "bg-amber-500" :
-                          "bg-rose-500";
+    const progressColor = row.compliance >= 80 ? "bg-emerald-500 shadow-emerald-500/20" :
+                          row.compliance >= 50 ? "bg-amber-500 shadow-amber-500/20" :
+                          "bg-rose-500 shadow-rose-500/20";
 
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
         <td class="p-3 text-center">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-black ${badgeColor}">${rank}</span>
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black ${badgeColor}">${rank}</span>
         </td>
         <td class="p-3 text-slate-900 dark:text-white font-black">${_escapeHtml(row.musyrif)}</td>
         <td class="p-3 text-slate-500 dark:text-slate-400 font-bold">${_escapeHtml(row.className)}</td>
@@ -1833,8 +1899,8 @@ window.renderMusyrifLeaderboard = function () {
         <td class="p-3 text-center font-bold text-slate-600 dark:text-slate-300">${row.totalSlots} Sesi</td>
         <td class="p-3">
           <div class="flex items-center gap-2">
-            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-              <div class="${progressColor} h-2 rounded-full" style="width: ${row.compliance}%"></div>
+            <div class="w-full bg-slate-100 dark:bg-slate-800/80 rounded-full h-2 overflow-hidden border border-slate-200/10">
+              <div class="${progressColor} h-2 rounded-full transition-all duration-500" style="width: ${row.compliance}%"></div>
             </div>
             <span class="text-[10px] font-black text-slate-600 dark:text-slate-300 shrink-0 w-8 text-right">${row.compliance}%</span>
           </div>
@@ -1997,33 +2063,37 @@ window.renderViolationLeaderboard = function () {
 
   data.forEach((row, index) => {
     const rank = index + 1;
-    const badgeColor = rank === 1 ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400" :
-                       rank === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400" :
-                       rank === 3 ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
-                       "bg-slate-50 text-slate-500 dark:bg-slate-900/50";
+    const badgeColor = rank === 1 ? "bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/25" :
+                       rank === 2 ? "bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/25" :
+                       rank === 3 ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25" :
+                       "bg-slate-500/5 text-slate-500 dark:text-slate-400 border border-slate-500/10";
                        
     // Status text based on points severity
-    const statusText = row.points >= 100 ? "SP3 (Skorsing/Dikeluarkan)" :
-                       row.points >= 75 ? "SP2 (Peringatan Keras)" :
-                       row.points >= 50 ? "SP1 (Pembinaan Intensif)" :
-                       row.points >= 25 ? "Peringatan Ringan" :
-                       "Teguran Lisan";
+    const statusText = row.points >= 100 ? "SP3 (Skorsing)" :
+                       row.points >= 75 ? "SP2 (Keras)" :
+                       row.points >= 50 ? "SP1 (Intensif)" :
+                       row.points >= 25 ? "Ringan" :
+                       "Teguran";
 
-    const statusColor = row.points >= 100 ? "text-red-600 dark:text-red-400" :
-                        row.points >= 50 ? "text-orange-500 dark:text-orange-400" :
-                        "text-slate-500 dark:text-slate-400";
+    const statusBadgeClass = row.points >= 100 ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20" :
+                             row.points >= 75 ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20" :
+                             row.points >= 50 ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" :
+                             row.points >= 25 ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" :
+                             "bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20";
 
     tbody.innerHTML += `
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors text-[11px] font-bold">
         <td class="p-3 text-center">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-black ${badgeColor}">${rank}</span>
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-black ${badgeColor}">${rank}</span>
         </td>
         <td class="p-3 text-slate-900 dark:text-white font-black">${_escapeHtml(row.name)}</td>
         <td class="p-3 text-slate-500 dark:text-slate-400 font-bold">${_escapeHtml(row.className)}</td>
         <td class="p-3 text-center font-black text-xs text-red-600 dark:text-red-400">${row.points} Poin</td>
-        <td class="p-3 text-center font-bold text-[10px] ${statusColor}">${statusText}</td>
         <td class="p-3 text-center">
-          <button type="button" onclick="window.recordCoachingDirect('${row.studentId}', '${_escapeHtml(row.name)}')" class="py-1 px-2.5 rounded-lg bg-teal-50 dark:bg-teal-500/10 border border-teal-100 dark:border-teal-500/20 text-teal-600 dark:text-teal-400 text-[10px] font-black active:scale-95 transition-all">
+          <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black inline-block ${statusBadgeClass}">${statusText}</span>
+        </td>
+        <td class="p-3 text-center">
+          <button type="button" onclick="window.recordCoachingDirect('${row.studentId}', '${_escapeHtml(row.name)}')" class="py-1 px-2.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-600 dark:text-teal-400 text-[10px] font-black active:scale-95 hover:bg-teal-500/25 transition-all">
             Bina Santri
           </button>
         </td>

@@ -2346,14 +2346,98 @@ window.renderWaliView = function () {
 };
 
 window.showAdminHRView = function () {
+  let view = document.getElementById("view-admin-hr");
+
+  // Create view if not exists
+  if (!view) {
+    // Generate unique classes for filter dropdown
+    const classes = [...new Set((MASTER_SANTRI || []).map(s => s.kelas || s.rombel).filter(Boolean))].sort();
+    const kelasOptions = classes.map(cls => `<option value="${cls}">${cls}</option>`).join('');
+
+    view = document.createElement("section");
+    view.id = "view-admin-hr";
+    view.className = "fixed inset-0 z-[70] bg-slate-50 dark:bg-slate-950 overflow-y-auto";
+    view.innerHTML = `
+      <!-- Header -->
+      <div class="sticky top-0 z-10 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+        <div class="flex items-center justify-between max-w-2xl mx-auto">
+          <button onclick="window.closeAdminHRView()" class="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-700 active:scale-95 transition-all">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+          </button>
+          <h2 class="text-base font-black text-slate-800 dark:text-white">Manajemen Wali & Santri</h2>
+          <div class="w-10"></div>
+        </div>
+      </div>
+
+      <!-- Search & Filter -->
+      <div class="sticky top-[60px] z-10 bg-slate-50 dark:bg-slate-950 px-4 py-3 border-b border-slate-100 dark:border-slate-800/50">
+        <div class="max-w-2xl mx-auto space-y-3">
+          <!-- Search Input -->
+          <div class="relative">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+            <input type="text" id="admin-hr-search" oninput="window.renderAdminHRList()" placeholder="Cari nama, NIS, atau nama wali..." class="w-full pl-11 pr-10 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all" />
+            <button id="admin-hr-search-clear" onclick="document.getElementById('admin-hr-search').value='';window.renderAdminHRList();" class="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-700 hidden transition-all">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Kelas Filter -->
+          <div class="relative">
+            <i data-lucide="users" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+            <select id="admin-hr-kelas-filter" onchange="window.renderAdminHRList()" class="w-full pl-11 pr-10 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-sm text-slate-800 dark:text-white appearance-none focus:outline-none focus:border-indigo-500 cursor-pointer">
+              <option value="">Semua Kelas</option>
+              ${kelasOptions}
+            </select>
+            <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Table View -->
+      <div id="admin-hr-desktop-view" class="hidden md:block max-w-2xl mx-auto px-4 py-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-slate-50 dark:bg-slate-800/50">
+                <tr>
+                  <th class="p-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-400">Nama Santri</th>
+                  <th class="p-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-400">Kelas</th>
+                  <th class="p-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-400">NIS</th>
+                  <th class="p-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-400">Wali</th>
+                  <th class="p-3 text-left text-[10px] font-black uppercase tracking-wider text-slate-400">Password</th>
+                  <th class="p-3 text-center text-[10px] font-black uppercase tracking-wider text-slate-400">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="admin-hr-table-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Card View -->
+      <div id="admin-hr-mobile-list" class="md:hidden max-w-2xl mx-auto px-4 py-4 space-y-3"></div>
+    `;
+    document.body.appendChild(view);
+  }
+
+  view.classList.remove("hidden");
+  view.classList.add("fixed", "inset-0", "z-[70]");
+
+  // Reset search
+  const searchInput = document.getElementById("admin-hr-search");
+  if (searchInput) searchInput.value = "";
+  const kelasFilter = document.getElementById("admin-hr-kelas-filter");
+  if (kelasFilter) kelasFilter.value = "";
+
+  if (window.renderAdminHRList) window.renderAdminHRList();
+  if (window.lucide) window.lucide.createIcons();
+};
+
+window.closeAdminHRView = function () {
   const view = document.getElementById("view-admin-hr");
   if (view) {
-    view.classList.remove("hidden");
-    const searchInput = document.getElementById("admin-hr-search");
-    if (searchInput) searchInput.value = "";
-    window.adminHRShowAll = false;
-    if (window.renderAdminHRList) window.renderAdminHRList();
-    if (window.lucide) window.lucide.createIcons();
+    view.classList.add("hidden");
+    view.classList.remove("fixed", "inset-0");
   }
 };
 
@@ -3530,6 +3614,32 @@ window.renderWeeklyCalendar = function () {
   container.innerHTML = html;
 };
 
+window.calculateSlotFillPercentage = function (slotId, dateKey) {
+  const classes = Object.keys(MASTER_KELAS || {}).filter(k => k?.toLowerCase() !== 'admin musyrif');
+  if (classes.length === 0) return 0;
+  
+  let filledCount = 0;
+  classes.forEach(className => {
+    try {
+      const storageKey = `musyrif_attendance_${className.replace(/\s+/g, '_')}`;
+      const savedData = localStorage.getItem(storageKey);
+      if (savedData) {
+        const attendanceData = window.safeJsonParse(savedData, {});
+        if (attendanceData && attendanceData[dateKey]) {
+          const dayData = attendanceData[dateKey];
+          if (dayData[slotId] && Object.keys(dayData[slotId]).length > 0) {
+            filledCount++;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  });
+  
+  return Math.round((filledCount / classes.length) * 100);
+};
+
 window.renderSlotList = function () {
   const container = document.getElementById("dash-other-slots");
   if (!container) return;
@@ -3589,26 +3699,32 @@ window.renderSlotList = function () {
     item.className = "slot-item flex flex-col p-3.5 sm:p-4 rounded-3xl border cursor-pointer transition-all duration-300 group relative overflow-hidden " +
       (s.id === "sekolah" ? "col-span-2" : "col-span-1");
 
-    // Calculate duration-based progress
+    // Calculate duration-based progress or admin musyrif fill percentage
     let timeProgressPercent = 0;
-    const todayStr = window.getLocalDateStr();
-    if (appState.date < todayStr) {
-      timeProgressPercent = 100;
-    } else if (appState.date > todayStr) {
-      timeProgressPercent = 0;
+    const isAdmin = appState.adminMode === true || appState.superadminMode === true;
+    
+    if (isAdmin) {
+      timeProgressPercent = window.calculateSlotFillPercentage(s.id, appState.date);
     } else {
-      const now = new Date();
-      const currentMinutes = now.getHours() * 60 + now.getMinutes();
-      const match = s.subLabel.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-      if (match) {
-        const startMins = parseInt(match[1]) * 60 + parseInt(match[2]);
-        const endMins = parseInt(match[3]) * 60 + parseInt(match[4]);
-        if (currentMinutes >= endMins) {
-          timeProgressPercent = 100;
-        } else if (currentMinutes >= startMins) {
-          const totalDuration = endMins - startMins;
-          const elapsed = currentMinutes - startMins;
-          timeProgressPercent = Math.max(0, Math.min(100, Math.round((elapsed / totalDuration) * 100)));
+      const todayStr = window.getLocalDateStr();
+      if (appState.date < todayStr) {
+        timeProgressPercent = 100;
+      } else if (appState.date > todayStr) {
+        timeProgressPercent = 0;
+      } else {
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const match = s.subLabel.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
+        if (match) {
+          const startMins = parseInt(match[1]) * 60 + parseInt(match[2]);
+          const endMins = parseInt(match[3]) * 60 + parseInt(match[4]);
+          if (currentMinutes >= endMins) {
+            timeProgressPercent = 100;
+          } else if (currentMinutes >= startMins) {
+            const totalDuration = endMins - startMins;
+            const elapsed = currentMinutes - startMins;
+            timeProgressPercent = Math.max(0, Math.min(100, Math.round((elapsed / totalDuration) * 100)));
+          }
         }
       }
     }
@@ -3684,7 +3800,11 @@ window.renderSlotList = function () {
       if (iconEl) iconEl.setAttribute("data-lucide", s.style.icon);
 
       if (progressStatusEl) {
-        if (timeProgressPercent === 100) {
+        if (isAdmin) {
+          const totalClasses = Object.keys(MASTER_KELAS || {}).filter(k => k?.toLowerCase() !== 'admin musyrif').length;
+          const filledCount = Math.round((timeProgressPercent / 100) * totalClasses);
+          progressStatusEl.textContent = `${filledCount}/${totalClasses} Musyrif`;
+        } else if (timeProgressPercent === 100) {
           progressStatusEl.textContent = "Selesai";
         } else if (timeProgressPercent > 0) {
           progressStatusEl.textContent = "Sesi Berjalan";
