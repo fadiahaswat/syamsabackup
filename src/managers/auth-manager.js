@@ -93,7 +93,10 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
     timestamp: new Date().toISOString(),
   };
 
-  const isAdmin = targetClass?.toLowerCase() === "admin musyrif";
+  // Check if admin (Admin Musyrif OR Koordinator Musyrif)
+  const isAdminMusyrif = targetClass?.toLowerCase() === "admin musyrif";
+  const isKoordinatorMusyrif = targetClass?.toLowerCase() === "koordinator musyrif";
+  const isAdmin = isAdminMusyrif || isKoordinatorMusyrif;
   appState.adminMode = isAdmin;
 
   if (isAdmin) {
@@ -101,6 +104,7 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
     appState.waliSantri = null;
     appState.waliKelas = null;
     authData.isAdmin = true;
+    authData.adminRole = isKoordinatorMusyrif ? 'koordinator' : 'admin';
     FILTERED_SANTRI = [];
   } else {
     appState.waliMode = (profile?.authProvider === "wali");
@@ -196,22 +200,50 @@ window.handleGoogleCallback = async function (response) {
     }
 
     // 2. VALIDASI EMAIL (KEAMANAN UTAMA)
-    // Jika di sheet kolom email kosong, kita tolak demi keamanan
-    if (!classInfo.email) {
-      return window.showToast(
-        "Admin belum mendaftarkan email untuk kelas ini.",
-        "warning",
-      );
-    }
+    // Untuk Admin Musyrif & Koordinator Musyrif: cek di 2 baris
+    const isAdminRole = targetClass?.toLowerCase() === "admin musyrif" ||
+                        targetClass?.toLowerCase() === "koordinator musyrif";
 
-    const allowedEmails = String(classInfo.email || "")
-      .split(/[;,]/)
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
+    let allowedEmails = [];
+
+    if (isAdminRole) {
+      // Admin: cek email di 2 baris (Admin Musyrif & Koordinator Musyrif)
+      const adminMusyrifEmails = String(window.classData?.["Admin Musyrif"]?.email || "")
+        .split(/[;,]/)
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
+
+      const koordinatorMusyrifEmails = String(window.classData?.["Koordinator Musyrif"]?.email || "")
+        .split(/[;,]/)
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
+
+      allowedEmails = [...adminMusyrifEmails, ...koordinatorMusyrifEmails];
+
+      // Tolak jika tidak ada email di kedua baris
+      if (allowedEmails.length === 0) {
+        return window.showToast(
+          "Admin belum mendaftarkan email untuk akses ini.",
+          "warning",
+        );
+      }
+    } else {
+      // Musyrif reguler: cek email di baris kelas sendiri
+      if (!classInfo.email) {
+        return window.showToast(
+          "Admin belum mendaftarkan email untuk kelas ini.",
+          "warning",
+        );
+      }
+      allowedEmails = String(classInfo.email || "")
+        .split(/[;,]/)
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
+    }
 
     if (!allowedEmails.includes(normalizedUserEmail)) {
       return window.showToast(
-        "AKSES DITOLAK! Email Anda tidak terdaftar untuk kelas ini.",
+        "AKSES DITOLAK! Email Anda tidak terdaftar untuk akses ini.",
         "error",
       );
     }
