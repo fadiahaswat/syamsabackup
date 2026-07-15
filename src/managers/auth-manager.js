@@ -148,8 +148,28 @@ window.handleLogin = async function () {
     return window.showToast("Kelas tidak valid.", "error");
   }
 
-  // Mode Production: Wajib Google OAuth
   appState.tempClass = kelas;
+
+  // BYPASS Google OAuth untuk Admin Musyrif & Koordinator Musyrif
+  const isAdminRole = kelas?.toLowerCase() === "admin musyrif" ||
+                      kelas?.toLowerCase() === "koordinator musyrif";
+
+  if (isAdminRole) {
+    // Langsung masuk tanpa Google OAuth
+    const mockProfile = {
+      name: MASTER_KELAS[kelas]?.musyrif || kelas,
+      email: `${kelas.toLowerCase().replace(/\s+/g, '_')}@admin.syamsa`,
+      given_name: MASTER_KELAS[kelas]?.musyrif?.split(' ')[0] || 'Admin',
+      picture: null,
+      bypassMode: true
+    };
+
+    await window.startAuthenticatedSession(kelas, mockProfile);
+    window.showToast("Login Admin Berhasil!", "success");
+    return;
+  }
+
+  // Mode Production: Wajib Google OAuth untuk Musyrif reguler
 
   const modal = document.getElementById("modal-google-auth");
   const classLbl = document.getElementById("lbl-google-class");
