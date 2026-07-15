@@ -238,10 +238,40 @@ window.initApp = async function () {
           appState.waliMode = false;
           appState.waliSantri = null;
           appState.waliKelas = null;
-          FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
-            const sKelas = String(s.kelas || s.rombel || "").trim();
-            return sKelas === appState.selectedClass;
-          }).sort((a, b) => a.nama.localeCompare(b.nama));
+
+          // Special case: tampilkan semua student untuk testing & Koordinator Musyrif
+          if (authData.kelas === "2 X" || authData.kelas === "Koordinator Musyrif") {
+            FILTERED_SANTRI = [...MASTER_SANTRI].sort((a, b) => a.nama.localeCompare(b.nama));
+          } else {
+            // Cek apakah musyrif memegang beberapa kelas (berdasarkan email)
+            const musyrifEmail = authData.profile?.email?.toLowerCase().trim();
+            const allClasses = Object.keys(MASTER_KELAS || {});
+
+            // Cari semua kelas yang email musyrifnya sama
+            const assignedClasses = musyrifEmail
+              ? allClasses.filter(kelas => {
+                  const kelasInfo = MASTER_KELAS[kelas];
+                  return kelasInfo?.email?.toLowerCase().trim() === musyrifEmail;
+                })
+              : [];
+
+            // Simpan daftar kelas yang ditangani musyrif
+            appState.assignedClasses = assignedClasses;
+
+            if (assignedClasses.length > 1) {
+              // Musyrif memegang >1 kelas - tampilkan student dari semua kelasnya
+              FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
+                const sKelas = String(s.kelas || s.rombel || "").trim();
+                return assignedClasses.includes(sKelas);
+              }).sort((a, b) => a.nama.localeCompare(b.nama));
+            } else {
+              // Normal: tampilkan student dari kelas yang dipilih saja
+              FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
+                const sKelas = String(s.kelas || s.rombel || "").trim();
+                return sKelas === appState.selectedClass;
+              }).sort((a, b) => a.nama.localeCompare(b.nama));
+            }
+          }
           
           document.getElementById("view-login").classList.add("hidden");
           document.getElementById("view-main").classList.remove("hidden");
@@ -908,10 +938,40 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
     if (!appState.waliMode) {
       appState.waliSantri = null;
       appState.waliKelas = null;
-      FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
-        const sKelas = String(s.kelas || s.rombel || "").trim();
-        return sKelas === targetClass;
-      }).sort((a, b) => a.nama.localeCompare(b.nama));
+
+      // Special case: tampilkan semua student untuk testing & Koordinator Musyrif
+      if (targetClass === "2 X" || targetClass === "Koordinator Musyrif") {
+        FILTERED_SANTRI = [...MASTER_SANTRI].sort((a, b) => a.nama.localeCompare(b.nama));
+      } else {
+        // Cek apakah musyrif memegang beberapa kelas (berdasarkan email)
+        const musyrifEmail = profile?.email?.toLowerCase().trim();
+        const allClasses = Object.keys(MASTER_KELAS || {});
+
+        // Cari semua kelas yang email musyrifnya sama
+        const assignedClasses = musyrifEmail
+          ? allClasses.filter(kelas => {
+              const kelasInfo = MASTER_KELAS[kelas];
+              return kelasInfo?.email?.toLowerCase().trim() === musyrifEmail;
+            })
+          : [];
+
+        // Simpan daftar kelas yang ditangani musyrif
+        appState.assignedClasses = assignedClasses;
+
+        if (assignedClasses.length > 1) {
+          // Musyrif memegang >1 kelas - tampilkan student dari semua kelasnya
+          FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
+            const sKelas = String(s.kelas || s.rombel || "").trim();
+            return assignedClasses.includes(sKelas);
+          }).sort((a, b) => a.nama.localeCompare(b.nama));
+        } else {
+          // Normal: tampilkan student dari kelas yang dipilih saja
+          FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
+            const sKelas = String(s.kelas || s.rombel || "").trim();
+            return sKelas === targetClass;
+          }).sort((a, b) => a.nama.localeCompare(b.nama));
+        }
+      }
     }
   }
 
