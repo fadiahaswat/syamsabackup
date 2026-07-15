@@ -2291,3 +2291,20 @@ body.qibla-browser-active.qibla-browser-green {
   100% { opacity: 1; transform: translateY(0); }
 }
 
+/* Force quick access and prayer grids to be a single horizontal row on all screen sizes */
+#quick-access-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+#salat-hijri-widget .grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+@media (min-width: 1024px) {
+  #salat-hijri-widget .grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  }
+}
+

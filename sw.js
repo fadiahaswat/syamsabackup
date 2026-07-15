@@ -5,7 +5,7 @@
  * @version 2.3.7
  */
 
-const CACHE_VERSION = "v260";
+const CACHE_VERSION = "v263";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Static assets to cache for offline functionality
@@ -44,6 +44,7 @@ const STATIC_ASSETS = [
   // Core JS - precached for offline functionality
   "src/config/config.js",
   "src/config/config.local.js",
+  "src/platform/supabase-client.js",
   "src/core/app-init.js",
   "src/core/app-core.js",
   "src/core/script.js",
@@ -78,6 +79,7 @@ const STATIC_ASSETS = [
   "src/managers/sync-debug.js",
   "src/managers/database-schema.js",
   "src/managers/repository.js",
+  "src/managers/supabase-sync.js",
   "src/managers/data-migrator.js",
   "src/managers/debug-panel.js",
   "src/managers/notification-manager.js",
