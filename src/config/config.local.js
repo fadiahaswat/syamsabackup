@@ -22,3 +22,7 @@ window.APP_SECRETS.superadminHash = null;
 // Konfigurasi Supabase (Cloud Sync & Realtime)
 window.APP_SECRETS.supabaseUrl = "https://ilrpgbrqlfpzvxxbhuhk.supabase.co"; // Masukkan URL proyek Supabase Anda
 window.APP_SECRETS.supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlscnBnYnJxbGZwenZ4eGJodWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDc4MTQsImV4cCI6MjA5Nzg4MzgxNH0.75g3TvrYcRx9CEPB0C8HNadc-zwQPVKuUVOFS-tCLrg"; // Masukkan Anon Public Key Supabase Anda
+
+// Parameter Tambahan
+window.APP_SECRETS.tahfizhScriptUrl = ""; // Masukkan URL Google Apps Script Tahfizh (opsional)
+window.APP_SECRETS.adminWhatsAppNumber = ""; // Masukkan nomor WA Admin bantuan (opsional, misal: 6285339213109)

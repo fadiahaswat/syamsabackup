@@ -26,6 +26,8 @@ const _DEFAULT_CREDENTIALS = {
   adminEmails: [],
   supabaseUrl: "",
   supabaseAnonKey: "",
+  tahfizhScriptUrl: "https://script.google.com/macros/s/AKfycbyl2FCcGUtolkJIDsoiTYFKeKp8IQwHT0V3z8n1pOHH9CLiyvYZTBaimrojILJM_A-HLg/exec",
+  adminWhatsAppNumber: "6285339213109",
 };
 
 // Override dengan secrets dari config.local.js atau window.APP_SECRETS
@@ -37,6 +39,8 @@ window.APP_CREDENTIALS = {
   adminEmails: _SECRETS.adminEmails || _DEFAULT_CREDENTIALS.adminEmails,
   supabaseUrl: _SECRETS.supabaseUrl || _DEFAULT_CREDENTIALS.supabaseUrl,
   supabaseAnonKey: _SECRETS.supabaseAnonKey || _DEFAULT_CREDENTIALS.supabaseAnonKey,
+  tahfizhScriptUrl: _SECRETS.tahfizhScriptUrl || _DEFAULT_CREDENTIALS.tahfizhScriptUrl,
+  adminWhatsAppNumber: _SECRETS.adminWhatsAppNumber || _DEFAULT_CREDENTIALS.adminWhatsAppNumber,
 };
 
 // ==========================================
@@ -138,6 +142,7 @@ window.APP_TAHFIZH_CONFIG = {
   // Ubah target/deadline Tahfizh dari sini tanpa menyentuh modul utama.
   deadlineJuz30Score: "2026-01-03T23:59:59",
   deadlineTahfizhTuntas: "2026-06-27T12:30:00",
+  musyrifSortOrder: ['Andi Aqillah Fadia Haswat', 'Abdullah', 'Muhammad Zhafir Setiaji'],
   perpulanganPeriods: [
     {
       name: "Perpulangan",

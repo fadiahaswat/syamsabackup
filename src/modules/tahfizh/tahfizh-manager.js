@@ -6,12 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.initTahfizhTab = initTahfizhTab;
 });
 
-// Konfigurasi Tahfizh (Sama seperti Setor.in config.js)
+// Konfigurasi Tahfizh (Membaca dinamis dari konfigurasi terpusat)
 const TahfizhConfig = {
-    scriptURL: 'https://script.google.com/macros/s/AKfycbyl2FCcGUtolkJIDsoiTYFKeKp8IQwHT0V3z8n1pOHH9CLiyvYZTBaimrojILJM_A-HLg/exec',
-    musyrifSortOrder: ['Andi Aqillah Fadia Haswat', 'Abdullah', 'Muhammad Zhafir Setiaji'],
-    deadlineJuz30Score: new Date('2026-01-03T23:59:59'),
-    deadlineTahfizhTuntas: new Date('2026-06-27T12:30:00'),
+    scriptURL: window.APP_CREDENTIALS?.tahfizhScriptUrl || 'https://script.google.com/macros/s/AKfycbyl2FCcGUtolkJIDsoiTYFKeKp8IQwHT0V3z8n1pOHH9CLiyvYZTBaimrojILJM_A-HLg/exec',
+    musyrifSortOrder: window.APP_TAHFIZH_CONFIG?.musyrifSortOrder || ['Andi Aqillah Fadia Haswat', 'Abdullah', 'Muhammad Zhafir Setiaji'],
+    deadlineJuz30Score: window.APP_TAHFIZH_CONFIG?.deadlineJuz30Score ? new Date(window.APP_TAHFIZH_CONFIG.deadlineJuz30Score) : new Date('2026-01-03T23:59:59'),
+    deadlineTahfizhTuntas: window.APP_TAHFIZH_CONFIG?.deadlineTahfizhTuntas ? new Date(window.APP_TAHFIZH_CONFIG.deadlineTahfizhTuntas) : new Date('2026-06-27T12:30:00'),
     rules: {
         halfJuzKeyPattern: 'juz{juz}_setengah',
         halfJuzPages: 9,

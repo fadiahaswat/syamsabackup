@@ -101,6 +101,10 @@ window.initApp = async function () {
       window.initConnectionIndicator(); // Initialize connection status monitoring
       if (window.initSalatHijriWidget) window.initSalatHijriWidget();
       if (window.applyLoginModeUI) window.applyLoginModeUI();
+      const helpLink = document.getElementById("help-wa-link");
+      if (helpLink && window.APP_CREDENTIALS?.adminWhatsAppNumber) {
+        helpLink.href = `https://wa.me/${window.APP_CREDENTIALS.adminWhatsAppNumber.replace(/[^0-9]/g, "")}`;
+      }
     } catch (uiError) {
       console.error("UI Init Error:", uiError);
     }
@@ -8453,6 +8457,16 @@ window.evaluatePermitForSlot = function (permit, currentDateStr, currentSlotId) 
 
   // --- LOGIKA IZIN & PULANG ---
   else {
+    if (permit.returned_at) {
+      const returnDate = permit.returned_at.split("T")[0];
+      if (currentDateStr > returnDate) return null;
+      if (currentDateStr === returnDate && permit.end_session) {
+        if (currentOrder >= endOrder) {
+          return null;
+        }
+      }
+    }
+
     if (currentDateStr < permit.start_date) return null;
 
     // Cek Waktu Mulai Izin (jika hari ini mulai izin dan ada jam mulai spesifik)
@@ -10880,20 +10894,24 @@ window.markAsRecovered = function (id) {
 window.markAsReturned = function (id) {
   const permit = appState.permits.find((p) => p.id === id);
   if (permit) {
+    const currentSlotId = appState.activeAttendanceSlotId || appState.currentSlotId || "shubuh";
     const wasOverdue = Boolean(
       window.getPermitRuntimeWarning?.(permit, appState.date, window.getPermitSlotIdForView())?.type === "PermitOverdue"
     );
-    permit.is_active = false;
+    permit.end_date = appState.date;
+    permit.end_session = currentSlotId;
     permit.returned_at = new Date().toISOString();
     permit.return_note = wasOverdue ? "Kembali setelah melewati deadline" : "Kembali tepat waktu";
     permit.is_overdue = false;
+    permit.is_active = true; // Tetap aktif agar tanggal historis valid
 
     window.persistPermits();
     if (window.storageManager) {
       window.storageManager.savePermit(permit);
     }
-    window.showToast("Santri sudah kembali. Silakan presensi manual.", "success");
+    window.showToast("Santri sudah kembali. Status kehadiran hari ini disinkronkan.", "success");
     window.refreshPermitSurfaces();
+    window.renderAttendanceList?.();
   }
 };
 
