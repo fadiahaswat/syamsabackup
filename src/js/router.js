@@ -12,6 +12,7 @@ const AppRouter = {
   routes: {
     home: { tabId: 'main-content', title: 'Dashboard' },
     tahfizh: { tabId: 'tab-tahfizh', title: 'Tahfizh' },
+    jurnal: { tabId: 'tab-jurnal', title: 'Jurnal Musyrif' },
     report: { tabId: 'tab-report', title: 'Laporan' },
     notifications: { tabId: 'tab-notifications', title: 'Notifikasi' },
     profile: { tabId: 'tab-profile', title: 'Profil' },

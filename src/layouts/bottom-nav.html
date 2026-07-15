@@ -45,6 +45,24 @@
       <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Tahfizh</span>
     </button>
 
+    <!-- Jurnal Button -->
+    <button
+      onclick="window.switchTab('jurnal')"
+      data-target="jurnal"
+      aria-current="false"
+      class="nav-btn musyrif-only group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+      aria-label="Jurnal"
+    >
+      <div
+        class="absolute inset-0 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
+      ></div>
+      <i
+        data-lucide="clipboard-check"
+        class="w-6 h-6 text-slate-400 group-[.active]:text-indigo-500 transition-colors relative z-10"
+      ></i>
+      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Jurnal</span>
+    </button>
+
     <!-- Report Button -->
     <button
       onclick="window.switchTab('report')"

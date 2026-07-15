@@ -1,0 +1,109 @@
+<div
+  id="tab-jurnal"
+  class="tab-content hidden min-h-screen animate-fade-in overflow-y-auto hide-scrollbar"
+>
+  <div class="page-container p-4 max-w-md mx-auto space-y-6 pb-24">
+    <!-- Premium Header -->
+    <header class="flex justify-between items-center gap-3 animate-slide-up relative z-40 w-full delay-100ms">
+      <div class="flex items-center gap-3 min-w-0">
+        <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 active:scale-95 transition-all duration-300" aria-label="Kembali ke Dashboard">
+          <div class="absolute inset-0 rounded-full bg-indigo-500/25 blur-md opacity-25 group-hover:opacity-50 transition-opacity"></div>
+          <div class="relative w-11 h-11 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
+            <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+          </div>
+        </button>
+        <div class="flex flex-col justify-center min-w-0">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 dark:text-indigo-300 leading-none mb-1">Mutaba'ah Yaumiyah</span>
+          <h1 class="text-base sm:text-lg font-semibold text-slate-800 dark:text-white tracking-tight leading-normal truncate mb-0.5 select-none">Jurnal Musyrif</h1>
+        </div>
+      </div>
+    </header>
+
+    <!-- Today's Progress Card -->
+    <div class="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 rounded-[2rem] border border-indigo-100 dark:border-indigo-900/50 p-6 flex items-center gap-5 shadow-sm animate-slide-up delay-150ms">
+      <!-- Circular Progress SVG -->
+      <div class="relative w-20 h-20 flex-shrink-0 flex items-center justify-center">
+        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+          <path class="text-slate-200 dark:text-slate-800" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          <path id="journal-progress-circle" class="text-indigo-600 dark:text-indigo-400 transition-all duration-500" stroke-dasharray="0, 100" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        </svg>
+        <div class="absolute text-center">
+          <span id="journal-progress-text" class="text-base font-black text-slate-800 dark:text-white leading-none">0/6</span>
+          <span class="block text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-0.5">Tugas</span>
+        </div>
+      </div>
+      <div>
+        <h3 id="journal-summary-title" class="text-sm font-black text-slate-800 dark:text-white">Jurnal Hari Ini</h3>
+        <p id="journal-summary-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-normal">Silakan selesaikan tugas pemeriksaan asrama Anda dengan berjalan kaki.</p>
+      </div>
+    </div>
+
+    <!-- Date Mismatch Warning (Hidden by default) -->
+    <div id="journal-date-warning" class="hidden bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/50 rounded-2xl p-4 flex gap-3 animate-slide-up">
+      <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5"></i>
+      <div>
+        <h4 class="text-xs font-bold text-amber-800 dark:text-amber-300">Mode Baca-Saja (Read-Only)</h4>
+        <p class="text-[11px] text-amber-600 dark:text-amber-400/80 mt-1 leading-normal">Anda hanya bisa melakukan pengisian/verifikasi tugas untuk tanggal hari ini. Data di bawah ini bersifat arsip.</p>
+      </div>
+    </div>
+
+    <!-- Tasks List Wrapper -->
+    <div id="journal-tasks-list" class="space-y-4 animate-slide-up delay-200ms">
+      <!-- Task Cards will be dynamically rendered here -->
+    </div>
+  </div>
+
+  <!-- Step Count Verification Modal (Strict Lock) -->
+  <div
+    id="modal-journal-step-verification"
+    class="fixed inset-0 z-[999] hidden flex items-center justify-center p-4 bg-slate-900/80 dark:bg-black/90 backdrop-blur-md animate-fade-in"
+  >
+    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl p-6 w-full max-w-sm text-center relative overflow-hidden animate-scale-in">
+      <!-- Progress Background Pulse -->
+      <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none"></div>
+
+      <!-- Icon & Animation -->
+      <div class="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
+        <!-- Footprint Outer Glow rings -->
+        <div class="absolute inset-0 bg-indigo-500/10 rounded-full animate-ping opacity-75"></div>
+        <div class="absolute w-20 h-20 bg-indigo-500/20 rounded-full animate-pulse"></div>
+        <div class="relative w-16 h-16 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-lg">
+          <i data-lucide="footprints" class="w-8 h-8 animate-bounce"></i>
+        </div>
+      </div>
+
+      <!-- Text Header -->
+      <h3 class="text-lg font-black text-slate-800 dark:text-white leading-none">Verifikasi Langkah Kaki</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed px-4">
+        Genggam HP Anda dan mulailah berjalan berkeliling memeriksa asrama.
+      </p>
+
+      <!-- Step Counter Display -->
+      <div class="my-6">
+        <div class="text-5xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight tabular-nums">
+          <span id="journal-verification-steps">0</span><span class="text-2xl text-slate-300 dark:text-slate-600">/50</span>
+        </div>
+        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mt-1">Langkah Terdeteksi</span>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 mb-6 overflow-hidden">
+        <div id="journal-verification-bar" class="bg-indigo-600 dark:text-indigo-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+
+      <!-- Instruction / Status -->
+      <div id="journal-verification-status" class="text-xs font-semibold text-indigo-500 dark:text-indigo-400 mb-6 flex items-center justify-center gap-1.5 animate-pulse">
+        <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
+        Mendeteksi gerakan jalan...
+      </div>
+
+      <!-- Actions -->
+      <button
+        onclick="window.abortJournalVerification()"
+        class="w-full py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/20 text-slate-500 dark:text-slate-400 font-black text-xs transition-all active:scale-[0.98]"
+      >
+        Batalkan Verifikasi
+      </button>
+    </div>
+  </div>
+</div>

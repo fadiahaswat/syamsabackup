@@ -46,6 +46,12 @@ if (typeof window.generateLogId !== 'function') {
   };
 }
 
+if (typeof window.generateJournalId !== 'function') {
+  window.generateJournalId = function (date, taskId, musyrifId) {
+    return `jr_${date}_${taskId}_${musyrifId}`;
+  };
+}
+
 class AttendanceRepository {
   constructor(db) {
     this.db = db;
@@ -1070,6 +1076,52 @@ class ActivityLogRepository {
 }
 
 
+class JournalRepository {
+  constructor(db) {
+    this.db = db;
+    this.storeName = window.DB_STORES?.musyrif_journals || 'musyrif_journals';
+    this._logger = window.RepositoryLogger || console;
+  }
+
+  _createId(date, taskId, musyrifId) {
+    return window.generateJournalId(date, taskId, musyrifId);
+  }
+
+  async get(date, taskId, musyrifId) {
+    const id = this._createId(date, taskId, musyrifId);
+    return this.db.get(this.storeName, id);
+  }
+
+  async getById(id) {
+    return this.db.get(this.storeName, id);
+  }
+
+  async getByDate(date) {
+    return this.db.getByIndex(this.storeName, 'date', date);
+  }
+
+  async getByMusyrif(musyrifId) {
+    return this.db.getByIndex(this.storeName, 'musyrifId', musyrifId);
+  }
+
+  async getByDateMusyrif(date, musyrifId) {
+    return this.db.getByIndex(this.storeName, 'date_musyrif', [date, musyrifId]);
+  }
+
+  async getAll() {
+    return this.db.getAll(this.storeName);
+  }
+
+  async put(record) {
+    return this.db.put(this.storeName, record);
+  }
+
+  async delete(id) {
+    return this.db.delete(this.storeName, id);
+  }
+}
+
+
 // ============================================================
 // FACTORY - Create all repositories with shared DB instance
 // ============================================================
@@ -1081,6 +1133,7 @@ class RepositoryFactory {
     this._tahfizh = null;
     this._settings = null;
     this._activityLog = null;
+    this._journal = null;
     this._logger = window.RepositoryLogger || {
       debug: (...args) => window.Logger?.debug('Repository', ...args),
       info: (...args) => window.Logger?.info('Repository', ...args),
@@ -1123,6 +1176,13 @@ class RepositoryFactory {
     }
     return this._activityLog;
   }
+
+  get journal() {
+    if (!this._journal) {
+      this._journal = new JournalRepository(this.db);
+    }
+    return this._journal;
+  }
 }
 
 // ============================================================
@@ -1153,5 +1213,6 @@ window.PermitRepository = PermitRepository;
 window.TahfizhRepository = TahfizhRepository;
 window.SettingsRepository = SettingsRepository;
 window.ActivityLogRepository = ActivityLogRepository;
+window.JournalRepository = JournalRepository;
 
 console.log('[Repository] Module loaded');

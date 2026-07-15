@@ -852,6 +852,11 @@ async function initDatabase() {
     await initRepositories();
     const repos = getRepositories();
 
+    // Initialize JournalManager
+    if (window.journalManager) {
+      await window.journalManager.init(localDB, repos);
+    }
+
     // 3. Initialize compatibility layer with migration
     compatibilityLayer = new CompatibilityLayer(stateManager, repos);
     await compatibilityLayer.init();

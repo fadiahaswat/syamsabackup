@@ -346,7 +346,8 @@ const ComponentLoader = {
       ['tab-notifications', 'notifications', 'notifications'],
       ['tab-report', 'report', 'report'],
       ['tab-profile', 'profile', 'profile'],
-      ['tab-tahfizh', 'tahfizh', 'tahfizh']
+      ['tab-tahfizh', 'tahfizh', 'tahfizh'],
+      ['tab-jurnal', 'jurnal', 'jurnal']
     ];
 
     await Promise.all(pages.map(([id, name, section]) => this.ensureAppPage(id, name, section)));
@@ -430,6 +431,7 @@ const ComponentLoader = {
       `${this.pagesPath}/profile/widgets/pembinaan.html`,
       `${this.pagesPath}/profile/widgets/permit-archive.html`,
       `${this.pagesPath}/tahfizh/tahfizh.html`,
+      `${this.pagesPath}/jurnal/jurnal.html`,
       `${this.pagesPath}/tahfizh/pages/beranda.html`,
       `${this.pagesPath}/tahfizh/pages/form.html`,
       `${this.pagesPath}/tahfizh/pages/analisis.html`,

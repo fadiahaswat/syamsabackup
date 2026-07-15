@@ -272,11 +272,29 @@ class SupabaseSync {
         }
       }
 
+      // 4. Sync Tabel Jurnal Musyrif
+      let queryJr = window.supabaseClient.from('musyrif_journals').select('*');
+      if (!isAdmin) {
+        const musyrifId = window.journalManager?.getMusyrifId() || 'unknown_musyrif';
+        queryJr = queryJr.eq('musyrifId', musyrifId);
+      }
+      const { data: cloudJournals, error: errJr } = await queryJr;
+
+      if (errJr) throw errJr;
+      if (cloudJournals) {
+        for (const record of cloudJournals) {
+          const localRecord = await this._db.get('musyrif_journals', record.id);
+          if (!localRecord || (record._version > (localRecord._version || 0))) {
+            await this._db.put('musyrif_journals', record);
+          }
+        }
+      }
+
       // Re-trigger UI Update setelah inbound sync selesai
       if (window.stateManager) {
         await window.stateManager._loadPersistedState();
         if (typeof window.stateManager._emit === 'function') {
-          window.stateManager._emit('change', ['attendanceData', 'permits']);
+          window.stateManager._emit('change', ['attendanceData', 'permits', 'journalData']);
         }
       }
 

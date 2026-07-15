@@ -364,6 +364,20 @@ class LocalDB {
       this._logger.info('Created store: meta');
     }
 
+    // ==========================================
+    // STORE: musyrif_journals
+    // ==========================================
+    if (!db.objectStoreNames.contains('musyrif_journals')) {
+      const store = db.createObjectStore('musyrif_journals', { keyPath: 'id' });
+
+      store.createIndex('date', 'date', { unique: false });
+      store.createIndex('status', 'status', { unique: false });
+      store.createIndex('musyrifId', 'musyrifId', { unique: false });
+      store.createIndex('date_musyrif', ['date', 'musyrifId'], { unique: false });
+
+      this._logger.info('Created store: musyrif_journals');
+    }
+
     this._logger.info('All stores created successfully');
   }
 
@@ -454,6 +468,13 @@ class LocalDB {
 
       case 'settings':
         if (!data.id) errors.push('id required');
+        break;
+
+      case 'musyrif_journals':
+        if (!data.id) errors.push('id required');
+        if (!data.date) errors.push('date required');
+        if (!data.taskId) errors.push('taskId required');
+        if (!data.musyrifId) errors.push('musyrifId required');
         break;
     }
 

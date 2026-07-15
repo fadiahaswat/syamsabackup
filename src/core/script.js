@@ -2992,6 +2992,11 @@ window.updateDashboard = async function () {
     window.initSalatHijriWidget().catch(err => console.error("Gagal update salat widget:", err));
   }
   window.syncRoleModeUI();
+
+  // Cascade refresh to Jurnal tab if active
+  if (window.AppRouter?.currentRoute === "jurnal" && window.renderJournalTab) {
+    window.renderJournalTab();
+  }
 };
 
 // ==========================================
@@ -7085,6 +7090,8 @@ window.switchTab = function (tabName) {
     if (appState.adminMode === true) {
       if (window.renderAdminTahfizhList) window.renderAdminTahfizhList();
     }
+  } else if (tabName === "jurnal") {
+    if (window.renderJournalTab) window.renderJournalTab();
   } else if (tabName === "profile") {
     appState.timesheetViewDate = appState.date; // <--- TAMBAHKAN INI
     window.updateProfileStats();
@@ -13329,6 +13336,8 @@ window.openAdminSubPage = function (pageId) {
     window.renderAdminMusyrifStreak();
   } else if (pageId === 'unified-report' && window.renderUnifiedAdminReport) {
     window.renderUnifiedAdminReport();
+  } else if (pageId === 'admin-journals' && window.renderAdminJournals) {
+    window.renderAdminJournals();
   }
 };
 
@@ -14652,5 +14661,231 @@ window.renderUnifiedAdminReport = async function () {
   } catch (error) {
     console.error("[UnifiedReport] Error rendering report:", error);
     tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500 font-bold">Gagal memuat data: ${error.message}</td></tr>`;
+  }
+};
+
+// ==========================================
+// 15. JURNAL MUSYRIF MODULE
+// ==========================================
+
+window.renderJournalTab = async function () {
+  const container = document.getElementById("journal-tasks-list");
+  if (!container) return;
+
+  const dateWarning = document.getElementById("journal-date-warning");
+  const progressText = document.getElementById("journal-progress-text");
+  const progressCircle = document.getElementById("journal-progress-circle");
+  
+  const today = window.getLocalDateStr();
+  const isToday = appState.date === today;
+
+  // Toggle warning
+  if (dateWarning) {
+    dateWarning.classList.toggle("hidden", isToday);
+  }
+
+  // Set header date title
+  const summaryTitle = document.getElementById("journal-summary-title");
+  if (summaryTitle) {
+    summaryTitle.textContent = isToday ? "Jurnal Hari Ini" : `Jurnal: ${window.formatDate(appState.date)}`;
+  }
+
+  try {
+    container.innerHTML = `<div class="p-8 text-center text-slate-400 font-bold"><i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto mb-2"></i> Memuat Jurnal...</div>`;
+    if (window.lucide) window.lucide.createIcons();
+
+    // Fetch entries
+    const tasks = await window.journalManager.getJournalForDate(appState.date);
+    container.innerHTML = "";
+
+    if (tasks.length === 0) {
+      container.innerHTML = `<div class="p-8 text-center text-slate-400 font-bold">Tidak ada jurnal untuk tanggal ini.</div>`;
+      if (progressText) progressText.textContent = "0/0";
+      if (progressCircle) progressCircle.setAttribute("stroke-dasharray", "0, 100");
+      return;
+    }
+
+    // Calculate progress
+    const completedCount = tasks.filter(t => t.status === "completed").length;
+    const totalCount = tasks.length;
+    const pct = Math.round((completedCount / totalCount) * 100);
+
+    if (progressText) progressText.textContent = `${completedCount}/${totalCount}`;
+    if (progressCircle) {
+      progressCircle.setAttribute("stroke-dasharray", `${pct}, 100`);
+    }
+
+    // Render cards
+    tasks.forEach(task => {
+      const card = document.createElement("div");
+      
+      const isCompleted = task.status === "completed";
+      
+      let borderClass = "border-slate-100 dark:border-slate-800/60";
+      let bgClass = "bg-white/70 dark:bg-slate-900/60";
+      
+      if (isCompleted) {
+        borderClass = "border-emerald-100 dark:border-emerald-950/40";
+        bgClass = "bg-emerald-500/5 dark:bg-emerald-500/10";
+      }
+
+      card.className = `${bgClass} backdrop-blur-xl border ${borderClass} rounded-3xl p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-sm`;
+      
+      let statusBadge = "";
+      let actionArea = "";
+
+      if (isCompleted) {
+        const timeStr = task.verifiedAt ? new Date(task.verifiedAt).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }) : "--:--";
+        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[9px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 uppercase tracking-wider flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Selesai pada ${timeStr}</span>`;
+        actionArea = `
+          <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/40 flex justify-between items-center text-[10px] font-bold text-slate-400">
+            <span class="flex items-center gap-1"><i data-lucide="footprints" class="w-3.5 h-3.5"></i> ${task.stepsCount || 50} Langkah</span>
+            <span class="text-emerald-500 flex items-center gap-1 font-black"><i data-lucide="check-check" class="w-3.5 h-3.5"></i> Terverifikasi</span>
+          </div>
+        `;
+      } else {
+        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[9px] font-black bg-slate-50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-800 uppercase tracking-wider">Belum Selesai</span>`;
+        
+        if (isToday) {
+          actionArea = `
+            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/40 flex justify-end">
+              <button 
+                onclick="window.startJournalVerification('${task.date}', '${task.taskId}')"
+                class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-black text-xs hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-sm shadow-indigo-600/10"
+              >
+                <i data-lucide="play" class="w-3.5 h-3.5 fill-white"></i>
+                Mulai Tugas
+              </button>
+            </div>
+          `;
+        } else {
+          actionArea = `
+            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/40 text-[10px] font-bold text-slate-400/60 italic text-center">
+              Lewat Waktu (Tidak Terisi)
+            </div>
+          `;
+        }
+      }
+
+      card.innerHTML = `
+        <div class="flex justify-between items-start gap-4">
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-1.5">
+              <i data-lucide="clock" class="w-3.5 h-3.5"></i> ${task.timeWindow}
+            </div>
+            <h4 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white leading-snug">${task.taskName}</h4>
+          </div>
+          <div class="shrink-0">
+            ${statusBadge}
+          </div>
+        </div>
+        ${actionArea}
+      `;
+      
+      container.appendChild(card);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  } catch (error) {
+    console.error("[Journal] Render failed:", error);
+    container.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">Gagal memuat jurnal: ${error.message}</div>`;
+  }
+};
+
+window.startJournalVerification = function (date, taskId) {
+  const modal = document.getElementById("modal-journal-step-verification");
+  const stepsEl = document.getElementById("journal-verification-steps");
+  const bar = document.getElementById("journal-verification-bar");
+  
+  if (!modal) return;
+  
+  // Reset UI
+  if (stepsEl) stepsEl.textContent = "0";
+  if (bar) bar.style.width = "0%";
+  modal.classList.remove("hidden");
+
+  window.journalManager.startStepTracking(
+    date,
+    taskId,
+    // Step update callback
+    (steps) => {
+      if (stepsEl) stepsEl.textContent = steps;
+      if (bar) bar.style.width = `${Math.min((steps / 50) * 100, 100)}%`;
+    },
+    // Complete callback
+    (task) => {
+      modal.classList.add("hidden");
+      window.showToast("Tugas berhasil diverifikasi! 🎉", "success");
+      window.renderJournalTab();
+    },
+    // Error callback
+    (errorMsg) => {
+      modal.classList.add("hidden");
+      window.showToast(errorMsg || "Sensor gerak gagal digunakan", "error");
+    }
+  );
+};
+
+window.abortJournalVerification = function () {
+  const modal = document.getElementById("modal-journal-step-verification");
+  if (modal) modal.classList.add("hidden");
+  window.journalManager.stopStepTracking();
+  window.showToast("Verifikasi dibatalkan.", "warning");
+};
+
+window.renderAdminJournals = async function () {
+  const tbody = document.getElementById("admin-journals-tbody");
+  const dateInput = document.getElementById("admin-journals-filter-date");
+  if (!tbody) return;
+
+  // Set date filter value to appState.date if empty
+  if (dateInput && !dateInput.value) {
+    dateInput.value = appState.date;
+  }
+
+  const filterDate = dateInput ? dateInput.value : appState.date;
+
+  try {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 font-bold"><i data-lucide="loader" class="w-4.5 h-4.5 animate-spin inline-block mr-1.5"></i>Memuat jurnal...</td></tr>`;
+    if (window.lucide) window.lucide.createIcons();
+
+    const logs = await window.journalManager.getAdminReportForDate(filterDate);
+    tbody.innerHTML = "";
+
+    if (logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 font-bold">Tidak ada jurnal musyrif pada tanggal ini.</td></tr>`;
+      return;
+    }
+
+    logs.forEach(task => {
+      const isCompleted = task.status === "completed";
+      const statusBadge = isCompleted 
+        ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50">Selesai</span>`
+        : `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-slate-50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-800">Pending</span>`;
+      
+      const timeStr = isCompleted && task.verifiedAt 
+        ? new Date(task.verifiedAt).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }) 
+        : "-";
+
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors";
+      tr.innerHTML = `
+        <td class="p-3 font-bold text-slate-500 dark:text-slate-400">${task.date}</td>
+        <td class="p-3 font-black text-slate-800 dark:text-white">${task.musyrifName || 'Musyrif'}</td>
+        <td class="p-3">
+          <div class="font-bold text-slate-700 dark:text-slate-200">${task.taskName}</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">${task.timeWindow}</div>
+        </td>
+        <td class="p-3">${statusBadge}</td>
+        <td class="p-3 font-bold text-slate-500 dark:text-slate-400">${timeStr}</td>
+        <td class="p-3 text-right font-black text-indigo-500">${isCompleted ? (task.stepsCount || 50) : '-'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    if (window.lucide) window.lucide.createIcons();
+  } catch (error) {
+    console.error("[AdminJournal] Render failed:", error);
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">Gagal memuat jurnal: ${error.message}</td></tr>`;
   }
 };

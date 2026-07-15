@@ -44,7 +44,7 @@ const STORAGE_KEYS = {
 // ==========================================
 const DB_CONFIG = {
   name: 'musyrif_local_db',
-  version: 1,
+  version: 2,
 };
 
 // ==========================================
@@ -60,6 +60,7 @@ const DB_STORES = {
   sync_metadata: 'sync_metadata',
   conflicts: 'conflicts',
   meta: 'meta',
+  musyrif_journals: 'musyrif_journals',
 };
 
 // ==========================================
