@@ -2609,6 +2609,46 @@
         transform: translateX(0);
         color: #ffffff !important;
       }
+      #bottom-nav .nav-label { display: none !important; }
+      #bottom-nav .nav-btn {
+        flex: 1 1 0 !important;
+        min-width: 0;
+        padding: 0.7rem !important;
+        border-radius: 9999px;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+      }
+      #bottom-nav .nav-btn.active {
+        flex: 1 1 0 !important;
+        background: rgba(15, 23, 42, 0.06) !important;
+      }
+      #bottom-nav .nav-btn[data-target="home"].active { background: rgba(16, 185, 129, 0.14) !important; }
+      #bottom-nav .nav-btn[data-target="tahfizh"].active { background: rgba(249, 115, 22, 0.14) !important; }
+      #bottom-nav .nav-btn[data-target="report"].active { background: rgba(59, 130, 246, 0.14) !important; }
+      #bottom-nav .nav-btn[data-target="profile"].active { background: rgba(168, 85, 247, 0.14) !important; }
+      #bottom-nav .nav-btn[data-target="home"].active i { color: #10b981 !important; }
+      #bottom-nav .nav-btn[data-target="tahfizh"].active i { color: #f97316 !important; }
+      #bottom-nav .nav-btn[data-target="report"].active i { color: #3b82f6 !important; }
+      #bottom-nav .nav-btn[data-target="profile"].active i { color: #a855f7 !important; }
+      #bottom-nav .nav-btn > div:first-child { background: transparent !important; }
+      #bottom-nav .nav-btn i,
+      #bottom-nav .nav-btn svg { width: 1.45rem; height: 1.45rem; }
+      #bottom-nav > [data-target="jurnal"] {
+        transform: translateX(-50%);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      #bottom-nav > [data-target="jurnal"].active {
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2), 0 16px 28px -10px rgba(79, 70, 229, 0.55) !important;
+      }
+      #bottom-nav > [data-target="jurnal"].active i { transform: scale(1.08); }
+      @media (max-width: 380px) {
+        #bottom-nav > [data-target="jurnal"] {
+          width: 3.25rem;
+          height: 3.25rem;
+          top: -1.25rem;
+        }
+      }
       @media (max-width: 380px) {
         .nav-btn {
           flex: 1 1 0;
@@ -4663,11 +4703,7 @@
         </span>
       </div>
 
-      <h1 id="dash-title-greeting" class="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight pb-0.5 mb-2">
-        <span class="text-white">
-          Ustadz Andi Aqillah!
-        </span>
-      </h1>
+      <h1 id="dash-title-greeting" class="text-xl sm:text-3xl font-semibold tracking-tight leading-tight pb-0.5 mb-2 max-w-full whitespace-normal break-words"><span class="text-white">Ustadz Andi Aqillah!</span></h1>
 
       <div id="header-prayer-countdown" class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/20 border border-white/25 text-white text-[9px] w-fit shadow-sm backdrop-blur-sm">
         <span class="countdown-label opacity-80 font-bold uppercase tracking-widest text-[8px]">Ke Syuruq</span>
@@ -4686,11 +4722,6 @@
         <p id="dash-clock-sec" class="text-[10px] font-bold text-slate-400 leading-none">24</p>
       </div>
     </div>
-
-    <!-- Supabase Cloud Sync Status Indicator -->
-    <button id="supabase-sync-status" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 focus:outline-none" onclick="if (window.supabaseSync) window.supabaseSync.syncAll()" title="Lokal Only (Klik untuk sinkronisasi)">
-      <i data-lucide="cloud" class="w-5 h-5 block"></i>
-    </button>
 
     <!-- Standalone Notification Bell Button -->
     <button onclick="window.switchTab('notifications')" class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm text-slate-500 dark:text-slate-400 hover:text-palette-blue hover:scale-105 active:scale-95 transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-palette-blue" aria-label="Buka notifikasi" title="Notifikasi">
@@ -8141,7 +8172,17 @@
         id="bottom-nav"
         class="fixed left-4 right-4 z-50 max-w-md mx-auto animate-fade-in delay-500ms"
         style="bottom: calc(1rem + env(safe-area-inset-bottom));"
+
       >
+        <button
+          onclick="window.switchTab('jurnal')"
+          data-target="jurnal"
+          aria-label="Buka Jurnal Musyrif"
+          class="musyrif-only absolute -top-6 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-indigo-500 dark:to-blue-700 text-white border-4 border-white dark:border-slate-800 shadow-xl shadow-indigo-500/50 hover:scale-110 hover:-translate-x-1/2 active:scale-95 transition-all duration-300 flex items-center justify-center z-50"
+        >
+          <i data-lucide="plus" class="w-6 h-6"></i>
+        </button>
+
         <div
           class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-full shadow-xl shadow-slate-200/30 dark:shadow-black/30 border border-white/50 dark:border-white/10 p-1.5"
         >

@@ -2,39 +2,33 @@
   id="tab-jurnal"
   class="tab-content hidden min-h-screen animate-fade-in overflow-y-auto hide-scrollbar"
 >
-  <div class="page-container p-4 max-w-md mx-auto space-y-6 pb-24">
-    <!-- Premium Header -->
-    <header class="flex justify-between items-center gap-3 animate-slide-up relative z-40 w-full delay-100ms">
-      <div class="flex items-center gap-3 min-w-0">
-        <button onclick="switchTab('home')" class="relative shrink-0 rounded-full group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 active:scale-95 transition-all duration-300" aria-label="Kembali ke Dashboard">
-          <div class="absolute inset-0 rounded-full bg-indigo-500/25 blur-md opacity-25 group-hover:opacity-50 transition-opacity"></div>
-          <div class="relative w-11 h-11 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-md z-10 transition-transform group-hover:scale-105">
-            <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-          </div>
-        </button>
-        <div class="flex flex-col justify-center min-w-0">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-400 dark:text-indigo-300 leading-none mb-1">Mutaba'ah Yaumiyah</span>
-          <h1 class="text-base sm:text-lg font-semibold text-slate-800 dark:text-white tracking-tight leading-normal truncate mb-0.5 select-none">Jurnal Musyrif</h1>
-        </div>
+  <div class="page-container p-4 max-w-md mx-auto space-y-5 pb-28">
+    <header class="flex items-center justify-between animate-slide-up relative z-40 w-full delay-100ms">
+      <div>
+        <p class="text-xs font-bold text-slate-400 dark:text-slate-500">Hari ini, <span id="journal-header-date" class="text-slate-700 dark:text-slate-200">-</span></p>
+        <h1 class="text-xl font-black text-slate-900 dark:text-white tracking-tight mt-1">Jurnal Musyrif</h1>
       </div>
+      <button onclick="switchTab('home')" class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center shadow-sm active:scale-95 transition-all" aria-label="Kembali ke Dashboard">
+        <i data-lucide="user-round" class="w-5 h-5"></i>
+      </button>
     </header>
 
-    <!-- Today's Progress Card -->
-    <div class="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 rounded-[2rem] border border-indigo-100 dark:border-indigo-900/50 p-6 flex items-center gap-5 shadow-sm animate-slide-up delay-150ms">
-      <!-- Circular Progress SVG -->
-      <div class="relative w-20 h-20 flex-shrink-0 flex items-center justify-center">
-        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-          <path class="text-slate-200 dark:text-slate-800" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-          <path id="journal-progress-circle" class="text-indigo-600 dark:text-indigo-400 transition-all duration-500" stroke-dasharray="0, 100" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-        </svg>
-        <div class="absolute text-center">
-          <span id="journal-progress-text" class="text-base font-black text-slate-800 dark:text-white leading-none">0/6</span>
-          <span class="block text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-0.5">Tugas</span>
+    <div id="journal-week-strip" class="grid grid-cols-7 gap-1.5 bg-white/70 dark:bg-slate-900/70 border border-white dark:border-slate-800 rounded-3xl p-2 shadow-sm animate-slide-up delay-150ms"></div>
+
+    <div class="rounded-3xl bg-slate-900 dark:bg-slate-800 p-4 text-white shadow-lg animate-slide-up delay-150ms">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-300">Progress hari ini</p>
+          <h3 id="journal-summary-title" class="text-base font-black mt-1">Jurnal Hari Ini</h3>
+          <p id="journal-summary-desc" class="text-[11px] text-slate-300 mt-1">Selesaikan pemeriksaan asrama secara bertahap.</p>
         </div>
-      </div>
-      <div>
-        <h3 id="journal-summary-title" class="text-sm font-black text-slate-800 dark:text-white">Jurnal Hari Ini</h3>
-        <p id="journal-summary-desc" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-normal">Silakan selesaikan tugas pemeriksaan asrama Anda dengan berjalan kaki.</p>
+        <div class="relative w-16 h-16 shrink-0 flex items-center justify-center">
+          <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+            <path class="text-slate-700" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path id="journal-progress-circle" class="text-emerald-400 transition-all duration-500" stroke-dasharray="0, 100" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          </svg>
+          <span id="journal-progress-text" class="absolute text-xs font-black">0/6</span>
+        </div>
       </div>
     </div>
 
@@ -48,7 +42,7 @@
     </div>
 
     <!-- Tasks List Wrapper -->
-    <div id="journal-tasks-list" class="space-y-4 animate-slide-up delay-200ms">
+    <div id="journal-tasks-list" class="space-y-5 animate-slide-up delay-200ms">
       <!-- Task Cards will be dynamically rendered here -->
     </div>
   </div>

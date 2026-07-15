@@ -7057,7 +7057,12 @@ window.switchTab = function (tabName) {
   if (targetTab) targetTab.classList.remove("hidden");
 
   // 4. Update Style Tombol Navigasi
-  document.querySelectorAll(".nav-btn").forEach((btn) => {
+  const navButtons = [
+    ...document.querySelectorAll(".nav-btn"),
+    document.querySelector('#bottom-nav > [data-target="jurnal"]'),
+  ].filter(Boolean);
+
+  navButtons.forEach((btn) => {
     if (btn.dataset.target === tabName) {
       btn.classList.add("active");
       btn.setAttribute("aria-current", "page");
@@ -14690,6 +14695,29 @@ window.renderJournalTab = async function () {
     summaryTitle.textContent = isToday ? "Jurnal Hari Ini" : `Jurnal: ${window.formatDate(appState.date)}`;
   }
 
+  // Compact week selector inspired by the reference health-tracker layout.
+  const weekStrip = document.getElementById("journal-week-strip");
+  const headerDate = document.getElementById("journal-header-date");
+  if (headerDate) {
+    headerDate.textContent = new Date(`${appState.date}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  }
+  if (weekStrip) {
+    const selected = new Date(`${appState.date}T00:00:00`);
+    const mondayOffset = (selected.getDay() + 6) % 7;
+    const monday = new Date(selected);
+    monday.setDate(selected.getDate() - mondayOffset);
+    weekStrip.innerHTML = Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + index);
+      const date = window.getLocalDateStr(day);
+      const active = date === appState.date;
+      const dayLabel = day.toLocaleDateString("id-ID", { weekday: "short" }).replace(".", "").slice(0, 3);
+      return `<button onclick="window.setJournalDate('${date}')" class="rounded-2xl py-2.5 text-center transition-all ${active ? "bg-emerald-500 text-white shadow-md" : "text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/20"}">
+        <span class="block text-[9px] font-bold uppercase">${dayLabel}</span><span class="block text-xs font-black mt-1">${day.getDate()}</span>
+      </button>`;
+    }).join("");
+  }
+
   try {
     container.innerHTML = `<div class="p-8 text-center text-slate-400 font-bold"><i data-lucide="loader" class="w-6 h-6 animate-spin mx-auto mb-2"></i> Memuat Jurnal...</div>`;
     if (window.lucide) window.lucide.createIcons();
@@ -14715,11 +14743,22 @@ window.renderJournalTab = async function () {
       progressCircle.setAttribute("stroke-dasharray", `${pct}, 100`);
     }
 
-    // Render cards
-    tasks.forEach(task => {
+    // Render cards in two calm sections, like Morning/Evening Circle.
+    tasks.forEach((task, taskIndex) => {
       const card = document.createElement("div");
       
       const isCompleted = task.status === "completed";
+      const visual = [
+        ["sunrise", "bg-blue-100", "text-blue-600"], ["school", "bg-violet-100", "text-violet-600"], ["sun", "bg-amber-100", "text-amber-600"],
+        ["shower-head", "bg-cyan-100", "text-cyan-600"], ["door-open", "bg-rose-100", "text-rose-600"], ["moon", "bg-indigo-100", "text-indigo-600"]
+      ][taskIndex] || ["clipboard-check", "bg-emerald-100", "text-emerald-600"];
+
+      if (taskIndex === 0 || taskIndex === 3) {
+        const section = document.createElement("div");
+        section.className = "flex items-center gap-2 px-1";
+        section.innerHTML = `<span class="w-6 h-6 rounded-lg ${taskIndex === 0 ? "bg-amber-100 text-amber-600" : "bg-indigo-100 text-indigo-600"} flex items-center justify-center"><i data-lucide="${taskIndex === 0 ? "sun" : "moon"}" class="w-3.5 h-3.5"></i></span><h3 class="text-xs font-black text-slate-800 dark:text-white">${taskIndex === 0 ? "Morning Circle" : "Evening Circle"}</h3>`;
+        container.appendChild(section);
+      }
       
       let borderClass = "border-slate-100 dark:border-slate-800/60";
       let bgClass = "bg-white/70 dark:bg-slate-900/60";
@@ -14729,57 +14768,37 @@ window.renderJournalTab = async function () {
         bgClass = "bg-emerald-500/5 dark:bg-emerald-500/10";
       }
 
-      card.className = `${bgClass} backdrop-blur-xl border ${borderClass} rounded-3xl p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-sm`;
+      card.className = `${bgClass} backdrop-blur-xl border ${borderClass} rounded-3xl p-3.5 flex items-center gap-3 transition-all duration-300 hover:shadow-sm`;
       
       let statusBadge = "";
       let actionArea = "";
 
       if (isCompleted) {
         const timeStr = task.verifiedAt ? new Date(task.verifiedAt).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }) : "--:--";
-        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[9px] font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 uppercase tracking-wider flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3"></i> Selesai pada ${timeStr}</span>`;
+        statusBadge = `<span class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Selesai</span>`;
         actionArea = `
-          <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/40 flex justify-between items-center text-[10px] font-bold text-slate-400">
-            <span class="flex items-center gap-1"><i data-lucide="footprints" class="w-3.5 h-3.5"></i> ${task.stepsCount || 50} Langkah</span>
-            <span class="text-emerald-500 flex items-center gap-1 font-black"><i data-lucide="check-check" class="w-3.5 h-3.5"></i> Terverifikasi</span>
+          <div class="text-[9px] font-bold text-slate-400 mt-0.5">
+            ${task.stepsCount || 50} langkah · ${timeStr}
           </div>
         `;
       } else {
-        statusBadge = `<span class="px-2.5 py-1 rounded-full text-[9px] font-black bg-slate-50 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-800 uppercase tracking-wider">Belum Selesai</span>`;
+        statusBadge = `<button onclick="window.startJournalVerification('${task.date}', '${task.taskId}')" class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-700 dark:text-slate-200 hover:bg-emerald-500 hover:text-white transition-all">Mulai</button>`;
         
-        if (isToday) {
-          actionArea = `
-            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/40 flex justify-end">
-              <button 
-                onclick="window.startJournalVerification('${task.date}', '${task.taskId}')"
-                class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-black text-xs hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-sm shadow-indigo-600/10"
-              >
-                <i data-lucide="play" class="w-3.5 h-3.5 fill-white"></i>
-                Mulai Tugas
-              </button>
-            </div>
-          `;
+        if (!isToday) {
+          statusBadge = `<span class="text-[10px] font-black text-slate-400">Arsip</span>`;
         } else {
-          actionArea = `
-            <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/40 text-[10px] font-bold text-slate-400/60 italic text-center">
-              Lewat Waktu (Tidak Terisi)
-            </div>
-          `;
+          actionArea = `<div class="text-[9px] font-bold text-slate-400 mt-0.5">Belum diverifikasi</div>`;
         }
       }
 
       card.innerHTML = `
-        <div class="flex justify-between items-start gap-4">
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5 text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-1.5">
-              <i data-lucide="clock" class="w-3.5 h-3.5"></i> ${task.timeWindow}
-            </div>
-            <h4 class="text-xs sm:text-sm font-black text-slate-800 dark:text-white leading-snug">${task.taskName}</h4>
-          </div>
-          <div class="shrink-0">
-            ${statusBadge}
-          </div>
+        <div class="w-11 h-11 rounded-xl ${visual[1]} ${visual[2]} flex items-center justify-center shrink-0"><i data-lucide="${visual[0]}" class="w-5 h-5"></i></div>
+        <div class="min-w-0 flex-1">
+          <h4 class="text-xs font-black text-slate-800 dark:text-white leading-snug truncate">${task.taskName}</h4>
+          <p class="text-[9px] font-bold text-slate-400 mt-1">${task.timeWindow}</p>
+          ${actionArea}
         </div>
-        ${actionArea}
+        <div class="shrink-0">${statusBadge}</div>
       `;
       
       container.appendChild(card);
@@ -14790,6 +14809,11 @@ window.renderJournalTab = async function () {
     console.error("[Journal] Render failed:", error);
     container.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">Gagal memuat jurnal: ${error.message}</div>`;
   }
+};
+
+window.setJournalDate = function (date) {
+  appState.date = date;
+  window.renderJournalTab();
 };
 
 window.startJournalVerification = function (date, taskId) {
