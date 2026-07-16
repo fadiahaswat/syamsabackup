@@ -2,93 +2,74 @@
 <!-- Extracted from index.html for modular architecture -->
 <nav
   id="bottom-nav"
-  class="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto animate-slide-up delay-500ms"
+  class="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto pointer-events-none select-none"
   aria-label="Navigasi utama"
 >
+  <!-- 1. Floating Action Button (FAB) Jurnal Musyrif (Only visible for Musyrif) -->
   <button
     onclick="window.switchTab('jurnal')"
     data-target="jurnal"
     aria-label="Buka Jurnal Musyrif"
-    class="musyrif-only absolute -top-6 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-indigo-500 dark:to-blue-700 text-white border-4 border-white dark:border-slate-800 shadow-xl shadow-indigo-500/50 hover:scale-110 hover:-translate-x-1/2 active:scale-95 transition-all duration-300 flex items-center justify-center z-50"
+    class="musyrif-only absolute w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white border-4 border-white dark:border-slate-900 flex items-center justify-center pointer-events-auto"
   >
     <i data-lucide="plus" class="w-6 h-6"></i>
   </button>
 
-<div
-  class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-full shadow-xl shadow-slate-200/30 dark:shadow-black/30 border border-white/50 dark:border-white/10 p-1.5"
->
-  <div class="flex items-center justify-between gap-1">
-    <!-- Dashboard Button -->
-    <button
-      onclick="window.switchTab('home')"
-      data-target="home"
-      aria-current="page"
-      class="nav-btn active group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
-      aria-label="Dashboard"
-    >
-      <div
-        class="absolute inset-0 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
-      ></div>
-      <i
-        data-lucide="home"
-        class="w-6 h-6 text-slate-400 group-[.active]:text-emerald-500 transition-colors relative z-10"
-      ></i>
-      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Dashboard</span>
-    </button>
+  <!-- 2. Glassmorphic Navigation Bar Container -->
+  <div
+    class="nav-container pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-full shadow-xl shadow-slate-200/30 dark:shadow-black/30 border border-white/50 dark:border-white/10 p-1.5"
+  >
+    <div class="flex items-center justify-between gap-1">
+      <!-- Tab 1: Dashboard -->
+      <button
+        onclick="window.switchTab('home')"
+        data-target="home"
+        aria-current="page"
+        class="nav-btn active group"
+        aria-label="Dashboard"
+      >
+        <i data-lucide="home"></i>
+        <span class="nav-indicator"></span>
+      </button>
 
-    <!-- Tahfizh Button -->
-    <button
-      onclick="window.switchTab('tahfizh')"
-      data-target="tahfizh"
-      aria-current="false"
-      class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
-      aria-label="Tahfizh"
-    >
-      <div
-        class="absolute inset-0 bg-orange-500/10 dark:bg-orange-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
-      ></div>
-      <i
-        data-lucide="book-open-check"
-        class="w-6 h-6 text-slate-400 group-[.active]:text-orange-500 transition-colors relative z-10"
-      ></i>
-      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Tahfizh</span>
-    </button>
+      <!-- Tab 2: Tahfizh -->
+      <button
+        onclick="window.switchTab('tahfizh')"
+        data-target="tahfizh"
+        aria-current="false"
+        class="nav-btn group"
+        aria-label="Tahfizh"
+      >
+        <i data-lucide="book-open-check"></i>
+        <span class="nav-indicator"></span>
+      </button>
 
-    <!-- Report Button -->
-    <button
-      onclick="window.switchTab('report')"
-      data-target="report"
-      aria-current="false"
-      class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
-      aria-label="Laporan"
-    >
-      <div
-        class="absolute inset-0 bg-blue-500/10 dark:bg-blue-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
-      ></div>
-      <i
-        data-lucide="file-bar-chart"
-        class="w-6 h-6 text-slate-400 group-[.active]:text-blue-500 transition-colors relative z-10"
-      ></i>
-      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Laporan</span>
-    </button>
+      <!-- Dynamic Spacer for Musyrif Jurnal FAB (Only active for Musyrif) -->
+      <div class="musyrif-only musyrif-spacer w-14 flex-shrink-0" aria-hidden="true"></div>
 
-    <!-- Profile Button -->
-    <button
-      onclick="window.switchTab('profile')"
-      data-target="profile"
-      aria-current="false"
-      class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
-      aria-label="Profil"
-    >
-      <div
-        class="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
-      ></div>
-      <i
-        data-lucide="user"
-        class="w-6 h-6 text-slate-400 group-[.active]:text-purple-500 transition-colors relative z-10"
-      ></i>
-      <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Profil</span>
-    </button>
+      <!-- Tab 3: Laporan -->
+      <button
+        onclick="window.switchTab('report')"
+        data-target="report"
+        aria-current="false"
+        class="nav-btn group"
+        aria-label="Laporan"
+      >
+        <i data-lucide="file-bar-chart"></i>
+        <span class="nav-indicator"></span>
+      </button>
+
+      <!-- Tab 4: Profil -->
+      <button
+        onclick="window.switchTab('profile')"
+        data-target="profile"
+        aria-current="false"
+        class="nav-btn group"
+        aria-label="Profil"
+      >
+        <i data-lucide="user"></i>
+        <span class="nav-indicator"></span>
+      </button>
+    </div>
   </div>
-</div>
 </nav>

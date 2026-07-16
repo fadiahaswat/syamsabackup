@@ -1,6 +1,84 @@
 // File: auth-manager.js
 
 // ==========================================
+// MULTIDEVICE & MULTIROLE INTEGRATION
+// ==========================================
+
+/**
+ * Initialize multirole auth after successful login
+ * @param {Object} profile - Google profile object
+ * @param {string} targetClass - Selected class
+ */
+window.initMultiRoleAuth = async function(profile, targetClass) {
+  if (!window.authMultiRole || !window.supabaseClient) return;
+
+  try {
+    // Initialize authMultiRole with Supabase client
+    await window.authMultiRole.init(window.supabaseClient);
+
+    // Get or create user
+    const user = await window.authMultiRole.getOrCreateUser(profile);
+    console.log('[AuthMultiRole] User synced:', user?.email);
+
+    // Get user roles
+    const roles = await window.authMultiRole.getUserRoles();
+    console.log('[AuthMultiRole] User roles:', roles);
+
+    // Register current device
+    await window.authMultiRole.registerDevice();
+    console.log('[AuthMultiRole] Device registered');
+
+    // Create session
+    await window.authMultiRole.createSession();
+
+    // Log activity
+    await window.authMultiRole.logActivity('login', `Login sebagai ${targetClass}`, {
+      kelas: targetClass,
+      metadata: { email: profile?.email }
+    });
+
+    // Store in localStorage for quick access
+    localStorage.setItem('multirole_user_id', user?.id);
+    localStorage.setItem('multirole_roles', JSON.stringify(roles));
+
+  } catch (error) {
+    console.warn('[AuthMultiRole] Initialization failed:', error);
+    // Don't throw - this is optional enhancement
+  }
+};
+
+/**
+ * Get current user roles from multirole system
+ */
+window.getMultiRoleUser = function() {
+  const userId = localStorage.getItem('multirole_user_id');
+  const rolesJson = localStorage.getItem('multirole_roles');
+  const roles = rolesJson ? JSON.parse(rolesJson) : [];
+  return { userId, roles };
+};
+
+/**
+ * Check if user has specific role
+ */
+window.hasMultiRole = function(roleName, kelas = null) {
+  const { roles } = window.getMultiRoleUser();
+  return roles.some(r => {
+    if (r.roles?.name !== roleName) return false;
+    if (kelas && r.kelas && r.kelas !== kelas) return false;
+    return true;
+  });
+};
+
+/**
+ * Check if user is admin (any level)
+ */
+window.isMultiRoleAdmin = function() {
+  return window.hasMultiRole('superadmin') ||
+         window.hasMultiRole('admin') ||
+         window.hasMultiRole('koordinator');
+};
+
+// ==========================================
 // 2. LOGIN LOGIC
 // ==========================================
 
@@ -134,6 +212,10 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
   window.syncRoleModeUI();
   window.updateDashboard();
   window.updateProfileInfo();
+
+  // ========== MULTIROLE AUTH INIT ==========
+  // Register device and sync user to cloud
+  window.initMultiRoleAuth(profile, targetClass);
 };
 
 window.handleLogin = async function () {

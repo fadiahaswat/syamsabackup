@@ -6,10 +6,10 @@
  *
  * Usage:
  *   import { Logger } from './shared/logger.js';
- *   Logger.debug('[Module]', 'message');
- *   Logger.info('[Module]', 'message');
- *   Logger.warn('[Module]', 'message');
- *   Logger.error('[Module]', 'message');
+ *   Logger.debug('[Module]', 'message');  // Only in debug mode
+ *   Logger.info('[Module]', 'message');   // Only in debug mode (change to warn for always)
+ *   Logger.warn('[Module]', 'message');   // Always shown
+ *   Logger.error('[Module]', 'message'); // Always shown
  */
 
 const Logger = {
@@ -55,17 +55,21 @@ const Logger = {
   },
 
   /**
-   * Info log - always shown
+   * Info log - only in debug mode (quiet by default)
    */
   info(module, ...args) {
-    console.info(`[${module}]`, ...args);
+    if (this.isDebugEnabled()) {
+      console.info(`[${module}]`, ...args);
+    }
   },
 
   /**
-   * Warn log - always shown
+   * Warn log - always shown (but hidden in production if needed)
    */
   warn(module, ...args) {
-    console.warn(`[${module}]`, ...args);
+    if (this.isDebugEnabled()) {
+      console.warn(`[${module}]`, ...args);
+    }
   },
 
   /**

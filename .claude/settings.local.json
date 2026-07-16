@@ -97,7 +97,10 @@
       "Bash(node --check src/managers/database-schema.js)",
       "Bash(cd \"d:/syamsa-backup/syamsabackup\" && cat src/pages/report/report.html | head -n 792 > /tmp/report_part1.html && cat src/pages/report/report.html | tail -n +1611 > /tmp/report_part2.html && cat /tmp/report_part1.html /tmp/report_part2.html > src/pages/report/report.html && echo \"Done. Now checking...\" && grep -c 'admin-report-menu' src/pages/report/report.html)",
       "Skill(code-review)",
-      "Skill(code-review:*)"
+      "Skill(code-review:*)",
+      "Bash(openssl dgst *)",
+      "Bash(ls -la /c/Users/Lenovo/.claude/projects/d--syamsa-backup-syamsabackup/memory/ 2>/dev/null || echo \"Directory doesn't exist\")",
+      "Read(//c/Users/Lenovo/.claude/projects/d--syamsa-backup-syamsabackup/memory//**)"
     ],
     "additionalDirectories": [
       "d:\\syamsa-backup\\syamsabackup",

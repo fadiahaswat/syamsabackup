@@ -1,9 +1,19 @@
 -- ============================================================
--- SYAMSA PWA - COMPLETE DATABASE SCHEMA
+-- RESET DATABASE - Complete Clean Slate
 -- ============================================================
--- Drop existing tables (clean slate)
+-- This script will:
+-- 1. Drop all tables
+-- 2. Drop all functions/triggers
+-- 3. Drop all types
+-- 4. Create fresh schema
+-- 5. Insert initial data
 -- ============================================================
 
+BEGIN;
+
+-- ============================================================
+-- 1. DROP ALL TABLES (cascade will handle publications)
+-- ============================================================
 DROP TABLE IF EXISTS public.musyrif_journals CASCADE;
 DROP TABLE IF EXISTS public.activity_logs CASCADE;
 DROP TABLE IF EXISTS public.settings CASCADE;
@@ -12,39 +22,75 @@ DROP TABLE IF EXISTS public.permits CASCADE;
 DROP TABLE IF EXISTS public.attendances CASCADE;
 
 -- ============================================================
--- 1. ATTENDANCES (Data Presensi Harian)
+-- 3. DROP ALL FUNCTIONS & TRIGGERS
 -- ============================================================
+CREATE OR REPLACE FUNCTION drop_all_functions()
+RETURNS void AS $$
+DECLARE
+    func_record RECORD;
+BEGIN
+    FOR func_record IN SELECT proname, oid FROM pg_proc WHERE pronamespace = 'public'::regnamespace LOOP
+        EXECUTE 'DROP FUNCTION IF EXISTS public.' || func_record.proname || ' CASCADE';
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT drop_all_functions();
+DROP FUNCTION IF EXISTS drop_all_functions();
+
+-- ============================================================
+-- 4. VERIFY CLEAN
+-- ============================================================
+DO $$
+DECLARE
+    table_count INTEGER;
+    func_count INTEGER;
+BEGIN
+    SELECT COUNT(*) INTO table_count FROM information_schema.tables WHERE table_schema = 'public';
+    SELECT COUNT(*) INTO func_count FROM pg_proc WHERE pronamespace = 'public'::regnamespace;
+
+    RAISE NOTICE 'Tables remaining: %', table_count;
+    RAISE NOTICE 'Functions remaining: %', func_count;
+
+    IF table_count > 0 OR func_count > 0 THEN
+        RAISE WARNING 'Schema may not be completely clean!';
+    ELSE
+        RAISE NOTICE 'Schema is clean!';
+    END IF;
+END $$;
+
+-- ============================================================
+-- 5. CREATE TABLES
+-- ============================================================
+
+-- 5.1 ATTENDANCES
 CREATE TABLE public.attendances (
     id TEXT PRIMARY KEY,
-    date TEXT NOT NULL,                          -- YYYY-MM-DD
-    slot TEXT NOT NULL,                         -- shubuh | sekolah | ashar | maghrib | isya
-    "studentId" TEXT NOT NULL,                 -- NIS Santri
-    kelas TEXT NOT NULL,                        -- Nama Kelas
-    status JSONB NOT NULL DEFAULT '{}',          -- { activityId: status }
+    date TEXT NOT NULL,
+    slot TEXT NOT NULL,
+    "studentId" TEXT NOT NULL,
+    kelas TEXT NOT NULL,
+    status JSONB NOT NULL DEFAULT '{}',
     note TEXT DEFAULT '',
-    timestamps JSONB DEFAULT '{}',              -- { activityId: ISO8601 }
-    "auditTrail" JSONB DEFAULT '[]',           -- Log perubahan
+    timestamps JSONB DEFAULT '{}',
+    "auditTrail" JSONB DEFAULT '[]',
     _version INTEGER DEFAULT 1,
     "_createdAt" TIMESTAMPTZ DEFAULT NOW(),
     "_updatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.attendances IS 'Data presensi harian santri per sesi';
-
--- ============================================================
--- 2. PERMITS (Data Perizinan)
--- ============================================================
+-- 5.2 PERMITS
 CREATE TABLE public.permits (
     id TEXT PRIMARY KEY,
     nis TEXT NOT NULL,
     kelas TEXT NOT NULL,
-    category TEXT NOT NULL,                     -- sakit | izin | pulang
+    category TEXT NOT NULL,
     reason TEXT NOT NULL,
-    start_date TEXT NOT NULL,                   -- YYYY-MM-DD
+    start_date TEXT NOT NULL,
     end_date TEXT,
     start_session TEXT,
     end_session TEXT,
-    status TEXT NOT NULL DEFAULT 'pending',      -- pending | approved | rejected
+    status TEXT NOT NULL DEFAULT 'pending',
     is_active BOOLEAN DEFAULT true,
     document TEXT,
     audit_trail JSONB DEFAULT '[]',
@@ -53,34 +99,26 @@ CREATE TABLE public.permits (
     "_updatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.permits IS 'Data perizinan sakit, izin, dan pulang';
-
--- ============================================================
--- 3. TAHFIZH (Data Setoran Hafalan)
--- ============================================================
+-- 5.3 TAHFIZH
 CREATE TABLE public.tahfizh (
     id TEXT PRIMARY KEY,
     nis TEXT NOT NULL,
     kelas TEXT NOT NULL,
-    program TEXT NOT NULL,                      -- Ziyadah | Murojaah
+    program TEXT NOT NULL,
     jenis TEXT NOT NULL,
     juz TEXT NOT NULL,
     halaman TEXT NOT NULL,
     surat TEXT NOT NULL,
-    kualitas TEXT NOT NULL,                      -- Lancar | Sedang | Kurang
-    status TEXT NOT NULL DEFAULT 'Pending',       -- Pending | Verified | Rejected
+    kualitas TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Pending',
     musyrif TEXT NOT NULL,
-    tanggal TEXT NOT NULL,                        -- YYYY-MM-DD
+    tanggal TEXT NOT NULL,
     _version INTEGER DEFAULT 1,
     "_createdAt" TIMESTAMPTZ DEFAULT NOW(),
     "_updatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.tahfizh IS 'Data setoran dan progres hafalan';
-
--- ============================================================
--- 4. SETTINGS (Konfigurasi Aplikasi)
--- ============================================================
+-- 5.4 SETTINGS
 CREATE TABLE public.settings (
     id TEXT PRIMARY KEY,
     data JSONB NOT NULL DEFAULT '{}',
@@ -88,11 +126,7 @@ CREATE TABLE public.settings (
     "_updatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.settings IS 'Konfigurasi app_config, kelas_settings, user_session';
-
--- ============================================================
--- 5. ACTIVITY_LOGS (Log Audit Trail)
--- ============================================================
+-- 5.5 ACTIVITY_LOGS
 CREATE TABLE public.activity_logs (
     id TEXT PRIMARY KEY,
     action TEXT NOT NULL,
@@ -102,29 +136,23 @@ CREATE TABLE public.activity_logs (
     timestamp TIMESTAMPTZ DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.activity_logs IS 'Log aktivitas untuk audit trail';
-
--- ============================================================
--- 6. MUSYRIF_JOURNALS (Jurnal Harian Musyrif)
--- ============================================================
+-- 5.6 MUSYRIF_JOURNALS
 CREATE TABLE public.musyrif_journals (
     id TEXT PRIMARY KEY,
     musyrif_id TEXT NOT NULL,
     kelas TEXT NOT NULL,
-    tanggal TEXT NOT NULL,                      -- YYYY-MM-DD
+    tanggal TEXT NOT NULL,
     content JSONB NOT NULL DEFAULT '{}',
     _version INTEGER DEFAULT 1,
     "_createdAt" TIMESTAMPTZ DEFAULT NOW(),
     "_updatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
 
-COMMENT ON TABLE public.musyrif_journals IS 'Jurnal harian musyrif';
-
 -- ============================================================
--- INDEXES - Optimasi Query
+-- 6. CREATE INDEXES
 -- ============================================================
 
--- Attendances indexes
+-- Attendances
 CREATE INDEX idx_attendances_date ON public.attendances(date);
 CREATE INDEX idx_attendances_slot ON public.attendances(slot);
 CREATE INDEX idx_attendances_student ON public.attendances("studentId");
@@ -133,30 +161,29 @@ CREATE INDEX idx_attendances_date_slot ON public.attendances(date, slot);
 CREATE INDEX idx_attendances_date_kelas ON public.attendances(date, kelas);
 CREATE INDEX idx_attendances_updated ON public.attendances("_updatedAt");
 
--- Permits indexes
+-- Permits
 CREATE INDEX idx_permits_nis ON public.permits(nis);
 CREATE INDEX idx_permits_kelas ON public.permits(kelas);
 CREATE INDEX idx_permits_status ON public.permits(status);
 CREATE INDEX idx_permits_nis_start ON public.permits(nis, start_date);
 CREATE INDEX idx_permits_updated ON public.permits("_updatedAt");
 
--- Tahfizh indexes
+-- Tahfizh
 CREATE INDEX idx_tahfizh_nis ON public.tahfizh(nis);
 CREATE INDEX idx_tahfizh_kelas ON public.tahfizh(kelas);
 CREATE INDEX idx_tahfizh_tanggal ON public.tahfizh(tanggal);
 CREATE INDEX idx_tahfizh_musyrif ON public.tahfizh(musyrif);
 CREATE INDEX idx_tahfizh_updated ON public.tahfizh("_updatedAt");
 
--- Journals indexes
+-- Journals
 CREATE INDEX idx_journals_musyrif ON public.musyrif_journals(musyrif_id);
 CREATE INDEX idx_journals_kelas ON public.musyrif_journals(kelas);
 CREATE INDEX idx_journals_tanggal ON public.musyrif_journals(tanggal);
 CREATE INDEX idx_journals_updated ON public.musyrif_journals("_updatedAt");
 
 -- ============================================================
--- ROW LEVEL SECURITY (RLS)
+-- 7. ENABLE RLS
 -- ============================================================
-
 ALTER TABLE public.attendances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.permits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tahfizh ENABLE ROW LEVEL SECURITY;
@@ -165,11 +192,7 @@ ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.musyrif_journals ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- RLS POLICIES
--- ============================================================
--- Aplikasi ini menggunakan anonymous access (anon key)
--- Filtering berdasarkan role dilakukan di sisi client
--- Policies ini mengijinkan semua operasi untuk anon
+-- 8. CREATE RLS POLICIES (Allow all for anon)
 -- ============================================================
 
 -- Attendances
@@ -203,7 +226,7 @@ CREATE POLICY "journals_update" ON public.musyrif_journals FOR UPDATE TO anon US
 CREATE POLICY "journals_delete" ON public.musyrif_journals FOR DELETE TO anon USING (true);
 
 -- ============================================================
--- ENABLE REALTIME REPLICATION
+-- 9. ENABLE REALTIME
 -- ============================================================
 ALTER PUBLICATION supabase_realtime ADD TABLE public.attendances;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.permits;
@@ -213,10 +236,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.activity_logs;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.musyrif_journals;
 
 -- ============================================================
--- INITIAL DATA
+-- 10. INSERT INITIAL DATA
 -- ============================================================
-
--- App Config
 INSERT INTO public.settings (id, data) VALUES (
     'app_config',
     '{
@@ -239,8 +260,28 @@ INSERT INTO public.settings (id, data) VALUES (
     }'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
 
+COMMIT;
+
 -- ============================================================
 -- VERIFICATION
 -- ============================================================
-SELECT 'Schema created successfully!' as status;
-SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
+DO $$
+DECLARE
+    t TEXT;
+    r INTEGER;
+BEGIN
+    RAISE NOTICE '';
+    RAISE NOTICE '============================================';
+    RAISE NOTICE 'DATABASE RESET COMPLETE';
+    RAISE NOTICE '============================================';
+
+    FOR t IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name LOOP
+        EXECUTE format('SELECT count(*) FROM public.%I', t) INTO r;
+        RAISE NOTICE 'Table: % - Rows: %', t, r;
+    END LOOP;
+
+    RAISE NOTICE '============================================';
+    RAISE NOTICE 'All tables created successfully!';
+    RAISE NOTICE 'RLS and Realtime enabled.';
+    RAISE NOTICE '============================================';
+END $$;

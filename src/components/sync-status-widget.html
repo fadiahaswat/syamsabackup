@@ -1,0 +1,497 @@
+<!--
+  Sync Status Widget & Panel
+  Shows sync status, pending changes, and sync controls
+-->
+
+<!-- Sync Status Indicator (Compact) -->
+<div id="supabase-sync-status"
+  class="relative p-2.5 rounded-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 shadow-sm hover:scale-105 active:scale-95 transition-all duration-300 focus:outline-none cursor-pointer"
+  onclick="window.openSyncPanel?.()"
+  title="Klik untuk opsi sinkronisasi"
+  role="button"
+  aria-label="Status sinkronisasi">
+  <i data-lucide="cloud" class="w-5 h-5 text-slate-400 block"></i>
+</div>
+
+<!-- Pending Changes Badge -->
+<div id="sync-pending-badge"
+  class="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold px-1 hidden"
+  title="Perubahan tertunda">
+</div>
+
+<!-- Sync Panel (Expanded View) -->
+<div id="sync-panel" class="fixed inset-0 z-[100] hidden" aria-hidden="true">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="window.closeSyncPanel?.()"></div>
+
+  <div class="absolute bottom-0 left-0 right-0 max-h-[70vh] bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl overflow-hidden">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+      <div class="flex items-center gap-3">
+        <div id="sync-panel-icon" class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+          <i data-lucide="cloud-check" class="w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white">Sinkronisasi</h2>
+          <p id="sync-panel-status" class="text-sm text-slate-500 dark:text-slate-400">Terhubung ke cloud</p>
+        </div>
+      </div>
+      <button onclick="window.closeSyncPanel?.()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+        <i data-lucide="x" class="w-5 h-5 text-slate-500"></i>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="p-6 space-y-6 overflow-auto max-h-[50vh]">
+
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-3 gap-4">
+        <div class="text-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
+          <div id="sync-stat-pending" class="text-2xl font-bold text-amber-600 dark:text-amber-400">0</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">Tertunda</div>
+        </div>
+        <div class="text-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
+          <div id="sync-stat-synced" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">0</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">Terakhir Sync</div>
+        </div>
+        <div class="text-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
+          <div id="sync-stat-conflicts" class="text-2xl font-bold text-red-600 dark:text-red-400">0</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">Konflik</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="space-y-3">
+        <button onclick="window.triggerManualSync?.()"
+          class="w-full py-3 px-4 rounded-xl bg-syamsa-blue hover:bg-[#0a4a9e] text-white font-semibold flex items-center justify-center gap-2 transition-colors">
+          <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+          Sinkronkan Sekarang
+        </button>
+
+        <div class="flex gap-3">
+          <button onclick="window.toggleSyncPause?.()"
+            id="btn-sync-pause"
+            class="flex-1 py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium flex items-center justify-center gap-2 transition-colors">
+            <i data-lucide="pause" class="w-5 h-5"></i>
+            <span id="pause-btn-text">Jeda Sync</span>
+          </button>
+
+          <button onclick="window.openSyncConflictsModal?.()"
+            class="flex-1 py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium flex items-center justify-center gap-2 transition-colors">
+            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            Konflik
+          </button>
+        </div>
+      </div>
+
+      <!-- Selective Sync -->
+      <div>
+        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Sinkronkan Data</h3>
+        <div class="space-y-2">
+          <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <input type="checkbox" id="sync-table-attendances" checked
+              class="w-5 h-5 rounded border-slate-300 text-syamsa-blue focus:ring-syamsa-blue"
+              onchange="window.updateSyncTables?.()">
+            <i data-lucide="calendar-check" class="w-5 h-5 text-emerald-500"></i>
+            <span class="text-slate-700 dark:text-slate-300">Presensi</span>
+          </label>
+          <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <input type="checkbox" id="sync-table-permits" checked
+              class="w-5 h-5 rounded border-slate-300 text-syamsa-blue focus:ring-syamsa-blue"
+              onchange="window.updateSyncTables?.()">
+            <i data-lucide="file-text" class="w-5 h-5 text-blue-500"></i>
+            <span class="text-slate-700 dark:text-slate-300">Perizinan</span>
+          </label>
+          <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <input type="checkbox" id="sync-table-tahfizh" checked
+              class="w-5 h-5 rounded border-slate-300 text-syamsa-blue focus:ring-syamsa-blue"
+              onchange="window.updateSyncTables?.()">
+            <i data-lucide="book-open" class="w-5 h-5 text-orange-500"></i>
+            <span class="text-slate-700 dark:text-slate-300">Tahfizh</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Date Range Filter -->
+      <div>
+        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Filter Tanggal</h3>
+        <div class="flex gap-3">
+          <input type="date" id="sync-date-start"
+            class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm">
+          <span class="text-slate-400 self-center">s/d</span>
+          <input type="date" id="sync-date-end"
+            class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm">
+        </div>
+        <button onclick="window.applyDateFilter?.()"
+          class="mt-2 w-full py-2 px-4 rounded-xl border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">
+          Terapkan Filter
+        </button>
+      </div>
+
+      <!-- Recent History -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Riwayat Sinkronisasi</h3>
+          <button onclick="window.clearSyncHistory?.()"
+            class="text-xs text-slate-500 hover:text-red-500 transition-colors">Hapus Riwayat</button>
+        </div>
+        <div id="sync-history-list" class="space-y-2 max-h-40 overflow-auto">
+          <!-- History items will be rendered here -->
+          <p class="text-sm text-slate-400 text-center py-4">Belum ada riwayat sinkronisasi</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Offline Indicator Banner -->
+<div id="offline-indicator"
+  class="hidden fixed top-0 left-0 right-0 z-[90] bg-amber-500 text-white px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
+  <i data-lucide="wifi-off" class="w-4 h-4"></i>
+  <span>Offline - Perubahan akan disinkronkan saat koneksi kembali</span>
+</div>
+
+<script>
+/**
+ * Sync Status UI Controller
+ */
+(function() {
+  'use strict';
+
+  let updateInterval = null;
+
+  /**
+   * Initialize sync status UI
+   */
+  window.initSyncStatusUI = function() {
+    // Initial update
+    updateSyncStatus();
+
+    // Periodic update
+    if (updateInterval) {
+      clearInterval(updateInterval);
+    }
+    updateInterval = setInterval(updateSyncStatus, 5000);
+
+    // Listen for online/offline events
+    window.addEventListener('online', updateSyncStatus);
+    window.addEventListener('offline', updateSyncStatus);
+
+    // Listen for service worker messages
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleSWMessage);
+    }
+
+    console.log('[SyncStatusUI] Initialized');
+  };
+
+  /**
+   * Handle messages from Service Worker
+   */
+  function handleSWMessage(event) {
+    if (event.data?.type === 'SYNC_COMPLETE') {
+      updateSyncStatus();
+      if (event.data.count > 0) {
+        window.showToast?.(`${event.data.count} perubahan berhasil disinkronkan`, 'success');
+      }
+    }
+  }
+
+  /**
+   * Update sync status display
+   */
+  async function updateSyncStatus() {
+    try {
+      // Update pending count
+      let pendingCount = 0;
+      let conflictCount = 0;
+
+      if (window.syncQueue) {
+        pendingCount = await window.syncQueue.getPendingCount();
+        const conflicts = await window.syncQueue.getConflicts();
+        conflictCount = conflicts.length;
+      }
+
+      // Update badge
+      const badge = document.getElementById('sync-pending-badge');
+      if (badge) {
+        if (pendingCount > 0) {
+          badge.textContent = pendingCount > 99 ? '99+' : pendingCount;
+          badge.classList.remove('hidden');
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+
+      // Update stat displays
+      const pendingStat = document.getElementById('sync-stat-pending');
+      const conflictStat = document.getElementById('sync-stat-conflicts');
+
+      if (pendingStat) pendingStat.textContent = pendingCount;
+      if (conflictStat) conflictStat.textContent = conflictCount;
+
+      // Update offline indicator
+      const offlineIndicator = document.getElementById('offline-indicator');
+      if (offlineIndicator) {
+        if (!navigator.onLine) {
+          offlineIndicator.classList.remove('hidden');
+        } else {
+          offlineIndicator.classList.add('hidden');
+        }
+      }
+
+      // Update indicator icon
+      updateStatusIcon();
+
+    } catch (e) {
+      console.error('[SyncStatusUI] Failed to update status:', e);
+    }
+  }
+
+  /**
+   * Update the status indicator icon
+   */
+  function updateStatusIcon() {
+    const indicator = document.getElementById('supabase-sync-status');
+    if (!indicator) return;
+
+    let icon = 'cloud';
+    let colorClass = 'text-slate-400';
+
+    if (!navigator.onLine) {
+      icon = 'wifi-off';
+      colorClass = 'text-amber-500';
+    } else if (window.syncManager?.isPaused?.()) {
+      icon = 'pause';
+      colorClass = 'text-amber-500';
+    } else if (window.syncManager?.isSyncing) {
+      icon = 'refresh-cw';
+      colorClass = 'text-blue-500';
+      indicator.classList.add('animate-spin');
+    } else if (window.isSupabaseEnabled) {
+      icon = 'cloud-check';
+      colorClass = 'text-emerald-500';
+      indicator.classList.remove('animate-spin');
+    } else {
+      icon = 'cloud-off';
+      colorClass = 'text-slate-400';
+      indicator.classList.remove('animate-spin');
+    }
+
+    indicator.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5 block ${colorClass}"></i>`;
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  /**
+   * Open sync panel
+   */
+  window.openSyncPanel = async function() {
+    const panel = document.getElementById('sync-panel');
+    if (!panel) return;
+
+    // Update stats
+    await updateSyncStatus();
+
+    // Update pause button
+    updatePauseButton();
+
+    // Update history
+    await renderSyncHistory();
+
+    // Update selective sync checkboxes
+    if (window.syncManager) {
+      const options = window.syncManager.getSyncOptions();
+      document.getElementById('sync-table-attendances').checked = options.tables.includes('attendances');
+      document.getElementById('sync-table-permits').checked = options.tables.includes('permits');
+      document.getElementById('sync-table-tahfizh').checked = options.tables.includes('tahfizh');
+    }
+
+    panel.classList.remove('hidden');
+    panel.setAttribute('aria-hidden', 'false');
+
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  };
+
+  /**
+   * Close sync panel
+   */
+  window.closeSyncPanel = function() {
+    const panel = document.getElementById('sync-panel');
+    if (panel) {
+      panel.classList.add('hidden');
+      panel.setAttribute('aria-hidden', 'true');
+    }
+  };
+
+  /**
+   * Update pause button state
+   */
+  function updatePauseButton() {
+    const btn = document.getElementById('btn-sync-pause');
+    const text = document.getElementById('pause-btn-text');
+
+    if (!btn || !text) return;
+
+    if (window.syncManager?.isPaused?.()) {
+      btn.classList.remove('bg-slate-100', 'dark:bg-slate-800');
+      btn.classList.add('bg-emerald-100', 'dark:bg-emerald-900/30');
+      text.textContent = 'Lanjutkan';
+      btn.querySelector('i')?.setAttribute('data-lucide', 'play');
+    } else {
+      btn.classList.add('bg-slate-100', 'dark:bg-slate-800');
+      btn.classList.remove('bg-emerald-100', 'dark:bg-emerald-900/30');
+      text.textContent = 'Jeda Sync';
+      btn.querySelector('i')?.setAttribute('data-lucide', 'pause');
+    }
+
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  /**
+   * Toggle sync pause
+   */
+  window.toggleSyncPause = function() {
+    if (window.syncManager) {
+      const isPaused = window.syncManager.togglePause();
+      updatePauseButton();
+      updateStatusIcon();
+      window.showToast?.(
+        isPaused ? 'Sinkronisasi dijeda' : 'Sinkronisasi dilanjutkan',
+        'info'
+      );
+    }
+  };
+
+  /**
+   * Trigger manual sync
+   */
+  window.triggerManualSync = function() {
+    if (window.syncManager) {
+      window.syncManager.syncAll();
+      window.closeSyncPanel?.();
+      window.showToast?.('Memulai sinkronisasi...', 'info');
+    }
+  };
+
+  /**
+   * Update sync tables selection
+   */
+  window.updateSyncTables = function() {
+    if (!window.syncManager) return;
+
+    const tables = [];
+    if (document.getElementById('sync-table-attendances')?.checked) tables.push('attendances');
+    if (document.getElementById('sync-table-permits')?.checked) tables.push('permits');
+    if (document.getElementById('sync-table-tahfizh')?.checked) tables.push('tahfizh');
+    tables.push('settings'); // Settings always included
+
+    window.syncManager.setTablesToSync(tables);
+    window.showToast?.('Tabel sinkronisasi diperbarui', 'success');
+  };
+
+  /**
+   * Apply date filter
+   */
+  window.applyDateFilter = function() {
+    if (!window.syncManager) return;
+
+    const startInput = document.getElementById('sync-date-start');
+    const endInput = document.getElementById('sync-date-end');
+
+    if (startInput?.value && endInput?.value) {
+      window.syncManager.setDateRange(startInput.value, endInput.value);
+      window.showToast?.('Filter tanggal diterapkan', 'success');
+    } else {
+      window.syncManager.clearDateRange();
+      window.showToast?.('Filter tanggal dihapus', 'info');
+    }
+  };
+
+  /**
+   * Render sync history
+   */
+  async function renderSyncHistory() {
+    const list = document.getElementById('sync-history-list');
+    if (!list) return;
+
+    if (!window.syncManager) {
+      list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">Sinkronisasi tidak tersedia</p>';
+      return;
+    }
+
+    const history = window.syncManager.getHistory(10);
+
+    if (history.length === 0) {
+      list.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">Belum ada riwayat sinkronisasi</p>';
+      return;
+    }
+
+    list.innerHTML = history.map(entry => {
+      const time = formatTime(entry.timestamp);
+      const success = entry.success;
+      const icon = success ? 'check-circle' : 'x-circle';
+      const color = success ? 'text-emerald-500' : 'text-red-500';
+
+      let details = '';
+      if (entry.type === 'full') {
+        details = `↑${entry.outbound || 0} ↓${entry.inbound || 0}`;
+      } else if (entry.type === 'force') {
+        details = entry.table;
+      }
+
+      return `
+        <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800">
+          <i data-lucide="${icon}" class="w-4 h-4 ${color} flex-shrink-0"></i>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-slate-700 dark:text-slate-300 truncate">${details || (success ? 'Berhasil' : 'Gagal')}</p>
+          </div>
+          <span class="text-xs text-slate-400 flex-shrink-0">${time}</span>
+        </div>
+      `;
+    }).join('');
+
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }
+
+  /**
+   * Clear sync history
+   */
+  window.clearSyncHistory = function() {
+    if (window.syncManager) {
+      window.syncManager.clearHistory();
+      renderSyncHistory();
+      window.showToast?.('Riwayat sinkronisasi dihapus', 'success');
+    }
+  };
+
+  /**
+   * Format timestamp for display
+   */
+  function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+
+    if (diff < 60000) return 'Baru saja';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m lalu`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}j lalu`;
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  }
+
+  // Auto-initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', window.initSyncStatusUI);
+  } else {
+    setTimeout(window.initSyncStatusUI, 100);
+  }
+
+  console.log('[SyncStatusUI] Module loaded');
+})();
+</script>

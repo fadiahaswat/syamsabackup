@@ -644,6 +644,14 @@ class CompatibilityLayer {
 
     // Flag to control if we use new or old storage
     this.useNewStorage = true;
+
+    // Initialize logger
+    this._logger = window.Logger || {
+      debug: (...args) => console.debug('[CompatibilityLayer]', ...args),
+      info: (...args) => console.info('[CompatibilityLayer]', ...args),
+      warn: (...args) => console.warn('[CompatibilityLayer]', ...args),
+      error: (...args) => console.error('[CompatibilityLayer]', ...args),
+    };
   }
 
   /**

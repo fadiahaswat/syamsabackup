@@ -41,8 +41,6 @@ class SupabaseSync {
     this._db = localDB;
     this._repos = repos;
 
-    this._logger.info('[SupabaseSync] Initializing Sync Manager...');
-
     // 1. Jalankan sinkronisasi awal (inbound pull & outbound push)
     if (navigator.onLine) {
       this.syncAll();
@@ -55,7 +53,6 @@ class SupabaseSync {
 
     // 3. Setup event listener koneksi internet
     window.addEventListener('online', () => {
-      this._logger.info('[SupabaseSync] Network online, starting sync...');
       this.syncAll();
     });
 
@@ -117,7 +114,6 @@ class SupabaseSync {
     this.updateStatus('syncing');
 
     try {
-      this._logger.info('[SupabaseSync] Starting full sync cycle...');
       // 1. Tarik data konfigurasi dinamis (settings) dulu agar batas-batas terupdate
       await this.syncInboundConfig();
 
@@ -128,7 +124,6 @@ class SupabaseSync {
       await this.syncInboundData();
 
       this.updateStatus('synced');
-      this._logger.info('[SupabaseSync] Full sync cycle completed successfully');
     } catch (error) {
       this._logger.error('[SupabaseSync] Sync cycle failed:', error);
       this.updateStatus('error');
@@ -142,18 +137,30 @@ class SupabaseSync {
    * Mengirim antrean perubahan dari sync_queue
    */
   async syncOutbound() {
-    if (this.isSyncingOutbound || !window.syncQueue) return;
+    if (this.isSyncingOutbound || !window.syncQueue || !window.supabaseClient) {
+      this._logger.debug('[SupabaseSync] syncOutbound skipped:', {
+        isSyncingOutbound: this.isSyncingOutbound,
+        hasSyncQueue: !!window.syncQueue,
+        hasClient: !!window.supabaseClient
+      });
+      return;
+    }
+
     this.isSyncingOutbound = true;
+    this.updateStatus('syncing');
 
     try {
       const pendingChanges = await window.syncQueue.getPending(100);
 
       if (pendingChanges.length === 0) {
-        this._logger.info('[SupabaseSync] No outbound changes to sync');
+        this._logger.debug('[SupabaseSync] No pending changes to sync');
         return;
       }
 
-      this._logger.info(`[SupabaseSync] Syncing ${pendingChanges.length} outbound changes...`);
+      this._logger.info(`[SupabaseSync] Syncing ${pendingChanges.length} changes to cloud`);
+
+      let successCount = 0;
+      let failCount = 0;
 
       for (const change of pendingChanges) {
         try {
@@ -171,11 +178,18 @@ class SupabaseSync {
             const payload = change.payload;
             // Clean payload to only include Supabase schema fields
             const cleanPayload = this._stripInternalFields(payload, table);
+
+            this._logger.debug(`[SupabaseSync] Upserting to ${table}:`, cleanPayload.id);
+
             const { error } = await window.supabaseClient
               .from(table)
               .upsert(cleanPayload);
 
-            if (error) throw error;
+            if (error) {
+              this._logger.error(`[SupabaseSync] Upsert error for ${table}:`, error);
+              throw error;
+            }
+            successCount++;
           } else if (change.operation === 'delete') {
             const { error } = await window.supabaseClient
               .from(table)
@@ -183,6 +197,7 @@ class SupabaseSync {
               .eq('id', entityId);
 
             if (error) throw error;
+            successCount++;
           }
 
           // Tandai sebagai sukses ter-sync
@@ -191,12 +206,23 @@ class SupabaseSync {
           await window.syncQueue.deleteChange(change.id);
 
         } catch (err) {
+          failCount++;
           this._logger.error(`[SupabaseSync] Failed to sync change ${change.id}:`, err);
           await window.syncQueue.markFailed(change.id, err);
         }
       }
+
+      this._logger.info(`[SupabaseSync] Sync complete: ${successCount} success, ${failCount} failed`);
+
+    } catch (err) {
+      this._logger.error('[SupabaseSync] syncOutbound error:', err);
     } finally {
       this.isSyncingOutbound = false;
+      if (failCount === 0) {
+        this.updateStatus('synced');
+      } else {
+        this.updateStatus('error');
+      }
     }
   }
 
@@ -207,15 +233,13 @@ class SupabaseSync {
   async syncInboundData() {
     const isAdmin = appState?.adminMode || appState?.superadminMode;
     const kelas = appState?.selectedClass;
+
+    this._logger.info(`[SupabaseSync] syncInboundData called - kelas: ${kelas}, isAdmin: ${isAdmin}`);
+
     if (!kelas && !isAdmin) {
-      this._logger.info('[SupabaseSync] Inbound data sync skipped: No selected class and not admin');
+      this._logger.warn('[SupabaseSync] syncInboundData skipped - no kelas and not admin');
       return;
     }
-
-    this._logger.info(isAdmin 
-      ? '[SupabaseSync] Pulling latest data for ALL classes (Admin Mode)' 
-      : `[SupabaseSync] Pulling latest data for class: ${kelas}`
-    );
 
     // Menandai agar write ke local DB tidak di-queue ulang ke sync_queue
     this._db.isSyncing = true;
@@ -228,12 +252,22 @@ class SupabaseSync {
       }
       const { data: cloudAttendances, error: errAtt } = await queryAtt;
 
-      if (errAtt) throw errAtt;
-      if (cloudAttendances) {
+      if (errAtt) {
+        this._logger.error('[SupabaseSync] Error fetching attendances:', errAtt);
+        throw errAtt;
+      }
+
+      this._logger.info(`[SupabaseSync] Got ${cloudAttendances?.length || 0} attendance records from cloud`);
+
+      if (cloudAttendances && cloudAttendances.length > 0) {
         for (const record of cloudAttendances) {
+          // Transform Supabase format to local format
           const localRecord = await this._db.get('attendances', record.id);
+          const transformedRecord = this._toLocalFormat(record, 'attendances');
+
           if (!localRecord || (record._version > (localRecord._version || 0))) {
-            await this._db.put('attendances', record);
+            this._logger.debug(`[SupabaseSync] Updating local attendance: ${record.id}`);
+            await this._db.put('attendances', transformedRecord);
           }
         }
       }
@@ -276,7 +310,7 @@ class SupabaseSync {
       let queryJr = window.supabaseClient.from('musyrif_journals').select('*');
       if (!isAdmin) {
         const musyrifId = window.journalManager?.getMusyrifId() || 'unknown_musyrif';
-        queryJr = queryJr.eq('musyrifId', musyrifId);
+        queryJr = queryJr.eq('musyrif_id', musyrifId);
       }
       const { data: cloudJournals, error: errJr } = await queryJr;
 
@@ -311,7 +345,6 @@ class SupabaseSync {
    * Menarik konfigurasi geofencing, batas edit, deadline tahfizh, dll.
    */
   async syncInboundConfig() {
-    this._logger.info('[SupabaseSync] Pulling app config & settings...');
     this._db.isSyncing = true;
 
     try {
@@ -346,8 +379,6 @@ class SupabaseSync {
    * Menerapkan konfigurasi dinamis dari database ke variabel global aplikasi secara runtime
    */
   _applyDynamicAppConfig(config) {
-    this._logger.info('[SupabaseSync] Applying dynamic app_config parameters:', config);
-    
     // 1. GPS Geofencing
     if (config.gps) {
       window.APP_LOCATION = {
@@ -392,28 +423,33 @@ class SupabaseSync {
           'postgres_changes',
           { event: '*', schema: 'public', table: table },
           async (payload) => {
-            this._logger.info(`[SupabaseSync] Realtime change detected on ${table}:`, payload);
-            
+            this._logger.debug(`[Realtime] Received ${payload.eventType} on ${table}`);
+
             // Bypass sync_queue
             this._db.isSyncing = true;
-            
+
             try {
               if (payload.eventType === 'DELETE') {
                 await this._db.delete(table, payload.old.id);
               } else {
                 // INSERT atau UPDATE
                 const record = payload.new;
-                
+
+                // Transform Supabase format to local format
+                const transformedRecord = this._toLocalFormat(record, table);
+
                 // Khusus untuk tabel spesifik kelas, pastikan kelasnya cocok dengan kelas saat ini (kecuali jika mode Admin/Superadmin)
                 const isAdmin = appState?.adminMode || appState?.superadminMode;
                 if (table !== 'settings' && !isAdmin && record.kelas !== appState?.selectedClass) {
+                  this._logger.debug(`[Realtime] Skipping ${table} record - kelas mismatch: ${record.kelas} !== ${appState?.selectedClass}`);
                   return; // Abaikan data kelas lain
                 }
 
                 const localRecord = await this._db.get(table, record.id);
                 if (!localRecord || (record._version > (localRecord._version || 0))) {
-                  await this._db.put(table, record);
-                  
+                  this._logger.debug(`[Realtime] Updating local ${table}:`, record.id);
+                  await this._db.put(table, transformedRecord);
+
                   // Jika setting app_config berubah, langsung terapkan
                   if (table === 'settings' && record.id === 'app_config' && record.data) {
                     this._applyDynamicAppConfig(record.data);
@@ -428,8 +464,6 @@ class SupabaseSync {
                   window.stateManager._emit('change', ['attendanceData', 'permits', 'settings']);
                 }
               }
-              
-              this._logger.info(`[SupabaseSync] Realtime update applied for ${table}`);
             } catch (err) {
               this._logger.error(`[SupabaseSync] Failed to apply realtime change on ${table}:`, err);
             } finally {
@@ -440,17 +474,20 @@ class SupabaseSync {
         .subscribe();
 
       this.channels.push(channel);
+      this._logger.info(`Subscribed to realtime changes for ${table}`);
     });
-
-    this._logger.info(`[SupabaseSync] Realtime listener subscribed to tables: ${tables.join(', ')}`);
   }
 
   /**
    * Whitelist of fields that exist in Supabase schema
    * Only these fields will be synced to Supabase - everything else is local-only
+   *
+   * NOTE: Supabase schema uses JSONB for status field which can store objects,
+   * so no transformation is needed. The local status object {shalat: "Hadir"}
+   * is sent directly to Supabase.
    */
   _SUPABASE_FIELDS = {
-    attendances: ['id', 'date', 'slot', 'studentId', 'kelas', 'status', 'note'],
+    attendances: ['id', 'date', 'slot', 'studentId', 'kelas', 'status', 'note', 'timestamps', 'auditTrail', '_version', '_updatedAt'],
     permits: ['id', 'nis', 'kelas', 'category', 'reason', 'start_date', 'end_date', 'start_session', 'end_session', 'status', 'is_active', 'document', 'audit_trail', '_version'],
     tahfizh: ['id', 'nis', 'kelas', 'program', 'jenis', 'juz', 'halaman', 'surat', 'kualitas', 'status', 'musyrif', 'tanggal', '_version'],
     settings: ['id', 'data', 'updated_at'],
@@ -458,6 +495,7 @@ class SupabaseSync {
 
   /**
    * Clean payload to only include fields that exist in Supabase schema
+   * No transformation needed - JSONB in Supabase can store objects directly
    */
   _stripInternalFields(payload, entityType = 'attendances') {
     if (Array.isArray(payload)) {
@@ -467,22 +505,31 @@ class SupabaseSync {
     if (typeof payload === 'object' && payload !== null) {
       const allowedFields = this._SUPABASE_FIELDS[entityType] || Object.keys(payload);
       const cleaned = {};
+
       for (const key of allowedFields) {
         if (payload.hasOwnProperty(key)) {
           cleaned[key] = payload[key];
         }
       }
+
       // Always include 'id' field
       if (payload.id && !cleaned.id) {
         cleaned.id = payload.id;
       }
+
       return cleaned;
     }
 
     return payload;
   }
+
+  /**
+   * Transform Supabase data back to local format (no-op since formats are compatible)
+   */
+  _toLocalFormat(record, entityType = 'attendances') {
+    return record;
+  }
 }
 
 // Singleton Instance
 window.supabaseSync = new SupabaseSync();
-console.log('[SupabaseSync] Module loaded');

@@ -532,8 +532,19 @@ class LocalDB {
             priority: storeName === 'attendances' ? 8 : (storeName === 'permits' ? 7 : (storeName === 'tahfizh' ? 7 : 5))
           }).then(() => {
             if (window.supabaseSync && navigator.onLine) {
-              window.supabaseSync.syncOutbound();
+              // Debounce syncOutbound to avoid rapid calls
+              if (!this._syncDebounceTimer) {
+                this._syncDebounceTimer = setTimeout(() => {
+                  this._syncDebounceTimer = null;
+                  this._logger.debug(`[LocalDB] Triggering syncOutbound after ${storeName} write`);
+                  window.supabaseSync.syncOutbound().catch(err => {
+                    this._logger.error('[LocalDB] syncOutbound failed:', err);
+                  });
+                }, 100); // 100ms debounce
+              }
             }
+          }).catch(err => {
+            this._logger.error('[LocalDB] Failed to add to sync queue:', err);
           });
         }
         resolve(record);

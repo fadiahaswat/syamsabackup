@@ -109,13 +109,24 @@ class SyncQueue {
 
   /**
    * Add attendance change
+   * FIX: Create unique ID per student for proper sync
+   * Each student in a slot has their own record
    */
-  async addAttendanceChange(dateKey, slotId, data) {
+  async addAttendanceChange(dateKey, slotId, studentId, data) {
+    // Create unique entity_id per student
+    const entityId = `${dateKey}_${slotId}_${studentId}`;
+
     return this.add({
       entity_type: 'attendances',
-      entity_id: `${dateKey}_${slotId}`,
+      entity_id: entityId,
       operation: 'upsert',
-      payload: { dateKey, slotId, data },
+      payload: {
+        id: entityId,
+        date: dateKey,
+        slot: slotId,
+        studentId: String(studentId),
+        ...data
+      },
       priority: 8,
     });
   }

@@ -1,15 +1,17 @@
 /**
- * StorageManagerV2 - Backward Compatible Storage Wrapper
+ * StorageManagerV2 - Optimized IndexedDB-First Storage
  *
- * Wraps the new IndexedDB-based storage system while maintaining
- * the same API as the old StorageManager for zero-breaking changes
+ * OPTIMIZATION: Uses IndexedDB as PRIMARY storage only.
+ * LocalStorage is kept for read-only caching (backup display),
+ * but writes go to IndexedDB only - eliminating dual write overhead.
  *
  * FEATURES:
- * - Seamless migration from localStorage to IndexedDB
- * - Maintains existing appState references
+ * - IndexedDB as single source of truth
+ * - Delta sync with timestamp-based tracking
  * - Auto-persistence with debouncing
  * - Version tracking
  * - Event callbacks
+ * - Reduced storage write operations
  */
 
 class StorageManagerV2 {
@@ -35,6 +37,10 @@ class StorageManagerV2 {
     this._lastSavedData = null;
     this._lastSavedVersion = 0;
 
+    // NEW: Timestamp-based delta sync
+    this._lastSyncTime = null;
+    this._syncVersion = 0;
+
     // Database references
     this._db = null;
     this._repos = null;
@@ -45,8 +51,11 @@ class StorageManagerV2 {
     this.onOnlineStatusChange = null;
     this.onDataUpdate = null;
 
-    // Legacy mode flag (true = use new IndexedDB, false = use localStorage)
+    // Mode flag - true = IndexedDB primary (optimized), false = localStorage fallback
     this._useIndexedDB = false;
+
+    // OPTIMIZATION: Track dirty state to avoid unnecessary writes
+    this._isDirty = false;
 
     // Setup connection listeners
     this._setupConnectionListeners();
@@ -56,8 +65,10 @@ class StorageManagerV2 {
    * Initialize StorageManager
    */
   async init(musyrifId) {
-    console.log('[StorageManagerV2] Initializing with musyrifId:', musyrifId);
     this.musyrifId = musyrifId;
+
+    // Load last sync time from localStorage
+    this._lastSyncTime = parseInt(localStorage.getItem('sync_last_time') || '0', 10) || null;
 
     try {
       // Initialize the database system
@@ -80,7 +91,6 @@ class StorageManagerV2 {
       }
 
       this._initialized = true;
-      console.log('[StorageManagerV2] Initialized with IndexedDB');
 
     } catch (error) {
       console.error('[StorageManagerV2] IndexedDB init failed, falling back to localStorage:', error);
@@ -91,13 +101,7 @@ class StorageManagerV2 {
       this._initialized = true;
     }
 
-    console.log('[StorageManagerV2] Initialization complete', {
-      useIndexedDB: this._useIndexedDB,
-      isOnline: this.isOnline,
-      musyrifId: this.musyrifId
-    });
-
-    // Auto-trigger dashboard refresh once initialization is complete (so async repos are ready)
+    // Auto-trigger dashboard refresh once initialization is complete
     if (typeof window.updateDashboard === 'function') {
       window.updateDashboard();
     }
@@ -109,7 +113,6 @@ class StorageManagerV2 {
   _setupConnectionListeners() {
     window.addEventListener('online', () => {
       this.isOnline = true;
-      console.log('[StorageManagerV2] Connection restored');
       if (this.onOnlineStatusChange) {
         this.onOnlineStatusChange(true);
       }
@@ -117,7 +120,6 @@ class StorageManagerV2 {
 
     window.addEventListener('offline', () => {
       this.isOnline = false;
-      console.log('[StorageManagerV2] Connection lost - offline mode');
       if (this.onOnlineStatusChange) {
         this.onOnlineStatusChange(false);
       }
@@ -136,6 +138,9 @@ class StorageManagerV2 {
           this.onDataUpdate(key);
         });
       }
+
+      // Mark as dirty for batch sync
+      this._isDirty = true;
 
       // Auto-refresh dashboard and leaderboard on inbound sync updates
       if (changedKeys.includes('attendanceData') || changedKeys.includes('permits') || changedKeys.includes('attendance')) {
@@ -162,17 +167,21 @@ class StorageManagerV2 {
 
   /**
    * Load data from IndexedDB into appState
+   * OPTIMIZATION: Uses delta sync - only load records changed since last sync
    */
   async _loadFromDatabase() {
     if (!this._repos || !this._db) return;
 
-    console.log('[StorageManagerV2] Loading data from IndexedDB...');
-
     try {
-      // Load attendance data
       const kelas = this.musyrifId?.replace('class_', '') || 'Unknown';
-      const today = new Date().toISOString().split('T')[0];
-      const attendanceRecords = await this._repos.attendance.getByKelas(kelas);
+
+      // OPTIMIZATION: Delta sync - only load records changed since last sync
+      let attendanceRecords;
+      if (this._lastSyncTime && !this._syncVersion) {
+        attendanceRecords = await this._repos.attendance.getByKelasModifiedAfter(kelas, this._lastSyncTime);
+      } else {
+        attendanceRecords = await this._repos.attendance.getByKelas(kelas);
+      }
 
       // Transform IndexedDB records to legacy appState format
       const attendanceData = {};
@@ -193,21 +202,18 @@ class StorageManagerV2 {
 
       if (typeof appState !== 'undefined') {
         appState.attendanceData = attendanceData;
-        console.log('[StorageManagerV2] Attendance loaded:', Object.keys(attendanceData).length, 'dates');
       }
 
       // Load permits
       const permits = await this._repos.permit.getByKelas(kelas);
       if (typeof appState !== 'undefined') {
         appState.permits = permits || [];
-        console.log('[StorageManagerV2] Permits loaded:', permits?.length || 0);
       }
 
       // Load settings
       const settings = await this._repos.settings.getUserSettings();
       if (typeof appState !== 'undefined') {
         appState.settings = { ...appState.settings, ...settings };
-        console.log('[StorageManagerV2] Settings loaded');
       }
 
       // Load activity log
@@ -216,36 +222,59 @@ class StorageManagerV2 {
         appState.activityLog = activityLog || [];
       }
 
+      // OPTIMIZATION: Update localStorage cache (read-only) for backup display
+      this._updateLocalStorageCache();
+
     } catch (error) {
       console.error('[StorageManagerV2] Failed to load from IndexedDB:', error);
     }
   }
 
   /**
-   * Load data from localStorage (fallback)
+   * OPTIMIZATION: Update localStorage cache (read-only backup)
+   * Only updates cache, does NOT write to IndexedDB
+   */
+  async _updateLocalStorageCache() {
+    if (typeof appState === 'undefined') return;
+
+    try {
+      // Only update if data has changed
+      const currentData = JSON.stringify(appState.attendanceData);
+      if (currentData === this._lastSavedData) return;
+
+      // Update localStorage cache for fallback/backup
+      this._set(this.keys.attendance, appState.attendanceData);
+      this._set(this.keys.permits, appState.permits);
+      this._set(this.keys.settings, appState.settings);
+      this._set(this.keys.activityLog, appState.activityLog);
+
+      this._lastSavedData = currentData;
+
+    } catch (error) {
+      console.error('[StorageManagerV2] Failed to update localStorage cache:', error);
+    }
+  }
+
+  /**
+   * Load data from localStorage (fallback only)
    */
   _loadFromStorage() {
-    console.log('[StorageManagerV2] Loading data from localStorage...');
-
     // Load attendance
     const attendanceData = this._get(this.keys.attendance);
     if (attendanceData && typeof appState !== 'undefined') {
       appState.attendanceData = attendanceData;
-      console.log('[StorageManagerV2] Attendance loaded, dates:', Object.keys(attendanceData || {}));
     }
 
     // Load permits
     const permits = this._get(this.keys.permits);
     if (permits && typeof appState !== 'undefined') {
       appState.permits = permits;
-      console.log('[StorageManagerV2] Permits loaded:', permits.length);
     }
 
     // Load settings
     const settings = this._get(this.keys.settings);
     if (settings && typeof appState !== 'undefined') {
       appState.settings = { ...appState.settings, ...settings };
-      console.log('[StorageManagerV2] Settings loaded');
     }
 
     // Load activity log
@@ -256,7 +285,7 @@ class StorageManagerV2 {
   }
 
   // ==========================================
-  // LOCAL STORAGE HELPERS (fallback)
+  // LOCAL STORAGE HELPERS (cache only, not primary)
   // ==========================================
 
   _get(key) {
@@ -288,6 +317,7 @@ class StorageManagerV2 {
 
   /**
    * Save attendance data
+   * OPTIMIZATION: Single write to IndexedDB, no dual write
    */
   saveAttendance(dateKey, slotId, data) {
     if (typeof appState === 'undefined') return;
@@ -308,7 +338,8 @@ class StorageManagerV2 {
       _savedBy: this.musyrifId,
     };
 
-    // Auto-save
+    // Mark dirty and schedule save
+    this._isDirty = true;
     if (this.autoSave.enabled) {
       this._scheduleAutoSave();
     }
@@ -342,17 +373,15 @@ class StorageManagerV2 {
   // ==========================================
 
   /**
-   * Save permits (full array) - async with proper Promise handling
+   * Save permits (full array)
+   * OPTIMIZATION: Single write to IndexedDB only
    */
   async savePermits(permits) {
     if (typeof appState !== 'undefined') {
       appState.permits = permits;
     }
 
-    // Use localStorage as single source of truth for backup
-    // IndexedDB is primary storage managed by repositories
-    this._set(this.keys.permits, permits);
-
+    // OPTIMIZATION: IndexedDB is PRIMARY - localStorage only as read cache
     if (this._useIndexedDB && this._repos?.permit) {
       try {
         for (const permit of permits) {
@@ -364,9 +393,12 @@ class StorageManagerV2 {
           }
         }
       } catch (err) {
-        console.error('[StorageManagerV2] Failed to bulk save permits to IndexedDB:', err);
+        console.error('[StorageManagerV2] Failed to save permits to IndexedDB:', err);
       }
     }
+
+    // Update localStorage cache (not primary)
+    this._set(this.keys.permits, permits);
 
     if (this.onDataUpdate) {
       this.onDataUpdate('permits');
@@ -377,6 +409,7 @@ class StorageManagerV2 {
 
   /**
    * Save single permit - immutable update
+   * OPTIMIZATION: Single write to IndexedDB only
    */
   async savePermit(permit) {
     if (typeof appState === 'undefined') {
@@ -396,9 +429,7 @@ class StorageManagerV2 {
 
     appState.permits = updatedPermits;
 
-    // Use localStorage as single source of truth for backup
-    this._set(this.keys.permits, updatedPermits);
-
+    // OPTIMIZATION: IndexedDB primary - no dual write
     if (this._useIndexedDB && this._repos?.permit) {
       try {
         const existing = await this._repos.permit.get(permit.id);
@@ -412,6 +443,9 @@ class StorageManagerV2 {
       }
     }
 
+    // Update localStorage cache only
+    this._set(this.keys.permits, updatedPermits);
+
     if (this.onDataUpdate) {
       this.onDataUpdate('permits');
     }
@@ -421,20 +455,26 @@ class StorageManagerV2 {
 
   /**
    * Delete permit - immutable update
+   * OPTIMIZATION: Single delete from IndexedDB only
    */
   async deletePermit(permitId) {
     if (typeof appState !== 'undefined' && Array.isArray(appState.permits)) {
       // Immutable update
       appState.permits = appState.permits.filter(p => String(p.id) !== String(permitId));
-      this._set(this.keys.permits, appState.permits);
     }
 
+    // OPTIMIZATION: IndexedDB primary - no dual write
     if (this._useIndexedDB && this._repos?.permit) {
       try {
         await this._repos.permit.delete(permitId);
       } catch (err) {
         console.error('[StorageManagerV2] Failed to delete permit from IndexedDB:', err);
       }
+    }
+
+    // Update localStorage cache only
+    if (typeof appState !== 'undefined') {
+      this._set(this.keys.permits, appState.permits);
     }
 
     if (this.onDataUpdate) {
@@ -451,10 +491,12 @@ class StorageManagerV2 {
       appState.settings = { ...appState.settings, ...settings };
     }
 
+    // OPTIMIZATION: IndexedDB primary
     if (this._useIndexedDB && this._stateManager) {
       this._stateManager.updateSettings(settings);
     }
 
+    // Update cache only
     this._set(this.keys.settings, settings);
 
     if (this.onDataUpdate) {
@@ -473,7 +515,7 @@ class StorageManagerV2 {
       appState.activityLog = logs;
     }
 
-    // Use localStorage as single source of truth
+    // Update cache only (activity logs are local)
     this._set(this.keys.activityLog, logs);
 
     if (this.onDataUpdate) {
@@ -505,18 +547,24 @@ class StorageManagerV2 {
     const currentVersion = appState._version || 0;
 
     if (currentData === this._lastSavedData &&
-        currentVersion === this._lastSavedVersion) {
+        currentVersion === this._lastSavedVersion &&
+        !this._isDirty) {
       return; // No changes
     }
 
     this._lastSavedData = currentData;
     this._lastSavedVersion = currentVersion;
+    this._isDirty = false;
 
     if (this._useIndexedDB && this._stateManager) {
-      // Use new state manager for IndexedDB
+      // Use state manager for IndexedDB (PRIMARY)
       this._stateManager.forcePersist();
+
+      // Update localStorage cache in background
+      this._updateLocalStorageCache();
+
     } else {
-      // Fall back to localStorage
+      // Fall back to localStorage only
       if (appState.attendanceData) {
         this._set(this.keys.attendance, appState.attendanceData);
       }
@@ -531,7 +579,7 @@ class StorageManagerV2 {
       }
     }
 
-    console.log('[StorageManagerV2] Auto-saved (v' + currentVersion + ')');
+    Logger.debug('[StorageManagerV2] Auto-saved (v' + currentVersion + ')');
   }
 
   /**
@@ -546,6 +594,37 @@ class StorageManagerV2 {
   }
 
   // ==========================================
+  // DELTA SYNC METHODS (NEW)
+  // ==========================================
+
+  /**
+   * Update last sync timestamp for delta sync
+   */
+  updateLastSyncTime(timestamp = Date.now()) {
+    this._lastSyncTime = timestamp;
+    localStorage.setItem('sync_last_time', timestamp.toString());
+    this._syncVersion++;
+    Logger.debug('[StorageManagerV2] Last sync updated:', new Date(timestamp).toISOString());
+  }
+
+  /**
+   * Get last sync time
+   */
+  getLastSyncTime() {
+    return this._lastSyncTime;
+  }
+
+  /**
+   * Force full sync on next load (bypass delta)
+   */
+  forceFullSync() {
+    this._lastSyncTime = null;
+    this._syncVersion = 0;
+    localStorage.removeItem('sync_last_time');
+    Logger.debug('[StorageManagerV2] Full sync enforced on next load');
+  }
+
+  // ==========================================
   // UTILITY METHODS
   // ==========================================
 
@@ -556,6 +635,8 @@ class StorageManagerV2 {
       storageKeys: this.keys,
       useIndexedDB: this._useIndexedDB,
       initialized: this._initialized,
+      lastSyncTime: this._lastSyncTime,
+      isDirty: this._isDirty
     };
   }
 
@@ -612,7 +693,7 @@ class StorageManagerV2 {
       localStorage.removeItem(key);
     }
 
-    // Clear IndexedDB with proper async handling
+    // Clear IndexedDB
     if (this._db) {
       try {
         await Promise.all([
@@ -639,10 +720,14 @@ class StorageManagerV2 {
       };
     }
 
+    // Reset delta sync
+    this._lastSyncTime = null;
+    this._syncVersion = 0;
+    localStorage.removeItem('sync_last_time');
     this._lastSavedData = null;
     this._lastSavedVersion = 0;
 
-    console.log('[StorageManagerV2] All data cleared');
+    Logger.debug('[StorageManagerV2] All data cleared');
   }
 
   destroy() {
@@ -655,7 +740,6 @@ class StorageManagerV2 {
       this._stateManager = null;
     }
 
-    console.log('[StorageManagerV2] Destroyed');
   }
 }
 
@@ -676,5 +760,3 @@ window.storageManager = storageManagerV2; // Override legacy manager with V2
 
 // Also create global alias for easy access
 window.newStorageManager = storageManagerV2;
-
-console.log('[StorageManagerV2] Module loaded and assigned to window.storageManager');

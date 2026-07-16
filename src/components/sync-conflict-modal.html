@@ -1,0 +1,318 @@
+<!--
+  Sync Conflict Resolution Modal
+  Displays when data conflicts are detected during synchronization
+-->
+<div id="modal-sync-conflicts" class="modal fixed inset-0 z-[100] hidden" aria-hidden="true">
+  <div class="modal-backdrop absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="window.closeSyncConflictsModal?.()"></div>
+
+  <div class="modal-content absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[85vh] overflow-auto bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700">
+
+    <!-- Header -->
+    <div class="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-6 py-4 rounded-t-2xl">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 dark:text-amber-400"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Konflik Sinkronisasi</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              <span id="sync-conflict-count">0</span> konflik perlu diselesaikan
+            </p>
+          </div>
+        </div>
+        <button onclick="window.closeSyncConflictsModal?.()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5 text-slate-500"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Conflict List -->
+    <div id="sync-conflicts-list" class="p-6 space-y-4">
+      <!-- Conflicts will be rendered here -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="sync-conflicts-empty" class="hidden p-8 text-center">
+      <div class="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 mx-auto mb-4 flex items-center justify-center">
+        <i data-lucide="check-circle" class="w-8 h-8 text-emerald-600 dark:text-emerald-400"></i>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Semua Konflik Terselesaikan</h3>
+      <p class="text-slate-500 dark:text-slate-400">Data sudah tersinkronisasi dengan baik.</p>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="sticky bottom-0 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-6 py-4 rounded-b-2xl">
+      <div class="flex items-center justify-between">
+        <button onclick="window.resolveAllConflicts?.('local')"
+          class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <i data-lucide="smartphone" class="w-4 h-4 inline mr-1"></i>
+          Gunakan Semua Data Lokal
+        </button>
+        <div class="flex gap-3">
+          <button onclick="window.closeSyncConflictsModal?.()"
+            class="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+            Nanti Saja
+          </button>
+          <button onclick="window.resolveAllConflicts?.('server')"
+            class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors">
+            <i data-lucide="cloud" class="w-4 h-4 inline mr-1"></i>
+            Gunakan Semua Data Server
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Individual Conflict Item Template -->
+<template id="sync-conflict-item-template">
+  <div class="conflict-item bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700" data-conflict-id="">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h4 class="font-semibold text-slate-900 dark:text-white conflict-title">Konflik Data</h4>
+        <p class="text-sm text-slate-500 dark:text-slate-400 conflict-meta">
+          <span class="conflict-type"></span> • <span class="conflict-time"></span>
+        </p>
+      </div>
+      <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 conflict-status">
+        Konflik
+      </span>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <!-- Local Data -->
+      <div class="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="smartphone" class="w-4 h-4 text-blue-500"></i>
+          <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Data Lokal</span>
+        </div>
+        <pre class="text-xs text-slate-600 dark:text-slate-400 overflow-auto max-h-32 conflict-local-data"></pre>
+      </div>
+
+      <!-- Server Data -->
+      <div class="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="cloud" class="w-4 h-4 text-emerald-500"></i>
+          <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Data Server</span>
+        </div>
+        <pre class="text-xs text-slate-600 dark:text-slate-400 overflow-auto max-h-32 conflict-server-data"></pre>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="btn-use-local flex-1 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+        <i data-lucide="smartphone" class="w-4 h-4 inline mr-1"></i>
+        Gunakan Lokal
+      </button>
+      <button class="btn-use-server flex-1 px-3 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors">
+        <i data-lucide="cloud" class="w-4 h-4 inline mr-1"></i>
+        Gunakan Server
+      </button>
+    </div>
+  </div>
+</template>
+
+<script>
+/**
+ * Sync Conflict Resolution Controller
+ */
+(function() {
+  'use strict';
+
+  let conflicts = [];
+  let onConflictResolved = null;
+
+  /**
+   * Open the sync conflicts modal
+   */
+  window.openSyncConflictsModal = async function() {
+    const modal = document.getElementById('modal-sync-conflicts');
+    if (!modal) return;
+
+    // Load conflicts from SyncQueue
+    try {
+      if (window.syncQueue) {
+        conflicts = await window.syncQueue.getConflicts();
+      } else if (window.localDB) {
+        conflicts = await window.localDB.getByIndex('conflicts', 'resolved', false);
+      }
+    } catch (e) {
+      console.error('[SyncConflicts] Failed to load conflicts:', e);
+      conflicts = [];
+    }
+
+    renderConflicts();
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+
+    // Initialize Lucide icons
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  };
+
+  /**
+   * Close the sync conflicts modal
+   */
+  window.closeSyncConflictsModal = function() {
+    const modal = document.getElementById('modal-sync-conflicts');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  };
+
+  /**
+   * Render conflicts list
+   */
+  function renderConflicts() {
+    const list = document.getElementById('sync-conflicts-list');
+    const empty = document.getElementById('sync-conflicts-empty');
+    const count = document.getElementById('sync-conflict-count');
+
+    if (!list || !empty || !count) return;
+
+    count.textContent = conflicts.length;
+
+    if (conflicts.length === 0) {
+      list.classList.add('hidden');
+      empty.classList.remove('hidden');
+      return;
+    }
+
+    list.classList.remove('hidden');
+    empty.classList.add('hidden');
+
+    const template = document.getElementById('sync-conflict-item-template');
+    list.innerHTML = '';
+
+    conflicts.forEach((conflict, index) => {
+      const item = template.content.cloneNode(true);
+      const container = item.querySelector('.conflict-item');
+
+      container.dataset.conflictId = conflict.id;
+
+      // Set title
+      const title = item.querySelector('.conflict-title');
+      const entityType = conflict.entity_type || conflict.entityType || 'unknown';
+      title.textContent = `Konflik ${formatEntityType(entityType)}`;
+
+      // Set meta
+      const meta = item.querySelector('.conflict-meta');
+      const time = item.querySelector('.conflict-time');
+      const type = item.querySelector('.conflict-type');
+      type.textContent = formatEntityType(entityType);
+      time.textContent = formatTime(conflict.created_at || conflict.createdAt || Date.now());
+
+      // Set data
+      const localData = item.querySelector('.conflict-local-data');
+      const serverData = item.querySelector('.conflict-server-data');
+
+      try {
+        localData.textContent = JSON.stringify(conflict.local_data || conflict.localData || {}, null, 2);
+        serverData.textContent = JSON.stringify(conflict.server_data || conflict.serverData || {}, null, 2);
+      } catch (e) {
+        localData.textContent = 'Data tidak tersedia';
+        serverData.textContent = 'Data tidak tersedia';
+      }
+
+      // Set button handlers
+      const useLocalBtn = item.querySelector('.btn-use-local');
+      const useServerBtn = item.querySelector('.btn-use-server');
+
+      useLocalBtn.onclick = () => resolveConflict(conflict.id, 'local');
+      useServerBtn.onclick = () => resolveConflict(conflict.id, 'server');
+
+      list.appendChild(item);
+    });
+  }
+
+  /**
+   * Resolve a single conflict
+   */
+  async function resolveConflict(conflictId, resolution) {
+    try {
+      if (window.syncQueue) {
+        await window.syncQueue.resolveConflict(conflictId, {
+          resolution,
+          resolvedAt: Date.now()
+        });
+      } else if (window.localDB) {
+        const conflict = await window.localDB.get('conflicts', conflictId);
+        if (conflict) {
+          conflict.resolved = true;
+          conflict.resolution = resolution;
+          conflict.resolvedAt = Date.now();
+          await window.localDB.put('conflicts', conflict);
+        }
+      }
+
+      // Remove from local list
+      conflicts = conflicts.filter(c => c.id !== conflictId);
+
+      // Re-render
+      renderConflicts();
+
+      // Trigger callback
+      if (onConflictResolved) {
+        onConflictResolved(conflictId, resolution);
+      }
+
+      // Show toast
+      const resolutionText = resolution === 'local' ? 'Data Lokal' : 'Data Server';
+      window.showToast?.(`Konflik diselesaikan dengan ${resolutionText}`, 'success');
+
+    } catch (e) {
+      console.error('[SyncConflicts] Failed to resolve conflict:', e);
+      window.showToast?.('Gagal menyelesaikan konflik', 'error');
+    }
+  }
+
+  /**
+   * Resolve all conflicts with a single strategy
+   */
+  window.resolveAllConflicts = async function(strategy) {
+    for (const conflict of conflicts) {
+      await resolveConflict(conflict.id, strategy);
+    }
+    window.closeSyncConflictsModal?.();
+  };
+
+  /**
+   * Set callback for conflict resolution
+   */
+  window.onSyncConflictResolved = function(callback) {
+    onConflictResolved = callback;
+  };
+
+  /**
+   * Format entity type for display
+   */
+  function formatEntityType(type) {
+    const typeMap = {
+      'attendances': 'Presensi',
+      'permits': 'Perizinan',
+      'tahfizh': 'Tahfizh',
+      'settings': 'Pengaturan'
+    };
+    return typeMap[type] || type;
+  }
+
+  /**
+   * Format timestamp for display
+   */
+  function formatTime(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+
+    if (diff < 60000) return 'Baru saja';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} menit lalu`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)} jam lalu`;
+    return date.toLocaleDateString('id-ID');
+  }
+
+  console.log('[SyncConflicts] Module loaded');
+})();
+</script>

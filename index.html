@@ -2609,81 +2609,123 @@
         transform: translateX(0);
         color: #ffffff !important;
       }
-      #bottom-nav .nav-label { display: none !important; }
+      /* New Clean and Premium Bottom Nav Styles */
+      #bottom-nav {
+        bottom: calc(1rem + env(safe-area-inset-bottom));
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
+      #bottom-nav .nav-container {
+        background: rgba(255, 255, 255, 0.76) !important;
+        backdrop-filter: blur(20px) saturate(170%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        box-shadow: 
+          0 12px 34px -10px rgba(15, 23, 42, 0.08),
+          0 4px 12px -4px rgba(15, 23, 42, 0.03),
+          inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+      }
+      .dark #bottom-nav .nav-container {
+        background: rgba(15, 23, 42, 0.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 
+          0 16px 40px -12px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+      }
+      #bottom-nav .nav-label {
+        display: none !important;
+      }
       #bottom-nav .nav-btn {
-        flex: 1 1 0 !important;
-        min-width: 0;
-        padding: 0.7rem !important;
-        border-radius: 9999px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 0.65rem 0 !important;
         background: transparent !important;
         border: 0 !important;
         box-shadow: none !important;
-      }
-      #bottom-nav .nav-btn.active {
+        border-radius: 9999px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
         flex: 1 1 0 !important;
-        background: rgba(15, 23, 42, 0.06) !important;
+        min-width: 0;
       }
-      #bottom-nav .nav-btn[data-target="home"].active { background: rgba(16, 185, 129, 0.14) !important; }
-      #bottom-nav .nav-btn[data-target="tahfizh"].active { background: rgba(249, 115, 22, 0.14) !important; }
-      #bottom-nav .nav-btn[data-target="report"].active { background: rgba(59, 130, 246, 0.14) !important; }
-      #bottom-nav .nav-btn[data-target="profile"].active { background: rgba(168, 85, 247, 0.14) !important; }
+      #bottom-nav .nav-btn i,
+      #bottom-nav .nav-btn svg {
+        width: 1.35rem;
+        height: 1.35rem;
+        color: #94a3b8 !important;
+        stroke: currentColor !important;
+        transition: all 0.25s ease;
+      }
+      #bottom-nav .nav-btn.active i,
+      #bottom-nav .nav-btn.active svg {
+        transform: translateY(-2px);
+        animation: bottom-nav-active-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
       #bottom-nav .nav-btn[data-target="home"].active i { color: #10b981 !important; }
       #bottom-nav .nav-btn[data-target="tahfizh"].active i { color: #f97316 !important; }
       #bottom-nav .nav-btn[data-target="report"].active i { color: #3b82f6 !important; }
       #bottom-nav .nav-btn[data-target="profile"].active i { color: #a855f7 !important; }
-      #bottom-nav .nav-btn > div:first-child { background: transparent !important; }
-      #bottom-nav .nav-btn i,
-      #bottom-nav .nav-btn svg { width: 1.45rem; height: 1.45rem; }
+
+      #bottom-nav .nav-indicator {
+        position: absolute;
+        bottom: 4px;
+        width: 4px;
+        height: 4px;
+        border-radius: 9999px;
+        transform: scale(0);
+        opacity: 0;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+      }
+      #bottom-nav .nav-btn.active .nav-indicator {
+        transform: scale(1);
+        opacity: 1;
+      }
+      #bottom-nav .nav-btn[data-target="home"] .nav-indicator { background-color: #10b981 !important; }
+      #bottom-nav .nav-btn[data-target="tahfizh"] .nav-indicator { background-color: #f97316 !important; }
+      #bottom-nav .nav-btn[data-target="report"] .nav-indicator { background-color: #3b82f6 !important; }
+      #bottom-nav .nav-btn[data-target="profile"] .nav-indicator { background-color: #a855f7 !important; }
+
       #bottom-nav > [data-target="jurnal"] {
-        transform: translateX(-50%);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: absolute;
+        top: -1.25rem;
+        left: 50%;
+        transform: translate3d(-50%, 0, 0);
+        z-index: 50;
+        box-shadow: 0 8px 24px rgba(79, 70, 229, 0.25) !important;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+      }
+      #bottom-nav > [data-target="jurnal"]:hover {
+        transform: translate3d(-50%, -4px, 0) scale(1.06) !important;
+        box-shadow: 0 12px 30px rgba(79, 70, 229, 0.4) !important;
+      }
+      #bottom-nav > [data-target="jurnal"]:active {
+        transform: translate3d(-50%, 2px, 0) scale(0.95) !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2) !important;
       }
       #bottom-nav > [data-target="jurnal"].active {
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2), 0 16px 28px -10px rgba(79, 70, 229, 0.55) !important;
+        background-color: #4f46e5 !important;
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.25), 0 12px 28px rgba(79, 70, 229, 0.45) !important;
       }
-      #bottom-nav > [data-target="jurnal"].active i { transform: scale(1.08); }
+
       @media (max-width: 380px) {
         #bottom-nav > [data-target="jurnal"] {
           width: 3.25rem;
           height: 3.25rem;
-          top: -1.25rem;
+          top: -1rem;
+        }
+        #bottom-nav .musyrif-spacer {
+          width: 3.25rem !important;
         }
       }
-      @media (max-width: 380px) {
-        .nav-btn {
-          flex: 1 1 0;
-        }
-        .nav-btn.active {
-          flex: 1.55 1 0;
-          padding-left: 0.7rem;
-          padding-right: 0.7rem;
-        }
-        .nav-label {
-          font-size: 10px !important;
-        }
-      }
-      .nav-btn.active i,
-      .nav-btn.active svg {
-        transform: scale(0.92);
-        stroke-width: 2.15px;
-        color: #ffffff !important;
-        stroke: currentColor !important;
-        animation: bottom-nav-active-pop 0.28s ease-out;
-      }
-      nav .nav-btn:not(.active) i,
-      nav .nav-btn:not(.active) svg {
-        color: #94a3b8 !important;
-        stroke: currentColor !important;
-      }
-      .nav-btn.active .nav-indicator {
-        transform: scale(1);
-        opacity: 1;
-      }
+
       @keyframes bottom-nav-active-pop {
-        0% { transform: scale(0.92); }
-        65% { transform: scale(1.12); }
-        100% { transform: scale(1.08); }
+        0% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-3px) scale(1.1); }
+        100% { transform: translateY(-2px) scale(1); }
       }
+
       @keyframes tahfizh-tab-pop {
         0% { transform: scale(0.96); }
         65% { transform: scale(1.03); }
@@ -8170,90 +8212,74 @@
       <!-- Bottom Navigation Bar -->
       <nav
         id="bottom-nav"
-        class="fixed left-4 right-4 z-50 max-w-md mx-auto animate-fade-in delay-500ms"
+        class="fixed left-4 right-4 z-50 max-w-md mx-auto pointer-events-none select-none"
         style="bottom: calc(1rem + env(safe-area-inset-bottom));"
-
+        aria-label="Navigasi utama"
       >
+        <!-- 1. Floating Action Button (FAB) Jurnal Musyrif (Only visible for Musyrif) -->
         <button
           onclick="window.switchTab('jurnal')"
           data-target="jurnal"
           aria-label="Buka Jurnal Musyrif"
-          class="musyrif-only absolute -top-6 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-indigo-500 dark:to-blue-700 text-white border-4 border-white dark:border-slate-800 shadow-xl shadow-indigo-500/50 hover:scale-110 hover:-translate-x-1/2 active:scale-95 transition-all duration-300 flex items-center justify-center z-50"
+          class="musyrif-only absolute w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white border-4 border-white dark:border-slate-900 flex items-center justify-center pointer-events-auto"
         >
           <i data-lucide="plus" class="w-6 h-6"></i>
         </button>
 
+        <!-- 2. Glassmorphic Navigation Bar Container -->
         <div
-          class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-full shadow-xl shadow-slate-200/30 dark:shadow-black/30 border border-white/50 dark:border-white/10 p-1.5"
+          class="nav-container pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-full shadow-xl shadow-slate-200/30 dark:shadow-black/30 border border-white/50 dark:border-white/10 p-1.5"
         >
           <div class="flex items-center justify-between gap-1">
+            <!-- Tab 1: Dashboard -->
             <button
               onclick="window.switchTab('home')"
               data-target="home"
-              aria-label="Dashboard"
               aria-current="page"
-              class="nav-btn active group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+              class="nav-btn active group"
+              aria-label="Dashboard"
             >
-              <div
-                class="absolute inset-0 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
-              ></div>
-              <i
-                data-lucide="home"
-                class="w-6 h-6 text-slate-400 group-[.active]:text-emerald-500 transition-colors relative z-10"
-              ></i>
-              <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Beranda</span>
+              <i data-lucide="home"></i>
+              <span class="nav-indicator"></span>
             </button>
 
+            <!-- Tab 2: Tahfizh -->
             <button
               onclick="window.switchTab('tahfizh')"
               data-target="tahfizh"
-              aria-label="Tahfizh"
               aria-current="false"
-              class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+              class="nav-btn group"
+              aria-label="Tahfizh"
             >
-              <div
-                class="absolute inset-0 bg-orange-500/10 dark:bg-orange-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
-              ></div>
-              <i
-                data-lucide="book-open-check"
-                class="w-6 h-6 text-slate-400 group-[.active]:text-orange-500 transition-colors relative z-10"
-              ></i>
-              <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Tahfizh</span>
+              <i data-lucide="book-open-check"></i>
+              <span class="nav-indicator"></span>
             </button>
 
+            <!-- Dynamic Spacer for Musyrif Jurnal FAB (Only active for Musyrif) -->
+            <div class="musyrif-only musyrif-spacer w-14 flex-shrink-0" aria-hidden="true"></div>
+
+            <!-- Tab 3: Laporan -->
             <button
               onclick="window.switchTab('report')"
               data-target="report"
-              aria-label="Laporan"
               aria-current="false"
-              class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+              class="nav-btn group"
+              aria-label="Laporan"
             >
-              <div
-                class="absolute inset-0 bg-blue-500/10 dark:bg-blue-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
-              ></div>
-              <i
-                data-lucide="file-bar-chart"
-                class="w-6 h-6 text-slate-400 group-[.active]:text-blue-500 transition-colors relative z-10"
-              ></i>
-              <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Laporan</span>
+              <i data-lucide="file-bar-chart"></i>
+              <span class="nav-indicator"></span>
             </button>
 
-
+            <!-- Tab 4: Profil -->
             <button
               onclick="window.switchTab('profile')"
               data-target="profile"
-              aria-label="Profil"
               aria-current="false"
-              class="nav-btn group relative flex items-center justify-center gap-1.5 py-3 rounded-full transition-all duration-300"
+              class="nav-btn group"
+              aria-label="Profil"
             >
-              <div
-                class="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/20 rounded-full scale-0 group-[.active]:scale-100 transition-transform duration-300"
-              ></div>
-              <i
-                data-lucide="user"
-                class="w-6 h-6 text-slate-400 group-[.active]:text-purple-500 transition-colors relative z-10"
-              ></i>
-              <span class="nav-label relative z-10 text-[11px] font-black text-slate-900">Profil</span>
+              <i data-lucide="user"></i>
+              <span class="nav-indicator"></span>
             </button>
           </div>
         </div>
@@ -9898,6 +9924,8 @@
     <script src="src/managers/sync-manager.js"></script>
     <script src="src/managers/data-migrator.js"></script>
     <script src="src/managers/supabase-sync.js"></script>
+    <script src="src/managers/auth-multirole.js"></script>
+    <script src="src/managers/device-manager.js"></script>
     <script src="src/managers/storage-manager-v2.js"></script>
     <script src="src/managers/file-upload.js"></script>
     <script src="src/platform/storage-service.js"></script>
@@ -10377,6 +10405,111 @@
         </form>
       </div>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- Modal: Device Manager (Multidevice Support) -->
+    <!-- ============================================================ -->
+    <div id="modal-device-manager" class="fixed inset-0 z-[120] hidden">
+      <div class="modal-backdrop absolute inset-0 bg-slate-950/60 backdrop-blur-md" onclick="window.closeDeviceManagerModal()"></div>
+      <div class="absolute inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md sm:max-h-[85vh] bg-white dark:bg-slate-900 rounded-[1.75rem] shadow-2xl overflow-hidden flex flex-col">
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <i data-lucide="smartphone" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-black text-slate-800 dark:text-white">Perangkat Terhubung</h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Kelola perangkat yang login ke akun Anda</p>
+            </div>
+          </div>
+          <button onclick="window.closeDeviceManagerModal()" class="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors" title="Tutup">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-5 space-y-4">
+          <!-- Current Device -->
+          <div id="device-manager-current" class="p-4 rounded-2xl border-2 border-blue-500/30 bg-blue-50/50 dark:bg-blue-500/10">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                <i data-lucide="smartphone" class="w-5 h-5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-slate-800 dark:text-white text-sm" id="dm-current-name">Memuat...</span>
+                  <span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">Saat Ini</span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="dm-current-meta">-</p>
+                <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-1" id="dm-current-active">-</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Other Devices Section -->
+          <div>
+            <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Perangkat Lain</h3>
+            <div id="dm-other-devices" class="space-y-2">
+              <!-- Populated by JS -->
+              <div class="text-center py-4 text-xs text-slate-400">
+                <i data-lucide="loader-2" class="w-5 h-5 mx-auto mb-2 animate-spin"></i>
+                Memuat perangkat...
+              </div>
+            </div>
+          </div>
+
+          <!-- Active Sessions -->
+          <div>
+            <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Sesi Aktif</h3>
+            <div id="dm-sessions" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="p-4 border-t border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-800/50">
+          <button onclick="window.logoutOtherDevices()" class="w-full py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+            Logout Semua Perangkat Lain
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Device Card Template (for other devices) -->
+    <template id="dm-device-card-template">
+      <div class="dm-device-card flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+        <div class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+          <i data-lucide="monitor" class="w-5 h-5"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <span class="dm-device-name font-medium text-slate-700 dark:text-slate-300 text-sm block truncate">Unknown Device</span>
+          <p class="dm-device-meta text-xs text-slate-500 dark:text-slate-400 mt-0.5">-</p>
+          <p class="dm-device-active text-[10px] text-slate-400 dark:text-slate-500 mt-1">-</p>
+        </div>
+        <button class="dm-remove-btn w-8 h-8 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-500/20 flex items-center justify-center text-rose-500 hover:text-rose-600 transition-colors shrink-0" title="Hapus">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </template>
+
+    <!-- Session Row Template -->
+    <template id="dm-session-row-template">
+      <div class="dm-session-row flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+        <div class="flex items-center gap-2 min-w-0">
+          <i data-lucide="clock" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+          <div class="min-w-0">
+            <span class="dm-session-name text-xs font-medium text-slate-700 dark:text-slate-300 block truncate">-</span>
+            <p class="dm-session-meta text-[10px] text-slate-500 dark:text-slate-400">-</p>
+          </div>
+        </div>
+        <button class="dm-revoke-btn px-2 py-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-500 hover:text-rose-600 text-[10px] font-bold transition-colors" title="Cabut Sesi">
+          Cabut
+        </button>
+      </div>
+    </template>
 
   </body>
 </html>

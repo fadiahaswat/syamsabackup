@@ -1,0 +1,142 @@
+<!-- ============================================================
+     Device Manager Component - Multidevice Support UI
+     ============================================================ -->
+
+<template id="device-manager-template">
+  <div class="device-manager">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <i data-lucide="smartphone" class="w-5 h-5 text-brand-blue"></i>
+        <h3 class="font-semibold text-slate-800 dark:text-slate-200">Perangkat Terhubung</h3>
+      </div>
+      <button id="btn-refresh-devices" class="btn btn-sm btn-ghost" title="Refresh">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Current Device -->
+    <div id="current-device-card" class="device-card current">
+      <div class="flex items-start gap-3">
+        <div class="device-icon current">
+          <i data-lucide="smartphone" class="w-5 h-5"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-slate-800 dark:text-slate-200 truncate" id="current-device-name">
+              Loading...
+            </span>
+            <span class="badge badge-success badge-sm">Saat Ini</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" id="current-device-meta">
+            -
+          </p>
+          <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" id="current-device-last-active">
+            -
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Other Devices -->
+    <div class="space-y-2 mt-4" id="other-devices-list">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="devices-empty" class="hidden text-center py-6">
+      <i data-lucide="monitor" class="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-2"></i>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Tidak ada perangkat lain</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+      <button id="btn-logout-other-devices" class="btn btn-sm btn-outline btn-error w-full">
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+        Logout Semua Perangkat Lain
+      </button>
+    </div>
+
+    <!-- Active Sessions -->
+    <div class="mt-4">
+      <h4 class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Sesi Aktif</h4>
+      <div id="sessions-list" class="space-y-2">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="device-card-template">
+  <div class="device-card">
+    <div class="flex items-start gap-3">
+      <div class="device-icon">
+        <i data-lucide="monitor" class="w-5 h-5"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <span class="font-medium text-slate-700 dark:text-slate-300 truncate device-name">
+          Unknown Device
+        </span>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 device-meta">
+          -
+        </p>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 device-last-active">
+          -
+        </p>
+      </div>
+      <button class="btn btn-sm btn-ghost btn-remove-device text-error" title="Hapus Perangkat">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+</template>
+
+<template id="session-row-template">
+  <div class="session-row flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+    <div class="flex items-center gap-2 min-w-0">
+      <i data-lucide="clock" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+      <div class="min-w-0">
+        <span class="text-xs font-medium text-slate-700 dark:text-slate-300 device-name">-</span>
+        <p class="text-xs text-slate-500 dark:text-slate-400 session-meta">-</p>
+      </div>
+    </div>
+    <button class="btn btn-xs btn-ghost btn-revoke-session" title="Cabut Sesi">
+      <i data-lucide="x" class="w-3 h-3"></i>
+    </button>
+  </div>
+</template>
+
+<style>
+  .device-manager {
+    @apply p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700;
+  }
+
+  .device-card {
+    @apply p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50;
+    @apply transition-all duration-200;
+  }
+
+  .device-card.current {
+    @apply border-brand-blue/30 bg-brand-blue/5 dark:bg-brand-blue/10;
+  }
+
+  .device-icon {
+    @apply w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400;
+  }
+
+  .device-icon.current {
+    @apply bg-brand-blue/20 text-brand-blue;
+  }
+
+  .session-row {
+    @apply hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors;
+  }
+
+  .session-row .btn-revoke-session {
+    @apply opacity-0 group-hover:opacity-100 transition-opacity;
+  }
+
+  .session-row:hover .btn-revoke-session {
+    @apply opacity-100;
+  }
+</style>

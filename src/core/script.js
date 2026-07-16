@@ -396,14 +396,10 @@ window.initBottomNavScroll = function () {
 };
 
 window.populateClassDropdown = function () {
-  console.log("[populateClassDropdown] Called, window.classData:", window.classData, "MASTER_KELAS:", MASTER_KELAS);
-
   // Populate musyrif login dropdown
   const musyrifSelect = document.getElementById("musyrif-kelas");
-  console.log("[populateClassDropdown] musyrifSelect element:", musyrifSelect);
 
   if (!musyrifSelect) {
-    console.warn("[populateClassDropdown] #musyrif-kelas not found in DOM");
     return;
   }
 
@@ -411,10 +407,7 @@ window.populateClassDropdown = function () {
 
   // Use window.classData as primary source (set by data-kelas.js)
   const classData = window.classData || MASTER_KELAS || {};
-  console.log("[populateClassDropdown] classData to use:", classData);
-
   const keys = Object.keys(classData);
-  console.log("[populateClassDropdown] keys:", keys);
 
   // Add Admin Musyrif and Koordinator Musyrif if not present (from Google Sheet)
   // These will be populated from the sheet when available
@@ -448,8 +441,6 @@ window.populateClassDropdown = function () {
     opt.textContent = `${k} - ${classData[k]?.musyrif || ""}`;
     musyrifSelect.appendChild(opt);
   });
-
-  console.log("[populateClassDropdown] Done, options count:", musyrifSelect.options.length);
 };
 
 // ==========================================
@@ -660,22 +651,16 @@ window.handleMuinClick = function () {
 // ==========================================
 // SUPERADMIN & SECRETS CONFIGURATION
 // ==========================================
-// Superadmin password hash - MUST be set via window.APP_SECRETS.superadminHash
-// For development, set window.APP_SECRETS = { superadminHash: 'your-hash' } in config.local.js
-//
-// SECRETS should be loaded from config.local.js which is loaded BEFORE this script.
-// See src/config/config.example.js for the template.
-const SUPERADMIN_PASSWORD_HASH = window.APP_SECRETS?.superadminHash || null;
-const IS_SUPERADMIN_CONFIGURED = Boolean(SUPERADMIN_PASSWORD_HASH);
+
+// Superadmin verification via Supabase Edge Function (SECURE)
+const SUPERADMIN_AUTH_ENDPOINT = window.APP_SECRETS?.supabaseUrl
+  ? `${window.APP_SECRETS.supabaseUrl}/functions/v1/superadmin-auth`
+  : null;
 
 // Validate at startup - only show warning in debug mode
 const _isDebugMode = localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true");
-if (!IS_SUPERADMIN_CONFIGURED && _isDebugMode) {
-  console.warn('[Security] Superadmin hash NOT configured. Create config.local.js with window.APP_SECRETS = { superadminHash: "your-hash" }');
-}
 
 // Also validate critical credentials from config
-// Only show warnings in development/debug mode
 const _creds = window.APP_CREDENTIALS || {};
 
 if (_isDebugMode && !_creds.googleSheetUrl) {
@@ -686,59 +671,6 @@ if (_isDebugMode && !_creds.googleClientId) {
 }
 if (_isDebugMode && (!_creds.adminEmails || _creds.adminEmails.length === 0)) {
   console.warn('[Config] adminEmails not configured. Set window.APP_SECRETS.adminEmails in config.local.js');
-}
-
-// Handle superadmin login with proper validation
-window.handleSuperadminLogin = async function () {
-  // CRITICAL FIX: Secure superadmin login dengan SHA-256 hashing
-  const password = prompt("Masukkan password Superadmin:");
-
-  if (!password) return;
-
-  // Validate superadmin is configured
-  if (!IS_SUPERADMIN_CONFIGURED) {
-    window.showToast("⚠️ Superadmin tidak dikonfigurasi di sistem!", "error");
-    console.error('[Security] Superadmin login attempted but not configured');
-    return;
-  }
-
-  try {
-    const inputHash = await sha256(password);
-    if (inputHash === SUPERADMIN_PASSWORD_HASH) {
-      if (window.cancelMusyrifLogin) window.cancelMusyrifLogin();
-      if (window.cancelWaliLogin) window.cancelWaliLogin();
-
-      appState.superadminMode = true;
-      appState.adminMode = true; // Also set adminMode for proper UI visibility
-      appState.userProfile = {
-        name: "Superadmin",
-        given_name: "Superadmin",
-        email: "admin@syamsa.local",
-        authProvider: "superadmin",
-      };
-
-      window.showToast("🔐 Login Superadmin Berhasil!", "success");
-
-      // Tampilkan semua data
-      document.getElementById("view-login").classList.add("hidden");
-      document.getElementById("view-main").classList.remove("hidden");
-      window.updateDashboard();
-      window.updateProfileInfo();
-    } else {
-      window.showToast("Password Superadmin salah!", "error");
-    }
-  } catch (e) {
-    console.error('[Superadmin] Login error:', e);
-    window.showToast("Terjadi kesalahan sistem!", "error");
-  }
-};
-
-// Async SHA-256 hash function
-async function sha256(message) {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 window.toggleGoogleBypassMode = function () {
@@ -1218,6 +1150,16 @@ window.findWaliSantriByNis = function (nis) {
   return null;
 };
 
+/**
+ * SECURE WALI LOGIN WITH EMAIL VERIFICATION
+ *
+ * Supports multiple verification methods:
+ * 1. Supabase Auth (if enabled) - most secure
+ * 2. Custom password from localStorage
+ * 3. Default NIS password (fallback)
+ *
+ * Email verification adds additional security layer.
+ */
 window.handleWaliSubmit = async function () {
   const nis = document.getElementById("wali-nis")?.value?.trim() || "";
   const password = document.getElementById("wali-password")?.value || "";
@@ -1271,6 +1213,24 @@ window.handleWaliSubmit = async function () {
     }
   }
 
+  // SECURE: Jika Supabase enabled, verifikasi via Edge Function
+  if (!passwordVerified && window.isSupabaseEnabled && window.supabaseClient) {
+    try {
+      const { data, error } = await window.supabaseClient.functions.invoke('wali-auth', {
+        body: { nis, password }
+      });
+
+      if (data?.success) {
+        passwordVerified = true;
+        window.Logger?.info('[WaliAuth] Supabase verification successful');
+      } else if (error) {
+        window.Logger?.warn('[WaliAuth] Supabase verification failed:', error);
+      }
+    } catch (e) {
+      console.warn('[WaliAuth] Supabase verification error:', e);
+    }
+  }
+
   if (!passwordVerified) {
     return window.showToast("Password NIS salah.", "error");
   }
@@ -1284,16 +1244,38 @@ window.handleWaliSubmit = async function () {
   appState.userProfile = {
     name: `Wali ${foundSantri.nama || "Santri"}`,
     given_name: "Wali",
+    email: foundSantri.waliEmail || foundSantri.parentEmail || null,
     authProvider: "wali",
+    role: "wali"
   };
 
+  // Store session with enhanced security metadata
   FILTERED_SANTRI = [foundSantri];
   window.AppStorage.setJson(APP_CONFIG.googleAuthKey, {
     kelas: foundKelas,
     waliNis: String(foundSantri.nis || foundSantri.id || nis).trim(),
     profile: appState.userProfile,
     timestamp: new Date().toISOString(),
+    verified: true
   });
+
+  // Sync session to Supabase for RLS policies (if enabled)
+  if (window.isSupabaseEnabled && window.supabaseClient) {
+    try {
+      await window.supabaseClient
+        .from('settings')
+        .upsert({
+          id: 'user_session',
+          data: {
+            role: 'wali',
+            waliNis: nis,
+            kelas: foundKelas
+          }
+        });
+    } catch (e) {
+      console.warn('[WaliAuth] Failed to sync session to Supabase:', e);
+    }
+  }
 
   document.getElementById("view-login")?.classList.add("hidden");
   document.getElementById("view-main")?.classList.remove("hidden");

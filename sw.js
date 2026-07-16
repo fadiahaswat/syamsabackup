@@ -5,7 +5,7 @@
  * @version 2.3.7
  */
 
-const CACHE_VERSION = "v265";
+const CACHE_VERSION = "v266";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Static assets to cache for offline functionality
@@ -458,9 +458,19 @@ function normalizePath(path) {
 
 /**
  * Process offline changes from IndexedDB SyncQueue
+ * Actually syncs to Supabase when network is available
  */
 async function processOfflineChanges() {
   try {
+    console.log('[SW] Starting background sync process...');
+
+    // Get Supabase config from cache or skip if not available
+    const supabaseConfig = await getSupabaseConfig();
+    if (!supabaseConfig) {
+      console.log('[SW] Supabase not configured, skipping background sync');
+      return;
+    }
+
     const db = await openSyncDB();
     const changes = await getPendingChanges(db);
 
@@ -471,26 +481,179 @@ async function processOfflineChanges() {
 
     console.log('[SW] Processing', changes.length, 'pending changes');
 
+    let syncedCount = 0;
+    let failedCount = 0;
+
     for (const change of changes) {
       try {
-        await processChange(change);
-        await markChangeComplete(db, change.id);
-        console.log('[SW] Synced:', change.id, change.entityType);
+        const success = await syncChangeToSupabase(change, supabaseConfig);
+        if (success) {
+          await markChangeComplete(db, change.id);
+          console.log('[SW] Synced:', change.id, change.entityType || change.entity_type);
+          syncedCount++;
+        } else {
+          throw new Error('Sync returned false');
+        }
       } catch (err) {
         console.error('[SW] Failed to sync:', change.id, err);
         await markChangeFailed(db, change.id, err.message);
+        failedCount++;
       }
     }
+
+    console.log(`[SW] Background sync complete: ${syncedCount} synced, ${failedCount} failed`);
 
     // Notify clients
     const clients = await self.clients.matchAll({ type: 'window' });
     clients.forEach(client => {
-      client.postMessage({ type: 'SYNC_COMPLETE', count: changes.length });
+      client.postMessage({
+        type: 'SYNC_COMPLETE',
+        count: syncedCount,
+        failed: failedCount
+      });
     });
 
   } catch (err) {
-    console.error('[SW] Sync failed:', err);
+    console.error('[SW] Background sync failed:', err);
   }
+}
+
+/**
+ * Get Supabase configuration from cache or message client
+ */
+async function getSupabaseConfig() {
+  // Try to get from cache first
+  const cache = await caches.open(CACHE_NAME);
+  const configResponse = await cache.match('src/config/config.local.js');
+
+  if (configResponse) {
+    try {
+      const configText = await configResponse.text();
+      // Parse window.APP_SECRETS from the cached config
+      const match = configText.match(/window\.APP_SECRETS\s*=\s*({[\s\S]*?});/);
+      if (match) {
+        const config = eval('(' + match[1] + ')');
+        return {
+          url: config.supabaseUrl,
+          anonKey: config.supabaseAnonKey
+        };
+      }
+    } catch (e) {
+      console.warn('[SW] Failed to parse cached config:', e);
+    }
+  }
+
+  // Request config from active client
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  for (const client of clients) {
+    if (client.visibilityState === 'visible') {
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => resolve(null), 3000);
+        const handler = (event) => {
+          if (event.data?.type === 'SUPABASE_CONFIG') {
+            clearTimeout(timeout);
+            self.clients.removeEventListener('message', handler);
+            resolve(event.data.config);
+          }
+        };
+        self.clients.addEventListener('message', handler);
+        client.postMessage({ type: 'GET_SUPABASE_CONFIG' });
+      });
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Sync a single change to Supabase
+ */
+async function syncChangeToSupabase(change, config) {
+  if (!config || !config.url || !config.anonKey) {
+    throw new Error('Invalid Supabase configuration');
+  }
+
+  // Get entity type (handle both naming conventions)
+  const entityType = change.entity_type || change.entityType || 'unknown';
+  const entityId = change.entity_id || change.entityId || '';
+  const operation = change.operation || 'upsert';
+
+  // Skip local-only tables
+  const localOnlyTables = ['sync_queue', 'conflicts', 'sync_metadata', 'meta'];
+  if (localOnlyTables.includes(entityType)) {
+    console.log('[SW] Skipping local-only table:', entityType);
+    return true; // Mark as complete
+  }
+
+  const supabaseUrl = config.url;
+  const supabaseKey = config.anonKey;
+
+  // Build the payload - clean internal fields
+  const payload = cleanPayload(change.payload || {}, entityType);
+
+  // Determine the endpoint
+  const endpoint = `${supabaseUrl}/rest/v1/${entityType}`;
+
+  // Set headers
+  const headers = {
+    'apikey': supabaseKey,
+    'Authorization': `Bearer ${supabaseKey}`,
+    'Content-Type': 'application/json',
+    'Prefer': operation === 'upsert' ? 'resolution=merge-duplicates' : ''
+  };
+
+  let response;
+
+  if (operation === 'delete') {
+    // DELETE request
+    response = await fetch(`${endpoint}?id=eq.${entityId}`, {
+      method: 'DELETE',
+      headers
+    });
+  } else {
+    // UPSERT request
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { ...headers, ' Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify(payload)
+    });
+  }
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
+  }
+
+  return true;
+}
+
+/**
+ * Clean payload to only include valid Supabase fields
+ */
+function cleanPayload(payload, entityType) {
+  // Define allowed fields per table
+  const allowedFields = {
+    attendances: ['id', 'date', 'slot', 'studentId', 'kelas', 'status', 'note', 'timestamps', 'auditTrail', '_version'],
+    permits: ['id', 'nis', 'kelas', 'category', 'reason', 'start_date', 'end_date', 'start_session', 'end_session', 'status', 'is_active', 'document', 'audit_trail', '_version'],
+    tahfizh: ['id', 'nis', 'kelas', 'program', 'jenis', 'juz', 'halaman', 'surat', 'kualitas', 'status', 'musyrif', 'tanggal', '_version'],
+    settings: ['id', 'data', '_version']
+  };
+
+  const fields = allowedFields[entityType] || Object.keys(payload);
+  const cleaned = {};
+
+  for (const key of fields) {
+    if (payload.hasOwnProperty(key)) {
+      cleaned[key] = payload[key];
+    }
+  }
+
+  // Always include id
+  if (payload.id && !cleaned.id) {
+    cleaned.id = payload.id;
+  }
+
+  return cleaned;
 }
 
 function openSyncDB() {
@@ -503,80 +666,154 @@ function openSyncDB() {
       if (!db.objectStoreNames.contains('changes')) {
         db.createObjectStore('changes', { keyPath: 'id' });
       }
+      if (!db.objectStoreNames.contains('sync_metadata')) {
+        db.createObjectStore('sync_metadata', { keyPath: 'id' });
+      }
     };
   });
 }
 
 function getPendingChanges(db) {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(['changes'], 'readonly');
-    const store = tx.objectStore('changes');
-    const index = store.index('status');
-    const request = index.getAll(IDBKeyRange.only('pending'));
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    try {
+      const tx = db.transaction(['changes'], 'readonly');
+      const store = tx.objectStore('changes');
+
+      // Try to use status index if available
+      if (store.indexNames.contains('status')) {
+        const index = store.index('status');
+        const request = index.getAll(IDBKeyRange.only('pending'));
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      } else {
+        // Fallback to getAll and filter
+        const request = store.getAll();
+        request.onsuccess = () => {
+          const results = (request.result || []).filter(c => c.status === 'pending');
+          resolve(results);
+        };
+        request.onerror = () => reject(request.error);
+      }
+    } catch (e) {
+      // If changes store doesn't exist, try to open musyrif_local_db
+      const localDbRequest = indexedDB.open('musyrif_local_db', 1);
+      localDbRequest.onsuccess = () => {
+        const localDb = localDbRequest.result;
+        if (localDb.objectStoreNames.contains('sync_queue')) {
+          const tx = localDb.transaction(['sync_queue'], 'readonly');
+          const store = tx.objectStore('sync_queue');
+          const request = store.getAll();
+          request.onsuccess = () => {
+            const results = (request.result || []).filter(c => c.status === 'pending');
+            resolve(results);
+          };
+          request.onerror = () => reject(request.error);
+        } else {
+          resolve([]);
+        }
+      };
+      localDbRequest.onerror = () => resolve([]);
+    }
   });
 }
 
 async function processChange(change) {
-  console.log('[SW] Processing:', change.entityType, change.operation);
+  console.log('[SW] Processing:', change.entityType || change.entity_type, change.operation);
 
-  // Placeholder for backend sync - current app is local-only
-  switch (change.entityType) {
-    case 'attendance':
-    case 'permit':
-    case 'settings':
-    case 'tahfizh':
-      // Sync logic would go here
-      break;
-    default:
-      console.log('[SW] Unknown entity type:', change.entityType);
-  }
+  // This is now handled by syncChangeToSupabase
+  return true;
 }
 
 function markChangeComplete(db, id) {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(['changes'], 'readwrite');
-    const store = tx.objectStore('changes');
-    const getReq = store.get(id);
+    try {
+      const tx = db.transaction(['changes'], 'readwrite');
+      const store = tx.objectStore('changes');
+      const getReq = store.get(id);
 
-    getReq.onsuccess = () => {
-      const record = getReq.result;
-      if (record) {
-        record.status = 'complete';
-        record.completedAt = Date.now();
-        const putReq = store.put(record);
-        putReq.onsuccess = () => resolve();
-        putReq.onerror = () => reject(putReq.error);
-      } else {
-        resolve();
-      }
-    };
-    getReq.onerror = () => reject(getReq.error);
+      getReq.onsuccess = () => {
+        const record = getReq.result;
+        if (record) {
+          record.status = 'complete';
+          record.completedAt = Date.now();
+          const putReq = store.put(record);
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = () => reject(putReq.error);
+        } else {
+          resolve();
+        }
+      };
+      getReq.onerror = () => reject(getReq.error);
+    } catch (e) {
+      // Store might not exist, try main localDB
+      const localDbRequest = indexedDB.open('musyrif_local_db', 1);
+      localDbRequest.onsuccess = () => {
+        const localDb = localDbRequest.result;
+        if (localDb.objectStoreNames.contains('sync_queue')) {
+          const tx = localDb.transaction(['sync_queue'], 'readwrite');
+          const store = tx.objectStore('sync_queue');
+          const getReq = store.get(id);
+          getReq.onsuccess = () => {
+            const record = getReq.result;
+            if (record) {
+              record.status = 'synced';
+              record.synced_at = Date.now();
+              store.put(record);
+            }
+            resolve();
+          };
+          getReq.onerror = () => resolve();
+        } else {
+          resolve();
+        }
+      };
+      localDbRequest.onerror = () => resolve();
+    }
   });
 }
 
 function markChangeFailed(db, id, error) {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(['changes'], 'readwrite');
-    const store = tx.objectStore('changes');
-    const getReq = store.get(id);
+    try {
+      const tx = db.transaction(['changes'], 'readwrite');
+      const store = tx.objectStore('changes');
+      const getReq = store.get(id);
 
-    getReq.onsuccess = () => {
-      const record = getReq.result;
-      if (record) {
-        record.status = 'failed';
-        record.lastError = error;
-        record.attempts = (record.attempts || 0) + 1;
-        const putReq = store.put(record);
-        putReq.onsuccess = () => resolve();
-        putReq.onerror = () => reject(putReq.error);
-      } else {
-        resolve();
-      }
-    };
-    getReq.onerror = () => reject(getReq.error);
+      getReq.onsuccess = () => {
+        const record = getReq.result;
+        if (record) {
+          record.status = 'failed';
+          record.lastError = error;
+          record.attempts = (record.attempts || 0) + 1;
+          const putReq = store.put(record);
+          putReq.onsuccess = () => resolve();
+          putReq.onerror = () => reject(putReq.error);
+        } else {
+          resolve();
+        }
+      };
+      getReq.onerror = () => reject(getReq.error);
+    } catch (e) {
+      console.warn('[SW] markChangeFailed error:', e);
+      resolve();
+    }
   });
 }
+
+// Message handler for config requests
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'GET_SUPABASE_CONFIG') {
+    // Get config from window.APP_SECRETS (injected at build time or loaded from cache)
+    const config = {
+      url: typeof window !== 'undefined' ? window.APP_SECRETS?.supabaseUrl : null,
+      anonKey: typeof window !== 'undefined' ? window.APP_SECRETS?.supabaseAnonKey : null
+    };
+
+    event.source.postMessage({
+      type: 'SUPABASE_CONFIG',
+      config
+    });
+  }
+});
 
 console.log('[SW] Service Worker loaded, version:', CACHE_VERSION);
