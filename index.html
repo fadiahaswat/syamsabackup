@@ -4224,14 +4224,8 @@
       aria-label="Memuat aplikasi"
     >
       <div class="max-w-[220px] sm:max-w-[280px] w-full px-4 flex flex-col items-center">
-        <img src="assets/branding/Primary%20Logo.webp" class="w-full h-auto object-contain" alt="Syamsa" />
-        <!-- Loading spinner -->
-        <div class="mt-6 flex items-center gap-2">
-          <div class="w-2 h-2 rounded-full bg-palette-blue animate-bounce" style="animation-delay: 0ms;"></div>
-          <div class="w-2 h-2 rounded-full bg-palette-blue animate-bounce" style="animation-delay: 150ms;"></div>
-          <div class="w-2 h-2 rounded-full bg-palette-blue animate-bounce" style="animation-delay: 300ms;"></div>
-        </div>
-        <p class="mt-4 text-xs text-slate-400 font-medium">Memuat...</p>
+        <!-- Logomark in the center (matches onboarding Slide 1) -->
+        <img src="assets/branding/Logomark.webp" style="width: 100px; height: 100px;" class="object-contain loading-logo-spin-premium" alt="Syamsa Logomark" />
       </div>
     </div>
 
@@ -4283,9 +4277,7 @@
           <div class="onboarding-slider" id="onboarding-slider">
             <!-- Slide 1: Welcome -->
             <div class="onboarding-slide flex flex-col items-center justify-center text-center p-4">
-              <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-palette-blue mb-6 onboarding-icon-float border border-blue-100/40 dark:border-blue-500/10 shadow-sm">
-                <i data-lucide="home" class="w-10 h-10 sm:w-12 sm:h-12"></i>
-              </div>
+              <img src="assets/branding/Logomark.webp" style="width: 100px; height: 100px;" class="object-contain onboarding-icon-float mb-6" alt="Syamsa Logomark" />
               <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug mb-4">
                 Selamat Datang di Syamsa
               </h3>
@@ -4335,8 +4327,23 @@
           </div>
         </div>
 
+        <!-- Lower Row: Institutional Logos -->
+        <div class="mt-auto pt-6 pb-2 relative z-10 shrink-0 w-full">
+          <div class="flex justify-center">
+            <div
+              id="onboarding-institutional-logos"
+              class="flex items-center justify-center gap-6 opacity-45 dark:opacity-30 select-none"
+              aria-label="Logo lembaga"
+            >
+              <img src="assets/branding/Logo%20PP%20Muhammadiyah.webp" style="height: 20px; width: auto; object-fit: contain;" alt="PP Muhammadiyah" />
+              <img src="assets/branding/Logo%20Mu%27allimin.webp" style="height: 22px; width: auto; object-fit: contain;" alt="Mu'allimin" />
+              <img src="assets/branding/Logo%20Sekolah%20Pemimpin%20Bangsa.webp" style="height: 18px; width: auto; object-fit: contain;" alt="Sekolah Pemimpin Bangsa" />
+            </div>
+          </div>
+        </div>
+
         <!-- Lower Row: Navigation & Indicators -->
-        <div class="flex items-center justify-between mt-auto pt-6 relative z-10 shrink-0">
+        <div class="flex items-center justify-between pt-4 pb-2 relative z-10 shrink-0">
           <!-- Dot Indicators -->
           <div class="flex items-center gap-2" id="onboarding-dots">
             <div class="onboarding-dot active" onclick="window.setOnboardingSlide(0)" aria-label="Slide 1"></div>

@@ -305,35 +305,38 @@ window.initApp = async function () {
     console.error("Critical Init Error:", criticalError);
     window.showToast?.("Terjadi kesalahan sistem: " + criticalError.message, "error", true);
   } finally {
-    if (loadingEl) {
-      loadingEl.classList.add("opacity-0", "pointer-events-none");
-      setTimeout(() => {
-        loadingEl.style.display = "none";
-      }, 500);
-    }
-    window.initBottomNavScroll();
+    // Wait 1000ms (to let the centered logomark sit alone) before proceeding to next screen
+    setTimeout(() => {
+      if (loadingEl) {
+        loadingEl.classList.add("opacity-0", "pointer-events-none");
+        setTimeout(() => {
+          loadingEl.style.display = "none";
+        }, 500);
+      }
+      window.initBottomNavScroll();
 
-    // Check if onboarding needs to be shown (only when user is not logged in)
-    try {
-      const viewMain = document.getElementById("view-main");
-      if (viewMain && viewMain.classList.contains("hidden")) {
-        const hasSeen = window.AppStorage.getItem("has_seen_onboarding") === "true";
-        if (!hasSeen) {
-          // Show onboarding immediately (no delay) to prevent login page glitch
-          if (window.showOnboarding) window.showOnboarding(true);
-        } else {
-          // If onboarding has been seen, ensure login screen is visible
-          const viewLogin = document.getElementById("view-login");
-          if (viewLogin) {
-            viewLogin.classList.remove("hidden");
-            // Populate class dropdown when login page becomes visible
-            window.populateClassDropdown?.();
+      // Check if onboarding needs to be shown (only when user is not logged in)
+      try {
+        const viewMain = document.getElementById("view-main");
+        if (viewMain && viewMain.classList.contains("hidden")) {
+          const hasSeen = window.AppStorage.getItem("has_seen_onboarding") === "true";
+          if (!hasSeen) {
+            // Show onboarding
+            if (window.showOnboarding) window.showOnboarding(true);
+          } else {
+            // If onboarding has been seen, ensure login screen is visible
+            const viewLogin = document.getElementById("view-login");
+            if (viewLogin) {
+              viewLogin.classList.remove("hidden");
+              // Populate class dropdown when login page becomes visible
+              window.populateClassDropdown?.();
+            }
           }
         }
+      } catch (onboardingInitErr) {
+        console.warn("Failed checking onboarding state:", onboardingInitErr);
       }
-    } catch (onboardingInitErr) {
-      console.warn("Failed checking onboarding state:", onboardingInitErr);
-    }
+    }, 1000);
   }
 };
 
