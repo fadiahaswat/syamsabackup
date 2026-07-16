@@ -1557,7 +1557,7 @@ function renderTahfizhJuzTuntasTracking() {
     const tabsContainer = TDOM.tahfizhTuntasTrackingSection.querySelector('.tahfizh-target-tabs');
     if (tabsContainer) {
         tabsContainer.innerHTML = targets.map((target, index) => `
-            <button class="tahfizh-tab shrink-0 rounded-xl px-3 py-2 text-[11px] font-black transition-all ${index === initialTargetIndex ? '' : 'text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-800'}" data-target="${target.id}">
+            <button class="tahfizh-tab shrink-0 rounded-xl px-4 py-2 text-xs font-black transition-all ${index === initialTargetIndex ? '' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}" data-target="${target.id}">
                 ${window.sanitizeHTML(target.label)}
             </button>
         `).join('');
@@ -1568,7 +1568,7 @@ function renderTahfizhJuzTuntasTracking() {
     renderTahfizhJuzContent(firstTarget);
     const tab = TDOM.tahfizhTuntasTrackingSection.querySelector(`[data-target="${firstTarget}"]`);
     if (tab) {
-        tab.className = "tahfizh-tab shrink-0 rounded-xl px-3 py-2 text-[11px] font-black transition-all bg-white text-orange-600 shadow-sm border border-orange-100/70 dark:bg-slate-800 dark:text-orange-300 dark:border-orange-500/20";
+        tab.className = "tahfizh-tab shrink-0 rounded-xl px-4 py-2 text-xs font-black transition-all bg-white text-orange-600 shadow-sm border border-orange-100/50 dark:bg-slate-800 dark:text-orange-400 dark:border-orange-500/20";
     }
 }
 
@@ -2947,9 +2947,9 @@ function handleTahfizhDelegatedClicks(e) {
     if (juzTab) {
         const target = juzTab.dataset.target;
         juzTab.parentElement.querySelectorAll('.tahfizh-tab').forEach(b => {
-            b.className = "tahfizh-tab shrink-0 rounded-xl px-3 py-2 text-[11px] font-black transition-all text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-800";
+            b.className = "tahfizh-tab shrink-0 rounded-xl px-4 py-2 text-xs font-black transition-all text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200";
         });
-        juzTab.className = "tahfizh-tab shrink-0 rounded-xl px-3 py-2 text-[11px] font-black transition-all bg-white text-orange-600 shadow-sm border border-orange-100/70 dark:bg-slate-800 dark:text-orange-300 dark:border-orange-500/20";
+        juzTab.className = "tahfizh-tab shrink-0 rounded-xl px-4 py-2 text-xs font-black transition-all bg-white text-orange-600 shadow-sm border border-orange-100/50 dark:bg-slate-800 dark:text-orange-400 dark:border-orange-500/20";
         renderTahfizhJuzContent(target);
         return;
     }
