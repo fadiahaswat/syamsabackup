@@ -97,6 +97,13 @@ window.logActivity = function (action, detail) {
       console.error('[ActivityLogger] Failed to save logs even after cleanup:', e2);
     }
   }
+
+  if (window.cloudSessionReady && window.authMultiRole?.currentUser) {
+    window.authMultiRole.logActivity(action, detail, {
+      kelas: appState.selectedClass || null,
+      metadata: { source: 'app_activity_logger' },
+    }).catch(error => ActivityLogger$Logger.error('Cloud audit log failed:', error));
+  }
 };
 
 

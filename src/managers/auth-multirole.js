@@ -20,6 +20,7 @@ class AuthMultiRole {
     this.supabase = null;
     this.currentUser = null;
     this.currentDeviceId = null;
+    this.currentDeviceRecordId = null;
     this.roles = [];
     this._logger = window.Logger || console;
   }
@@ -104,11 +105,17 @@ class AuthMultiRole {
       throw new Error('Email is required');
     }
 
-    // Check if user exists
+    const { data: authData, error: authError } = await this.supabase.auth.getUser();
+    const authUser = authData?.user;
+    if (authError || !authUser) {
+      throw authError || new Error('Authenticated Supabase user is required');
+    }
+
+    // Check if user exists by verified auth identity first.
     const { data: existingUser, error: fetchError } = await this.supabase
       .from('users')
       .select('*')
-      .eq('email', email)
+      .eq('auth_user_id', authUser.id)
       .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -120,7 +127,11 @@ class AuthMultiRole {
       // Update last login
       await this.supabase
         .from('users')
-        .update({ last_login: new Date().toISOString() })
+        .update({
+          last_login: new Date().toISOString(),
+          name,
+          picture,
+        })
         .eq('id', existingUser.id);
 
       this.currentUser = existingUser;
@@ -129,7 +140,8 @@ class AuthMultiRole {
 
     // Create new user
     const newUser = {
-      id: `user_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 10)}`,
+      id: authUser.id,
+      auth_user_id: authUser.id,
       email,
       name,
       picture,
@@ -155,7 +167,7 @@ class AuthMultiRole {
       const { data: retryUser } = await this.supabase
         .from('users')
         .select('*')
-        .eq('email', email)
+        .eq('auth_user_id', authUser.id)
         .single();
       if (retryUser) {
         this.currentUser = retryUser;
@@ -316,21 +328,29 @@ class AuthMultiRole {
 
     const deviceInfo = this._getDeviceInfo();
 
+    const recordId = `dev_${this.currentUser.id}_${deviceInfo.deviceId}`;
     const { data, error } = await this.supabase
-      .rpc('register_device', {
-        p_user_id: this.currentUser.id,
-        p_device_id: deviceInfo.deviceId,
-        p_device_name: deviceInfo.deviceName,
-        p_device_type: deviceInfo.deviceType,
-        p_browser: deviceInfo.browser,
-        p_os: deviceInfo.os,
-      });
+      .from('user_devices')
+      .upsert({
+        id: recordId,
+        user_id: this.currentUser.id,
+        device_id: deviceInfo.deviceId,
+        device_name: deviceInfo.deviceName,
+        device_type: deviceInfo.deviceType,
+        browser: deviceInfo.browser,
+        os: deviceInfo.os,
+        last_active: new Date().toISOString(),
+        is_current: true,
+      }, { onConflict: 'user_id,device_id' })
+      .select()
+      .single();
 
     if (error) {
       this._logger.error('Error registering device:', error);
       return null;
     }
 
+    this.currentDeviceRecordId = data.id;
     return data;
   }
 
@@ -361,9 +381,12 @@ class AuthMultiRole {
     if (!this.currentUser) return [];
 
     const { data, error } = await this.supabase
-      .rpc('get_active_sessions', {
-        p_user_id: this.currentUser.id,
-      });
+      .from('sessions')
+      .select('*')
+      .eq('user_id', this.currentUser.id)
+      .is('revoked_at', null)
+      .gte('expires_at', new Date().toISOString())
+      .order('last_used', { ascending: false });
 
     if (error) {
       this._logger.error('Error fetching sessions:', error);
@@ -399,11 +422,14 @@ class AuthMultiRole {
       return 0;
     }
 
+    const currentSessionId = localStorage.getItem('app_session_id');
     const { data, error } = await this.supabase
-      .rpc('revoke_other_sessions', {
-        p_user_id: this.currentUser.id,
-        p_device_id: this.currentDeviceId,
-      });
+      .from('sessions')
+      .update({ revoked_at: new Date().toISOString(), revoked_by: this.currentUser.id })
+      .eq('user_id', this.currentUser.id)
+      .neq('id', currentSessionId || '')
+      .is('revoked_at', null)
+      .select('id');
 
     if (error) {
       this._logger.error('Error logging out other devices:', error);
@@ -416,13 +442,26 @@ class AuthMultiRole {
       .update({ is_trusted: true })
       .eq('device_id', this.currentDeviceId);
 
-    return data || 0;
+    return data?.length || 0;
   }
 
   /**
    * Remove a specific device
    */
   async removeDevice(deviceId) {
+    const { data: device } = await this.supabase
+      .from('user_devices')
+      .select('id')
+      .eq('device_id', deviceId)
+      .eq('user_id', this.currentUser?.id)
+      .maybeSingle();
+    if (device?.id) {
+      await this.supabase
+        .from('sessions')
+        .update({ revoked_at: new Date().toISOString(), revoked_by: this.currentUser.id })
+        .eq('device_id', device.id)
+        .is('revoked_at', null);
+    }
     const { error } = await this.supabase
       .from('user_devices')
       .delete()
@@ -449,13 +488,32 @@ class AuthMultiRole {
       throw new Error('No user logged in');
     }
 
-    const sessionId = `sess_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 15)}`;
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    if (!this.currentDeviceRecordId) await this.registerDevice();
+    let sessionId = localStorage.getItem('app_session_id');
+    const { data: authData } = await this.supabase.auth.getSession();
+    const authSession = authData?.session;
+    if (!authSession) throw new Error('Supabase session is required');
+
+    if (sessionId) {
+      const { data: existing } = await this.supabase.from('sessions').select('*').eq('id', sessionId).maybeSingle();
+      if (existing?.revoked_at) throw new Error('Sesi perangkat telah dicabut');
+      if (existing) {
+        await this.supabase.from('sessions').update({ last_used: new Date().toISOString() }).eq('id', sessionId);
+        return existing;
+      }
+    }
+
+    sessionId = `sess_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 15)}`;
+    const expiresAt = authSession.expires_at
+      ? new Date(authSession.expires_at * 1000)
+      : new Date(Date.now() + 60 * 60 * 1000);
+    const tokenHash = await this._sha256(authSession.access_token);
 
     const session = {
       id: sessionId,
       user_id: this.currentUser.id,
-      device_id: this.currentDeviceId,
+      device_id: this.currentDeviceRecordId,
+      token_hash: tokenHash,
       user_agent: navigator.userAgent,
       expires_at: expiresAt.toISOString(),
       created_at: new Date().toISOString(),
@@ -472,9 +530,7 @@ class AuthMultiRole {
       return null;
     }
 
-    // Register device
-    await this.registerDevice();
-
+    localStorage.setItem('app_session_id', sessionId);
     return data;
   }
 
@@ -485,7 +541,7 @@ class AuthMultiRole {
     const { data, error } = await this.supabase
       .from('sessions')
       .select('*')
-      .eq('device_id', this.currentDeviceId)
+      .eq('id', localStorage.getItem('app_session_id') || '')
       .is('revoked_at', null)
       .gte('expires_at', new Date().toISOString())
       .single();
@@ -501,6 +557,12 @@ class AuthMultiRole {
       .eq('id', data.id);
 
     return { valid: true, session: data };
+  }
+
+  async _sha256(value) {
+    const bytes = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
   }
 
   // ============================================================
@@ -657,9 +719,9 @@ class AuthMultiRole {
    * Clear all local session data
    */
   clearLocalSession() {
-    localStorage.removeItem('auth_session');
-    localStorage.removeItem('current_user');
-    localStorage.removeItem('user_roles');
+    sessionStorage.removeItem('multirole_user_id');
+    sessionStorage.removeItem('multirole_roles');
+    localStorage.removeItem('app_session_id');
     // Keep device_id for device tracking
   }
 
@@ -698,4 +760,4 @@ const authMultiRole = new AuthMultiRole();
 window.AuthMultiRole = AuthMultiRole;
 window.authMultiRole = authMultiRole;
 
-export default authMultiRole;
+console.log('[AuthMultiRole] Module loaded');

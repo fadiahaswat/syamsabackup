@@ -95,6 +95,13 @@
       juz: entry.juz || entry.Juz || "",
       surat: entry.surat || entry.Surat || "",
       halaman: entry.halaman || entry.Halaman || "",
+      ayatMulai: Number(entry.ayatMulai || entry.ayat_mulai || entry.metadata?.ayatMulai || entry.metadata?.ayat_mulai) || null,
+      ayatAkhir: Number(entry.ayatAkhir || entry.ayat_akhir || entry.metadata?.ayatAkhir || entry.metadata?.ayat_akhir) || null,
+      metadata: {
+        ...(entry.metadata && typeof entry.metadata === "object" ? entry.metadata : {}),
+        ayatMulai: Number(entry.ayatMulai || entry.ayat_mulai || entry.metadata?.ayatMulai || entry.metadata?.ayat_mulai) || null,
+        ayatAkhir: Number(entry.ayatAkhir || entry.ayat_akhir || entry.metadata?.ayatAkhir || entry.metadata?.ayat_akhir) || null,
+      },
       kualitas: entry.kualitas || entry.Kualitas || "Lancar",
       status,
       Status: status,
@@ -106,6 +113,9 @@
   };
 
   const getTahfizhSetoran = function () {
+    if (typeof appState !== 'undefined' && appState.tahfizhSetoran) {
+      return appState.tahfizhSetoran;
+    }
     const raw = localStorage.getItem(TAHFIZH_SETORAN_KEY);
     const list = safeJsonParse(raw, []);
     return Array.isArray(list) ? list.map(normalizeTahfizhSetoran) : [];
@@ -113,7 +123,11 @@
 
   const saveTahfizhSetoran = function (records) {
     const list = Array.isArray(records) ? records.map(normalizeTahfizhSetoran) : [];
-    localStorage.setItem(TAHFIZH_SETORAN_KEY, JSON.stringify(list));
+    if (window.storageManager && typeof window.storageManager.saveTahfizhSetoran === 'function') {
+      window.storageManager.saveTahfizhSetoran(list);
+    } else {
+      localStorage.setItem(TAHFIZH_SETORAN_KEY, JSON.stringify(list));
+    }
     return list;
   };
 
@@ -362,9 +376,9 @@
   window.safeJsonParse = window.safeJsonParse || safeJsonParse;
   window.TAHFIZH_SETORAN_KEY = window.TAHFIZH_SETORAN_KEY || TAHFIZH_SETORAN_KEY;
   window.normalizeTahfizhSetoran = window.normalizeTahfizhSetoran || normalizeTahfizhSetoran;
-  window.getTahfizhSetoran = window.getTahfizhSetoran || getTahfizhSetoran;
-  window.saveTahfizhSetoran = window.saveTahfizhSetoran || saveTahfizhSetoran;
-  window.addTahfizhSetoran = window.addTahfizhSetoran || addTahfizhSetoran;
+  window.getTahfizhSetoran = getTahfizhSetoran;
+  window.saveTahfizhSetoran = saveTahfizhSetoran;
+  window.addTahfizhSetoran = addTahfizhSetoran;
   window.getLocalDateStr = window.getLocalDateStr || getLocalDateStr;
   window.formatDate = window.formatDate || formatDate;
   window.getGrade = window.getGrade || getGrade;

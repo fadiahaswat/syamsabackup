@@ -16,6 +16,11 @@ function initServiceWorker() {
   appInitDebugLog("[SW] SW supported:", "serviceWorker" in navigator);
 
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data?.type === 'SYNC_AUTH_REQUIRED' && window.cloudSessionReady) {
+        window.supabaseSync?.syncAll?.();
+      }
+    });
     window.addEventListener("load", async () => {
       appInitDebugLog("[SW] Window loaded, registering service worker...");
 

@@ -20,9 +20,15 @@ class JournalManager {
       { taskId: 'malam', taskName: 'Mengecek Kamar Malam (Jam Tidur)', timeWindow: '21:00 - 22:00' }
     ];
 
-    // Device motion state
+    // Device motion and GPS state
     this.isTracking = false;
     this.stepCount = 0;
+    this.gpsWatchId = null;
+    this.startCoords = null;
+    this.maxDisplacement = 0;
+    this.pathCoords = [];
+    this.gpsActive = false;
+    this.gpsAccuracy = 0;
   }
 
   /**
@@ -81,7 +87,10 @@ class JournalManager {
           verifiedAt: null,
           stepsCount: 0,
           musyrifId,
-          musyrifName
+          musyrifName,
+          gpsVerified: false,
+          maxDisplacement: 0,
+          pathCoords: []
         };
         await this._repos.journal.put(record);
         prepopulated.push(record);
@@ -109,22 +118,139 @@ class JournalManager {
   }
 
   /**
-   * Start tracking motion steps
+   * Calculate current daily streak for the logged-in Musyrif
+   */
+  async getStreakCount() {
+    if (!this._repos?.journal) return 0;
+    
+    const musyrifId = this.getMusyrifId();
+    const allRecords = await this._repos.journal.getByMusyrif(musyrifId);
+    
+    // Group records by date string YYYY-MM-DD
+    const recordsByDate = {};
+    allRecords.forEach(r => {
+      if (!recordsByDate[r.date]) {
+        recordsByDate[r.date] = [];
+      }
+      recordsByDate[r.date].push(r);
+    });
+    
+    // Helper to check if a date is completed (all 6 default tasks are completed)
+    const isDateCompleted = (dateStr) => {
+      const records = recordsByDate[dateStr] || [];
+      if (records.length === 0) return false;
+      return records.every(r => r.status === 'completed');
+    };
+    
+    let checkDate = new Date();
+    let streak = 0;
+    
+    const formatDate = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    let currentStr = formatDate(checkDate);
+    
+    // Check starting from today or yesterday
+    if (isDateCompleted(currentStr)) {
+      while (isDateCompleted(currentStr)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+        currentStr = formatDate(checkDate);
+      }
+    } else {
+      checkDate.setDate(checkDate.getDate() - 1);
+      currentStr = formatDate(checkDate);
+      if (isDateCompleted(currentStr)) {
+        while (isDateCompleted(currentStr)) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+          currentStr = formatDate(checkDate);
+        }
+      }
+    }
+    
+    return streak;
+  }
+
+  /**
+   * Start tracking motion steps and GPS displacement
    * @param {string} date - Journal date
    * @param {string} taskId - Task identifier
-   * @param {Function} onStepCallback - Triggered on step count update
-   * @param {Function} onCompleteCallback - Triggered on completion (50 steps)
+   * @param {Function} onStepCallback - Triggered on step count / coordinates update
+   * @param {Function} onCompleteCallback - Triggered on completion (100 steps & 15m displacement)
    * @param {Function} onErrorCallback - Triggered if permission is denied or not supported
    */
   async startStepTracking(date, taskId, onStepCallback, onCompleteCallback, onErrorCallback) {
-    if (this.isTracking) {
-      this.stopStepTracking();
-    }
+    this.stopStepTracking();
 
     this.stepCount = 0;
+    this.maxDisplacement = 0;
+    this.pathCoords = [];
+    this.startCoords = null;
+    this.gpsActive = false;
     this.isTracking = true;
 
-    // Check device support
+    // 1. Initialize GPS Tracking (if supported)
+    if (navigator.geolocation) {
+      this.gpsWatchId = navigator.geolocation.watchPosition(
+        (position) => {
+          this.gpsActive = true;
+          this.gpsAccuracy = position.coords.accuracy;
+          
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const currentPoint = { latitude: lat, longitude: lon, timestamp: Date.now() };
+          
+          this.pathCoords.push(currentPoint);
+          
+          if (!this.startCoords) {
+            this.startCoords = currentPoint;
+          } else {
+            const dist = this._calculateDistance(
+              this.startCoords.latitude, this.startCoords.longitude,
+              lat, lon
+            );
+            if (dist > this.maxDisplacement) {
+              this.maxDisplacement = dist;
+            }
+          }
+          
+          if (onStepCallback) {
+            onStepCallback({
+              steps: this.stepCount,
+              maxDisplacement: this.maxDisplacement,
+              pathCoords: this.pathCoords,
+              gpsActive: this.gpsActive,
+              gpsAccuracy: this.gpsAccuracy
+            });
+          }
+          
+          this._checkCompletion(date, taskId, onCompleteCallback, onErrorCallback);
+        },
+        (err) => {
+          this._logger.warn('[JournalManager] Geolocation tracking error:', err);
+          this.gpsActive = false;
+          // Fallback UI reporting
+          if (onStepCallback) {
+            onStepCallback({
+              steps: this.stepCount,
+              maxDisplacement: this.maxDisplacement,
+              pathCoords: this.pathCoords,
+              gpsActive: false,
+              gpsAccuracy: 0,
+              gpsError: err.message
+            });
+          }
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    }
+
+    // 2. Initialize Device Motion (Steps)
     if (!window.DeviceMotionEvent) {
       this.isTracking = false;
       if (onErrorCallback) onErrorCallback('Sensor gerak tidak didukung di perangkat ini.');
@@ -134,7 +260,7 @@ class JournalManager {
     const startListener = () => {
       let lastMag = 0;
       let lastStepTime = 0;
-      const peakThreshold = 11.5; // gravity is ~9.8, step adds spike
+      const peakThreshold = 11.5; // gravity spike for step detection
 
       this._stepListener = (event) => {
         const acc = event.accelerationIncludingGravity || event.acceleration;
@@ -144,28 +270,25 @@ class JournalManager {
         const y = acc.y || 0;
         const z = acc.z || 0;
         
-        // Calculate magnitude
         const mag = Math.sqrt(x * x + y * y + z * z);
         const now = Date.now();
 
-        // Simple peak detector with 350ms debounce
         if (mag > peakThreshold && (now - lastStepTime > 350)) {
-          // Check for change in magnitude to avoid continuous trigger
           if (Math.abs(mag - lastMag) > 1.5) {
             this.stepCount++;
             lastStepTime = now;
             
-            if (onStepCallback) onStepCallback(this.stepCount);
-
-            if (this.stepCount >= 50) {
-              this._logger.info('[JournalManager] Verification goal reached: 50 steps');
-              this.stopStepTracking();
-              this._verifyTask(date, taskId)
-                .then(onCompleteCallback)
-                .catch(err => {
-                  if (onErrorCallback) onErrorCallback(err.message);
-                });
+            if (onStepCallback) {
+              onStepCallback({
+                steps: this.stepCount,
+                maxDisplacement: this.maxDisplacement,
+                pathCoords: this.pathCoords,
+                gpsActive: this.gpsActive,
+                gpsAccuracy: this.gpsAccuracy
+              });
             }
+
+            this._checkCompletion(date, taskId, onCompleteCallback, onErrorCallback);
           }
         }
         lastMag = mag;
@@ -191,13 +314,12 @@ class JournalManager {
         if (onErrorCallback) onErrorCallback('Gagal meminta izin sensor gerak.');
       }
     } else {
-      // Android / Older browsers
       startListener();
     }
   }
 
   /**
-   * Stop tracking motion steps
+   * Stop tracking motion steps & GPS
    */
   stopStepTracking() {
     this.isTracking = false;
@@ -206,6 +328,52 @@ class JournalManager {
       this._stepListener = null;
       this._logger.info('[JournalManager] DeviceMotion listener stopped');
     }
+    if (this.gpsWatchId !== null) {
+      navigator.geolocation.clearWatch(this.gpsWatchId);
+      this.gpsWatchId = null;
+      this._logger.info('[JournalManager] Geolocation watch stopped');
+    }
+  }
+
+  /**
+   * Check if verification goals are satisfied
+   * @private
+   */
+  _checkCompletion(date, taskId, onCompleteCallback, onErrorCallback) {
+    const stepsGoal = 100;
+    const displacementGoal = 15; // 15 meters
+
+    // If GPS works, verify both. If GPS fails or is disabled/denied, fallback to steps only.
+    const isGpsRequiredMet = !this.gpsActive || (this.maxDisplacement >= displacementGoal);
+
+    if (this.stepCount >= stepsGoal && isGpsRequiredMet) {
+      this._logger.info(`[JournalManager] Goals met: ${this.stepCount} steps, ${this.maxDisplacement.toFixed(1)}m displacement`);
+      this.stopStepTracking();
+      this._verifyTask(date, taskId)
+        .then(onCompleteCallback)
+        .catch(err => {
+          if (onErrorCallback) onErrorCallback(err.message);
+        });
+    }
+  }
+
+  /**
+   * Calculate distance between two coordinate pairs using Haversine formula
+   * @private
+   */
+  _calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Earth radius in meters
+    const phi1 = lat1 * Math.PI / 180;
+    const phi2 = lat2 * Math.PI / 180;
+    const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+    const deltaLon = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+              Math.cos(phi1) * Math.cos(phi2) *
+              Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // meters
   }
 
   /**
@@ -227,12 +395,16 @@ class JournalManager {
     task.status = 'completed';
     task.verifiedAt = new Date().toISOString();
     task.stepsCount = this.stepCount;
+    task.gpsVerified = this.gpsActive && (this.maxDisplacement >= 15);
+    task.maxDisplacement = this.maxDisplacement;
+    task.pathCoords = this.pathCoords;
 
     await this._repos.journal.put(task);
 
     // Audit log
     if (typeof window.logActivity === 'function') {
-      window.logActivity('Jurnal Musyrif', `Menyelesaikan tugas: ${task.taskName} (${this.stepCount} langkah)`);
+      const gpsStatusText = task.gpsVerified ? `${this.maxDisplacement.toFixed(1)}m` : 'Tanpa GPS';
+      window.logActivity('Jurnal Musyrif', `Menyelesaikan tugas: ${task.taskName} (${this.stepCount} langkah, gps: ${gpsStatusText})`);
     }
 
     return task;

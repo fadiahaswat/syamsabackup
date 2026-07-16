@@ -11,6 +11,14 @@
 
   window.supabaseClient = null;
   window.isSupabaseEnabled = false;
+  window.cloudSessionReady = false;
+  window.canWriteBusinessData = function () {
+    return Boolean(
+      window.isSupabaseEnabled &&
+      window.cloudSessionReady &&
+      navigator.onLine
+    );
+  };
 
   if (url && key) {
     try {
@@ -30,6 +38,18 @@
       console.error('[Supabase] Failed to initialize Supabase client:', e);
     }
   } else {
-    console.info('[Supabase] Credentials not set. Running in local-only mode (IndexedDB + LocalStorage).');
+    console.error('[Supabase] Credentials not set. Business data is read-only.');
+  }
+
+  if (window.supabaseClient) {
+    window.supabaseClient.auth.getSession().then(({ data }) => {
+      window.cloudSessionReady = Boolean(data?.session?.user);
+    });
+    window.supabaseClient.auth.onAuthStateChange((_event, session) => {
+      window.cloudSessionReady = Boolean(session?.user);
+      window.dispatchEvent(new CustomEvent('cloud:auth-state', {
+        detail: { isAuthenticated: window.cloudSessionReady }
+      }));
+    });
   }
 })();

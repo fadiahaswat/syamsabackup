@@ -235,29 +235,25 @@ window.loadGlobalTahfizh = async function () {
 };
 
 /**
- * 4. HR & WALI: Reset password kustom Wali agar kembali ke default (NIS)
- * Menggunakan localStorage
+ * 4. HR & WALI: Reset password Wali melalui Supabase Auth.
  * @param {string} nis - NIS Wali Santri
  * @returns {Promise<{success: boolean, error: Error|null}>}
  */
 window.resetWaliPassword = async function (nis) {
   _requireAdmin();
   try {
-    // Hapus dari local storage password wali
-    const passwordKey = 'wali_passwords_db';
-    const saved = localStorage.getItem(passwordKey);
-    let passwords = {};
-    try { passwords = saved ? JSON.parse(saved) : {}; } catch { passwords = {}; }
-
-    delete passwords[nis];
-    localStorage.setItem(passwordKey, JSON.stringify(passwords));
+    if (!window.supabaseClient) throw new Error('Cloud database tidak tersedia');
+    const { data, error } = await window.supabaseClient.functions.invoke('wali-admin', {
+      body: { action: 'reset_password', nis: String(nis) }
+    });
+    if (error || !data?.success) throw error || new Error(data?.message || 'Reset password gagal');
 
     // Catat ke audit log
     if (window.logActivityAudit) {
       window.logActivityAudit('Reset Password', `Wali ${nis}`, 'Mereset password Wali Santri kembali ke default (NIS)');
     }
 
-    return { success: true, error: null };
+    return { success: true, temporaryPassword: data.temporaryPassword, error: null };
   } catch (error) {
     return { success: false, error };
   }
@@ -265,7 +261,7 @@ window.resetWaliPassword = async function (nis) {
 
 /**
  * 6. HR & WALI: Ubah/Setel password Wali Santri
- * Menggunakan localStorage
+ * Password dikelola oleh Supabase Auth; browser tidak menyimpan hash/password.
  * @param {string} nis - NIS Wali Santri
  * @param {string} newPassword - Password baru
  * @returns {Promise<{success: boolean, error: Error|null}>}
@@ -273,22 +269,11 @@ window.resetWaliPassword = async function (nis) {
 window.changeWaliPassword = async function (nis, newPassword) {
   _requireAdmin();
   try {
-    const hash = await window.sha256Hex(newPassword);
-
-    // Simpan ke localStorage
-    const passwordKey = 'wali_passwords_db';
-    const saved = localStorage.getItem(passwordKey);
-    let passwords = {};
-    try { passwords = saved ? JSON.parse(saved) : {}; } catch { passwords = {}; }
-
-    passwords[nis] = {
-      nis: nis,
-      password_hash: hash,
-      updated_at: new Date().toISOString()
-    };
-
-    localStorage.setItem(passwordKey, JSON.stringify(passwords));
-
+    if (!window.supabaseClient) throw new Error('Cloud database tidak tersedia');
+    const { data, error } = await window.supabaseClient.functions.invoke('wali-admin', {
+      body: { action: 'set_password', nis: String(nis), password: String(newPassword) }
+    });
+    if (error || !data?.success) throw error || new Error(data?.message || 'Ubah password gagal');
     return { success: true, error: null };
   } catch (error) {
     return { success: false, error };
@@ -665,12 +650,16 @@ window.renderAdminHRList = async function () {
   if (mobileList) mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat data...</p>`;
 
   try {
-    // Ambil daftar NIS dengan password kustom dari localStorage
-    const passwordKey = 'wali_passwords_db';
-    const saved = localStorage.getItem(passwordKey);
-    let customPasswords = {};
-    try { customPasswords = saved ? JSON.parse(saved) : {}; } catch { customPasswords = {}; }
-    const customNisSet = new Set(Object.keys(customPasswords));
+    // Status akun berasal dari cloud, bukan cache kredensial perangkat.
+    let cloudCredentials = [];
+    if (window.supabaseClient) {
+      const { data: response, error } = await window.supabaseClient.functions.invoke('wali-admin', {
+        body: { action: 'list' }
+      });
+      if (error || !response?.success) throw error || new Error(response?.message || 'Gagal memuat akun wali');
+      cloudCredentials = response.data || [];
+    }
+    const customNisSet = new Set(cloudCredentials.filter(item => item.is_active).map(item => String(item.nis)));
 
     tbody.innerHTML = "";
     if (mobileList) mobileList.innerHTML = "";
@@ -783,10 +772,11 @@ window.renderAdminHRList = async function () {
  */
 window.handleResetPasswordClick = async function (nis) {
   _requireAdmin();
-  if (confirm(`Apakah Anda yakin ingin mereset password Wali dengan NIS ${nis}? Password akan kembali menggunakan default (NIS).`)) {
-    const { success, error } = await window.resetWaliPassword(nis);
+  if (confirm(`Reset password Wali dengan NIS ${nis}? Sistem akan membuat password sementara yang aman.`)) {
+    const { success, temporaryPassword, error } = await window.resetWaliPassword(nis);
     if (success) {
-      window.showToast(`Password Wali ${nis} berhasil direset ke default.`, "success");
+      window.showToast(`Password Wali ${nis} berhasil direset.`, "success");
+      alert(`Password sementara Wali ${nis}:\n\n${temporaryPassword}\n\nSalin sekarang dan sampaikan melalui kanal yang aman.`);
       window.renderAdminHRList();
     } else {
       window.showToast(`Gagal reset password: ${error?.message || error}`, "error");
@@ -2750,13 +2740,10 @@ window.deleteAdminTahfizh = async function (id) {
   if (!confirm("Apakah Anda yakin ingin menghapus catatan setoran tahfizh ini?")) return;
 
   try {
-    const saved = localStorage.getItem('tahfizh_local_setoran');
-    let list = [];
-    try { list = saved ? JSON.parse(saved) : []; } catch { list = []; }
-
+    const list = typeof window.getTahfizhSetoran === "function" ? window.getTahfizhSetoran() : [];
     const beforeLength = list.length;
     const filtered = list.filter(r => {
-      const generatedId = `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
+      const generatedId = r.id || `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
       return generatedId !== id;
     });
 
@@ -2765,7 +2752,11 @@ window.deleteAdminTahfizh = async function (id) {
       return;
     }
 
-    localStorage.setItem('tahfizh_local_setoran', JSON.stringify(filtered));
+    if (typeof window.saveTahfizhSetoran === "function") {
+      window.saveTahfizhSetoran(filtered);
+    } else {
+      localStorage.setItem('tahfizh_local_setoran', JSON.stringify(filtered));
+    }
     window.showToast?.("Setoran tahfizh berhasil dihapus!", "success");
     
     if (window.logActivityAudit) {
@@ -2785,12 +2776,9 @@ window.deleteAdminTahfizh = async function (id) {
 window.editAdminTahfizh = function (id) {
   _requireAdmin();
   try {
-    const saved = localStorage.getItem('tahfizh_local_setoran');
-    let list = [];
-    try { list = saved ? JSON.parse(saved) : []; } catch { list = []; }
-
+    const list = typeof window.getTahfizhSetoran === "function" ? window.getTahfizhSetoran() : [];
     const item = list.find(r => {
-      const generatedId = `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
+      const generatedId = r.id || `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
       return generatedId === id;
     });
 
@@ -2831,12 +2819,9 @@ window.handleEditTahfizhSubmit = function (e) {
     const kualitas = document.getElementById("edit-tahfizh-kualitas").value;
     const surat = document.getElementById("edit-tahfizh-surat").value.trim();
 
-    const saved = localStorage.getItem('tahfizh_local_setoran');
-    let list = [];
-    try { list = saved ? JSON.parse(saved) : []; } catch { list = []; }
-
+    const list = typeof window.getTahfizhSetoran === "function" ? window.getTahfizhSetoran() : [];
     const idx = list.findIndex(r => {
-      const generatedId = `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
+      const generatedId = r.id || `${r.kelas}_${r.santriId || r.nis || 'unknown'}_${r.rowNumber}`;
       return generatedId === id;
     });
 
@@ -2854,7 +2839,11 @@ window.handleEditTahfizhSubmit = function (e) {
         : r
     );
 
-    localStorage.setItem('tahfizh_local_setoran', JSON.stringify(updatedList));
+    if (typeof window.saveTahfizhSetoran === "function") {
+      window.saveTahfizhSetoran(updatedList);
+    } else {
+      localStorage.setItem('tahfizh_local_setoran', JSON.stringify(updatedList));
+    }
     window.showToast?.("Koreksi setoran berhasil disimpan!", "success");
 
     if (window.logActivityAudit) {
@@ -3221,9 +3210,7 @@ window.exportAdminCSV = async function (type) {
 
       filename = `presensi_export_${today}.csv`;
 
-    } else if (type === "tahfizh") {
-      let setoranList = [];
-      try { setoranList = JSON.parse(localStorage.getItem("tahfizh_local_setoran") || "[]"); } catch { setoranList = []; }
+      const setoranList = typeof window.getTahfizhSetoran === "function" ? window.getTahfizhSetoran() : [];
       rows.push(["Tanggal", "Kelas", "NIS", "Nama Santri", "Program", "Jenis", "Juz", "Surat/Halaman", "Kualitas", "Musyrif"]);
 
       setoranList.forEach(r => {
@@ -3290,40 +3277,26 @@ window.exportAdminCSV = async function (type) {
 /**
  * Backup semua data ke JSON
  */
-window.adminBackupJSON = function () {
+window.adminBackupJSON = async function () {
   _requireAdmin();
   try {
-    const BACKUP_KEYS = [
-      APP_CONFIG.storageKey,
-      APP_CONFIG.permitKey,
-      APP_CONFIG.violationsKey,
-      APP_CONFIG.studentTargetsKey,
-      APP_CONFIG.activityLogKey,
-      APP_CONFIG.settingsKey,
-      "tahfizh_local_setoran",
-      "cache_data_kelas",
-      "musyrif_violations_db",
-      "musyrif_wali_broadcast",
-      "musyrif_sp_db",
-      "wali_passwords_db",
-    ];
+    if (!window.supabaseClient) throw new Error('Cloud database tidak tersedia');
+    const tables = ['attendances', 'permits', 'tahfizh', 'settings', 'musyrif_journals', 'app_records'];
+    const entries = await Promise.all(tables.map(async table => {
+      const { data, error } = await window.supabaseClient.from(table).select('*');
+      if (error) throw error;
+      return [table, data || []];
+    }));
 
     const backup = {
       _meta: {
         created_at: new Date().toISOString(),
-        version: "syamsa_backup_v1",
-        app: "Musyrif App"
-      }
+        version: "syamsa_cloud_backup_v2",
+        app: "Musyrif App",
+        source: "supabase"
+      },
+      tables: Object.fromEntries(entries),
     };
-
-    BACKUP_KEYS.forEach(key => {
-      const raw = localStorage.getItem(key);
-      if (raw !== null) {
-        let parsed;
-        try { parsed = JSON.parse(raw); } catch { parsed = raw; }
-        backup[key] = parsed;
-      }
-    });
 
     const today = new Date().toISOString().split("T")[0];
     const filename = `syamsa_backup_${today}.json`;
@@ -3355,33 +3328,41 @@ window.adminRestoreJSON = function (event) {
   }
 
   const reader = new FileReader();
-  reader.onload = function (e) {
+  reader.onload = async function (e) {
     try {
       const data = JSON.parse(e.target.result);
-      if (!data._meta || data._meta.version !== "syamsa_backup_v1") {
+      if (!data._meta || data._meta.version !== "syamsa_cloud_backup_v2" || !data.tables) {
         window.showToast?.("File backup tidak valid atau versi tidak cocok!", "error");
         return;
       }
 
       const confirmed = confirm(
+        true ? `Restore Cloud Backup\n\nIni akan menimpa data cloud sesuai hak akses Anda dengan backup dari:\n${data._meta.created_at}\n\nLanjutkan?` :
         `⚠️ Restore Backup\n\nIni akan menimpa data lokal Anda dengan backup dari:\n${data._meta.created_at}\n\nLanjutkan?`
       );
       if (!confirmed) return;
 
       let restoredCount = 0;
-      Object.entries(data).forEach(([key, value]) => {
-        if (key === "_meta") return;
-        try {
-          localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+      const allowedTables = new Set(['attendances', 'permits', 'tahfizh', 'settings', 'musyrif_journals', 'app_records']);
+      for (const [table, records] of Object.entries(data.tables)) {
+        if (!allowedTables.has(table) || !Array.isArray(records)) continue;
+        for (const record of records) {
+          if (!record?.id) continue;
+          const { data: current, error: readError } = await window.supabaseClient
+            .from(table)
+            .select('_version')
+            .eq('id', record.id)
+            .maybeSingle();
+          if (readError) throw readError;
+          await window.supabaseSync._writeCloudRecord(table, record, Number(current?._version || 0));
           restoredCount++;
-        } catch (storageErr) {
-          console.warn(`[Restore] Failed to restore key: ${key}`, storageErr);
         }
-      });
+      }
 
       window.logActivityAudit?.("Restore Backup", "Admin", `Memulihkan ${restoredCount} kunci data dari backup.`);
       window.showToast?.(`✅ Restore berhasil! ${restoredCount} data dipulihkan. Halaman akan dimuat ulang.`, "success");
 
+      await window.manualSync?.();
       setTimeout(() => location.reload(), 2500);
     } catch (parseErr) {
       console.error("[Restore] Parse error:", parseErr);
@@ -3395,8 +3376,3 @@ window.adminRestoreJSON = function (event) {
   // Reset file input so user can re-upload same file
   event.target.value = "";
 };
-
-
-
-
-

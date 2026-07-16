@@ -21,6 +21,11 @@
           <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-300">Progress hari ini</p>
           <h3 id="journal-summary-title" class="text-base font-black mt-1">Jurnal Hari Ini</h3>
           <p id="journal-summary-desc" class="text-[11px] text-slate-300 mt-1">Selesaikan pemeriksaan asrama secara bertahap.</p>
+          <!-- Streak Flame Badge -->
+          <div id="journal-streak-badge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-400 text-[10px] font-black mt-1.5 border border-orange-500/30">
+            <i data-lucide="flame" class="w-3.5 h-3.5 fill-orange-400"></i>
+            <span id="journal-streak-text">0 Hari Streak</span>
+          </div>
         </div>
         <div class="relative w-16 h-16 shrink-0 flex items-center justify-center">
           <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -47,56 +52,73 @@
     </div>
   </div>
 
-  <!-- Step Count Verification Modal (Strict Lock) -->
+  <!-- Strava-inspired Step & GPS Verification Modal (Strict Lock) -->
   <div
     id="modal-journal-step-verification"
     class="fixed inset-0 z-[999] hidden flex items-center justify-center p-4 bg-slate-900/80 dark:bg-black/90 backdrop-blur-md animate-fade-in"
   >
-    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl p-6 w-full max-w-sm text-center relative overflow-hidden animate-scale-in">
-      <!-- Progress Background Pulse -->
-      <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none"></div>
+    <div class="bg-white dark:bg-slate-900 text-slate-800 dark:text-white rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl p-6 w-full max-w-sm text-center relative overflow-hidden animate-scale-in">
+      <!-- Glow rings background -->
+      <div class="absolute inset-0 bg-gradient-to-b from-[#FC5200]/5 to-transparent pointer-events-none"></div>
 
-      <!-- Icon & Animation -->
-      <div class="relative w-28 h-28 mx-auto mb-6 flex items-center justify-center">
-        <!-- Footprint Outer Glow rings -->
-        <div class="absolute inset-0 bg-indigo-500/10 rounded-full animate-ping opacity-75"></div>
-        <div class="absolute w-20 h-20 bg-indigo-500/20 rounded-full animate-pulse"></div>
-        <div class="relative w-16 h-16 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-lg">
-          <i data-lucide="footprints" class="w-8 h-8 animate-bounce"></i>
+      <!-- Strava branding header -->
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+        <div class="flex items-center gap-1.5 text-[#FC5200] font-black tracking-widest text-xs">
+          <i data-lucide="activity" class="w-4 h-4"></i>
+          <span>STRAVA | MUSYRIF</span>
+        </div>
+        <div id="journal-verification-gps-badge" class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-500 dark:text-slate-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-600 animate-pulse" id="gps-status-dot"></span>
+          <span id="gps-status-text">GPS Menghubungkan</span>
         </div>
       </div>
 
-      <!-- Text Header -->
-      <h3 class="text-lg font-black text-slate-800 dark:text-white leading-none">Verifikasi Langkah Kaki</h3>
-      <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed px-4">
-        Genggam HP Anda dan mulailah berjalan berkeliling memeriksa asrama.
-      </p>
-
-      <!-- Step Counter Display -->
-      <div class="my-6">
-        <div class="text-5xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight tabular-nums">
-          <span id="journal-verification-steps">0</span><span class="text-2xl text-slate-300 dark:text-slate-600">/50</span>
+      <!-- Real-time Route Map Canvas -->
+      <div class="relative w-full h-36 bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden mb-4 flex items-center justify-center">
+        <canvas id="journal-route-canvas" class="w-full h-full block" width="300" height="144"></canvas>
+        <div id="canvas-overlay-msg" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 text-slate-500 text-[10px] gap-1 font-bold pointer-events-none">
+          <i data-lucide="map" class="w-5 h-5 animate-pulse text-[#FC5200]/50"></i>
+          <span>Menggambar lintasan rute...</span>
         </div>
-        <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mt-1">Langkah Terdeteksi</span>
       </div>
 
-      <!-- Progress bar -->
-      <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 mb-6 overflow-hidden">
-        <div id="journal-verification-bar" class="bg-indigo-600 dark:text-indigo-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+      <!-- Strava Sporty Stats Grid -->
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        <!-- Stopwatch / Duration -->
+        <div class="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-3 text-left">
+          <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">WAKTU</span>
+          <span id="journal-verification-duration" class="text-xl font-black text-slate-800 dark:text-white tracking-tight tabular-nums block mt-0.5">00:00</span>
+        </div>
+        <!-- Steps Counter (No target shown) -->
+        <div class="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-3 text-left">
+          <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">LANGKAH</span>
+          <span id="journal-verification-steps" class="text-xl font-black text-[#FC5200] tracking-tight tabular-nums block mt-0.5">0</span>
+        </div>
+        <!-- Displacement Jarak Terjauh -->
+        <div class="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-3 text-left col-span-2 flex items-center justify-between">
+          <div>
+            <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">DISPLACEMENT (JARAK KELILING)</span>
+            <span id="journal-verification-displacement" class="text-base font-black text-slate-800 dark:text-white tracking-tight tabular-nums mt-0.5 block">0.0 m</span>
+          </div>
+          <!-- Target indicator status -->
+          <div id="displacement-target-indicator" class="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 text-[9px] font-black border border-amber-100 dark:border-amber-900/50">
+            Jalan Muter Asrama
+          </div>
+        </div>
       </div>
 
-      <!-- Instruction / Status -->
-      <div id="journal-verification-status" class="text-xs font-semibold text-indigo-500 dark:text-indigo-400 mb-6 flex items-center justify-center gap-1.5 animate-pulse">
-        <i data-lucide="loader" class="w-4 h-4 animate-spin"></i>
-        Mendeteksi gerakan jalan...
+      <!-- Status Message -->
+      <div id="journal-verification-status" class="text-[11px] font-black text-slate-500 dark:text-slate-400 mb-5 flex items-center justify-center gap-1.5">
+        <i data-lucide="loader" class="w-3.5 h-3.5 animate-spin text-[#FC5200]"></i>
+        <span>Genggam HP Anda & mulailah patroli asrama...</span>
       </div>
 
       <!-- Actions -->
       <button
         onclick="window.abortJournalVerification()"
-        class="w-full py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/20 text-slate-500 dark:text-slate-400 font-black text-xs transition-all active:scale-[0.98]"
+        class="w-full py-3.5 rounded-2xl bg-slate-100 hover:bg-red-500/10 hover:text-red-500 text-slate-600 dark:bg-slate-800 dark:text-slate-300 font-black text-xs transition-all active:scale-[0.98] border border-slate-200 dark:border-slate-700"
       >
-        Batalkan Verifikasi
+        Hentikan & Batal
       </button>
     </div>
   </div>

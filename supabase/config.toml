@@ -1,0 +1,13 @@
+project_id = "syamsabackup"
+
+# Login dan registrasi terjadi sebelum pengguna mempunyai sesi Supabase.
+# Keduanya tetap melakukan validasi sendiri di dalam Edge Function.
+[functions.wali-auth]
+verify_jwt = false
+
+[functions.wali-register]
+verify_jwt = false
+
+# Operasi password/approval hanya boleh dipanggil dengan JWT admin aktif.
+[functions.wali-admin]
+verify_jwt = true

@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register Wali - Systa</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="manifest" href="../manifest.json">
+  <link rel="manifest" href="../../manifest.json">
+  <script src="../config/config.local.js"></script>
+  <script src="../config/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../platform/supabase-client.js"></script>
   <style>
     body {
       font-family: 'Inter', system-ui, sans-serif;
@@ -82,6 +86,16 @@
           class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
           placeholder="Contoh: 12345">
         <p id="nisHint" class="mt-1 text-xs text-slate-400">Nomor Induk Santri anak Anda</p>
+      </div>
+
+      <!-- Nama Santri -->
+      <div>
+        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+          Kelas Santri <span class="text-red-500">*</span>
+        </label>
+        <input type="text" id="kelas" required maxlength="50"
+          class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+          placeholder="Contoh: 10A">
       </div>
 
       <!-- Nama Santri -->
@@ -180,38 +194,22 @@
         document.getElementById('nis').value = nisParam;
       }
 
-      // Check notification permission
-      if (!('Notification' in window)) {
-        showError('Browser tidak mendukung notifications');
-        return;
-      }
-
-      if (Notification.permission === 'denied') {
-        showError('Notifikasi diblokir. Aktifkan di pengaturan browser.');
-        return;
-      }
-
-      // Request permission
-      if (Notification.permission === 'default') {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          showError('Izin notifikasi diperlukan');
-          return;
-        }
-      }
+      // Notifikasi bersifat opsional dan tidak boleh memblokir pendaftaran.
+      const notificationSupported = 'Notification' in window;
 
       // Form submit
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const nis = document.getElementById('nis').value.trim();
+        const kelas = document.getElementById('kelas').value.trim();
         const namaSantri = document.getElementById('namaSantri').value.trim();
         const namaWali = document.getElementById('namaWali').value.trim();
         const noHP = document.getElementById('noHP').value.trim();
         const email = document.getElementById('email').value.trim();
 
         // Validate
-        if (!nis || !namaSantri || !namaWali || !noHP) {
+        if (!nis || !kelas || !namaSantri || !namaWali || !noHP) {
           showError('Mohon isi semua field yang wajib');
           return;
         }
@@ -222,6 +220,7 @@
         try {
           const data = {
             nis: nis,
+            kelas: kelas,
             namaSantri: namaSantri,
             namaWali: namaWali,
             noHP: noHP,
@@ -231,16 +230,26 @@
             active: true
           };
 
-          // Save to localStorage
-          localStorage.setItem(`wali_register_${nis}`, JSON.stringify(data));
-          log('Saved to localStorage successfully');
+          if (!window.supabaseClient || !navigator.onLine) {
+            throw new Error('Pendaftaran memerlukan koneksi cloud');
+          }
+          const { data: result, error } = await window.supabaseClient.functions.invoke('wali-register', {
+            body: data
+          });
+          if (error || !result?.success) {
+            throw error || new Error(result?.message || 'Pendaftaran gagal');
+          }
+          log('Registration request saved to cloud');
           showSuccess(nis, namaSantri);
 
           // Also send test notification
-          if (Notification.permission === 'granted') {
+          if (notificationSupported && Notification.permission === 'default') {
+            await Notification.requestPermission();
+          }
+          if (notificationSupported && Notification.permission === 'granted') {
             new Notification('Pendaftaran Berhasil! 🎉', {
               body: `Pendaftaran wali ${namaSantri} berhasil disimpan.`,
-              icon: '../assets/icons/icon.webp',
+              icon: '../../assets/icons/icon.webp',
               tag: 'wali-registered'
             });
           }

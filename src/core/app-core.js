@@ -54,6 +54,8 @@ const APP_CONFIG = {
   googleClientId: window.APP_CREDENTIALS.googleClientId,
   violationsKey: "musyrif_violations_db",
   studentTargetsKey: "musyrif_student_targets",
+  studentLogsKey: "musyrif_student_logs",
+  remindersKey: "musyrif_reminders",
 };
 
 // ==========================================
@@ -119,7 +121,7 @@ const appCoreDebugLog = (...args) => {
  * Initialize Storage Manager
  * Call this after user login to set the musyrifId
  */
-window.initStorage = function(musyrifId) {
+window.initStorage = async function(musyrifId) {
   appCoreDebugLog('[Storage] Initializing with musyrifId:', musyrifId);
 
   try {
@@ -150,7 +152,7 @@ window.initStorage = function(musyrifId) {
     }
 
     // Initialize with musyrif ID
-    sm.init(finalMusyrifId);
+    await sm.init(finalMusyrifId);
 
     appCoreDebugLog('[Storage] Initialized for musyrifId:', finalMusyrifId);
 
@@ -199,7 +201,7 @@ window.getStorageStatus = function() {
  * Manual sync - Reload data from localStorage
  */
 window.manualSync = async function() {
-  console.log('[ManualSync] Refreshing data from localStorage...');
+  console.log('[ManualSync] Refreshing data from cloud...');
 
   const syncBtn = document.getElementById('pwa-sync-btn');
   if (syncBtn) {
@@ -207,9 +209,9 @@ window.manualSync = async function() {
   }
 
   try {
-    // Reload data from localStorage
-    if (window.storageManager) {
-      window.storageManager._loadFromStorage();
+    if (window.storageManager && window.supabaseSync) {
+      await window.supabaseSync.syncAll();
+      await window.storageManager._loadFromDatabase();
 
       // Update UI
       if (typeof window.updateDashboard === 'function') {

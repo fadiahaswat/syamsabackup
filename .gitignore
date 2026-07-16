@@ -25,10 +25,10 @@ Thumbs.db
 # Secrets & Credentials
 .env
 .env.*
+src/config/config.local.js
 
 # Agent and auxiliary folders
 ecc/
 izinasramasatu-main/
 .agents/
 .gemini/
-

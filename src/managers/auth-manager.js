@@ -9,6 +9,22 @@
  * @param {Object} profile - Google profile object
  * @param {string} targetClass - Selected class
  */
+window.ensureSupabaseGoogleSession = async function(idToken) {
+  if (!window.isSupabaseEnabled || !window.supabaseClient) {
+    throw new Error('Cloud database is not configured');
+  }
+  if (!idToken) throw new Error('Google ID token is required');
+
+  const { data, error } = await window.supabaseClient.auth.signInWithIdToken({
+    provider: 'google',
+    token: idToken,
+  });
+  if (error || !data?.session?.user) {
+    throw error || new Error('Supabase session was not created');
+  }
+  return data.session;
+};
+
 window.initMultiRoleAuth = async function(profile, targetClass) {
   if (!window.authMultiRole || !window.supabaseClient) return;
 
@@ -23,6 +39,16 @@ window.initMultiRoleAuth = async function(profile, targetClass) {
     // Get user roles
     const roles = await window.authMultiRole.getUserRoles();
     console.log('[AuthMultiRole] User roles:', roles);
+    const requestedAdmin = ['admin musyrif', 'koordinator musyrif'].includes(String(targetClass || '').toLowerCase());
+    const authorized = roles.some(item => {
+      const roleName = item.roles?.name;
+      if (['superadmin', 'admin'].includes(roleName)) return true;
+      if (requestedAdmin) return roleName === 'koordinator';
+      return ['koordinator', 'musyrif', 'ustadz'].includes(roleName) && (!item.kelas || item.kelas === targetClass);
+    });
+    if (!authorized) {
+      throw new Error('Role cloud tidak mengizinkan akses ke kelas yang dipilih');
+    }
 
     // Register current device
     await window.authMultiRole.registerDevice();
@@ -37,13 +63,18 @@ window.initMultiRoleAuth = async function(profile, targetClass) {
       metadata: { email: profile?.email }
     });
 
-    // Store in localStorage for quick access
-    localStorage.setItem('multirole_user_id', user?.id);
-    localStorage.setItem('multirole_roles', JSON.stringify(roles));
+    // Keep only a non-authoritative display cache. Authorization always comes
+    // from the authenticated Supabase session and RLS.
+    sessionStorage.setItem('multirole_user_id', user?.id || '');
+    sessionStorage.setItem('multirole_roles', JSON.stringify(roles));
+
+    await window.cloudDomainStore?.init(window.supabaseClient, user?.id);
+
+    return { user, roles };
 
   } catch (error) {
-    console.warn('[AuthMultiRole] Initialization failed:', error);
-    // Don't throw - this is optional enhancement
+    console.error('[AuthMultiRole] Initialization failed:', error);
+    throw error;
   }
 };
 
@@ -51,8 +82,8 @@ window.initMultiRoleAuth = async function(profile, targetClass) {
  * Get current user roles from multirole system
  */
 window.getMultiRoleUser = function() {
-  const userId = localStorage.getItem('multirole_user_id');
-  const rolesJson = localStorage.getItem('multirole_roles');
+  const userId = sessionStorage.getItem('multirole_user_id');
+  const rolesJson = sessionStorage.getItem('multirole_roles');
   const roles = rolesJson ? JSON.parse(rolesJson) : [];
   return { userId, roles };
 };
@@ -196,9 +227,16 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
     }
   }
 
-  localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
   appState.selectedClass = targetClass;
   appState.userProfile = profile;
+
+  // Establish role authorization and hydrate cloud data before the protected
+  // application view becomes visible.
+  if (profile?.authProvider !== 'wali') {
+    await window.initMultiRoleAuth(profile, targetClass);
+  }
+  await window.initStorage?.(profile?.id || `class_${targetClass}`);
+  localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
 
   // ========== PWA UPDATE CHECK ==========
   // Skip PWA update check untuk bypass mode (supaya langsung masuk tanpa reload)
@@ -213,9 +251,6 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
   window.updateDashboard();
   window.updateProfileInfo();
 
-  // ========== MULTIROLE AUTH INIT ==========
-  // Register device and sync user to cloud
-  window.initMultiRoleAuth(profile, targetClass);
 };
 
 window.handleLogin = async function () {
@@ -266,74 +301,47 @@ window.handleGoogleCallback = async function (response) {
     if (!userEmail) {
       return window.showToast("Google tidak mengirim alamat email.", "error");
     }
-    const targetClass = appState.tempClass;
+
     const normalizedUserEmail = String(userEmail || "")
       .trim()
       .toLowerCase();
 
-    let classInfo =
-      window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
+    // Establish a real authenticated Supabase session. A decoded Google JWT
+    // alone is never used as database authorization.
+    await window.ensureSupabaseGoogleSession(response.credential);
 
-    if (!classInfo) {
-      return window.showToast(
-        "Data kelas belum siap. Silakan coba lagi.",
-        "warning",
-      );
+    // Check if we are in Google bypass mode (testing)
+    if (window.googleBypassActive) {
+      const targetClass = appState.tempClass;
+      localStorage.removeItem('app_session_id');
+      await window.startAuthenticatedSession(targetClass, profile);
+      window.closeModal("modal-google-auth");
+      window.showToast("Login Berhasil!", "success");
+      return;
     }
 
-    // 2. VALIDASI EMAIL (KEAMANAN UTAMA)
-    // Untuk Admin Musyrif & Koordinator Musyrif: cek di 2 baris
-    const isAdminRole = targetClass?.toLowerCase() === "admin musyrif" ||
-                        targetClass?.toLowerCase() === "koordinator musyrif";
+    // Get allowed classes for this email
+    const allowedClasses = window.getUserAllowedClassesForEmail(normalizedUserEmail);
 
-    let allowedEmails = [];
-
-    if (isAdminRole) {
-      // Admin: cek email di 2 baris (Admin Musyrif & Koordinator Musyrif)
-      const adminMusyrifEmails = String(window.classData?.["Admin Musyrif"]?.email || "")
-        .split(/[;,]/)
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean);
-
-      const koordinatorMusyrifEmails = String(window.classData?.["Koordinator Musyrif"]?.email || "")
-        .split(/[;,]/)
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean);
-
-      allowedEmails = [...adminMusyrifEmails, ...koordinatorMusyrifEmails];
-
-      // Tolak jika tidak ada email di kedua baris
-      if (allowedEmails.length === 0) {
-        return window.showToast(
-          "Admin belum mendaftarkan email untuk akses ini.",
-          "warning",
-        );
-      }
-    } else {
-      // Musyrif reguler: cek email di baris kelas sendiri
-      if (!classInfo.email) {
-        return window.showToast(
-          "Admin belum mendaftarkan email untuk kelas ini.",
-          "warning",
-        );
-      }
-      allowedEmails = String(classInfo.email || "")
-        .split(/[;,]/)
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean);
-    }
-
-    if (!allowedEmails.includes(normalizedUserEmail)) {
+    if (allowedClasses.length === 0) {
       return window.showToast(
-        "AKSES DITOLAK! Email Anda tidak terdaftar untuk akses ini.",
+        "AKSES DITOLAK! Email Anda tidak terdaftar untuk kelas mana pun.",
         "error",
       );
     }
 
-    // 3. JIKA LOLOS -> SIMPAN SESI
-    await window.startAuthenticatedSession(targetClass, profile);
-    window.closeModal("modal-google-auth");
-    window.showToast("Login Berhasil!", "success");
+    if (allowedClasses.length === 1) {
+      const targetClass = allowedClasses[0];
+      localStorage.removeItem('app_session_id');
+      await window.startAuthenticatedSession(targetClass, profile);
+      window.closeModal("modal-google-auth");
+      window.showToast("Login Berhasil!", "success");
+    } else {
+      // Terdaftar di lebih dari satu kelas, tampilkan list pemilihan
+      window.tempGoogleProfile = profile;
+      window.tempGoogleResponseCredential = response.credential;
+      window.showLoginClassSelection(allowedClasses);
+    }
   } catch (e) {
     console.error(e);
     window.showToast("Gagal memproses login Google.", "error");
@@ -347,6 +355,8 @@ window.handleLogout = async function () {
     "Keluar",
     "Batal",
     async () => {
+  await window.supabaseClient?.auth?.signOut();
+  window.authMultiRole?.clearLocalSession?.();
   if (clockInterval) {
     clearInterval(clockInterval);
     clockInterval = null;
@@ -366,4 +376,12 @@ window.handleLogout = async function () {
   location.reload();
     },
   );
+};
+
+window.handleForcedLogout = async function () {
+  await window.supabaseClient?.auth?.signOut();
+  window.authMultiRole?.clearLocalSession?.();
+  localStorage.removeItem(APP_CONFIG.googleAuthKey);
+  window.showToast?.('Sesi dicabut dari perangkat lain. Silakan masuk kembali.', 'warning');
+  setTimeout(() => window.location.reload(), 800);
 };

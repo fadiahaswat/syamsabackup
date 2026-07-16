@@ -492,8 +492,14 @@ class LocalDB {
   /**
    * Create or update record (upsert)
    */
-  async put(storeName, data) {
+  async put(storeName, data, options = {}) {
     const db = await this.ensureReady();
+    const { preserveVersion = false, skipSync = false } = options;
+    const businessStores = ['attendances', 'permits', 'tahfizh', 'settings', 'activity_logs', 'musyrif_journals'];
+    if (!preserveVersion && window.APP_STORAGE?.cloudOnly && businessStores.includes(storeName) && !window.canWriteBusinessData?.()) {
+      window.showToast?.('Tidak dapat menyimpan: koneksi dan sesi cloud diperlukan.', 'warning');
+      throw new Error('Cloud write unavailable');
+    }
 
     const validation = this._validateRecord(storeName, data);
     if (!validation.valid) {
@@ -506,22 +512,27 @@ class LocalDB {
       const store = tx.objectStore(storeName);
 
       const now = new Date().toISOString();
-      const record = {
-        ...data,
-        _updatedAt: now,
-      };
+      let record;
 
-      if (!record._createdAt) {
-        record._createdAt = now;
-        record._version = 1;
+      if (preserveVersion) {
+        // Cloud is authoritative. Never invent a newer local revision while
+        // applying inbound or realtime rows.
+        record = { ...data };
       } else {
-        record._version = (record._version || 0) + 1;
+        const baseVersion = Number(data._version || 0);
+        record = {
+          ...data,
+          _baseVersion: baseVersion,
+          _updatedAt: now,
+          _version: baseVersion + 1,
+        };
+        if (!record._createdAt) record._createdAt = now;
       }
 
       const request = store.put(record);
 
       request.onsuccess = () => {
-        if (!this.isSyncing && window.isSupabaseEnabled && window.syncQueue &&
+        if (!skipSync && !this.isSyncing && window.isSupabaseEnabled && window.syncQueue &&
             !['sync_queue', 'conflicts', 'sync_metadata', 'meta'].includes(storeName)) {
           // Use snake_case for sync queue to match schema
           window.syncQueue.add({
@@ -560,6 +571,14 @@ class LocalDB {
         reject(error);
       };
     });
+  }
+
+  /**
+   * Store an authoritative cloud row without changing its revision or
+   * creating a new outbound queue entry.
+   */
+  async putFromCloud(storeName, data) {
+    return this.put(storeName, data, { preserveVersion: true, skipSync: true });
   }
 
   /**
@@ -689,8 +708,9 @@ class LocalDB {
   /**
    * Delete record by ID
    */
-  async delete(storeName, id) {
+  async delete(storeName, id, options = {}) {
     const db = await this.ensureReady();
+    const { skipSync = false } = options;
 
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
@@ -698,7 +718,7 @@ class LocalDB {
       const request = store.delete(id);
 
       request.onsuccess = () => {
-        if (!this.isSyncing && window.isSupabaseEnabled && window.syncQueue &&
+        if (!skipSync && !this.isSyncing && window.isSupabaseEnabled && window.syncQueue &&
             !['sync_queue', 'conflicts', 'sync_metadata', 'meta'].includes(storeName)) {
           window.syncQueue.add({
             entity_type: storeName,

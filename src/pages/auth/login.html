@@ -68,7 +68,7 @@
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
               </svg>
-              <span>Masuk sebagai Musyrif</span>
+              <span>Masuk sebagai Ustadz</span>
             </button>
 
             <!-- Sign in as Wali / Student -->
@@ -97,7 +97,7 @@
           <!-- Form Login Musyrif Inline -->
           <div id="login-musyrif-view" class="hidden space-y-4 animate-fade-in w-full">
             <div class="text-center mb-2">
-              <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Pilih Kelas Musyrif</h4>
+              <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Pilih Kelas Ustadz</h4>
               <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1">Pilih kelas Anda untuk melanjutkan verifikasi</p>
             </div>
 
@@ -113,7 +113,7 @@
               <div class="relative group">
                 <select
                   id="musyrif-kelas"
-                  title="Pilih kelas musyrif"
+                  title="Pilih kelas ustadz"
                   class="w-full py-3 px-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 font-bold text-syamsa-foreground dark:text-white appearance-none focus:border-palette-blue focus:ring-4 focus:ring-palette-blue/10 outline-none transition-all cursor-pointer text-center text-xs"
                 >
                   <option value="" disabled selected>Pilih Kelas</option>
@@ -203,7 +203,7 @@
             <div class="text-center mb-2">
               <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Verifikasi Akun</h4>
               <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1 leading-relaxed">
-                Silakan login dengan Google untuk memverifikasi bahwa Anda adalah Musyrif kelas
+                Silakan login dengan Google untuk memverifikasi bahwa Anda adalah Ustadz kelas
                 <span id="lbl-google-class" class="font-black text-palette-blue dark:text-blue-400">...</span>
               </p>
             </div>
@@ -213,6 +213,30 @@
             <div class="pt-2">
               <button
                 onclick="window.cancelGoogleAuth()"
+                class="w-full py-3.5 rounded-2xl bg-transparent border border-slate-200 dark:border-slate-800 text-syamsa-muted-foreground font-black text-xs uppercase tracking-wider hover:bg-syamsa-muted/50 dark:hover:bg-slate-800/40 transition-all active:scale-[0.98]"
+                type="button"
+              >
+                Kembali
+              </button>
+            </div>
+          </div>
+
+          <!-- Form Pemilihan Kelas Pasca Login (Multi-class Musyrif) -->
+          <div id="login-class-selection-view" class="hidden space-y-4 animate-fade-in w-full">
+            <div class="text-center mb-2">
+              <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Pilih Kelas / Peran</h4>
+              <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1 leading-relaxed">
+                Akun Anda memiliki akses ke beberapa kelas. Silakan pilih kelas untuk memulai sesi:
+              </p>
+            </div>
+
+            <div id="login-class-selection-list" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+              <!-- Dynamically populated buttons -->
+            </div>
+
+            <div class="pt-2">
+              <button
+                onclick="window.cancelClassSelection()"
                 class="w-full py-3.5 rounded-2xl bg-transparent border border-slate-200 dark:border-slate-800 text-syamsa-muted-foreground font-black text-xs uppercase tracking-wider hover:bg-syamsa-muted/50 dark:hover:bg-slate-800/40 transition-all active:scale-[0.98]"
                 type="button"
               >

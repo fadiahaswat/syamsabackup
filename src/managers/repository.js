@@ -724,6 +724,10 @@ class TahfizhRepository {
       juz: data.juz || '',
       halaman: data.halaman || '',
       surat: data.surat || '',
+      metadata: data.metadata || {
+        ayatMulai: data.ayatMulai || null,
+        ayatAkhir: data.ayatAkhir || null,
+      },
       kualitas: data.kualitas || 'Lancar',
       status: data.status || 'Pending',
       musyrif: data.musyrif,
@@ -749,6 +753,10 @@ class TahfizhRepository {
       juz: r.juz || '',
       halaman: r.halaman || '',
       surat: r.surat || '',
+      metadata: r.metadata || {
+        ayatMulai: r.ayatMulai || null,
+        ayatAkhir: r.ayatAkhir || null,
+      },
       kualitas: r.kualitas || 'Lancar',
       status: r.status || 'Pending',
       musyrif: r.musyrif,
@@ -836,6 +844,20 @@ class TahfizhRepository {
         kurang: records.filter(r => r.kualitas === 'Kurang').length,
       }
     };
+  }
+
+  /**
+   * Get all setoran records
+   */
+  async getAll() {
+    return this.db.getAll(this.storeName);
+  }
+
+  /**
+   * Delete setoran
+   */
+  async delete(id) {
+    return this.db.delete(this.storeName, id);
   }
 }
 

@@ -285,13 +285,12 @@ class StateManager {
     if (!this._db || !this._repos || !this._state._isDirty) return;
 
     try {
-      // Save settings
+      // UI preferences are a supporting device cache. Business attendance is
+      // persisted explicitly by AttendanceRepository, never by replaying the
+      // entire in-memory state after an unrelated UI change.
       if (this._state.settings) {
-        await this._repos.settings.saveUserSettings(this._state.settings);
+        localStorage.setItem('musyrif_settings', JSON.stringify(this._state.settings));
       }
-
-      // Save attendance data
-      await this._persistAttendance();
 
       // Save permits
       // (Permits are saved individually via permit operations)

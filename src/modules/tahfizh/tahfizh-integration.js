@@ -140,18 +140,8 @@ function createTahfizhBasicStructure() {
 // Load Tahfizh config and app scripts
 async function loadTahfizhScripts() {
   try {
-    // First load config
-    if (!window.AppConfig) {
-      const configResponse = await fetch(
-        "/tmp/workspace/fadiahaswat/presensi/sistemtahfizh-main/config.js",
-      );
-      if (configResponse.ok) {
-        const configScript = await configResponse.text();
-        eval(configScript);
-      }
-    }
-
-    // Merge with main config
+    // Configuration is loaded by the main application. Never execute remote
+    // or workspace scripts dynamically.
     if (window.APP_TAHFIZH_CONFIG) {
       window.AppConfig = {
         ...(window.AppConfig || {}),

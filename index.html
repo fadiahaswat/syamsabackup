@@ -2527,31 +2527,7 @@
       }
 
 
-      /* Stable bottom navigation */
-      nav {
-        transition: opacity 0.2s ease !important;
-        transform: scale(1) !important;
-        opacity: 1 !important;
-        transform-origin: bottom center;
-      }
-      nav.nav-expanded, nav:hover, nav:active, nav:focus-within {
-        transform: scale(1) !important;
-        opacity: 1 !important;
-      }
-      #view-main > nav {
-        bottom: 0 !important;
-        padding-bottom: max(0.75rem, env(safe-area-inset-bottom)) !important;
-        transition: transform 0.3s ease, opacity 0.3s ease;
-      }
-      #view-main > nav .nav-btn {
-        padding-top: 0.625rem !important;
-        padding-bottom: 0.625rem !important;
-      }
-      /* Keep bottom navigation stable while scrolling */
-      #view-main > nav.nav-shrunk {
-        transform: scale(1) !important;
-        opacity: 1 !important;
-      }
+      /* Obsolete nav styles removed to prevent clashing with new bottom-nav design */
 
       /* --- Utilities --- */
       .hide-scrollbar::-webkit-scrollbar {
@@ -2609,27 +2585,35 @@
         transform: translateX(0);
         color: #ffffff !important;
       }
-      /* New Clean and Premium Bottom Nav Styles */
+      /* New Mockup-Style Bottom Nav Styles */
       #bottom-nav {
+        position: fixed;
         bottom: calc(1rem + env(safe-area-inset-bottom));
+        left: 1rem;
+        right: 1rem;
+        z-index: 50;
+        max-width: 28rem; /* max-w-md */
+        margin: 0 auto;
+        background: #ffffff !important;
+        border: 1px solid rgba(226, 232, 240, 0.8) !important;
+        border-radius: 9999px !important;
+        box-shadow: 0 12px 34px -10px rgba(15, 23, 42, 0.12) !important;
+        padding-bottom: 0 !important;
         transition: transform 0.2s ease, opacity 0.2s ease;
       }
-      #bottom-nav .nav-container {
-        background: rgba(255, 255, 255, 0.76) !important;
-        backdrop-filter: blur(20px) saturate(170%) !important;
-        -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        box-shadow: 
-          0 12px 34px -10px rgba(15, 23, 42, 0.08),
-          0 4px 12px -4px rgba(15, 23, 42, 0.03),
-          inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+      .dark #bottom-nav {
+        background: #0f172a !important;
+        border: 1px solid rgba(30, 41, 59, 0.8) !important;
+        box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.5) !important;
       }
-      .dark #bottom-nav .nav-container {
-        background: rgba(15, 23, 42, 0.8) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        box-shadow: 
-          0 16px 40px -12px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+      
+      #bottom-nav .nav-container {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0.25rem 0.75rem !important;
       }
       #bottom-nav .nav-label {
         display: none !important;
@@ -2639,53 +2623,60 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 0.65rem 0 !important;
+        padding: 0 !important;
+        height: 2.75rem !important;
         background: transparent !important;
         border: 0 !important;
         box-shadow: none !important;
-        border-radius: 9999px;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.2s ease;
         cursor: pointer;
         position: relative;
         flex: 1 1 0 !important;
         min-width: 0;
+        color: #64748b !important;
+      }
+      .dark #bottom-nav .nav-btn {
+        color: #94a3b8 !important;
       }
       #bottom-nav .nav-btn i,
       #bottom-nav .nav-btn svg {
         width: 1.35rem;
         height: 1.35rem;
-        color: #94a3b8 !important;
+        color: inherit !important;
         stroke: currentColor !important;
-        transition: all 0.25s ease;
+        transition: transform 0.2s ease, color 0.2s ease;
+      }
+      #bottom-nav .nav-btn[data-target="home"].active {
+        color: #10b981 !important;
+      }
+      #bottom-nav .nav-btn[data-target="tahfizh"].active {
+        color: #f97316 !important;
+      }
+      #bottom-nav .nav-btn[data-target="report"].active {
+        color: #3b82f6 !important;
+      }
+      #bottom-nav .nav-btn[data-target="profile"].active {
+        color: #a855f7 !important;
       }
       #bottom-nav .nav-btn.active i,
       #bottom-nav .nav-btn.active svg {
-        transform: translateY(-2px);
-        animation: bottom-nav-active-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transform: translateY(-1px);
       }
-      #bottom-nav .nav-btn[data-target="home"].active i { color: #10b981 !important; }
-      #bottom-nav .nav-btn[data-target="tahfizh"].active i { color: #f97316 !important; }
-      #bottom-nav .nav-btn[data-target="report"].active i { color: #3b82f6 !important; }
-      #bottom-nav .nav-btn[data-target="profile"].active i { color: #a855f7 !important; }
-
       #bottom-nav .nav-indicator {
-        position: absolute;
-        bottom: 4px;
+        display: block !important;
         width: 4px;
         height: 4px;
         border-radius: 9999px;
+        background-color: currentColor !important;
+        margin-top: 3px;
         transform: scale(0);
         opacity: 0;
-        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease;
       }
       #bottom-nav .nav-btn.active .nav-indicator {
         transform: scale(1);
         opacity: 1;
       }
-      #bottom-nav .nav-btn[data-target="home"] .nav-indicator { background-color: #10b981 !important; }
-      #bottom-nav .nav-btn[data-target="tahfizh"] .nav-indicator { background-color: #f97316 !important; }
-      #bottom-nav .nav-btn[data-target="report"] .nav-indicator { background-color: #3b82f6 !important; }
-      #bottom-nav .nav-btn[data-target="profile"] .nav-indicator { background-color: #a855f7 !important; }
 
       #bottom-nav > [data-target="jurnal"] {
         position: absolute;
@@ -2706,7 +2697,7 @@
       }
       #bottom-nav > [data-target="jurnal"].active {
         background-color: #4f46e5 !important;
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.25), 0 12px 28px rgba(79, 70, 229, 0.45) !important;
+        box-shadow: 0 12px 28px rgba(79, 70, 229, 0.45) !important;
       }
 
       @media (max-width: 380px) {
@@ -4325,7 +4316,7 @@
                 Kelola Asrama Lebih Efisien
               </h3>
               <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-[280px] sm:max-w-[320px] mx-auto">
-                Musyrif dapat menyetujui izin keluar/pulang, mengelola kehadiran harian santri, dan memantau perkembangan asrama.
+                Ustadz dapat menyetujui izin keluar/pulang, mengelola kehadiran harian santri, dan memantau perkembangan asrama.
               </p>
             </div>
 
@@ -4449,7 +4440,7 @@
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
               </svg>
-              <span>Masuk sebagai Musyrif</span>
+              <span>Masuk sebagai Ustadz</span>
             </button>
 
             <!-- Sign in as Wali / Student -->
@@ -4477,7 +4468,7 @@
           <!-- Form Login Musyrif Inline -->
           <div id="login-musyrif-view" class="hidden space-y-4 animate-fade-in w-full">
             <div class="text-center mb-2">
-              <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Pilih Kelas Musyrif</h4>
+              <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Pilih Kelas Ustadz</h4>
               <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1">Pilih kelas Anda untuk melanjutkan verifikasi</p>
             </div>
 
@@ -4588,7 +4579,7 @@
             <div class="text-center mb-2">
               <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Verifikasi Akun</h4>
               <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1 leading-relaxed">
-                Silakan masuk dengan Google untuk memverifikasi bahwa Anda adalah Musyrif kelas
+                Silakan masuk dengan Google untuk memverifikasi bahwa Anda adalah Ustadz kelas
                 <span id="lbl-google-class" class="font-black text-palette-blue dark:text-blue-400">...</span>
               </p>
             </div>
@@ -4598,6 +4589,30 @@
             <div class="pt-2">
               <button
                 onclick="window.cancelGoogleAuth()"
+                class="w-full py-3.5 rounded-2xl bg-transparent border border-slate-200 dark:border-slate-800 text-syamsa-muted-foreground font-black text-xs uppercase tracking-wider hover:bg-syamsa-muted/50 dark:hover:bg-slate-800/40 transition-all active:scale-[0.98]"
+                type="button"
+              >
+                Kembali
+              </button>
+            </div>
+          </div>
+
+          <!-- Form Pemilihan Kelas Pasca Login (Multi-class Musyrif) -->
+          <div id="login-class-selection-view" class="hidden space-y-4 animate-fade-in w-full">
+            <div class="text-center mb-2">
+              <h4 class="text-sm font-black text-syamsa-foreground dark:text-white uppercase tracking-wider">Pilih Kelas / Peran</h4>
+              <p class="text-[10px] text-syamsa-muted-foreground font-bold mt-1 leading-relaxed">
+                Akun Anda memiliki akses ke beberapa kelas. Silakan pilih kelas untuk memulai sesi:
+              </p>
+            </div>
+
+            <div id="login-class-selection-list" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+              <!-- Dynamically populated buttons -->
+            </div>
+
+            <div class="pt-2">
+              <button
+                onclick="window.cancelClassSelection()"
                 class="w-full py-3.5 rounded-2xl bg-transparent border border-slate-200 dark:border-slate-800 text-syamsa-muted-foreground font-black text-xs uppercase tracking-wider hover:bg-syamsa-muted/50 dark:hover:bg-slate-800/40 transition-all active:scale-[0.98]"
                 type="button"
               >
@@ -5956,17 +5971,6 @@
       <section class="tahfizh-card rounded-2xl p-3 sm:p-4">
         <div class="mb-3 flex items-center justify-between gap-3">
           <div class="min-w-0">
-            <h3 class="text-sm font-black text-slate-900 dark:text-white">Progress Kelas</h3>
-            <p class="mt-0.5 text-[10px] font-bold text-slate-400">Capaian tuntas, proses, dan volume setoran kelas aktif.</p>
-          </div>
-          <span class="shrink-0 rounded-xl border border-orange-100 bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-600 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-400">Live</span>
-        </div>
-        <div id="tahfizh-tuntas-tracking-accordion" class="space-y-3"></div>
-      </section>
-
-      <section class="tahfizh-card rounded-2xl p-3 sm:p-4">
-        <div class="mb-3 flex items-center justify-between gap-3">
-          <div class="min-w-0">
             <h3 class="text-sm font-black text-slate-900 dark:text-white">Target Prioritas</h3>
             <p class="mt-0.5 text-[10px] font-bold text-slate-400">Pilih target dan lihat santri yang sudah tuntas atau perlu pendampingan.</p>
           </div>
@@ -6009,10 +6013,12 @@
                 <div><label for="tahfizh-musyrif" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Musyrif</label><select id="tahfizh-musyrif" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
                 <div><label for="tahfizh-namaSantri" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Santri</label><select id="tahfizh-namaSantri" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
                 <div><label for="tahfizh-kelas" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Kelas</label><input id="tahfizh-kelas" readonly class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/70 p-3 text-sm font-bold"><input id="tahfizh-santriId" type="hidden"><input id="tahfizh-program" type="hidden"></div>
-                <div><label for="tahfizh-jenis" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Jenis</label><select id="tahfizh-jenis" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
-                <div><label for="tahfizh-juz" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Juz</label><select id="tahfizh-juz" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div id="tahfizh-jenis-field" class="hidden"><label for="tahfizh-jenis" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Jenis</label><select id="tahfizh-jenis" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+                <div id="tahfizh-juz-field" class="hidden"><label for="tahfizh-juz" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Juz</label><select id="tahfizh-juz" disabled class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></select><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
               </div>
+              <div id="tahfizh-quick-target-card" class="hidden rounded-2xl border border-orange-200/80 bg-orange-50/80 p-4 dark:border-orange-500/20 dark:bg-orange-500/10"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-[9px] font-black uppercase tracking-widest text-orange-500">Target pekan ini</p><p id="tahfizh-quick-target-title" class="mt-1 text-sm font-black text-slate-800 dark:text-white"></p><p id="tahfizh-quick-target-detail" class="mt-1 text-[10px] font-bold leading-relaxed text-slate-500 dark:text-slate-400"></p></div><span id="tahfizh-quick-target-status"></span></div><button id="tahfizh-quick-target-toggle" type="button" class="mt-3 text-[10px] font-black text-orange-600 underline decoration-orange-300 underline-offset-4 dark:text-orange-300">Isi setoran lain</button></div>
               <div id="tahfizh-halaman-container" class="hidden"><label for="tahfizh-halaman" class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Halaman</label><input id="tahfizh-halaman" type="number" step="0.5" min="0" class="mt-1 w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
+              <div id="tahfizh-ayat-container" class="hidden"><p class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 ml-1">Rentang Ayat</p><div class="mt-1 grid grid-cols-2 gap-3"><input id="tahfizh-ayat-mulai" type="number" min="1" placeholder="Ayat mulai" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"><input id="tahfizh-ayat-akhir" type="number" min="1" placeholder="Ayat akhir" class="w-full h-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/50 p-3 text-sm font-bold outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"></div><p class="form-error hidden text-xs font-bold text-red-500 mt-1"></p></div>
               <div id="tahfizh-surat-container" class="hidden rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50 p-4"><p class="text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-400 mb-2">Pilih Surat</p><div id="tahfizh-surat-checklist-area" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto"></div><p class="form-error hidden text-xs font-bold text-red-500 mt-2"></p></div>
               <button id="tahfizh-submit-button" type="submit" class="w-full h-12 rounded-xl bg-orange-500 hover:bg-orange-600 text-white border border-orange-400 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-orange-500/20 active:scale-95 transition-all"><i id="tahfizh-submit-button-icon" data-lucide="save" class="w-4 h-4"></i><span id="tahfizh-submit-button-text">Simpan Setoran</span><span id="tahfizh-submit-spinner" class="hidden w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin"></span></button>
               </div>
@@ -7529,6 +7535,21 @@
         <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
           <!-- Left Column: Profile Card & Calendar -->
           <div class="md:col-span-5 space-y-5">
+            <!-- Pindah Kelas / Class Switcher Widget (Visible for Musyrif with multiple classes) -->
+            <div id="profile-class-switcher-card" class="musyrif-only hidden bg-white/80 dark:bg-slate-800/90 p-5 rounded-[1.75rem] border border-white/60 dark:border-slate-700 shadow-xl shadow-slate-200/30 dark:shadow-black/20 flex flex-col gap-4 backdrop-blur-xl">
+              <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-palette-blue flex items-center justify-center border border-blue-100 dark:border-blue-500/20 shadow-sm shrink-0">
+                  <i data-lucide="shuffle" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-800 dark:text-white leading-tight">Pindah Kelas Binaan</h3>
+                  <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">Berpindah akses kelas binaan aktif Anda</p>
+                </div>
+              </div>
+              <div id="profile-class-switcher-list" class="grid grid-cols-2 gap-2">
+                <!-- Dynamically populated buttons -->
+              </div>
+            </div>
           
           <!-- Wali-Only Info Card & Contact Musyrif -->
           <div class="wali-only bg-white dark:bg-slate-900 p-5 rounded-[1.75rem] border border-slate-200/60 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-black/20 flex flex-col gap-5">
@@ -8212,8 +8233,7 @@
       <!-- Bottom Navigation Bar -->
       <nav
         id="bottom-nav"
-        class="fixed left-4 right-4 z-50 max-w-md mx-auto pointer-events-none select-none"
-        style="bottom: calc(1rem + env(safe-area-inset-bottom));"
+        class="fixed bottom-6 left-4 right-4 z-50 max-w-md mx-auto pointer-events-none select-none"
         aria-label="Navigasi utama"
       >
         <!-- 1. Floating Action Button (FAB) Jurnal Musyrif (Only visible for Musyrif) -->
@@ -8226,10 +8246,8 @@
           <i data-lucide="plus" class="w-6 h-6"></i>
         </button>
 
-        <!-- 2. Glassmorphic Navigation Bar Container -->
-        <div
-          class="nav-container pointer-events-auto bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-full shadow-xl shadow-slate-200/30 dark:shadow-black/30 border border-white/50 dark:border-white/10 p-1.5"
-        >
+        <!-- 2. Navigation Bar Container -->
+        <div class="nav-container pointer-events-auto">
           <div class="flex items-center justify-between gap-1">
             <!-- Tab 1: Dashboard -->
             <button
@@ -9904,13 +9922,14 @@
     <!-- Scripts -->
     <!-- Local config MUST be loaded BEFORE config.js to override defaults -->
     <script src="src/config/config.local.js"></script>
-    <script src="src/config/config.js"></script>
+    <script src="src/config/config.js?v=2.3.9"></script>
     <script src="src/data/data-kelas.js"></script>
     <script src="src/data/data-santri.js"></script>
     <script src="src/managers/santri-manager.js"></script>
     <!-- Supabase JS SDK & Integration -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="src/platform/supabase-client.js"></script>
+    <script src="src/platform/cloud-domain-store.js"></script>
 
     <!-- Database & Storage -->
     <script src="src/core/storage-constants.js"></script>
@@ -9921,7 +9940,6 @@
     <script src="src/managers/journal-manager.js"></script>
     <script src="src/managers/sync-queue.js"></script>
     <script src="src/managers/state-manager.js"></script>
-    <script src="src/managers/sync-manager.js"></script>
     <script src="src/managers/data-migrator.js"></script>
     <script src="src/managers/supabase-sync.js"></script>
     <script src="src/managers/auth-multirole.js"></script>
@@ -9941,7 +9959,7 @@
     <script src="src/js/router.js"></script>
     <script src="src/core/script.js"></script>
     <script src="src/core/pull-to-refresh.js"></script>
-    <script src="src/modules/tahfizh/tahfizh-manager.js"></script>
+    <script src="src/modules/tahfizh/tahfizh-manager.js?v=2.3.9"></script>
 
     <!-- Countdown Timer Script -->
     <script src="src/core/countdown.js"></script>

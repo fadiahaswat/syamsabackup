@@ -23,6 +23,7 @@ class StorageManagerV2 {
       settings: 'musyrif_settings',
       activityLog: 'musyrif_activity_log',
       googleAuth: 'musyrif_google_session',
+      tahfizh: 'tahfizh_local_setoran',
     };
 
     this.autoSave = {
@@ -79,25 +80,23 @@ class StorageManagerV2 {
       this._stateManager = result.stateManager;
       this._useIndexedDB = true;
 
-      // Load data into appState
-      await this._loadFromDatabase();
-
       // Setup state subscriptions
       this._setupStateSubscriptions();
 
-      // Initialize Supabase Sync
+      // Cloud is authoritative: complete inbound/outbound reconciliation
+      // before hydrating application state from the device cache.
       if (window.supabaseSync) {
-        window.supabaseSync.init(this._db, this._repos);
+        await window.supabaseSync.init(this._db, this._repos);
       }
+
+      await this._loadFromDatabase();
 
       this._initialized = true;
 
     } catch (error) {
-      console.error('[StorageManagerV2] IndexedDB init failed, falling back to localStorage:', error);
+      console.error('[StorageManagerV2] Cache initialization failed:', error);
       this._useIndexedDB = false;
-
-      // Fall back to legacy localStorage
-      this._loadFromStorage();
+      window.showToast?.('Cache perangkat gagal. Data lokal tidak digunakan sebagai sumber utama.', 'error');
       this._initialized = true;
     }
 
@@ -143,7 +142,7 @@ class StorageManagerV2 {
       this._isDirty = true;
 
       // Auto-refresh dashboard and leaderboard on inbound sync updates
-      if (changedKeys.includes('attendanceData') || changedKeys.includes('permits') || changedKeys.includes('attendance')) {
+      if (changedKeys.includes('attendanceData') || changedKeys.includes('permits') || changedKeys.includes('attendance') || changedKeys.includes('tahfizh') || changedKeys.includes('tahfizhSetoran')) {
         if (typeof window.updateDashboard === 'function') {
           if (typeof appState !== 'undefined' && (appState.adminMode || appState.superadminMode)) {
             if (window._repos?.attendance) {
@@ -210,6 +209,14 @@ class StorageManagerV2 {
         appState.permits = permits || [];
       }
 
+      // Load tahfizh
+      if (this._repos?.tahfizh) {
+        const tahfizhList = await this._repos.tahfizh.getAll();
+        if (typeof appState !== 'undefined') {
+          appState.tahfizhSetoran = tahfizhList || [];
+        }
+      }
+
       // Load settings
       const settings = await this._repos.settings.getUserSettings();
       if (typeof appState !== 'undefined') {
@@ -247,6 +254,7 @@ class StorageManagerV2 {
       this._set(this.keys.permits, appState.permits);
       this._set(this.keys.settings, appState.settings);
       this._set(this.keys.activityLog, appState.activityLog);
+      this._set(this.keys.tahfizh, appState.tahfizhSetoran || []);
 
       this._lastSavedData = currentData;
 
@@ -281,6 +289,12 @@ class StorageManagerV2 {
     const activityLog = this._get(this.keys.activityLog);
     if (activityLog && typeof appState !== 'undefined') {
       appState.activityLog = activityLog;
+    }
+
+    // Load tahfizh
+    const tahfizhSetoran = this._get(this.keys.tahfizh);
+    if (tahfizhSetoran && typeof appState !== 'undefined') {
+      appState.tahfizhSetoran = tahfizhSetoran;
     }
   }
 
@@ -479,6 +493,119 @@ class StorageManagerV2 {
 
     if (this.onDataUpdate) {
       this.onDataUpdate('permits');
+    }
+  }
+
+  // ==========================================
+  // TAHFIZH OPERATIONS
+  // ==========================================
+
+  /**
+   * Save tahfizh setoran (full array)
+   */
+  async saveTahfizhSetoran(records) {
+    if (typeof appState !== 'undefined') {
+      appState.tahfizhSetoran = records;
+    }
+
+    if (this._useIndexedDB && this._repos?.tahfizh) {
+      try {
+        // Since it's a full array save (overwrite style), delete items that are no longer present
+        const currentDB = await this._repos.tahfizh.getAll();
+        const recordIds = new Set(records.map(r => String(r.id || window.generateTahfizhId(r.kelas, r.nis, r.rowNumber))));
+        
+        for (const item of currentDB) {
+          if (!recordIds.has(String(item.id))) {
+            await this._repos.tahfizh.delete(item.id);
+          }
+        }
+
+        for (const record of records) {
+          const normalized = window.normalizeTahfizhSetoran(record);
+          const existing = await this._repos.tahfizh.get(normalized.id);
+          if (existing) {
+            await this._repos.tahfizh.update(normalized.id, normalized);
+          } else {
+            await this._repos.tahfizh.create(normalized);
+          }
+        }
+      } catch (err) {
+        console.error('[StorageManagerV2] Failed to save tahfizh setoran to IndexedDB:', err);
+      }
+    }
+
+    this._set(this.keys.tahfizh, records);
+
+    if (this.onDataUpdate) {
+      this.onDataUpdate('tahfizh');
+    }
+
+    return records;
+  }
+
+  /**
+   * Save single tahfizh record
+   */
+  async saveTahfizh(record) {
+    if (typeof appState === 'undefined') return record;
+
+    const normalized = window.normalizeTahfizhSetoran(record);
+    const list = appState.tahfizhSetoran || [];
+    const index = list.findIndex(r => r && String(r.id) === String(normalized.id));
+
+    let updatedList;
+    if (index !== -1) {
+      updatedList = list.map((r, i) => i === index ? normalized : r);
+    } else {
+      updatedList = [normalized, ...list];
+    }
+
+    appState.tahfizhSetoran = updatedList;
+
+    if (this._useIndexedDB && this._repos?.tahfizh) {
+      try {
+        const existing = await this._repos.tahfizh.get(normalized.id);
+        if (existing) {
+          await this._repos.tahfizh.update(normalized.id, normalized);
+        } else {
+          await this._repos.tahfizh.create(normalized);
+        }
+      } catch (err) {
+        console.error('[StorageManagerV2] Failed to save tahfizh record to IndexedDB:', err);
+      }
+    }
+
+    this._set(this.keys.tahfizh, updatedList);
+
+    if (this.onDataUpdate) {
+      this.onDataUpdate('tahfizh');
+    }
+
+    return normalized;
+  }
+
+  /**
+   * Delete tahfizh record
+   */
+  async deleteTahfizh(id) {
+    if (typeof appState !== 'undefined' && Array.isArray(appState.tahfizhSetoran)) {
+      appState.tahfizhSetoran = appState.tahfizhSetoran.filter(r => String(r.id) !== String(id));
+    }
+
+    if (this._useIndexedDB && this._repos?.tahfizh) {
+      try {
+        await this._repos.tahfizh.delete(id);
+      } catch (err) {
+        console.error('[StorageManagerV2] Failed to delete tahfizh record from IndexedDB:', err);
+      }
+    }
+
+    if (typeof appState !== 'undefined') {
+      this._set(this.keys.tahfizh, appState.tahfizhSetoran);
+    }
+
+    if (this.onDataUpdate) {
+      this.onDataUpdate('tahfizh');
     }
   }
 

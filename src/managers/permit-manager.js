@@ -27,16 +27,6 @@ const PERMIT_THEMES = {
 };
 window.PERMIT_THEMES = PERMIT_THEMES;
 
-// --- UTILITY FUNCTIONS ---
-window.fileToBase64 = function(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
 // --- FITUR PERIZINAN (UPDATED) ---
 
 // Variable state tambahan
@@ -724,21 +714,23 @@ window.savePermitLogic = async function () {
         window.showToast("Sakit lebih dari 2 hari wajib upload surat dokter!", "warning");
         return;
       }
-      // Upload using FileUploadManager (local storage fallback)
+      // Upload to private Supabase Storage.
       try {
         if (window.fileUploadManager) {
           // Generate temporary permit ID for upload
           const tempPermitId = `temp_${Date.now()}`;
-          const userId = appState?.userProfile?.email || 'anonymous';
+          const { data: authData } = await window.supabaseClient.auth.getUser();
+          const userId = authData?.user?.id;
+          if (!userId) throw new Error('Authenticated cloud user is required');
           const uploadResult = await window.fileUploadManager.uploadDocument(
             userId,
             tempPermitId,
             suratDokterFile
           );
-          suratDokterUrl = uploadResult.finalUrl;
+          if (!uploadResult.success) throw new Error(uploadResult.errors?.join(', ') || 'Upload gagal');
+          suratDokterUrl = uploadResult.localUrl;
         } else {
-          // Fallback to direct base64 conversion
-          suratDokterUrl = await window.fileToBase64(suratDokterFile);
+          throw new Error('Cloud file uploader tidak tersedia');
         }
       } catch (e) {
         window.showToast("Gagal upload surat dokter. Coba lagi.", "error");
@@ -752,6 +744,7 @@ window.savePermitLogic = async function () {
     permitData.status_label = "S";
     permitData.requires_surat_dokter = diffDays > 2;
     permitData.surat_dokter = suratDokterUrl;
+    permitData.document = suratDokterUrl;
   } else {
     // IZIN & PULANG: Punya Deadline
     const endDate = document.getElementById("permit-end-date").value;

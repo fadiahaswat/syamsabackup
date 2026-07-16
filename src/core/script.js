@@ -932,6 +932,97 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
 
 
 // ==========================================
+// USER ROLE & CLASS ACCESS HELPERS
+// ==========================================
+
+window.getUserAllowedClassesForEmail = function (email) {
+  if (!email) return [];
+  const normalizedEmail = email.trim().toLowerCase();
+  const classes = [];
+  const data = window.classData || MASTER_KELAS || {};
+
+  // Check from class data (which has emails mapped from sheet)
+  for (const [className, classInfo] of Object.entries(data)) {
+    const allowedEmails = String(classInfo.email || "")
+      .split(/[;,]/)
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (allowedEmails.includes(normalizedEmail)) {
+      classes.push(className);
+    }
+  }
+
+  // Also check config fallback for adminEmails
+  const adminEmails = (window.APP_CREDENTIALS?.adminEmails || [])
+    .map(e => String(e).trim().toLowerCase())
+    .filter(Boolean);
+  if (adminEmails.includes(normalizedEmail)) {
+    if (!classes.includes("Admin Musyrif")) {
+      classes.push("Admin Musyrif");
+    }
+  }
+
+  return classes;
+};
+
+window.getUserAllowedClasses = function () {
+  const profile = appState.userProfile;
+  if (!profile) return [];
+  
+  const data = window.classData || MASTER_KELAS || {};
+  const allClasses = Object.keys(data).filter(k => k?.toLowerCase() !== 'admin musyrif');
+  
+  if (profile.bypassMode) {
+    // In bypass mode, return all available classes so the developer can test any class
+    return allClasses;
+  }
+  
+  return window.getUserAllowedClassesForEmail(profile.email);
+};
+
+window.switchUserClass = async function (newClass) {
+  if (!newClass || newClass === appState.selectedClass) return;
+  
+  const profile = appState.userProfile;
+  if (!profile) return;
+  
+  window.showToast(`Berpindah ke Kelas ${newClass}...`, "info");
+  
+  // Re-run startAuthenticatedSession with the new class
+  await window.startAuthenticatedSession(newClass, profile);
+  
+  // Go back to dashboard (home tab)
+  window.switchTab("home");
+};
+
+window.initializeDirectGoogleLogin = function () {
+  if (window.location.protocol === "file:") {
+    const container = document.getElementById("google-btn-container");
+    if (container) {
+      container.innerHTML = `<div class="text-center p-4">
+        <p class="text-sm text-red-500 mb-2">⚠️ Google Sign-In tidak tersedia</p>
+        <p class="text-xs text-slate-500">Buka aplikasi via <code>http://localhost</code> untuk login Google.</p>
+      </div>`;
+    }
+    return;
+  }
+
+  if (window.google) {
+    google.accounts.id.initialize({
+      client_id: APP_CONFIG.googleClientId,
+      callback: window.handleGoogleCallback,
+    });
+    google.accounts.id.renderButton(
+      document.getElementById("google-btn-container"),
+      { theme: "outline", size: "large", type: "standard" },
+    );
+  } else {
+    window.showToast("Gagal memuat Google. Cek koneksi internet.", "error");
+  }
+};
+
+
+// ==========================================
 // MUSYRIF LOGIN
 // ==========================================
 
@@ -940,17 +1031,34 @@ window.handleMusyrifLogin = function () {
   const musyrifView = document.getElementById("login-musyrif-view");
   const waliView = document.getElementById("login-wali-view");
   const doodles = document.getElementById("login-doodles-container");
+  const googleView = document.getElementById("login-google-view");
 
-  if (musyrifView) {
-    if (selectionView) selectionView.classList.add("hidden");
-    if (waliView) waliView.classList.add("hidden");
-    if (doodles) doodles.classList.add("hidden");
-    musyrifView.classList.remove("hidden");
+  if (window.googleBypassActive) {
+    // Mode Bypass: Tampilkan pilihan kelas dulu
+    if (musyrifView) {
+      if (selectionView) selectionView.classList.add("hidden");
+      if (waliView) waliView.classList.add("hidden");
+      if (doodles) doodles.classList.add("hidden");
+      musyrifView.classList.remove("hidden");
 
-    const testingCreds = document.getElementById("musyrif-testing-creds");
-    if (testingCreds) testingCreds.classList.add("hidden");
+      const testingCreds = document.getElementById("musyrif-testing-creds");
+      if (testingCreds) testingCreds.classList.add("hidden");
+    }
   } else {
-    window.showToast("Tampilan login musyrif tidak ditemukan.", "error");
+    // Mode Produksi: Langsung tampilkan Google Sign-in
+    if (googleView) {
+      if (selectionView) selectionView.classList.add("hidden");
+      if (waliView) waliView.classList.add("hidden");
+      if (doodles) doodles.classList.add("hidden");
+      googleView.classList.remove("hidden");
+
+      const label = googleView.querySelector("p");
+      if (label) {
+        label.innerHTML = `Silakan masuk dengan Google untuk mengakses dashboard Ustadz.`;
+      }
+
+      window.initializeDirectGoogleLogin();
+    }
   }
 };
 
@@ -1037,8 +1145,68 @@ window.handleMusyrifSubmit = async function () {
 window.cancelGoogleAuth = function () {
   const googleView = document.getElementById("login-google-view");
   const musyrifView = document.getElementById("login-musyrif-view");
+  const selectionView = document.getElementById("login-selection-view");
+  const doodles = document.getElementById("login-doodles-container");
+
   if (googleView) googleView.classList.add("hidden");
-  if (musyrifView) musyrifView.classList.remove("hidden");
+
+  if (window.googleBypassActive) {
+    if (musyrifView) musyrifView.classList.remove("hidden");
+  } else {
+    if (selectionView) selectionView.classList.remove("hidden");
+    if (doodles) doodles.classList.remove("hidden");
+  }
+};
+
+window.showLoginClassSelection = function (classes) {
+  const googleView = document.getElementById("login-google-view");
+  const classSelectionView = document.getElementById("login-class-selection-view");
+  const listContainer = document.getElementById("login-class-selection-list");
+
+  if (googleView) googleView.classList.add("hidden");
+  if (classSelectionView) classSelectionView.classList.remove("hidden");
+
+  if (listContainer) {
+    listContainer.innerHTML = classes.map(className => {
+      return `
+        <button
+          onclick="window.selectLoginClass('${className}')"
+          class="w-full py-3 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-bold text-xs text-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-850 active:scale-95 transition-all"
+        >
+          ${className}
+        </button>
+      `;
+    }).join("");
+  }
+};
+
+window.selectLoginClass = async function (className) {
+  const profile = window.tempGoogleProfile;
+  if (!profile) return;
+
+  const classSelectionView = document.getElementById("login-class-selection-view");
+  if (classSelectionView) classSelectionView.classList.add("hidden");
+
+  await window.startAuthenticatedSession(className, profile);
+  window.closeModal("modal-google-auth");
+  window.showToast("Login Berhasil!", "success");
+
+  // Reset temp credentials
+  window.tempGoogleProfile = null;
+  window.tempGoogleResponseCredential = null;
+};
+
+window.cancelClassSelection = function () {
+  const selectionView = document.getElementById("login-selection-view");
+  const classSelectionView = document.getElementById("login-class-selection-view");
+  const doodles = document.getElementById("login-doodles-container");
+
+  if (classSelectionView) classSelectionView.classList.add("hidden");
+  if (selectionView) selectionView.classList.remove("hidden");
+  if (doodles) doodles.classList.remove("hidden");
+
+  window.tempGoogleProfile = null;
+  window.tempGoogleResponseCredential = null;
 };
 
 // ==========================================
@@ -2454,61 +2622,41 @@ window.handleGoogleCallback = async function (response) {
     if (!userEmail) {
       return window.showToast("Google tidak mengirim alamat email.", "error");
     }
-    const targetClass = appState.tempClass;
+
     const normalizedUserEmail = String(userEmail || "")
       .trim()
       .toLowerCase();
 
-    let classInfo =
-      window.classData?.[targetClass] || MASTER_KELAS?.[targetClass];
-
-    if (!classInfo) {
-      // For Admin Musyrif, check if email is in the admin list from config
-      if (targetClass?.toLowerCase() === "admin musyrif") {
-        const adminEmails = window.APP_CREDENTIALS?.adminEmails || [];
-        if (adminEmails.includes(normalizedUserEmail)) {
-          classInfo = {
-            wali: "-",
-            musyrif: "Admin",
-            email: normalizedUserEmail
-          };
-          console.log('[GoogleCallback] Admin email verified:', normalizedUserEmail);
-        }
-      }
-
-      if (!classInfo) {
-        return window.showToast(
-          "Data kelas belum siap. Silakan coba lagi.",
-          "warning",
-        );
-      }
+    // Check if we are in Google bypass mode (testing)
+    if (window.googleBypassActive) {
+      const targetClass = appState.tempClass;
+      await window.startAuthenticatedSession(targetClass, profile);
+      window.closeModal("modal-google-auth");
+      window.showToast("Login Berhasil!", "success");
+      return;
     }
 
-    // 2. VALIDASI EMAIL (KEAMANAN UTAMA)
-    // Jika di sheet kolom email kosong, kita tolak demi keamanan
-    if (!classInfo.email) {
-      return window.showToast(
-        "Admin belum mendaftarkan email untuk kelas ini.",
-        "warning",
-      );
-    }
+    // Get allowed classes for this email
+    const allowedClasses = window.getUserAllowedClassesForEmail(normalizedUserEmail);
 
-    const allowedEmails = String(classInfo.email || "")
-      .split(/[;,]/)
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-
-    if (!allowedEmails.includes(normalizedUserEmail)) {
+    if (allowedClasses.length === 0) {
       return window.showToast(
-        "AKSES DITOLAK! Email Anda tidak terdaftar untuk kelas ini.",
+        "AKSES DITOLAK! Email Anda tidak terdaftar untuk kelas mana pun.",
         "error",
       );
     }
 
-    // 3. JIKA LOLOS -> SIMPAN SESI
-    await window.startAuthenticatedSession(targetClass, profile);
-    window.closeModal("modal-google-auth");
-    window.showToast("Login Berhasil!", "success");
+    if (allowedClasses.length === 1) {
+      const targetClass = allowedClasses[0];
+      await window.startAuthenticatedSession(targetClass, profile);
+      window.closeModal("modal-google-auth");
+      window.showToast("Login Berhasil!", "success");
+    } else {
+      // Terdaftar di lebih dari satu kelas, tampilkan list pemilihan
+      window.tempGoogleProfile = profile;
+      window.tempGoogleResponseCredential = response.credential;
+      window.showLoginClassSelection(allowedClasses);
+    }
   } catch (e) {
     console.error(e);
     window.showToast("Gagal memproses login Google.", "error");
@@ -4465,6 +4613,51 @@ window.updateProfileInfo = function () {
         elSidebarAvatar.textContent = initials;
       }
     }
+  }
+
+  // Render switcher kelas jika punya akses ke banyak kelas
+  window.renderProfileClassSwitcher();
+};
+
+window.renderProfileClassSwitcher = function () {
+  const container = document.getElementById("profile-class-switcher-card");
+  const listContainer = document.getElementById("profile-class-switcher-list");
+  if (!container || !listContainer) return;
+
+  // Sembunyikan jika di wali mode
+  if (window.isWaliMode()) {
+    container.classList.add("hidden");
+    return;
+  }
+
+  // Ambil daftar kelas yang diizinkan
+  const allowedClasses = window.getUserAllowedClasses();
+  if (allowedClasses.length <= 1) {
+    container.classList.add("hidden");
+    return;
+  }
+
+  container.classList.remove("hidden");
+
+  listContainer.innerHTML = allowedClasses.map(className => {
+    const isActive = className === appState.selectedClass;
+    const activeClass = isActive
+      ? "bg-palette-blue border-palette-blue text-white shadow-md shadow-blue-500/20 pointer-events-none"
+      : "bg-slate-50 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60";
+    
+    return `
+      <button 
+        onclick="window.switchUserClass('${className}')"
+        class="py-3 px-4 rounded-xl border text-xs font-black transition-all active:scale-95 text-center ${activeClass}"
+        ${isActive ? 'disabled' : ''}
+      >
+        ${className}
+      </button>
+    `;
+  }).join("");
+
+  if (window.lucide) {
+    lucide.createIcons();
   }
 };
 
