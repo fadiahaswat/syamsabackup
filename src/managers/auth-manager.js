@@ -10,18 +10,26 @@
  * @param {string} targetClass - Selected class
  */
 window.ensureSupabaseGoogleSession = async function(idToken) {
+  console.log('[Auth] ensureSupabaseGoogleSession called, isSupabaseEnabled:', window.isSupabaseEnabled);
+
   if (!window.isSupabaseEnabled || !window.supabaseClient) {
     throw new Error('Cloud database is not configured');
   }
   if (!idToken) throw new Error('Google ID token is required');
 
+  console.log('[Auth] Attempting Supabase signInWithIdToken...');
   const { data, error } = await window.supabaseClient.auth.signInWithIdToken({
     provider: 'google',
     token: idToken,
   });
+  console.log('[Auth] Supabase signInWithIdToken result:', { error, hasData: !!data, hasSession: !!data?.session });
+
   if (error || !data?.session?.user) {
+    console.error('[Auth] Supabase session creation failed:', error);
     throw error || new Error('Supabase session was not created');
   }
+
+  console.log('[Auth] Supabase session created successfully:', data.session.user.email);
   return data.session;
 };
 
