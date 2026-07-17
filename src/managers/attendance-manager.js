@@ -471,40 +471,54 @@ window.renderAttendanceList = function () {
         }
 
         e.stopPropagation();
-        if (hasPermitConflict) {
+        e.preventDefault();
+
+        // ✅ FIX 3: Re-baca hasPermitConflict dari appState SAAT klik (bukan dari closure)
+        // Ini mencegah kondisi di mana permitManualOverride sudah diset tapi closure masih membawa
+        // nilai lama dari saat render
+        const liveData = appState.attendanceData?.[appState.date]?.[appState.currentSlotId]?.[id];
+        const liveHasPermitConflict =
+          activePermit &&
+          !(liveData?.permitManualOverride) &&
+          ["fardu", "kbm", "school"].includes(act.category);
+
+        if (liveHasPermitConflict) {
           window.showConfirmModal(
             "Ubah Manual Jadi Hadir?",
             `Santri tercatat ${activePermit.type}. Status otomatis akan ditimpa untuk sesi ini.`,
             "Ubah Hadir",
             "Batal",
             () => {
-          sData.permitManualOverride = true;
-          const recoveredSickPermit =
-            activePermit.type === "Sakit" &&
-            window.markSickPermitRecoveredBeforeSlot?.(
-              activePermit.permitId,
-              slot.id,
-            );
-          if (sData.note && sData.note.includes("[Auto]")) sData.note = "";
-          sData.status[act.id] = "Hadir";
-          if (act.category === "fardu" && act.id === "shalat") {
-            slot.activities.forEach((otherAct) => {
-              if (otherAct.category === "dependent")
-                sData.status[otherAct.id] = "Ya";
-              else if (["kbm", "school"].includes(otherAct.category))
-                sData.status[otherAct.id] = "Hadir";
-            });
-          }
-          window.saveData();
-          window.renderAttendanceList();
-          window.refreshPembinaanSurfaces?.();
-          if (recoveredSickPermit) {
-            window.renderActivePermitsWidget?.();
-            window.renderPermitHistory?.();
-          }
-          if (appState.date === window.getLocalDateStr()) {
-            window.updateDashboard();
-          }
+              // Gunakan liveData agar tidak menggunakan sData closure yang stale
+              const freshData = appState.attendanceData?.[appState.date]?.[appState.currentSlotId]?.[id];
+              if (!freshData) return;
+              freshData.permitManualOverride = true;
+              const recoveredSickPermit =
+                activePermit.type === "Sakit" &&
+                window.markSickPermitRecoveredBeforeSlot?.(
+                  activePermit.permitId,
+                  slot.id,
+                );
+              if (freshData.note && freshData.note.includes("[Auto]")) freshData.note = "";
+              freshData.status[act.id] = "Hadir";
+              if (act.category === "fardu" && act.id === "shalat") {
+                slot.activities.forEach((otherAct) => {
+                  if (otherAct.category === "dependent")
+                    freshData.status[otherAct.id] = "Ya";
+                  else if (["kbm", "school"].includes(otherAct.category))
+                    freshData.status[otherAct.id] = "Hadir";
+                });
+              }
+              window.saveData();
+              window.renderAttendanceList();
+              window.refreshPembinaanSurfaces?.();
+              if (recoveredSickPermit) {
+                window.renderActivePermitsWidget?.();
+                window.renderPermitHistory?.();
+              }
+              if (appState.date === window.getLocalDateStr()) {
+                window.updateDashboard();
+              }
             },
           );
           return;
@@ -672,7 +686,20 @@ window.renderAttendanceList = function () {
 // PERBAIKAN FUNGSI TOGGLE STATUS
 // ==========================================
 
+// Guard global untuk mencegah double-tap race condition pada toggle status
+window._toggleLock = {};
+
 window.toggleStatus = function (id, actId, type) {
+  const lockKey = `${id}:${actId}`;
+
+  // ✅ FIX 1: Guard debounce — tolak pemanggilan kedua jika toggle sedang berjalan
+  if (window._toggleLock[lockKey]) {
+    console.warn("[AttendanceManager] toggleStatus BLOCKED (debounce):", lockKey);
+    return;
+  }
+  window._toggleLock[lockKey] = true;
+  setTimeout(() => { delete window._toggleLock[lockKey]; }, 400);
+
   console.log("[AttendanceManager] toggleStatus called:", { id, actId, type, slotId: appState.currentSlotId, date: appState.date });
 
   const slotId = appState.currentSlotId;
@@ -686,6 +713,9 @@ window.toggleStatus = function (id, actId, type) {
     appState.attendanceData[dateKey][slotId][id] = { status: {}, note: "" };
 
   const sData = appState.attendanceData[dateKey][slotId][id];
+
+  // ✅ FIX 2: Baca status LANGSUNG dari appState saat klik, bukan dari closure render
+  // Ini mencegah stale-closure bug saat render belum selesai tapi toggle sudah dipanggil lagi
   const curr = sData.status[actId] || (type === "mandator" ? "Hadir" : "Ya");
   let next = "";
 
