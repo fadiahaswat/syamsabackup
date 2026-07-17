@@ -138,6 +138,41 @@ class AuthMultiRole {
       return existingUser;
     }
 
+    // Fallback: Check if user exists by email (pre-seeded users with NULL auth_user_id)
+    const { data: userByEmail, error: fetchEmailError } = await this.supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (fetchEmailError) {
+      this._logger.error('Error fetching user by email:', fetchEmailError);
+      throw fetchEmailError;
+    }
+
+    if (userByEmail) {
+      this._logger.info('[AuthMultiRole] Found existing user by email, linking auth_user_id...');
+      const { data: linkedUser, error: linkError } = await this.supabase
+        .from('users')
+        .update({
+          auth_user_id: authUser.id,
+          last_login: new Date().toISOString(),
+          name,
+          picture,
+        })
+        .eq('id', userByEmail.id)
+        .select()
+        .single();
+
+      if (linkError) {
+        this._logger.error('[AuthMultiRole] Failed to link auth_user_id:', linkError);
+        throw linkError;
+      }
+
+      this.currentUser = linkedUser;
+      return linkedUser;
+    }
+
     // Create new user
     const newUser = {
       id: authUser.id,
