@@ -625,9 +625,12 @@ window.handleLogout = async function () {
 
   document.getElementById("view-main").classList.add("hidden");
   document.getElementById("view-login").classList.remove("hidden");
-  document.getElementById("login-kelas").value = "";
+
+  // Clear login fields with null check
+  const kelasEl = document.getElementById("login-kelas");
   const userEl = document.getElementById("login-username");
   const passEl = document.getElementById("login-password");
+  if (kelasEl) kelasEl.value = "";
   if (userEl) userEl.value = "";
   if (passEl) passEl.value = "";
 
