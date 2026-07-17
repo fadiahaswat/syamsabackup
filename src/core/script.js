@@ -942,13 +942,8 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
   document.getElementById("view-wali")?.classList.add("hidden");
 
   window.syncRoleModeUI();
-  
-  if (isAdmin) {
-    window.switchTab("home");
-  } else {
-    window.updateDashboard();
-  }
-  
+  window.switchTab("home"); // <-- FIX: Konsisten panggil switchTab untuk semua role
+  window.updateDashboard();
   window.updateProfileInfo();
 
   // Initialize Storage Manager on manual login

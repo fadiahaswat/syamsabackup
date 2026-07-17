@@ -569,6 +569,7 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
   document.getElementById("view-main").classList.remove("hidden");
 
   window.syncRoleModeUI();
+  window.switchTab("home"); // <-- FIX: Pastikan tab Dashboard aktif setelah login
   window.updateDashboard();
   window.updateProfileInfo();
 
@@ -676,30 +677,34 @@ window.handleLogout = async function () {
     "Keluar",
     "Batal",
     async () => {
-  await window.supabaseClient?.auth?.signOut();
-  // FIX: Reset cloud session state on logout
-  window.cloudSessionReady = false;
-  window.authMultiRole?.clearLocalSession?.();
-  if (clockInterval) {
-    clearInterval(clockInterval);
-    clockInterval = null;
-  }
+      await window.supabaseClient?.auth?.signOut();
+      // FIX: Reset cloud session state on logout
+      window.cloudSessionReady = false;
+      window.authMultiRole?.clearLocalSession?.();
+      if (clockInterval) {
+        clearInterval(clockInterval);
+        clockInterval = null;
+      }
 
-  localStorage.removeItem(APP_CONFIG.googleAuthKey);
-  appState.selectedClass = null;
+      window.AppStorage.removeItem(APP_CONFIG.googleAuthKey);
+      appState.selectedClass = null;
+      appState.waliMode = false;
+      appState.waliSantri = null;
+      appState.waliKelas = null;
 
-  document.getElementById("view-main").classList.add("hidden");
-  document.getElementById("view-login").classList.remove("hidden");
+      document.getElementById("view-main").classList.add("hidden");
+      document.getElementById("view-wali")?.classList.add("hidden");
+      document.getElementById("view-login").classList.remove("hidden");
 
-  // Clear login fields with null check
-  const kelasEl = document.getElementById("login-kelas");
-  const userEl = document.getElementById("login-username");
-  const passEl = document.getElementById("login-password");
-  if (kelasEl) kelasEl.value = "";
-  if (userEl) userEl.value = "";
-  if (passEl) passEl.value = "";
+      // Clear login fields with null check
+      const loginKelasEl = document.getElementById("login-kelas");
+      const userEl = document.getElementById("login-username");
+      const passEl = document.getElementById("login-password");
+      if (loginKelasEl) loginKelasEl.value = "";
+      if (userEl) userEl.value = "";
+      if (passEl) passEl.value = "";
 
-  location.reload();
+      location.reload();
     },
   );
 };
