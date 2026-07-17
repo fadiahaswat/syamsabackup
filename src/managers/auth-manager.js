@@ -4,6 +4,161 @@
 // MULTIDEVICE & MULTIROLE INTEGRATION
 // ==========================================
 
+// Service account credentials for Wali cloud operations
+// Admin sets these in config.local.js
+const WALI_SERVICE_EMAIL = window.WALI_SERVICE_EMAIL || 'wali-service@syamsa.app';
+const WALI_SERVICE_PASSWORD = window.WALI_SERVICE_PASSWORD || null; // Set by admin
+
+/**
+ * Sync NIS from MASTER_SANTRI to Supabase wali_credentials table
+ * This runs when Wali user logs in successfully
+ */
+window.syncWaliCredentialsToCloud = async function(nis, studentName, studentClass) {
+  if (!window.isSupabaseEnabled || !window.supabaseClient) {
+    console.log('[WaliSync] Supabase not enabled, skipping NIS sync');
+    return;
+  }
+
+  // Check if service account is logged in
+  const { data: sessionData } = await window.supabaseClient.auth.getSession();
+  if (!sessionData?.session?.user) {
+    console.log('[WaliSync] No active session, skipping NIS sync');
+    return;
+  }
+
+  // Check if current user is service account
+  const currentEmail = sessionData.session.user.email;
+  if (currentEmail !== WALI_SERVICE_EMAIL) {
+    console.log('[WaliSync] Not service account user, skipping NIS sync');
+    return;
+  }
+
+  try {
+    console.log('[WaliSync] Syncing Wali credentials to cloud...');
+
+    // Prepare record
+    const record = {
+      nis: nis,
+      nama: studentName || '',
+      kelas: studentClass || '',
+      // Password hash - empty for now, will be set when wali changes password
+      password_hash: '',
+      is_active: true,
+    };
+
+    // Upsert to Supabase
+    const { data, error } = await window.supabaseClient
+      .from('wali_credentials')
+      .upsert(record, { onConflict: 'nis' })
+      .select();
+
+    if (error) {
+      console.error('[WaliSync] Failed to sync Wali credentials:', error);
+      return { success: false, error };
+    }
+
+    console.log('[WaliSync] Successfully synced Wali credentials:', nis);
+    return { success: true };
+
+  } catch (e) {
+    console.error('[WaliSync] Error syncing Wali credentials:', e);
+    return { success: false, error: e };
+  }
+};
+
+/**
+ * Sign in as Wali service account
+ * Called when Wali user logs in with NIS
+ */
+window.signInAsWaliService = async function() {
+  if (!window.isSupabaseEnabled || !window.supabaseClient) {
+    console.warn('[WaliAuth] Cloud not enabled, skipping service account login');
+    return { success: false, reason: 'cloud_disabled' };
+  }
+
+  // Get service account credentials from config (set by admin)
+  const serviceEmail = WALI_SERVICE_EMAIL;
+  const servicePassword = WALI_SERVICE_PASSWORD;
+
+  if (!servicePassword) {
+    console.warn('[WaliAuth] Service account password not configured. Add WALI_SERVICE_PASSWORD to config.local.js');
+    return { success: false, reason: 'service_not_configured' };
+  }
+
+  try {
+    console.log('[WaliAuth] Signing in as Wali service account...');
+
+    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+      email: serviceEmail,
+      password: servicePassword,
+    });
+
+    if (error) {
+      console.error('[WaliAuth] Service account login failed:', error);
+      return { success: false, error };
+    }
+
+    // Set cloud session ready
+    window.cloudSessionReady = true;
+    window.dispatchEvent(new CustomEvent('cloud:auth-state', {
+      detail: { isAuthenticated: true }
+    }));
+
+    console.log('[WaliAuth] Service account logged in successfully');
+
+    return { success: true, session: data.session };
+
+  } catch (e) {
+    console.error('[WaliAuth] Service account error:', e);
+    return { success: false, error: e };
+  }
+};
+
+/**
+ * Change Wali password
+ * Called when Wali wants to change their password
+ */
+window.changeWaliPassword = async function(nis, oldPassword, newPassword) {
+  if (!window.isSupabaseEnabled || !window.supabaseClient) {
+    return { success: false, error: 'Cloud not enabled' };
+  }
+
+  try {
+    // Hash new password
+    const newHash = await window.sha256Hex(newPassword);
+
+    // Update in cloud
+    const { data, error } = await window.supabaseClient
+      .from('wali_credentials')
+      .update({
+        password_hash: newHash,
+        password_changed_at: new Date().toISOString()
+      })
+      .eq('nis', nis)
+      .select();
+
+    if (error) {
+      console.error('[WaliAuth] Failed to change password:', error);
+      return { success: false, error };
+    }
+
+    // Also save locally
+    const savedPasswords = JSON.parse(localStorage.getItem('wali_passwords_db') || '{}');
+    savedPasswords[nis] = {
+      password_hash: newHash,
+      changed_at: new Date().toISOString()
+    };
+    localStorage.setItem('wali_passwords_db', JSON.stringify(savedPasswords));
+
+    console.log('[WaliAuth] Password changed successfully');
+    return { success: true };
+
+  } catch (e) {
+    console.error('[WaliAuth] Error changing password:', e);
+    return { success: false, error: e };
+  }
+};
+
 /**
  * Initialize multirole auth after successful login
  * @param {Object} profile - Google profile object

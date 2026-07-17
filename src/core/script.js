@@ -1431,6 +1431,21 @@ window.handleWaliSubmit = async function () {
 
   if (window.cancelWaliLogin) window.cancelWaliLogin();
 
+  // Try to sign in to cloud as service account
+  const cloudLoginResult = await window.signInAsWaliService?.();
+  if (cloudLoginResult?.success) {
+    console.log('[WaliAuth] Cloud session established via service account');
+    // Sync Wali credentials to cloud for RLS
+    await window.syncWaliCredentialsToCloud?.(
+      nis,
+      foundSantri.nama,
+      foundKelas
+    );
+  } else if (cloudLoginResult?.reason === 'service_not_configured') {
+    console.warn('[WaliAuth] Service account not configured - running in local-only mode');
+    window.showToast('Cloud sync tidak tersedia. Mode lokal saja.', 'warning');
+  }
+
   appState.waliMode = true;
   appState.waliSantri = foundSantri;
   appState.waliKelas = foundKelas;
@@ -1440,7 +1455,8 @@ window.handleWaliSubmit = async function () {
     given_name: "Wali",
     email: foundSantri.waliEmail || foundSantri.parentEmail || null,
     authProvider: "wali",
-    role: "wali"
+    role: "wali",
+    nis: nis  // Store NIS for password change
   };
 
   // Store session with enhanced security metadata

@@ -43,12 +43,30 @@ class SupabaseSync {
     this._repos = repos;
 
     const { data: sessionData } = await window.supabaseClient.auth.getSession();
-    if (!sessionData?.session?.user) {
+    const isAuthenticated = !!sessionData?.session?.user;
+    const isWaliMode = appState?.waliMode === true;
+    const isServiceAccount = sessionData?.session?.user?.email === 'wali-service@syamsa.app';
+
+    // Check if user is logged in
+    if (!isAuthenticated) {
+      // For Wali mode without cloud, skip sync gracefully
+      if (isWaliMode) {
+        this._logger.info('[SupabaseSync] Wali mode - cloud not available (local only)');
+        this.updateStatus('offline');
+        this._setupAuthRetry();
+        return;
+      }
+
+      // For musyrif/admin, cloud session is required
       this.updateStatus('error');
       this._logger.error('[SupabaseSync] Authenticated cloud session is required');
-      // Listen for auth state changes to retry when user logs in
       this._setupAuthRetry();
       return;
+    }
+
+    // If authenticated as service account (Wali cloud login), proceed with sync
+    if (isServiceAccount) {
+      this._logger.info('[SupabaseSync] Wali service account authenticated - starting sync');
     }
 
     await this._startSync();
