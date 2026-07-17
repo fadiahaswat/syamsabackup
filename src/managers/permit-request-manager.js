@@ -267,6 +267,13 @@
 
     persistSinglePermit(requestData);
 
+    // Also save to cloud if Wali is logged in
+    if (window.isSupabaseEnabled && window.supabaseClient && appState.waliMode) {
+      window.syncWaliPermitToCloud(requestData).catch(err => {
+        console.warn('[PermitRequest] Failed to sync permit to cloud:', err);
+      });
+    }
+
     // Trigger notification to Musyrif of the class
     let musyrifEmail = "";
     const targetKelasNormalized = String(requestData.kelas || "").replace(/\s+/g, "").toLowerCase();

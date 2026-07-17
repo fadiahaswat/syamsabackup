@@ -160,6 +160,71 @@ window.changeWaliPassword = async function(nis, oldPassword, newPassword) {
 };
 
 /**
+ * Sync permit request to cloud
+ * Called when Wali submits a permit request
+ */
+window.syncWaliPermitToCloud = async function(permitData) {
+  if (!window.isSupabaseEnabled || !window.supabaseClient) {
+    console.warn('[WaliSync] Cloud not enabled, skipping permit sync');
+    return { success: false, reason: 'cloud_disabled' };
+  }
+
+  // Check if service account is logged in
+  const { data: sessionData } = await window.supabaseClient.auth.getSession();
+  if (!sessionData?.session?.user) {
+    console.warn('[WaliSync] No active session, skipping permit sync');
+    return { success: false, reason: 'no_session' };
+  }
+
+  // Transform to Supabase format
+  const cloudPermit = {
+    id: permitData.id,
+    nis: permitData.nis,
+    kelas: permitData.kelas,
+    category: permitData.category || 'pulang',
+    reason: permitData.reason,
+    start_date: permitData.start_date,
+    end_date: permitData.end_date || permitData.start_date,
+    start_session: permitData.start_session || 'sekolah',
+    end_session: permitData.end_session || 'isya',
+    status: 'pending',
+    is_active: true,
+    document: null,
+    audit_trail: permitData.audit_trail || [],
+    _version: 1,
+    metadata: {
+      nama_santri: permitData.nama,
+      nama_wali: permitData.nama_wali,
+      alamat_wali: permitData.alamat_wali,
+      destination: permitData.destination,
+      requested_by: 'wali',
+    }
+  };
+
+  try {
+    console.log('[WaliSync] Syncing permit to cloud:', cloudPermit.id);
+
+    const { data, error } = await window.supabaseClient
+      .from('permits')
+      .upsert(cloudPermit, { onConflict: 'id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[WaliSync] Failed to sync permit:', error);
+      return { success: false, error };
+    }
+
+    console.log('[WaliSync] Permit synced to cloud successfully:', data.id);
+    return { success: true, data };
+
+  } catch (e) {
+    console.error('[WaliSync] Error syncing permit:', e);
+    return { success: false, error: e };
+  }
+};
+
+/**
  * Initialize multirole auth after successful login
  * @param {Object} profile - Google profile object
  * @param {string} targetClass - Selected class
