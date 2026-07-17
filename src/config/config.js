@@ -105,7 +105,7 @@ window.APP_AUTH = {
 // ==========================================
 // VERSI APLIKASI (untuk cache busting PWA)
 // ==========================================
-window.APP_VERSION = "2.3.9";
+window.APP_VERSION = "2.3.10";
 
 // Helper: Generate versioned script tag
 window.versionedScript = function(src) {
