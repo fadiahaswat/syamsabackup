@@ -688,49 +688,91 @@ window.renderAttendanceList = function () {
 
 // Guard global untuk mencegah double-tap race condition pada toggle status
 window._toggleLock = {};
+// Track pending saves per slot untuk debugging
+window._pendingSaves = new Set();
+
+/**
+ * Calculate next status in the toggle cycle
+ * @param {string} current - Current status value
+ * @param {string} type - 'mandator' or 'sunnah'
+ * @returns {string} Next status in cycle
+ */
+function calculateNextStatus(current, type) {
+  if (type === "mandator") {
+    const cycle = ["Hadir", "Alpa", "Sakit", "Izin", "Pulang", "Telat"];
+    const idx = cycle.indexOf(current);
+    return cycle[(idx + 1) % cycle.length];
+  } else {
+    // Sunnah cycle: Ya -> Tidak -> Ya
+    return current === "Ya" ? "Tidak" : "Ya";
+  }
+}
 
 window.toggleStatus = function (id, actId, type) {
   const lockKey = `${id}:${actId}`;
+  const timestamp = Date.now();
 
-  // ✅ FIX 1: Guard debounce — tolak pemanggilan kedua jika toggle sedang berjalan
+  // Guard debounce — tolak pemanggilan kedua jika toggle sedang berjalan
   if (window._toggleLock[lockKey]) {
-    console.warn("[AttendanceManager] toggleStatus BLOCKED (debounce):", lockKey);
+    console.warn("[AttendanceManager] toggleStatus BLOCKED (debounce):", lockKey, "Lock owner:", window._toggleLock[lockKey]);
     return;
   }
-  window._toggleLock[lockKey] = true;
-  setTimeout(() => { delete window._toggleLock[lockKey]; }, 400);
+  // Set lock dengan timestamp untuk debugging
+  window._toggleLock[lockKey] = timestamp;
 
-  console.log("[AttendanceManager] toggleStatus called:", { id, actId, type, slotId: appState.currentSlotId, date: appState.date });
-
+  // Guard save yang masih pending
   const slotId = appState.currentSlotId;
+  const saveKey = `${appState.date}:${slotId}`;
+  if (window._pendingSaves.has(saveKey)) {
+    console.warn("[AttendanceManager] Previous save still pending, queuing toggle...");
+    // Queue this toggle to run after save completes
+    setTimeout(() => {
+      if (window._pendingSaves.has(saveKey)) {
+        // Wait again
+        setTimeout(() => window.toggleStatus(id, actId, type), 100);
+      } else {
+        window.toggleStatus(id, actId, type);
+      }
+    }, 100);
+    return;
+  }
+
+  // Unlock after reasonable time
+  setTimeout(() => {
+    if (window._toggleLock[lockKey] === timestamp) {
+      delete window._toggleLock[lockKey];
+    }
+  }, 500);
+
+  console.log("[AttendanceManager] toggleStatus called:", { id, actId, type, slotId, date: appState.date });
+
   const dateKey = appState.date;
 
-  // Safety check data
-  if (!appState.attendanceData[dateKey]) appState.attendanceData[dateKey] = {};
-  if (!appState.attendanceData[dateKey][slotId])
+  // Safety check data - ensure structure exists
+  if (!appState.attendanceData[dateKey]) {
+    appState.attendanceData[dateKey] = {};
+  }
+  if (!appState.attendanceData[dateKey][slotId]) {
     appState.attendanceData[dateKey][slotId] = {};
-  if (!appState.attendanceData[dateKey][slotId][id])
+  }
+  if (!appState.attendanceData[dateKey][slotId][id]) {
     appState.attendanceData[dateKey][slotId][id] = { status: {}, note: "" };
+  }
 
+  // CRITICAL: Selalu baca dari appState saat ini (bukan dari closure)
   const sData = appState.attendanceData[dateKey][slotId][id];
 
-  // ✅ FIX 2: Baca status LANGSUNG dari appState saat klik, bukan dari closure render
-  // Ini mencegah stale-closure bug saat render belum selesai tapi toggle sudah dipanggil lagi
-  const curr = sData.status[actId] || (type === "mandator" ? "Hadir" : "Ya");
-  let next = "";
+  // Baca status saat ini - JANGAN gunakan default jika ada status tersimpan
+  // Ini mencegah masalah dimana status "Alpa" dianggap "Hadir" karena falsy check
+  const storedStatus = sData.status[actId];
+  const curr = (storedStatus !== undefined && storedStatus !== null)
+    ? storedStatus
+    : (type === "mandator" ? "Hadir" : "Ya");
 
-  // 1. TENTUKAN STATUS BARU (LOGIKA SIKLUS)
-  if (type === "mandator") {
-    if (curr === "Hadir") next = "Alpa";
-    else if (curr === "Alpa") next = "Sakit";
-    else if (curr === "Sakit") next = "Izin";
-    else if (curr === "Izin") next = "Pulang";
-    else if (curr === "Pulang") next = "Telat";
-    else next = "Hadir";
-  } else {
-    // Siklus Sunnah: Ya -> Tidak -> Ya
-    next = curr === "Ya" ? "Tidak" : "Ya";
-  }
+  // Calculate next status using helper function
+  const next = calculateNextStatus(curr, type);
+
+  console.log("[AttendanceManager] Status transition:", { from: curr, to: next, storedStatus, actId });
 
   // Terapkan status baru ke tombol yang diklik
   sData.status[actId] = next;

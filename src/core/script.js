@@ -6825,6 +6825,12 @@ window.saveData = async function () {
       const dateKey = appState.date;
       const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
       const slotData = appState.attendanceData[dateKey]?.[slotId] || {};
+      const saveKey = `${dateKey}:${slotId}`;
+
+      // Track pending save - this helps prevent race conditions with toggle
+      if (window._pendingSaves) {
+        window._pendingSaves.add(saveKey);
+      }
 
       // Check localStorage quota (iOS Safari limit ~5MB)
       if (dataStr.length > window.APP_CONSTANTS.maxStorageBytes) {
@@ -6887,7 +6893,20 @@ window.saveData = async function () {
           }, 1500);
         }
       }
+
+      // Mark save complete
+      if (window._pendingSaves) {
+        window._pendingSaves.delete(saveKey);
+      }
     } catch (e) {
+      // CRITICAL: Always clear pending save on error
+      const dateKey = appState.date;
+      const slotId = appState.activeAttendanceSlotId || appState.currentSlotId;
+      const saveKey = `${dateKey}:${slotId}`;
+      if (window._pendingSaves) {
+        window._pendingSaves.delete(saveKey);
+      }
+
       if (e.name === "QuotaExceededError") {
         window.showToast("Storage penuh! Hapus data lama.", "error");
       } else {
