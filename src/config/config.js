@@ -44,6 +44,14 @@ window.APP_CREDENTIALS = {
 };
 
 // ==========================================
+// WALI SERVICE ACCOUNT (Cloud Sync)
+// ==========================================
+// Service account untuk Wali cloud operations
+// Password diset langsung di sini untuk production
+window.WALI_SERVICE_EMAIL = _SECRETS.waliServiceEmail || 'wali-service@syamsa.app';
+window.WALI_SERVICE_PASSWORD = _SECRETS.waliServicePassword || 'Muin2026';
+
+// ==========================================
 // LOKASI & GPS
 // ==========================================
 window.APP_LOCATION = {
