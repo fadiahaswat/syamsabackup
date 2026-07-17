@@ -42,6 +42,43 @@ window.ensureSupabaseGoogleSession = async function(idToken) {
   return data.session;
 };
 
+/**
+ * Auto-assign role based on Google Sheet data
+ * @param {string} userEmail - User email from Google
+ * @param {string} targetClass - Target class from login
+ * @returns {Object|null} - { roleId, roleName, kelas } or null
+ */
+window.getCloudRoleFromSheet = function(userEmail, targetClass) {
+  if (!userEmail || !targetClass) return null;
+
+  const email = userEmail.toLowerCase().trim();
+  const data = window.classData || window.MASTER_KELAS || {};
+
+  // Special roles based on class name
+  if (targetClass === 'Admin Musyrif') {
+    return { roleId: 'role_admin', roleName: 'admin', kelas: null }; // Global access
+  }
+  if (targetClass === 'Koordinator Musyrif') {
+    return { roleId: 'role_koordinator', roleName: 'koordinator', kelas: targetClass };
+  }
+
+  // Check if email exists in class data
+  for (const [className, classInfo] of Object.entries(data)) {
+    if (!className || className === 'Admin Musyrif' || className === 'Koordinator Musyrif') continue;
+
+    const classEmails = String(classInfo.email || "")
+      .split(/[;,]/)
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (classEmails.includes(email)) {
+      return { roleId: 'role_musyrif', roleName: 'musyrif', kelas: className };
+    }
+  }
+
+  return null;
+};
+
 window.initMultiRoleAuth = async function(profile, targetClass) {
   if (!window.authMultiRole || !window.supabaseClient) return;
 
@@ -67,30 +104,21 @@ window.initMultiRoleAuth = async function(profile, targetClass) {
     });
 
     // Auto-assign role based on Google Sheet data (if no cloud role found)
-    if (!hasCloudRole && targetClass && targetClass !== 'Admin Musyrif') {
-      console.log('[AuthMultiRole] No cloud role found. Auto-assigning role based on Google Sheet data...');
+    if (!hasCloudRole && targetClass) {
+      const userEmail = profile?.email || '';
+      const roleInfo = window.getCloudRoleFromSheet(userEmail, targetClass);
 
-      // Get musyrif role ID
-      const { data: musyrifRole } = await window.supabaseClient
-        .from('roles')
-        .select('id, name')
-        .eq('name', 'musyrif')
-        .single();
-
-      if (musyrifRole && user?.id) {
-        // Check if user is coordinator based on class name
-        const isCoordinator = targetClass.toLowerCase().includes('koordinator');
-        const roleId = isCoordinator ? 'role_koordinator' : musyrifRole.id;
-        const roleName = isCoordinator ? 'koordinator' : 'musyrif';
+      if (roleInfo) {
+        console.log(`[AuthMultiRole] Auto-assigning ${roleInfo.roleName} role for ${targetClass}...`);
 
         // Upsert role assignment
         const { data: newRole, error: roleError } = await window.supabaseClient
           .from('user_roles')
           .upsert({
-            id: `ur_${user.id}_${targetClass}`,
-            user_id: user.id,
-            role_id: roleId,
-            kelas: targetClass,
+            id: `ur_${user?.id}_${targetClass}`.replace(/[^a-zA-Z0-9_]/g, '_'),
+            user_id: user?.id,
+            role_id: roleInfo.roleId,
+            kelas: roleInfo.kelas,
             assigned_at: new Date().toISOString(),
             is_active: true,
           }, { onConflict: 'user_id,role_id,kelas' })
@@ -98,7 +126,7 @@ window.initMultiRoleAuth = async function(profile, targetClass) {
           .single();
 
         if (!roleError && newRole) {
-          console.log(`[AuthMultiRole] Auto-assigned ${roleName} role for kelas ${targetClass}`);
+          console.log(`[AuthMultiRole] Successfully assigned ${roleInfo.roleName} role for kelas ${targetClass}`);
 
           // Refresh roles
           roles = await window.authMultiRole.getUserRoles();
@@ -107,37 +135,8 @@ window.initMultiRoleAuth = async function(profile, targetClass) {
         } else if (roleError) {
           console.warn('[AuthMultiRole] Failed to auto-assign role:', roleError);
         }
-      }
-    }
-
-    // If still no cloud role, check if this is admin mode
-    if (!hasCloudRole && targetClass === 'Admin Musyrif') {
-      console.log('[AuthMultiRole] Admin Musyrif mode - assigning admin role...');
-
-      const { data: adminRole } = await window.supabaseClient
-        .from('roles')
-        .select('id')
-        .eq('name', 'admin')
-        .single();
-
-      if (adminRole && user?.id) {
-        const { data: newRole, error: roleError } = await window.supabaseClient
-          .from('user_roles')
-          .upsert({
-            id: `ur_${user.id}_admin`,
-            user_id: user.id,
-            role_id: adminRole.id,
-            kelas: null, // Global access
-            assigned_at: new Date().toISOString(),
-            is_active: true,
-          }, { onConflict: 'user_id,role_id,kelas' })
-          .select()
-          .single();
-
-        if (!roleError) {
-          roles = await window.authMultiRole.getUserRoles();
-          hasCloudRole = true;
-        }
+      } else {
+        console.log(`[AuthMultiRole] Email ${userEmail} not found in Google Sheet data for class ${targetClass}`);
       }
     }
 
