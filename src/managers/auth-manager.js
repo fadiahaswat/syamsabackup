@@ -30,6 +30,15 @@ window.ensureSupabaseGoogleSession = async function(idToken) {
   }
 
   console.log('[Auth] Supabase session created successfully:', data.session.user.email);
+
+  // FIX: Set cloudSessionReady synchronously to prevent race condition
+  // where Journal write fails because canWriteBusinessData() returns false
+  // even though user just logged in successfully
+  window.cloudSessionReady = true;
+  window.dispatchEvent(new CustomEvent('cloud:auth-state', {
+    detail: { isAuthenticated: true }
+  }));
+
   return data.session;
 };
 
@@ -364,6 +373,8 @@ window.handleLogout = async function () {
     "Batal",
     async () => {
   await window.supabaseClient?.auth?.signOut();
+  // FIX: Reset cloud session state on logout
+  window.cloudSessionReady = false;
   window.authMultiRole?.clearLocalSession?.();
   if (clockInterval) {
     clearInterval(clockInterval);
@@ -388,6 +399,8 @@ window.handleLogout = async function () {
 
 window.handleForcedLogout = async function () {
   await window.supabaseClient?.auth?.signOut();
+  // FIX: Reset cloud session state on forced logout
+  window.cloudSessionReady = false;
   window.authMultiRole?.clearLocalSession?.();
   localStorage.removeItem(APP_CONFIG.googleAuthKey);
   window.showToast?.('Sesi dicabut dari perangkat lain. Silakan masuk kembali.', 'warning');
