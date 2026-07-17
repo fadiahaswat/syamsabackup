@@ -608,7 +608,7 @@ class SupabaseSync {
 
             try {
               if (payload.eventType === 'DELETE') {
-                if (this._hasLocalStore(table)) {
+                if (this._hasLocalStore(table) && payload.old?.id) {
                   await this._db.delete(table, payload.old.id, { skipSync: true });
                 }
                 window.dispatchEvent(new CustomEvent('cloud:record-deleted', {
@@ -617,6 +617,12 @@ class SupabaseSync {
               } else {
                 // INSERT atau UPDATE
                 const record = payload.new;
+
+                // Skip if no valid record
+                if (!record || !record.id) {
+                  this._logger.debug(`[Realtime] Skipping ${table} - no valid record or id`);
+                  return;
+                }
 
                 // Transform Supabase format to local format
                 const transformedRecord = this._toLocalFormat(record, table);
