@@ -54,18 +54,103 @@ window.initMultiRoleAuth = async function(profile, targetClass) {
     console.log('[AuthMultiRole] User synced:', user?.email);
 
     // Get user roles
-    const roles = await window.authMultiRole.getUserRoles();
+    let roles = await window.authMultiRole.getUserRoles();
     console.log('[AuthMultiRole] User roles:', roles);
+
+    // Check if user has valid cloud role for target class
     const requestedAdmin = ['admin musyrif', 'koordinator musyrif'].includes(String(targetClass || '').toLowerCase());
-    const authorized = roles.some(item => {
+    let hasCloudRole = roles.length > 0 && roles.some(item => {
       const roleName = item.roles?.name;
       if (['superadmin', 'admin'].includes(roleName)) return true;
       if (requestedAdmin) return roleName === 'koordinator';
       return ['koordinator', 'musyrif', 'ustadz'].includes(roleName) && (!item.kelas || item.kelas === targetClass);
     });
-    if (!authorized) {
-      throw new Error('Role cloud tidak mengizinkan akses ke kelas yang dipilih');
+
+    // Auto-assign role based on Google Sheet data (if no cloud role found)
+    if (!hasCloudRole && targetClass && targetClass !== 'Admin Musyrif') {
+      console.log('[AuthMultiRole] No cloud role found. Auto-assigning role based on Google Sheet data...');
+
+      // Get musyrif role ID
+      const { data: musyrifRole } = await window.supabaseClient
+        .from('roles')
+        .select('id, name')
+        .eq('name', 'musyrif')
+        .single();
+
+      if (musyrifRole && user?.id) {
+        // Check if user is coordinator based on class name
+        const isCoordinator = targetClass.toLowerCase().includes('koordinator');
+        const roleId = isCoordinator ? 'role_koordinator' : musyrifRole.id;
+        const roleName = isCoordinator ? 'koordinator' : 'musyrif';
+
+        // Upsert role assignment
+        const { data: newRole, error: roleError } = await window.supabaseClient
+          .from('user_roles')
+          .upsert({
+            id: `ur_${user.id}_${targetClass}`,
+            user_id: user.id,
+            role_id: roleId,
+            kelas: targetClass,
+            assigned_at: new Date().toISOString(),
+            is_active: true,
+          }, { onConflict: 'user_id,role_id,kelas' })
+          .select()
+          .single();
+
+        if (!roleError && newRole) {
+          console.log(`[AuthMultiRole] Auto-assigned ${roleName} role for kelas ${targetClass}`);
+
+          // Refresh roles
+          roles = await window.authMultiRole.getUserRoles();
+          console.log('[AuthMultiRole] Updated roles:', roles);
+          hasCloudRole = true;
+        } else if (roleError) {
+          console.warn('[AuthMultiRole] Failed to auto-assign role:', roleError);
+        }
+      }
     }
+
+    // If still no cloud role, check if this is admin mode
+    if (!hasCloudRole && targetClass === 'Admin Musyrif') {
+      console.log('[AuthMultiRole] Admin Musyrif mode - assigning admin role...');
+
+      const { data: adminRole } = await window.supabaseClient
+        .from('roles')
+        .select('id')
+        .eq('name', 'admin')
+        .single();
+
+      if (adminRole && user?.id) {
+        const { data: newRole, error: roleError } = await window.supabaseClient
+          .from('user_roles')
+          .upsert({
+            id: `ur_${user.id}_admin`,
+            user_id: user.id,
+            role_id: adminRole.id,
+            kelas: null, // Global access
+            assigned_at: new Date().toISOString(),
+            is_active: true,
+          }, { onConflict: 'user_id,role_id,kelas' })
+          .select()
+          .single();
+
+        if (!roleError) {
+          roles = await window.authMultiRole.getUserRoles();
+          hasCloudRole = true;
+        }
+      }
+    }
+
+    // Final check - if still no role, allow local login
+    if (!hasCloudRole) {
+      console.warn('[AuthMultiRole] No cloud role found. Allowing local login without cloud sync.');
+      sessionStorage.setItem('multirole_user_id', user?.id || '');
+      sessionStorage.setItem('multirole_roles', JSON.stringify([]));
+      sessionStorage.setItem('multirole_cloud_disabled', 'true');
+      return { user, roles: [], cloudEnabled: false };
+    }
+
+    // User has valid cloud role - proceed with full cloud sync
 
     // Register current device
     await window.authMultiRole.registerDevice();
@@ -80,14 +165,14 @@ window.initMultiRoleAuth = async function(profile, targetClass) {
       metadata: { email: profile?.email }
     });
 
-    // Keep only a non-authoritative display cache. Authorization always comes
-    // from the authenticated Supabase session and RLS.
+    // Store session data
     sessionStorage.setItem('multirole_user_id', user?.id || '');
     sessionStorage.setItem('multirole_roles', JSON.stringify(roles));
+    sessionStorage.removeItem('multirole_cloud_disabled');
 
     await window.cloudDomainStore?.init(window.supabaseClient, user?.id);
 
-    return { user, roles };
+    return { user, roles, cloudEnabled: true };
 
   } catch (error) {
     console.error('[AuthMultiRole] Initialization failed:', error);
