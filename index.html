@@ -9917,8 +9917,20 @@
     </template>
 
     <!-- Scripts -->
-    <!-- Local config MUST be loaded BEFORE config.js to override defaults -->
-    <script src="src/config/config.local.js"></script>
+    <!-- GitHub Pages: Inline secrets (config.local.js not pushed to repo) -->
+    <script>
+      window.APP_SECRETS = {
+        googleSheetUrl: "https://script.google.com/macros/s/AKfycbw-URYAsLTWCdnGurQhM1ZXa9N8vm-GBlHwtetDlin73-Ma8G0aAbFoboGGUI8GgVDl/exec",
+        googleClientId: "336443539411-b7uv4udqqhbqpdmeuja54dhfsda4q7cm.apps.googleusercontent.com",
+        adminEmails: ["andiaqillahfadiahaswat@gmail.com"],
+        superadminHash: null,
+        supabaseUrl: "https://omuknrizzvwshtutpatb.supabase.co",
+        supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tdWtucml6enZ3c2h0dXRwYXRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNDQwOTUsImV4cCI6MjA5OTcyMDA5NX0.bj0lKKNoJtb8TB-nHvxjbEmUsairE6kdn10Y1WuUogE",
+        tahfizhScriptUrl: "",
+        adminWhatsAppNumber: "6285339213109"
+      };
+    </script>
+    <!-- Config -->
     <script src="src/config/config.js?v=2.3.10"></script>
     <!-- Google Identity Services - loaded AFTER config (needs googleClientId) -->
     <script src="https://accounts.google.com/gsi/client"></script>
