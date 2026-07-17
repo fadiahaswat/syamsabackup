@@ -877,7 +877,7 @@
           
           <div>
             <!-- Desktop View -->
-            <div class="overflow-x-auto -mx-5 px-5">
+            <div class="hidden md:block overflow-x-auto -mx-5 px-5">
               <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
                 <thead class="bg-slate-50/50 dark:bg-slate-950/50 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800/80">
                   <tr>
@@ -900,7 +900,7 @@
             </div>
             
             <!-- Mobile View -->
-            <div class="hidden space-y-3" id="admin-ops-matrix-mobile-list">
+            <div class="block md:hidden space-y-3" id="admin-ops-matrix-mobile-list">
               <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat matriks presensi...</p>
             </div>
           </div>
@@ -1070,7 +1070,7 @@
           </div>
 
           <!-- Desktop View -->
-          <div class="overflow-x-auto -mx-5 px-5">
+          <div class="hidden md:block overflow-x-auto -mx-5 px-5">
             <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[700px]">
               <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
                 <tr>
@@ -1092,7 +1092,7 @@
           </div>
 
           <!-- Mobile View -->
-          <div class="hidden space-y-3" id="admin-permits-mobile-list">
+          <div class="block md:hidden space-y-3" id="admin-permits-mobile-list">
             <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat riwayat perizinan...</p>
           </div>
         </section>
@@ -1145,7 +1145,7 @@
           
           <div>
             <!-- Desktop View -->
-            <div class="overflow-x-auto -mx-5 px-5">
+            <div class="hidden md:block overflow-x-auto -mx-5 px-5">
               <table class="w-full text-left text-xs font-bold text-slate-500 dark:text-slate-400 min-w-[600px]">
                 <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800">
                   <tr>
@@ -1164,9 +1164,10 @@
             </div>
             
             <!-- Mobile View -->
-            <div class="hidden space-y-3" id="admin-logs-mobile-list">
+            <div class="block md:hidden space-y-3" id="admin-logs-mobile-list">
               <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat logs...</p>
             </div>
+          </div>
         </section>
 
         <!-- Admin Only: Detail Status Pengisian Slot Presensi -->
@@ -1212,7 +1213,8 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
+          <!-- Desktop View -->
+          <div class="hidden md:block overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
             <table class="w-full text-left text-xs border-collapse">
               <thead>
                 <tr class="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-black uppercase tracking-wider border-b border-slate-100 dark:border-slate-800">
@@ -1230,6 +1232,11 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Mobile View -->
+          <div class="block md:hidden space-y-3" id="admin-journals-mobile-list">
+            <p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat jurnal...</p>
           </div>
         </section>
       </div>

@@ -92,7 +92,11 @@ class JournalManager {
           maxDisplacement: 0,
           pathCoords: []
         };
-        await this._repos.journal.put(record);
+        try {
+          await this._repos.journal.put(record);
+        } catch (dbErr) {
+          this._logger.warn(`[JournalManager] Failed to persist prepopulated task ${task.taskId} locally:`, dbErr);
+        }
         prepopulated.push(record);
       }
       records = prepopulated;

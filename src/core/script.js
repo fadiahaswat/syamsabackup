@@ -180,6 +180,14 @@ window.initApp = async function () {
         if (authData?.profile?.authProvider === "testing") {
           throw new Error("Sesi testing tidak lagi didukung.");
         }
+
+        // --- NEW CHECK FOR SUPABASE SESSION VALIDITY ---
+        if (window.isSupabaseEnabled && window.supabaseClient && navigator.onLine && authData?.profile?.authProvider !== "wali") {
+          const { data: sessionData } = await window.supabaseClient.auth.getSession();
+          if (!sessionData?.session?.user) {
+            throw new Error("Sesi cloud database (Supabase) kadaluarsa");
+          }
+        }
         if (authData?.profile?.authProvider === "wali") {
           const foundSantri = window.findWaliSantriByNis(authData.waliNis);
           if (!foundSantri) throw new Error("Data santri wali tidak ditemukan");
@@ -294,10 +302,18 @@ window.initApp = async function () {
         }
       } catch (authError) {
         console.error("Auto-login error:", authError);
-        // Hanya hapus sesi jika memang error autentikasi kadaluarsa / testing dinonaktifkan.
+        // Hanya hapus sesi jika memang error autentikasi kadaluarsa / testing dinonaktifkan / supabase kadaluarsa.
         // Jangan hapus sesi hanya karena data tidak lengkap (misal offline/timeout).
-        if (authError.message === "Sesi login kadaluarsa" || authError.message.includes("dinonaktifkan")) {
+        if (
+          authError.message === "Sesi login kadaluarsa" ||
+          authError.message.includes("dinonaktifkan") ||
+          authError.message.includes("database") ||
+          authError.message.includes("Supabase")
+        ) {
           window.AppStorage.removeItem(APP_CONFIG.googleAuthKey);
+          setTimeout(() => {
+            window.showToast?.(authError.message, "warning");
+          }, 600);
         }
       }
     }
@@ -15037,6 +15053,7 @@ window.abortJournalVerification = function () {
 
 window.renderAdminJournals = async function () {
   const tbody = document.getElementById("admin-journals-tbody");
+  const mobileList = document.getElementById("admin-journals-mobile-list");
   const dateInput = document.getElementById("admin-journals-filter-date");
   if (!tbody) return;
 
@@ -15049,13 +15066,20 @@ window.renderAdminJournals = async function () {
 
   try {
     tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 font-bold"><i data-lucide="loader" class="w-4.5 h-4.5 animate-spin inline-block mr-1.5"></i>Memuat jurnal...</td></tr>`;
+    if (mobileList) {
+      mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Memuat jurnal...</p>`;
+    }
     if (window.lucide) window.lucide.createIcons();
 
     const logs = await window.journalManager.getAdminReportForDate(filterDate);
     tbody.innerHTML = "";
+    if (mobileList) mobileList.innerHTML = "";
 
     if (logs.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 font-bold">Tidak ada jurnal musyrif pada tanggal ini.</td></tr>`;
+      if (mobileList) {
+        mobileList.innerHTML = `<p class="text-xs text-slate-400 font-bold p-4 text-center">Tidak ada jurnal musyrif pada tanggal ini.</p>`;
+      }
       return;
     }
 
@@ -15083,11 +15107,35 @@ window.renderAdminJournals = async function () {
         <td class="p-3 text-right font-black text-indigo-500">${isCompleted ? (task.stepsCount || 50) : '-'}</td>
       `;
       tbody.appendChild(tr);
+
+      // Populate mobile card list
+      if (mobileList) {
+        mobileList.innerHTML += `
+          <div class="bg-white/80 dark:bg-slate-900/80 border border-slate-200/70 dark:border-slate-800 rounded-2xl p-4 shadow-sm backdrop-blur-xl space-y-2.5">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-black text-slate-800 dark:text-white text-xs">${_escapeHtml(task.taskName)}</h3>
+                <p class="text-[9px] text-slate-400 font-bold mt-0.5">${_escapeHtml(task.musyrifName || 'Musyrif')} • ${task.date}</p>
+              </div>
+              ${statusBadge}
+            </div>
+            <div class="h-px bg-slate-100 dark:bg-slate-800/60"></div>
+            <div class="text-[11px] text-slate-600 dark:text-slate-400 font-bold leading-relaxed space-y-1">
+              <p><span class="text-slate-400">Waktu:</span> ${task.timeWindow}</p>
+              <p><span class="text-slate-400">Verifikasi:</span> ${timeStr}</p>
+              <p><span class="text-slate-400">Langkah Kaki:</span> ${isCompleted ? (task.stepsCount || 50) : '-'}</p>
+            </div>
+          </div>
+        `;
+      }
     });
 
     if (window.lucide) window.lucide.createIcons();
   } catch (error) {
     console.error("[AdminJournal] Render failed:", error);
     tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">Gagal memuat jurnal: ${error.message}</td></tr>`;
+    if (mobileList) {
+      mobileList.innerHTML = `<p class="text-xs text-red-500 font-bold p-4 text-center">Gagal memuat jurnal: ${error.message}</p>`;
+    }
   }
 };
