@@ -46,9 +46,36 @@ class SupabaseSync {
     if (!sessionData?.session?.user) {
       this.updateStatus('error');
       this._logger.error('[SupabaseSync] Authenticated cloud session is required');
+      // Listen for auth state changes to retry when user logs in
+      this._setupAuthRetry();
       return;
     }
 
+    await this._startSync();
+  }
+
+  /**
+   * Setup listener untuk retry sync saat user login
+   */
+  _setupAuthRetry() {
+    if (this._authRetryBound) return; // Prevent duplicate listeners
+    this._authRetryBound = true;
+
+    const retryHandler = async (event) => {
+      if (event?.detail?.isAuthenticated) {
+        this._logger.info('[SupabaseSync] User authenticated, retrying sync initialization...');
+        window.removeEventListener('cloud:auth-state', retryHandler);
+        await this._startSync();
+      }
+    };
+
+    window.addEventListener('cloud:auth-state', retryHandler);
+  }
+
+  /**
+   * Start sync setelah session tersedia
+   */
+  async _startSync() {
     // 1. Jalankan sinkronisasi awal (inbound pull & outbound push)
     if (navigator.onLine) {
       await this.syncAll();
