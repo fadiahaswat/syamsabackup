@@ -237,6 +237,9 @@ window.initApp = async function () {
           );
 
           // Initialize Storage Manager
+          if (authData.profile?.authProvider !== "wali" && window.initMultiRoleAuth && navigator.onLine) {
+            await window.initMultiRoleAuth(authData.profile, authData.kelas);
+          }
           const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
           window.initStorage?.(musyrifId);
           window.restoreRouteAfterAuth("home");
@@ -289,6 +292,9 @@ window.initApp = async function () {
           );
 
           // Initialize Storage Manager
+          if (authData.profile?.authProvider !== "wali" && window.initMultiRoleAuth && navigator.onLine) {
+            await window.initMultiRoleAuth(authData.profile, authData.kelas);
+          }
           const musyrifId = authData.profile?.id || `class_${authData.kelas}`;
           window.initStorage?.(musyrifId);
           window.restoreRouteAfterAuth("home");
@@ -308,7 +314,8 @@ window.initApp = async function () {
           authError.message === "Sesi login kadaluarsa" ||
           authError.message.includes("dinonaktifkan") ||
           authError.message.includes("database") ||
-          authError.message.includes("Supabase")
+          authError.message.includes("Supabase") ||
+          authError.message.includes("tidak mengizinkan")
         ) {
           window.AppStorage.removeItem(APP_CONFIG.googleAuthKey);
           setTimeout(() => {

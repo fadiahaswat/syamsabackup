@@ -5,7 +5,7 @@
  * @version 2.7.1
  */
 
-const CACHE_VERSION = "v304";
+const CACHE_VERSION = "v306";
 const CACHE_NAME = `musyrif-app-${CACHE_VERSION}`;
 
 // Static assets to cache for offline functionality
