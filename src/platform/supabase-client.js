@@ -38,7 +38,12 @@
       console.error('[Supabase] Failed to initialize Supabase client:', e);
     }
   } else {
-    console.error('[Supabase] Credentials not set. Business data is read-only.');
+    // Log debug info untuk troubleshooting
+    console.warn('[Supabase] Credentials not set. Checking available config...');
+    console.debug('[Supabase] APP_CREDENTIALS:', window.APP_CREDENTIALS);
+    console.debug('[Supabase] APP_SECRETS:', window.APP_SECRETS);
+    console.debug('[Supabase] supabaseUrl from config:', url, '| supabaseAnonKey from config:', key ? '[REDACTED]' : 'empty');
+    console.warn('[Supabase] Business data is read-only. Ensure config.local.js is loaded and contains valid credentials.');
   }
 
   if (window.supabaseClient) {

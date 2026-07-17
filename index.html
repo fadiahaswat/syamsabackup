@@ -61,8 +61,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-
     <style>
       :root {
         --color-brand: #0C81E4; /* Vibrant Blue */
@@ -9922,6 +9920,8 @@
     <!-- Local config MUST be loaded BEFORE config.js to override defaults -->
     <script src="src/config/config.local.js"></script>
     <script src="src/config/config.js?v=2.3.9"></script>
+    <!-- Google Identity Services - loaded AFTER config (needs googleClientId) -->
+    <script src="https://accounts.google.com/gsi/client"></script>
     <script src="src/data/data-kelas.js"></script>
     <script src="src/data/data-santri.js"></script>
     <script src="src/managers/santri-manager.js"></script>
