@@ -2633,6 +2633,36 @@ window.showWaliView = function (tabName = "home") {
   view.classList.remove("hidden");
   window.renderWaliView();
 };
+window.ensureSupabaseGoogleSession = async function(idToken) {
+  console.log('[Auth] ensureSupabaseGoogleSession called, isSupabaseEnabled:', window.isSupabaseEnabled);
+
+  if (!window.isSupabaseEnabled || !window.supabaseClient) {
+    throw new Error('Cloud database is not configured');
+  }
+  if (!idToken) throw new Error('Google ID token is required');
+
+  console.log('[Auth] Attempting Supabase signInWithIdToken...');
+  const { data, error } = await window.supabaseClient.auth.signInWithIdToken({
+    provider: 'google',
+    token: idToken,
+  });
+  console.log('[Auth] Supabase signInWithIdToken result:', { error, hasData: !!data, hasSession: !!data?.session });
+
+  if (error || !data?.session?.user) {
+    console.error('[Auth] Supabase session creation failed:', error);
+    throw error || new Error('Supabase session was not created');
+  }
+
+  console.log('[Auth] Supabase session created successfully:', data.session.user.email);
+
+  // Set cloudSessionReady synchronously to prevent race conditions
+  window.cloudSessionReady = true;
+  window.dispatchEvent(new CustomEvent('cloud:auth-state', {
+    detail: { isAuthenticated: true }
+  }));
+
+  return data.session;
+};
 
 window.handleGoogleCallback = async function (response) {
   try {
@@ -2645,6 +2675,12 @@ window.handleGoogleCallback = async function (response) {
     const normalizedUserEmail = String(userEmail || "")
       .trim()
       .toLowerCase();
+
+    // Establish a real authenticated Supabase session. A decoded Google JWT
+    // alone is never used as database authorization.
+    if (window.isSupabaseEnabled && window.supabaseClient) {
+      await window.ensureSupabaseGoogleSession(response.credential);
+    }
 
     // Check if we are in Google bypass mode (testing)
     if (window.googleBypassActive) {
