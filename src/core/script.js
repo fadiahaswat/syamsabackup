@@ -1745,10 +1745,18 @@ window.updateWaliDashboardSummary = function () {
     try {
       const saved = localStorage.getItem("local_announcements");
       const announcements = saved ? JSON.parse(saved) : [];
-      
-      // Filter for announcements targeting 'wali' or 'all'
-      const waliAnn = announcements.find(ann => ann.target === "wali" || ann.target === "all");
-      
+
+      // Get dismissed announcements
+      let dismissed = [];
+      try {
+        dismissed = JSON.parse(localStorage.getItem('syamsa_dismissed_announcements') || '[]');
+      } catch (e) { dismissed = []; }
+
+      // Filter for announcements targeting 'wali' or 'all' that haven't been dismissed
+      const waliAnn = announcements.find(ann =>
+        (ann.target === "wali" || ann.target === "all") && !dismissed.includes(ann.id)
+      );
+
       if (waliAnn) {
         const dateFormatted = waliAnn.created_at ? new Date(waliAnn.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '-';
         bannerContainer.innerHTML = `
@@ -1761,7 +1769,13 @@ window.updateWaliDashboardSummary = function () {
               <span class="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest block">Pengumuman Ma'had</span>
               <h4 class="text-xs font-black text-slate-900 dark:text-white mt-0.5 truncate">${window.sanitizeHTML(waliAnn.title)}</h4>
               <p class="text-[10px] font-bold text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">${window.sanitizeHTML(waliAnn.content)}</p>
-              <span class="text-[8px] font-semibold text-slate-400 block mt-2">Diterbitkan: ${dateFormatted} oleh ${window.sanitizeHTML(waliAnn.created_by || 'Admin')}</span>
+              <div class="flex items-center justify-between mt-2">
+                <span class="text-[8px] font-semibold text-slate-400">${dateFormatted} • ${window.sanitizeHTML(waliAnn.created_by || 'Admin')}</span>
+                <button onclick="(function(){try{var d=JSON.parse(localStorage.getItem('syamsa_dismissed_announcements')||'[]');if(!d.includes('${waliAnn.id}')){d.push('${waliAnn.id}');localStorage.setItem('syamsa_dismissed_announcements',JSON.stringify(d));}var b=document.getElementById('wali-announcement-banner-container');if(b){b.classList.add('hidden');}}catch(e){}})()"
+                  class="px-2.5 py-1 rounded-lg bg-white/60 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 text-[9px] font-bold hover:bg-white/80 dark:hover:bg-slate-700/60 transition-all active:scale-95 border border-slate-200/50 dark:border-slate-700/50">
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
         `;

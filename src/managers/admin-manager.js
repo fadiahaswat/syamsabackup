@@ -439,15 +439,11 @@ window.dismissAnnouncement = function (announcementId) {
       dismissed.push(announcementId);
       localStorage.setItem('syamsa_dismissed_announcements', JSON.stringify(dismissed));
     }
-    // Hide banner dengan animasi
+    // Hide banner immediately
     const banner = document.getElementById('announcement-banner-container');
     if (banner) {
+      banner.classList.add('hidden');
       banner.classList.remove('animate-slide-up');
-      banner.classList.add('animate-fade-out');
-      setTimeout(() => {
-        banner.classList.add('hidden');
-        banner.classList.remove('animate-fade-out');
-      }, 300);
     }
   } catch (error) {
     console.error('[Announcement] Failed to dismiss:', error);
