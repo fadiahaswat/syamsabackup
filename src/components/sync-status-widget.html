@@ -1,6 +1,11 @@
 <!--
   Sync Status Widget & Panel
   Shows sync status, pending changes, and sync controls
+
+  🔴 CRITICAL FIX #9: Enhanced with:
+  - Presence indicator (online users)
+  - Last sync time display
+  - Real-time sync status
 -->
 
 <!-- Sync Status Indicator (Compact) -->
@@ -17,6 +22,20 @@
 <div id="sync-pending-badge"
   class="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-amber-500 text-white text-[10px] font-bold px-1 hidden"
   title="Perubahan tertunda">
+</div>
+
+<!-- 🔴 CRITICAL FIX #9: Last Sync Time Display -->
+<div id="sync-time-display"
+  class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm border border-slate-200/40 dark:border-slate-700/40 text-slate-500 dark:text-slate-400 text-[10px] font-medium">
+  <i data-lucide="clock" class="w-3 h-3"></i>
+  <span id="last-sync-time">-</span>
+</div>
+
+<!-- 🔴 CRITICAL FIX #5: Presence Indicator -->
+<div id="presence-indicator"
+  class="hidden items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200/50 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
+  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+  <span id="online-users-count">0 online</span>
 </div>
 
 <!-- Sync Panel (Expanded View) -->
@@ -176,13 +195,52 @@
     window.addEventListener('online', updateSyncStatus);
     window.addEventListener('offline', updateSyncStatus);
 
+    // 🔴 CRITICAL FIX #5: Listen for presence changes from SupabaseSync
+    if (window.supabaseSync) {
+      window.supabaseSync.onPresenceChange = updatePresenceIndicator;
+    }
+
     // Listen for service worker messages
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', handleSWMessage);
     }
 
+    // Initial presence update
+    updatePresenceIndicator();
+
     console.log('[SyncStatusUI] Initialized');
   };
+
+  /**
+   * 🔴 CRITICAL FIX #5: Update presence indicator
+   */
+  function updatePresenceIndicator() {
+    const indicator = document.getElementById('presence-indicator');
+    const countEl = document.getElementById('online-users-count');
+
+    if (!indicator) return;
+
+    let users = [];
+    if (window.supabaseSync?.getOnlineUsers) {
+      users = window.supabaseSync.getOnlineUsers();
+    }
+
+    const count = users.length;
+
+    if (count === 0) {
+      indicator.classList.add('hidden');
+      return;
+    }
+
+    indicator.classList.remove('hidden');
+    if (countEl) {
+      countEl.textContent = `${count} online`;
+    }
+
+    // Add tooltip with user list
+    const userNames = users.map(u => u.role || 'User').join(', ');
+    indicator.title = `Online: ${userNames}`;
+  }
 
   /**
    * Handle messages from Service Worker

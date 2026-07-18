@@ -1,22 +1,19 @@
 /**
  * SyncManager - Cross-Role Data Synchronization
  *
- * Handles data synchronization between Musyrif, Admin, and Wali roles.
- * Each role has different data access:
+ * ⚠️ DEPRECATED: This class is maintained for backward compatibility.
+ * All functionality has been moved to SupabaseSync in supabase-sync.js.
  *
- * - Musyrif: Own class data (attendances, permits, tahfizh)
- * - Admin: All classes data (full access)
- * - Wali: Own child's data (read-only, filtered by child NIS)
+ * SupabaseSync provides:
+ * - Real-time sync with Supabase Realtime (push updates)
+ * - Periodic sync (15 second interval)
+ * - BroadcastChannel for same-origin tab sync
+ * - Presence awareness for online users
  *
- * This manager ensures all roles see consistent data when online.
+ * This class now delegates all operations to SupabaseSync.
+ * Please use window.syncManager (which is now SupabaseSync) directly.
  *
- * Features:
- * - Auto-sync with configurable interval
- * - Pause/resume functionality
- * - Sync progress tracking
- * - Sync history/audit log
- * - Selective sync by table/date range
- * - Offline change indicators
+ * @deprecated Use SupabaseSync instead
  */
 
 class SyncManager {
@@ -816,15 +813,45 @@ class SyncManager {
 // SINGLETON INSTANCE
 // ============================================================
 
-const syncManager = new SyncManager();
+/**
+ * ⚠️ DEPRECATED: All operations now delegated to SupabaseSync
+ *
+ * For new code, use:
+ * - window.supabaseSync (SupabaseSync instance)
+ *
+ * Legacy alias maintained for backward compatibility:
+ * - window.syncManager now points to SupabaseSync
+ */
 
-// Export
+// Note: The actual singleton is created in supabase-sync.js
+// where window.syncManager = window.supabaseSync = new SupabaseSync()
+// This file only exports the class definition for backward compatibility
+
+// Export class (for type checking and legacy code)
 window.SyncManager = SyncManager;
-window.syncManager = syncManager;
+
+// Log deprecation warning
+console.warn(
+  '[SyncManager] ⚠️ DEPRECATED: SyncManager is deprecated. ' +
+  'All functionality has been moved to SupabaseSync. ' +
+  'Use window.supabaseSync (which is aliased as window.syncManager).'
+);
 
 window.SyncManagerLogger = {
-  debug: (...args) => Logger?.debug('SyncManager', ...args),
-  info: (...args) => Logger?.info('SyncManager', ...args),
-  warn: (...args) => Logger?.warn('SyncManager', ...args),
-  error: (...args) => Logger?.error('SyncManager', ...args),
+  debug: (...args) => {
+    console.debug('[SyncManager] (deprecated)', ...args);
+    window.SupabaseSyncLogger?.debug?.('[SyncManager]', ...args);
+  },
+  info: (...args) => {
+    console.info('[SyncManager] (deprecated)', ...args);
+    window.SupabaseSyncLogger?.info?.('[SyncManager]', ...args);
+  },
+  warn: (...args) => {
+    console.warn('[SyncManager] (deprecated)', ...args);
+    window.SupabaseSyncLogger?.warn?.('[SyncManager]', ...args);
+  },
+  error: (...args) => {
+    console.error('[SyncManager] (deprecated)', ...args);
+    window.SupabaseSyncLogger?.error?.('[SyncManager]', ...args);
+  },
 };

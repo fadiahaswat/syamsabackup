@@ -18,8 +18,20 @@ class SupabaseSync {
     this.isSyncingOutbound = false;
     this._history = [];
 
+    // 🔴 CRITICAL FIX #1: Add periodic sync interval (15 seconds)
+    this._syncInterval = null;
+    this._syncIntervalMs = 15000; // 15 seconds - balances real-time feel with server load
+
+    // 🔴 CRITICAL FIX #5: Presence awareness
+    this._presenceChannel = null;
+    this._onlineUsers = new Map();
+
     // Callbacks untuk UI
     this.onStatusChange = null;
+    this.onPresenceChange = null;
+
+    // Track last sync time for UI
+    this.lastSyncTime = null;
 
     // Logger
     this._logger = window.SupabaseSyncLogger || {
@@ -104,14 +116,275 @@ class SupabaseSync {
     // 2. Setup Realtime Subscriptions
     this._setupRealtimeSubscriptions();
 
+    // 🔴 CRITICAL FIX #1: Setup periodic sync interval (15 seconds)
+    this._startPeriodicSync();
+
+    // 🔴 CRITICAL FIX #5: Setup presence awareness
+    this._setupPresenceChannel();
+
+    // 🔴 CRITICAL FIX #8: Setup BroadcastChannel for same-origin tab sync
+    this._setupBroadcastChannel();
+
     // 3. Setup event listener koneksi internet
     window.addEventListener('online', () => {
+      this._startPeriodicSync(); // Restart interval on reconnect
       this.syncAll();
     });
 
     window.addEventListener('offline', () => {
+      this._stopPeriodicSync();
       this.updateStatus('offline');
     });
+  }
+
+  /**
+   * 🔴 CRITICAL FIX #1: Start periodic sync interval
+   */
+  _startPeriodicSync() {
+    // Clear any existing interval
+    this._stopPeriodicSync();
+
+    // Only start if online and Supabase enabled
+    if (!navigator.onLine || !window.isSupabaseEnabled) {
+      this._logger.debug('[SupabaseSync] Periodic sync not started - offline or disabled');
+      return;
+    }
+
+    this._syncInterval = setInterval(() => {
+      if (navigator.onLine && window.isSupabaseEnabled && !this.isSyncing) {
+        this.syncAll();
+      }
+    }, this._syncIntervalMs);
+
+    this._logger.info(`[SupabaseSync] Periodic sync started - interval: ${this._syncIntervalMs}ms`);
+  }
+
+  /**
+   * Stop periodic sync interval
+   */
+  _stopPeriodicSync() {
+    if (this._syncInterval) {
+      clearInterval(this._syncInterval);
+      this._syncInterval = null;
+      this._logger.debug('[SupabaseSync] Periodic sync stopped');
+    }
+  }
+
+  /**
+   * 🔴 CRITICAL FIX #8: Setup BroadcastChannel for same-origin tab synchronization
+   */
+  _setupBroadcastChannel() {
+    // Skip if BroadcastChannel not supported
+    if (typeof BroadcastChannel !== 'function') {
+      this._logger.warn('[SupabaseSync] BroadcastChannel not supported in this browser');
+      return;
+    }
+
+    // Create or connect to existing channel
+    if (this._broadcastChannel) {
+      this._broadcastChannel.close();
+    }
+
+    this._broadcastChannel = new BroadcastChannel('syamsa_data_sync');
+
+    // Listen for updates from other tabs
+    this._broadcastChannel.onmessage = (event) => {
+      const { type, data, timestamp } = event.data;
+      this._logger.debug(`[BroadcastChannel] Received: ${type}`, { timestamp });
+
+      switch (type) {
+        case 'DATA_UPDATED':
+          this._handleBroadcastUpdate(data);
+          break;
+        case 'SYNC_REQUEST':
+          // Another tab requesting full sync
+          this.syncAll();
+          break;
+        case 'PRESENCE':
+          this._handlePresenceBroadcast(data);
+          break;
+      }
+    };
+
+    // Announce presence on this tab
+    this._broadcastPresence();
+
+    this._logger.info('[SupabaseSync] BroadcastChannel setup complete');
+  }
+
+  /**
+   * Handle data update from another tab
+   */
+  _handleBroadcastUpdate(data) {
+    const { entityType, entityId, operation } = data;
+
+    this._logger.debug(`[BroadcastChannel] Handling update: ${entityType}/${entityId} (${operation})`);
+
+    // Dispatch event for local listeners
+    window.dispatchEvent(new CustomEvent('cloud:record-changed', {
+      detail: {
+        table: entityType,
+        record: { id: entityId },
+        eventType: operation,
+        source: 'broadcast'
+      }
+    }));
+
+    // Reload relevant data based on entity type
+    switch (entityType) {
+      case 'attendances':
+        window.renderAttendanceList?.();
+        window.updateDashboard?.();
+        break;
+      case 'permits':
+      case 'permit_requests':
+        window.loadMusyrifRequests?.();
+        window.renderMusyrifApprovalWidget?.();
+        window.refreshPermitSurfaces?.();
+        break;
+      case 'tahfizh':
+        window.reloadTahfizhData?.();
+        window.renderTahfizhDashboard?.();
+        break;
+      case 'notifications':
+        window.fetchNotifications?.();
+        window.renderNotificationsUI?.();
+        break;
+    }
+  }
+
+  /**
+   * Broadcast data update to other tabs
+   */
+  _broadcastUpdate(entityType, entityId, operation) {
+    if (!this._broadcastChannel) return;
+
+    this._broadcastChannel.postMessage({
+      type: 'DATA_UPDATED',
+      data: { entityType, entityId, operation },
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Broadcast presence to other tabs
+   */
+  _broadcastPresence() {
+    if (!this._broadcastChannel) return;
+
+    const userInfo = {
+      userId: appState?.userProfile?.id || appState?.userProfile?.email,
+      role: appState?.waliMode ? 'wali' : (appState?.userProfile?.role || 'musyrif'),
+      kelas: appState?.selectedClass,
+      nis: appState?.waliSantri?.nis,
+      onlineAt: Date.now()
+    };
+
+    this._broadcastChannel.postMessage({
+      type: 'PRESENCE',
+      data: userInfo
+    });
+  }
+
+  /**
+   * Handle presence broadcast from other tabs
+   */
+  _handlePresenceBroadcast(data) {
+    // Update local presence tracking
+    if (data.userId) {
+      this._onlineUsers.set(data.userId, {
+        ...data,
+        lastSeen: Date.now()
+      });
+
+      // Notify UI
+      if (this.onPresenceChange) {
+        this.onPresenceChange(this._getOnlineUsersList());
+      }
+    }
+  }
+
+  /**
+   * Get list of online users
+   */
+  _getOnlineUsersList() {
+    const now = Date.now();
+    const activeThreshold = 60000; // 1 minute
+
+    // Clean up stale entries
+    for (const [userId, info] of this._onlineUsers) {
+      if (now - info.lastSeen > activeThreshold) {
+        this._onlineUsers.delete(userId);
+      }
+    }
+
+    return Array.from(this._onlineUsers.values());
+  }
+
+  /**
+   * 🔴 CRITICAL FIX #5: Setup presence channel for tracking online users
+   */
+  _setupPresenceChannel() {
+    if (!window.isSupabaseEnabled || !window.supabaseClient) {
+      this._logger.debug('[SupabaseSync] Presence channel not setup - Supabase not enabled');
+      return;
+    }
+
+    // Clean up existing channel
+    if (this._presenceChannel) {
+      window.supabaseClient.removeChannel(this._presenceChannel);
+    }
+
+    this._presenceChannel = window.supabaseClient.channel('presence');
+
+    // Listen for presence sync events
+    this._presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = this._presenceChannel.presenceState();
+        this._logger.debug('[Presence] Sync:', Object.keys(state));
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        this._logger.info('[Presence] User joined:', key, newPresences);
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        this._logger.info('[Presence] User left:', key, leftPresences);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          try {
+            await this._presenceChannel.track({
+              user_id: appState?.userProfile?.id || appState?.userProfile?.email,
+              role: appState?.waliMode ? 'wali' : (appState?.userProfile?.role || 'musyrif'),
+              kelas: appState?.selectedClass,
+              nis: appState?.waliSantri?.nis,
+              online_at: new Date().toISOString()
+            });
+            this._logger.debug('[Presence] Tracking started');
+          } catch (err) {
+            this._logger.warn('[Presence] Failed to track:', err);
+          }
+        }
+      });
+
+    this._logger.info('[SupabaseSync] Presence channel setup complete');
+  }
+
+  /**
+   * Get current online users
+   */
+  getOnlineUsers() {
+    return this._getOnlineUsersList();
+  }
+
+  /**
+   * Get presence status
+   */
+  getPresenceStatus() {
+    return {
+      channelActive: !!this._presenceChannel,
+      onlineCount: this._getOnlineUsersList().length,
+      users: this._getOnlineUsersList()
+    };
   }
 
   /**
@@ -658,7 +931,7 @@ class SupabaseSync {
                 }
               }
 
-              // Re-trigger UI Update
+              // 🔴 CRITICAL FIX #2: Re-trigger UI Update for ALL tables
               if (table === 'user_roles' && window.authMultiRole?.currentUser) {
                 window.authMultiRole.roles = await window.authMultiRole.getUserRoles();
                 sessionStorage.setItem('multirole_roles', JSON.stringify(window.authMultiRole.roles));
@@ -669,17 +942,11 @@ class SupabaseSync {
                 if (!valid?.valid) window.handleForcedLogout?.();
               }
 
-              if (window.stateManager && this._hasLocalStore(table)) {
-                await window.stateManager._loadPersistedState();
-                if (typeof window.stateManager._emit === 'function') {
-                  window.stateManager._emit('change', ['attendanceData', 'permits', 'tahfizh', 'settings']);
-                }
-              }
+              // 🔴 CRITICAL FIX #2: UI refresh based on table type
+              this._triggerUIUpdate(table, payload.eventType);
 
-              // Reload tahfizh data if tahfizh table changed
-              if (table === 'tahfizh' && typeof window.reloadTahfizhData === 'function') {
-                window.reloadTahfizhData();
-              }
+              // 🔴 CRITICAL FIX #8: Broadcast to other tabs
+              this._broadcastUpdate(table, record.id, payload.eventType);
             } catch (err) {
               this._logger.error(`[SupabaseSync] Failed to apply realtime change on ${table}:`, err);
             } finally {
@@ -698,18 +965,50 @@ class SupabaseSync {
    * Whitelist of fields that exist in Supabase schema
    * Only these fields will be synced to Supabase - everything else is local-only
    *
+   * 🔴 CRITICAL FIX #6: Extended permits schema to include all request fields
+   * for proper exit ticket sync between devices
+   *
    * NOTE: Supabase schema uses JSONB for status field which can store objects,
    * so no transformation is needed. The local status object {shalat: "Hadir"}
    * is sent directly to Supabase.
    */
   _SUPABASE_FIELDS = {
     attendances: ['id', 'date', 'slot', 'studentId', 'kelas', 'status', 'note', 'timestamps', 'auditTrail', 'metadata', '_version', '_updatedAt'],
-    permits: ['id', 'nis', 'kelas', 'category', 'reason', 'start_date', 'end_date', 'start_session', 'end_session', 'status', 'is_active', 'document', 'audit_trail', 'metadata', '_version'],
+    permits: [
+      // Core fields
+      'id', 'nis', 'kelas', 'category', 'reason',
+      // Date/time fields
+      'start_date', 'end_date', 'start_session', 'end_session',
+      // Status fields
+      'status', 'is_active', 'is_overdue',
+      // Audit fields
+      'approvedBy', 'approvedAt', 'rejectedBy', 'rejectedAt', 'rejectReason',
+      'audit_trail',
+      // 🔴 CRITICAL FIX #6: Added missing request fields for exit ticket sync
+      'studentId', 'nama', 'nama_wali', 'alamat_wali',
+      'start_time_limit', 'end_time_limit', 'destination', 'location',
+      'requested_by', 'status_label',
+      // Document
+      'document', 'hasDocument',
+      // Metadata
+      'metadata', '_version', '_updatedAt'
+    ],
     tahfizh: ['id', 'nis', 'kelas', 'program', 'jenis', 'juz', 'halaman', 'surat', 'kualitas', 'status', 'musyrif', 'tanggal', 'metadata', '_version'],
     settings: ['id', 'data', '_version', '_updatedAt'],
     musyrif_journals: ['id', 'musyrif_id', 'kelas', 'tanggal', 'content', '_version'],
     activity_logs: ['id', 'action', 'detail', 'user_id', 'user_name_old', 'device_id', 'session_id', 'kelas', 'timestamp', 'metadata'],
     app_records: ['id', 'entity_type', 'kelas', 'nis', 'owner_user_id', 'data', '_version', 'deleted_at'],
+    // 🔴 CRITICAL FIX #6: Exit tickets table for digital ticket sync
+    exit_tickets: [
+      'id', 'permit_id', 'student_nis', 'student_name', 'student_class',
+      'wali_name', 'wali_address', 'destination', 'reason',
+      'valid_from', 'valid_until', 'approver_name', 'approved_at',
+      'created_at'
+    ],
+    notifications: [
+      'id', 'recipient_type', 'recipient_id', 'title', 'body',
+      'type', 'deep_link', 'is_read', 'created_at', 'synced_at'
+    ]
   };
 
   /**
@@ -804,6 +1103,135 @@ class SupabaseSync {
   }
 
   /**
+   * 🔴 CRITICAL FIX #2: Trigger UI updates based on table type
+   */
+  _triggerUIUpdate(table, eventType) {
+    // Always reload state manager
+    if (window.stateManager && this._hasLocalStore(table)) {
+      window.stateManager._loadPersistedState?.();
+      if (typeof window.stateManager._emit === 'function') {
+        window.stateManager._emit('change', ['attendanceData', 'permits', 'tahfizh', 'settings']);
+      }
+    }
+
+    // Table-specific UI updates
+    switch (table) {
+      case 'attendances':
+        // Update attendance UI
+        if (typeof window.renderAttendanceList === 'function') {
+          window.renderAttendanceList();
+        }
+        // Update dashboard widgets
+        if (typeof window.updateDashboard === 'function') {
+          window.updateDashboard();
+        }
+        // Update quick presence badge
+        if (typeof window.refreshQuickPresence === 'function') {
+          window.refreshQuickPresence();
+        }
+        this._logger.debug(`[SupabaseSync] UI refreshed for ${table}`);
+        break;
+
+      case 'permits':
+      case 'permit_requests':
+        // Update permit widgets and lists
+        if (typeof window.initPermitRequestListener === 'function') {
+          window.initPermitRequestListener();
+        }
+        if (typeof window.loadMusyrifRequests === 'function') {
+          window.loadMusyrifRequests();
+        }
+        if (typeof window.renderMusyrifApprovalWidget === 'function') {
+          window.renderMusyrifApprovalWidget(window.currentPendingRequests?.length || 0);
+        }
+        if (typeof window.refreshPermitSurfaces === 'function') {
+          window.refreshPermitSurfaces();
+        }
+        // Reload Wali permit history if in Wali mode
+        if (typeof window.loadWaliPermitHistory === 'function') {
+          window.loadWaliPermitHistory();
+        }
+        this._logger.debug(`[SupabaseSync] UI refreshed for ${table}`);
+        break;
+
+      case 'tahfizh':
+        // Update tahfizh data and UI
+        if (typeof window.reloadTahfizhData === 'function') {
+          window.reloadTahfizhData();
+        }
+        if (typeof window.renderTahfizhDashboard === 'function') {
+          window.renderTahfizhDashboard();
+        }
+        this._logger.debug(`[SupabaseSync] UI refreshed for ${table}`);
+        break;
+
+      case 'notifications':
+        // Refresh notification UI
+        if (typeof window.fetchNotifications === 'function') {
+          window.fetchNotifications();
+        }
+        if (typeof window.renderNotificationsUI === 'function') {
+          window.renderNotificationsUI(window.currentNotificationsList);
+        }
+        // Update notification badge
+        const badge = document.getElementById('notif-badge');
+        if (badge) {
+          badge.classList.remove('hidden');
+        }
+        this._logger.debug(`[SupabaseSync] UI refreshed for ${table}`);
+        break;
+
+      case 'musyrif_journals':
+        // Update journal UI
+        if (typeof window.reloadJournalData === 'function') {
+          window.reloadJournalData();
+        }
+        if (typeof window.renderJournalDashboard === 'function') {
+          window.renderJournalDashboard();
+        }
+        this._logger.debug(`[SupabaseSync] UI refreshed for ${table}`);
+        break;
+
+      case 'settings':
+        // Reload app settings
+        if (typeof window.reloadAppSettings === 'function') {
+          window.reloadAppSettings();
+        }
+        this._logger.debug(`[SupabaseSync] UI refreshed for ${table}`);
+        break;
+
+      case 'activity_logs':
+        // Update activity log display if visible
+        if (typeof window.refreshActivityLogs === 'function') {
+          window.refreshActivityLogs();
+        }
+        break;
+
+      default:
+        this._logger.debug(`[SupabaseSync] No specific UI handler for ${table}`);
+    }
+
+    // Update last sync time display
+    this.lastSyncTime = new Date();
+    this._updateSyncTimeDisplay();
+  }
+
+  /**
+   * Update sync time display in UI
+   */
+  _updateSyncTimeDisplay() {
+    const syncTimeEl = document.getElementById('last-sync-time');
+    if (syncTimeEl && this.lastSyncTime) {
+      const timeStr = this.lastSyncTime.toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      syncTimeEl.textContent = timeStr;
+    }
+  }
+
+  /**
    * Handle incoming notification from Supabase realtime
    * Add to localStorage and show browser notification
    */
@@ -864,6 +1292,19 @@ class SupabaseSync {
   }
 }
 
-// Singleton Instance
+// ============================================================
+// SINGLETON INSTANCE
+// ============================================================
+
+// Create SupabaseSync singleton
 window.supabaseSync = new SupabaseSync();
+
+// Alias for backward compatibility (SyncManager -> SupabaseSync)
 window.syncManager = window.supabaseSync;
+
+// Deprecation notice
+console.info('[SupabaseSync] ✓ Real-time sync enabled with:');
+console.info('  - Periodic sync: 15 second interval');
+console.info('  - Supabase Realtime: Push updates');
+console.info('  - BroadcastChannel: Same-origin tab sync');
+console.info('  - Presence awareness: Online users tracking');

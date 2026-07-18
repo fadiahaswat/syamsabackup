@@ -735,6 +735,63 @@
   let currentPendingRequests = [];
 
   /**
+   * 🔴 CRITICAL FIX #3: Add cloud realtime listener for permit requests
+   * This ensures new permit requests from Wali appear immediately on Musyrif dashboard
+   */
+  function initCloudRealtimeListener() {
+    // Listen for cloud:record-changed events from SupabaseSync
+    window.addEventListener('cloud:record-changed', (event) => {
+      const { table, eventType, record, source } = event.detail || {};
+
+      permitDebugLog('[PermitRequestManager] Cloud change detected:', { table, eventType, source });
+
+      // Only handle permit-related tables
+      if (table !== 'permits' && table !== 'permit_requests') return;
+
+      // Reload permits data
+      loadMusyrifRequests();
+
+      // Show toast notification for new requests
+      if (eventType === 'INSERT' && record) {
+        const studentName = record.nama || 'Santri';
+        const categoryText = record.category === 'sakit' ? 'Sakit' : 'Izin Pulang';
+
+        permitDebugLog(`[PermitRequestManager] New permit request: ${studentName} - ${categoryText}`);
+
+        // Only show toast if this is from another device (source: cloud)
+        if (source === 'broadcast' || source === 'realtime') {
+          window.showToast?.(
+            `Pengajuan izin baru dari ${studentName}!`,
+            'info',
+            true,
+            5000
+          );
+
+          // Also send browser notification
+          window.sendLocalNotification?.(
+            'Pengajuan Izin Baru!',
+            `Wali dari ${studentName} mengajukan ${categoryText}. Silakan periksa dan setujui.`,
+            'permit'
+          );
+        }
+      }
+
+      // Update approval widget
+      renderMusyrifApprovalWidget(currentPendingRequests.length);
+    });
+
+    // Also listen for local data updates from other tabs via BroadcastChannel
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'musyrif_permits_db') {
+        permitDebugLog('[PermitRequestManager] Storage changed from another tab, reloading...');
+        loadMusyrifRequests();
+      }
+    });
+
+    permitDebugLog('[PermitRequestManager] Cloud realtime listener initialized');
+  }
+
+  /**
    * Inisialisasi listener untuk Musyrif
    */
   window.initPermitRequestListener = function() {
@@ -742,6 +799,14 @@
     if (!kelas) return;
 
     permitDebugLog(`[PermitRequestManager] Loading requests for Class ${kelas}`);
+
+    // 🔴 CRITICAL FIX #3: Initialize cloud realtime listener (only once)
+    if (!window._permitRealtimeListenerInitialized) {
+      initCloudRealtimeListener();
+      window._permitRealtimeListenerInitialized = true;
+      permitDebugLog('[PermitRequestManager] Cloud realtime listener enabled');
+    }
+
     loadMusyrifRequests();
   };
 

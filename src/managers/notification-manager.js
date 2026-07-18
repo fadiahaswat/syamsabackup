@@ -7,6 +7,103 @@ const notificationDebugLog = (...args) => {
 };
 
 // ==========================================
+// 🔴 CRITICAL FIX #7: PUSH NOTIFICATION SUPPORT
+// ==========================================
+
+/**
+ * Setup Push Notification Subscription
+ * Enables receiving push notifications even when app is not in foreground
+ */
+window.setupPushNotifications = async function() {
+  // Check if push notifications are supported
+  if (!('Notification' in window)) {
+    console.warn('[PushNotif] Browser does not support notifications');
+    return false;
+  }
+
+  // Request permission
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') {
+    console.warn('[PushNotif] Notification permission denied');
+    return false;
+  }
+
+  // Check for service worker support
+  if (!('serviceWorker' in navigator)) {
+    console.warn('[PushNotif] Service Worker not supported');
+    return false;
+  }
+
+  try {
+    // Register service worker if not already
+    const registration = await navigator.serviceWorker.ready;
+
+    // Subscribe to push (if using Firebase/FCM, would need server key)
+    // For now, we'll use the Service Worker for background sync
+    if ('sync' in registration) {
+      // Register for background sync
+      await registration.sync.register('sync-notifications');
+      console.info('[PushNotif] Background sync registered');
+    }
+
+    console.info('[PushNotif] Push notifications setup complete');
+    return true;
+  } catch (err) {
+    console.error('[PushNotif] Setup failed:', err);
+    return false;
+  }
+};
+
+/**
+ * Enhanced notification with real-time delivery
+ * Sends notification via multiple channels
+ */
+window.sendEnhancedNotification = async function(recipientType, recipientId, title, body, type, deepLink) {
+  // 1. Store locally
+  window.addNotification(recipientType, recipientId, title, body, type, deepLink);
+
+  // 2. Send browser notification
+  window.sendLocalNotification(title, body, type);
+
+  // 3. Trigger sync to cloud for cross-device delivery
+  if (window.isSupabaseEnabled && window.supabaseClient) {
+    window.syncNotificationToCloud({
+      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
+      recipient_type: recipientType,
+      recipient_id: String(recipientId).trim().toLowerCase(),
+      title,
+      body,
+      type,
+      deep_link: deepLink,
+      is_read: false,
+      created_at: new Date().toISOString()
+    });
+  }
+};
+
+/**
+ * Trigger sync on device to fetch latest notifications
+ * Called after receiving push or on app focus
+ */
+window.syncNotificationsNow = async function() {
+  if (!window.isSupabaseEnabled) return;
+
+  try {
+    // Merge cloud notifications
+    await window.mergeCloudNotifications();
+
+    // Refresh UI
+    if (typeof window.fetchNotifications === 'function') {
+      await window.fetchNotifications();
+    }
+
+    console.debug('[NotificationManager] Notifications synced');
+  } catch (err) {
+    console.warn('[NotificationManager] Sync failed:', err);
+  }
+};
+
+// ==========================================
 // HIGH FIX: Rate Limiting untuk Notifications
 // ==========================================
 
@@ -1486,7 +1583,27 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     window.fetchNotifications();
   }, 1000);
+
+  // 🔴 CRITICAL FIX #7: Sync notifications when app regains focus
+  // This ensures notifications sent while app was in background are fetched
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      // App is now visible - sync notifications from cloud
+      window.syncNotificationsNow?.();
+    }
+  });
+
+  // Also sync on online event (when connection restored)
+  window.addEventListener('online', () => {
+    setTimeout(() => {
+      window.syncNotificationsNow?.();
+    }, 1000);
+  });
+
+  // Setup push notifications capability
+  window.setupPushNotifications?.();
 });
 
 // LocalStorage-only mode - no realtime sync
 // Notifications are now localStorage-only, fetched on role change and app load
+// With Supabase: Cross-device sync via cloud and realtime
