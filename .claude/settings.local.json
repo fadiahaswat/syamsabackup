@@ -100,7 +100,8 @@
       "Skill(code-review:*)",
       "Bash(openssl dgst *)",
       "Bash(ls -la /c/Users/Lenovo/.claude/projects/d--syamsa-backup-syamsabackup/memory/ 2>/dev/null || echo \"Directory doesn't exist\")",
-      "Read(//c/Users/Lenovo/.claude/projects/d--syamsa-backup-syamsabackup/memory//**)"
+      "Read(//c/Users/Lenovo/.claude/projects/d--syamsa-backup-syamsabackup/memory//**)",
+      "Bash(gh --version)"
     ],
     "additionalDirectories": [
       "d:\\syamsa-backup\\syamsabackup",

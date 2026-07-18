@@ -517,39 +517,75 @@ window.handleDevTap = function () {
 };
 
 window.startAuthenticatedSession = async function (targetClass, profile) {
-  const authData = {
-    kelas: targetClass,
-    profile: profile,
-    timestamp: new Date().toISOString(),
-  };
-
   // Check if admin (Admin Musyrif OR Koordinator Musyrif)
   const isAdminMusyrif = targetClass?.toLowerCase() === "admin musyrif";
   const isKoordinatorMusyrif = targetClass?.toLowerCase() === "koordinator musyrif";
   const isAdmin = isAdminMusyrif || isKoordinatorMusyrif;
+
+  const authData = {
+    kelas: targetClass,
+    profile: profile,
+    timestamp: new Date().toISOString(),
+    isAdmin: isAdmin
+  };
+
   appState.adminMode = isAdmin;
+  appState.selectedClass = targetClass;
+  appState.userProfile = profile;
+
+  // Cache musyrif email untuk notifikasi dari Wali
+  // Ini penting agar notifikasi bisa dikirim meskipun MASTER_KELAS belum loaded
+  if (!isAdmin && profile?.email) {
+    const kelasKey = String(targetClass).replace(/\s+/g, "").toLowerCase();
+    window.AppStorage?.setItem(`musyrif_email_${kelasKey}`, String(profile.email).trim().toLowerCase());
+    const _isDebugMode = localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true");
+    if (_isDebugMode) console.debug('[AuthManager] Musyrif email cached for class:', kelasKey);
+  }
 
   if (isAdmin) {
+    // Admin Musyrif - tampilkan semua student untuk monitoring
     appState.waliMode = false;
     appState.waliSantri = null;
     appState.waliKelas = null;
     authData.isAdmin = true;
     authData.adminRole = isKoordinatorMusyrif ? 'koordinator' : 'admin';
-    FILTERED_SANTRI = [];
+    FILTERED_SANTRI = [...MASTER_SANTRI].sort((a, b) => a.nama.localeCompare(b.nama));
   } else {
     appState.waliMode = (profile?.authProvider === "wali");
     if (!appState.waliMode) {
       appState.waliSantri = null;
       appState.waliKelas = null;
-      FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
-        const sKelas = String(s.kelas || s.rombel || "").trim();
-        return sKelas === targetClass;
-      }).sort((a, b) => a.nama.localeCompare(b.nama));
+
+      // Cek apakah musyrif memegang beberapa kelas (berdasarkan email)
+      const musyrifEmail = profile?.email?.toLowerCase().trim();
+      const allClasses = Object.keys(MASTER_KELAS || {});
+
+      // Cari semua kelas yang email musyrifnya sama
+      const assignedClasses = musyrifEmail
+        ? allClasses.filter(kelas => {
+            const kelasInfo = MASTER_KELAS[kelas];
+            return kelasInfo?.email?.toLowerCase().trim() === musyrifEmail;
+          })
+        : [];
+
+      // Simpan daftar kelas yang ditangani musyrif
+      appState.assignedClasses = assignedClasses;
+
+      if (assignedClasses.length > 1) {
+        // Musyrif memegang >1 kelas - tampilkan student dari semua kelasnya
+        FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
+          const sKelas = String(s.kelas || s.rombel || "").trim();
+          return assignedClasses.includes(sKelas);
+        }).sort((a, b) => a.nama.localeCompare(b.nama));
+      } else {
+        // Normal: tampilkan student dari kelas yang dipilih saja
+        FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
+          const sKelas = String(s.kelas || s.rombel || "").trim();
+          return sKelas === targetClass;
+        }).sort((a, b) => a.nama.localeCompare(b.nama));
+      }
     }
   }
-
-  appState.selectedClass = targetClass;
-  appState.userProfile = profile;
 
   // Establish role authorization and hydrate cloud data before the protected
   // application view becomes visible.
@@ -557,7 +593,7 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
     await window.initMultiRoleAuth(profile, targetClass);
   }
   await window.initStorage?.(profile?.id || `class_${targetClass}`);
-  localStorage.setItem(APP_CONFIG.googleAuthKey, JSON.stringify(authData));
+  window.AppStorage?.setJson(APP_CONFIG.googleAuthKey, authData);
 
   // ========== PWA UPDATE CHECK ==========
   // Skip PWA update check untuk bypass mode (supaya langsung masuk tanpa reload)
@@ -565,14 +601,15 @@ window.startAuthenticatedSession = async function (targetClass, profile) {
     window.checkForPWAUpdate();
   }
 
-  document.getElementById("view-login").classList.add("hidden");
-  document.getElementById("view-main").classList.remove("hidden");
+  // Show main view and switch to dashboard tab
+  document.getElementById("view-login")?.classList.add("hidden");
+  document.getElementById("view-main")?.classList.remove("hidden");
+  document.getElementById("view-wali")?.classList.add("hidden");
 
   window.syncRoleModeUI();
-  window.switchTab("home"); // <-- FIX: Pastikan tab Dashboard aktif setelah login
+  window.switchTab("home");
   window.updateDashboard();
   window.updateProfileInfo();
-
 };
 
 window.handleLogin = async function () {
@@ -677,34 +714,40 @@ window.handleLogout = async function () {
     "Keluar",
     "Batal",
     async () => {
-      await window.supabaseClient?.auth?.signOut();
-      // FIX: Reset cloud session state on logout
-      window.cloudSessionReady = false;
-      window.authMultiRole?.clearLocalSession?.();
-      if (clockInterval) {
-        clearInterval(clockInterval);
-        clockInterval = null;
+      try {
+        await window.supabaseClient?.auth?.signOut();
+        // Reset cloud session state on logout
+        window.cloudSessionReady = false;
+        window.authMultiRole?.clearLocalSession?.();
+        if (clockInterval) {
+          clearInterval(clockInterval);
+          clockInterval = null;
+        }
+
+        window.AppStorage?.removeItem(APP_CONFIG.googleAuthKey);
+        appState.selectedClass = null;
+        appState.waliMode = false;
+        appState.waliSantri = null;
+        appState.waliKelas = null;
+
+        // Hide all views and show login
+        document.getElementById("view-main")?.classList.add("hidden");
+        document.getElementById("view-wali")?.classList.add("hidden");
+        document.getElementById("view-login")?.classList.remove("hidden");
+
+        // Clear login fields
+        const loginKelasEl = document.getElementById("login-kelas");
+        const userEl = document.getElementById("login-username");
+        const passEl = document.getElementById("login-password");
+        if (loginKelasEl) loginKelasEl.value = "";
+        if (userEl) userEl.value = "";
+        if (passEl) passEl.value = "";
+      } catch (error) {
+        console.error('[Auth] Logout error:', error);
+      } finally {
+        // Always reload to ensure clean state
+        location.reload();
       }
-
-      window.AppStorage.removeItem(APP_CONFIG.googleAuthKey);
-      appState.selectedClass = null;
-      appState.waliMode = false;
-      appState.waliSantri = null;
-      appState.waliKelas = null;
-
-      document.getElementById("view-main").classList.add("hidden");
-      document.getElementById("view-wali")?.classList.add("hidden");
-      document.getElementById("view-login").classList.remove("hidden");
-
-      // Clear login fields with null check
-      const loginKelasEl = document.getElementById("login-kelas");
-      const userEl = document.getElementById("login-username");
-      const passEl = document.getElementById("login-password");
-      if (loginKelasEl) loginKelasEl.value = "";
-      if (userEl) userEl.value = "";
-      if (passEl) passEl.value = "";
-
-      location.reload();
     },
   );
 };

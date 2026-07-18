@@ -869,91 +869,10 @@ window.sha256Hex = async function (input) {
     .join("");
 };
 
-window.startAuthenticatedSession = async function (targetClass, profile) {
-  const isAdmin = targetClass?.toLowerCase() === "admin musyrif" || profile?.isAdmin === true;
-
-  const authData = {
-    kelas: targetClass,
-    profile: profile,
-    timestamp: new Date().toISOString(),
-    isAdmin: isAdmin
-  };
-  window.AppStorage.setJson(APP_CONFIG.googleAuthKey, authData);
-
-  appState.selectedClass = targetClass;
-  appState.userProfile = profile;
-  appState.adminMode = isAdmin;
-
-  // Cache musyrif email untuk notifikasi dari Wali
-  // Ini penting agar notifikasi bisa dikirim meskipun MASTER_KELAS belum loaded
-  if (!isAdmin && profile?.email) {
-    const kelasKey = String(targetClass).replace(/\s+/g, "").toLowerCase();
-    window.AppStorage.setItem(`musyrif_email_${kelasKey}`, String(profile.email).trim().toLowerCase());
-    // Debug only - remove in production
-    const _isDebugMode = localStorage.getItem("DEBUG_LOGS") === "true" || location.search.includes("debug=true");
-    if (_isDebugMode) console.debug('[AuthManager] Musyrif email cached for class:', kelasKey);
-  }
-
-  if (isAdmin) {
-    // Admin Musyrif - tampilkan semua student untuk monitoring
-    appState.waliMode = false;
-    appState.waliSantri = null;
-    appState.waliKelas = null;
-    FILTERED_SANTRI = [...MASTER_SANTRI].sort((a, b) => a.nama.localeCompare(b.nama));
-  } else {
-    appState.waliMode = (profile?.authProvider === "wali");
-    if (!appState.waliMode) {
-      appState.waliSantri = null;
-      appState.waliKelas = null;
-
-      // Cek apakah musyrif memegang beberapa kelas (berdasarkan email)
-      const musyrifEmail = profile?.email?.toLowerCase().trim();
-      const allClasses = Object.keys(MASTER_KELAS || {});
-
-      // Cari semua kelas yang email musyrifnya sama
-      const assignedClasses = musyrifEmail
-        ? allClasses.filter(kelas => {
-            const kelasInfo = MASTER_KELAS[kelas];
-            return kelasInfo?.email?.toLowerCase().trim() === musyrifEmail;
-          })
-        : [];
-
-      // Simpan daftar kelas yang ditangani musyrif
-      appState.assignedClasses = assignedClasses;
-
-      if (assignedClasses.length > 1) {
-        // Musyrif memegang >1 kelas - tampilkan student dari semua kelasnya
-        FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
-          const sKelas = String(s.kelas || s.rombel || "").trim();
-          return assignedClasses.includes(sKelas);
-        }).sort((a, b) => a.nama.localeCompare(b.nama));
-      } else {
-        // Normal: tampilkan student dari kelas yang dipilih saja
-        FILTERED_SANTRI = MASTER_SANTRI.filter((s) => {
-          const sKelas = String(s.kelas || s.rombel || "").trim();
-          return sKelas === targetClass;
-        }).sort((a, b) => a.nama.localeCompare(b.nama));
-      }
-    }
-  }
-
-  document.getElementById("view-login").classList.add("hidden");
-  document.getElementById("view-main").classList.remove("hidden");
-  document.getElementById("view-wali")?.classList.add("hidden");
-
-  window.syncRoleModeUI();
-  window.switchTab("home"); // <-- FIX: Konsisten panggil switchTab untuk semua role
-  window.updateDashboard();
-  window.updateProfileInfo();
-
-  // Initialize Storage Manager on manual login
-  const musyrifId = profile?.id || `class_${targetClass}`;
-  window.initStorage?.(musyrifId);
-};
-
 
 // ==========================================
 // USER ROLE & CLASS ACCESS HELPERS
+// NOTE: startAuthenticatedSession is defined in auth-manager.js
 // ==========================================
 
 window.getUserAllowedClassesForEmail = function (email) {
@@ -2750,40 +2669,8 @@ window.handleGoogleCallback = async function (response) {
   }
 };
 
-window.handleLogout = function () {
-  window.showConfirmModal(
-    "Keluar dari Akun?",
-    "Sesi saat ini akan ditutup dan Anda kembali ke layar login.",
-    "Keluar",
-    "Batal",
-    () => {
-  if (clockInterval) {
-    clearInterval(clockInterval);
-    clockInterval = null;
-  }
-
-  window.AppStorage.removeItem(APP_CONFIG.googleAuthKey);
-  appState.selectedClass = null;
-  appState.waliMode = false;
-  appState.waliSantri = null;
-  appState.waliKelas = null;
-
-  document.getElementById("view-main").classList.add("hidden");
-  document.getElementById("view-wali")?.classList.add("hidden");
-  document.getElementById("view-login").classList.remove("hidden");
-
-  const loginKelasEl = document.getElementById("login-kelas");
-  if (loginKelasEl) loginKelasEl.value = "";
-
-  const userEl = document.getElementById("login-username");
-  const passEl = document.getElementById("login-password");
-  if (userEl) userEl.value = "";
-  if (passEl) passEl.value = "";
-
-  location.reload();
-    },
-  );
-};
+// NOTE: handleLogout is defined in auth-manager.js (async version with proper cleanup)
+// See auth-manager.js line ~673 for the actual implementation
 
 const getGreetingTranslation = function (arabic, hour) {
   const isSore = hour >= 15 && hour < 18;
