@@ -365,6 +365,218 @@ window.loadGlobalActivityLogs = async function () {
 };
 
 // ============================================================
+// ANNOUNCEMENT BANNER SYSTEM (Cross-Role)
+// ============================================================
+
+/**
+ * Load announcements yang relevan untuk user saat ini
+ * Mengecek target audience: musyrif, wali, atau all
+ * @returns {Promise<Array>} Array announcement yang relevan
+ */
+window.loadRelevantAnnouncements = async function () {
+  try {
+    const announcementKey = 'local_announcements';
+    const saved = localStorage.getItem(announcementKey);
+    let announcements = [];
+    try { announcements = saved ? JSON.parse(saved) : []; } catch { announcements = []; }
+
+    // Tentukan role user saat ini
+    const isWali = appState?.waliMode === true;
+    const isMusyrif = appState?.musyrifMode === true || (appState?.adminMode === true || appState?.superadminMode === true);
+    const isAdmin = appState?.adminMode === true || appState?.superadminMode === true;
+
+    // Filter berdasarkan target
+    const relevantAnnouncements = announcements.filter(ann => {
+      // Admin melihat semua
+      if (isAdmin) return true;
+
+      // Musyrif melihat musyrif dan all
+      if (isMusyrif && !isWali) {
+        return ann.target === 'musyrif' || ann.target === 'all';
+      }
+
+      // Wali melihat wali dan all
+      if (isWali) {
+        return ann.target === 'wali' || ann.target === 'all';
+      }
+
+      return false;
+    });
+
+    // Urutkan dari terbaru
+    relevantAnnouncements.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    return relevantAnnouncements;
+  } catch (error) {
+    console.error('[Announcement] Failed to load relevant announcements:', error);
+    return [];
+  }
+};
+
+/**
+ * Get dismissed announcement IDs dari localStorage
+ * @returns {Array<string>} Array ID announcement yang sudah dismissed
+ */
+window.getDismissedAnnouncements = function () {
+  try {
+    const key = 'syamsa_dismissed_announcements';
+    const saved = localStorage.getItem(key);
+    if (!saved) return [];
+    return JSON.parse(saved);
+  } catch (e) {
+    return [];
+  }
+};
+
+/**
+ * Dismiss announcement (tandai sudah dibaca)
+ * @param {string} announcementId - ID announcement
+ */
+window.dismissAnnouncement = function (announcementId) {
+  try {
+    const dismissed = window.getDismissedAnnouncements();
+    if (!dismissed.includes(announcementId)) {
+      dismissed.push(announcementId);
+      localStorage.setItem('syamsa_dismissed_announcements', JSON.stringify(dismissed));
+    }
+    // Hide banner dengan animasi
+    const banner = document.getElementById('announcement-banner-container');
+    if (banner) {
+      banner.classList.remove('animate-slide-up');
+      banner.classList.add('animate-fade-out');
+      setTimeout(() => {
+        banner.classList.add('hidden');
+        banner.classList.remove('animate-fade-out');
+      }, 300);
+    }
+  } catch (error) {
+    console.error('[Announcement] Failed to dismiss:', error);
+  }
+};
+
+/**
+ * Render announcement banner di header dashboard
+ * Dipanggil saat updateDashboard
+ */
+window.renderAnnouncementBanner = async function () {
+  const container = document.getElementById('announcement-banner-container');
+  if (!container) return;
+
+  // Jangan tampilkan banner untuk admin (mereka sudah punya panel broadcast)
+  if (appState?.adminMode === true || appState?.superadminMode === true) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  try {
+    const announcements = await window.loadRelevantAnnouncements();
+    const dismissed = window.getDismissedAnnouncements();
+
+    // Ambil announcement terbaru yang belum di-dismiss
+    const activeAnnouncement = announcements.find(ann => !dismissed.includes(ann.id));
+
+    if (!activeAnnouncement) {
+      container.classList.add('hidden');
+      return;
+    }
+
+    // Tentukan styling berdasarkan target
+    const targetColors = {
+      musyrif: {
+        bg: 'bg-teal-500/10 dark:bg-teal-500/15',
+        border: 'border-teal-500/30 dark:border-teal-500/40',
+        icon: 'text-teal-500',
+        badge: 'bg-teal-500/20 text-teal-600 dark:text-teal-400'
+      },
+      wali: {
+        bg: 'bg-amber-500/10 dark:bg-amber-500/15',
+        border: 'border-amber-500/30 dark:border-amber-500/40',
+        icon: 'text-amber-500',
+        badge: 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+      },
+      all: {
+        bg: 'bg-purple-500/10 dark:bg-purple-500/15',
+        border: 'border-purple-500/30 dark:border-purple-500/40',
+        icon: 'text-purple-500',
+        badge: 'bg-purple-500/20 text-purple-600 dark:text-purple-400'
+      }
+    };
+
+    const colors = targetColors[activeAnnouncement.target] || targetColors.all;
+    const targetLabel = activeAnnouncement.target === 'wali' ? 'Wali Santri' :
+                       activeAnnouncement.target === 'all' ? 'Semua User' : 'Musyrif';
+
+    // Format tanggal
+    const dateStr = activeAnnouncement.created_at
+      ? new Date(activeAnnouncement.created_at).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      : '';
+
+    // Escape content untuk prevent XSS
+    const safeTitle = window.sanitizeHTML(activeAnnouncement.title || '');
+    const safeContent = window.sanitizeHTML(activeAnnouncement.content || '');
+
+    container.innerHTML = `
+      <div class="rounded-2xl ${colors.bg} border ${colors.border} p-4 shadow-lg backdrop-blur-sm">
+        <div class="flex items-start gap-3">
+          <!-- Icon -->
+          <div class="shrink-0 w-10 h-10 rounded-xl ${colors.badge} flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${colors.icon}">
+              <path d="m3 11 18-5v12L3 13v-2z"/>
+              <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+            </svg>
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${colors.badge}">
+                ${targetLabel}
+              </span>
+              <span class="text-[9px] text-slate-400 font-mono">${dateStr}</span>
+            </div>
+            <h4 class="text-sm font-black text-slate-800 dark:text-white leading-tight mb-1">
+              ${safeTitle}
+            </h4>
+            <p class="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed line-clamp-2">
+              ${safeContent}
+            </p>
+            <button onclick="window.dismissAnnouncement('${activeAnnouncement.id}')"
+              class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 text-[10px] font-bold border border-slate-200/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Tandai Sudah Dibaca
+            </button>
+          </div>
+
+          <!-- Close Button -->
+          <button onclick="window.dismissAnnouncement('${activeAnnouncement.id}')"
+            class="shrink-0 w-8 h-8 rounded-lg hover:bg-white/50 dark:hover:bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            aria-label="Tutup pengumuman">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Tampilkan banner dengan animasi
+    container.classList.remove('hidden');
+    container.classList.add('animate-slide-up');
+
+  } catch (error) {
+    console.error('[Announcement] Failed to render banner:', error);
+    container.classList.add('hidden');
+  }
+};
+
+// ============================================================
 // ADMIN DASHBOARD RENDERING & EVENT CONTROLLERS
 // ============================================================
 

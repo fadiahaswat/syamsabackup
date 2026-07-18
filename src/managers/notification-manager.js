@@ -899,8 +899,8 @@ window.onRoleChange = function(newRole) {
 };
 
 // Toggle visibility dropdown
-// Fetch notifications from localStorage only
-window.fetchNotifications = function () {
+// Fetch notifications from localStorage and merge with cloud
+window.fetchNotifications = async function () {
   const recipient = window.getNotificationRecipientInfo();
   notificationDebugLog("[NotificationManager] fetchNotifications called:", recipient);
 
@@ -927,6 +927,138 @@ window.fetchNotifications = function () {
   }
 
   window.renderNotificationsUI(notificationsList);
+
+  // Merge with cloud notifications for cross-device sync
+  if (window.isSupabaseEnabled) {
+    window.mergeCloudNotifications().catch(err => {
+      notificationDebugLog("[NotificationManager] Failed to merge cloud notifications:", err);
+    });
+  }
+};
+
+// ==========================================
+// SYNC NOTIFICATION TO SUPABASE (Cross-Device)
+// ==========================================
+
+/**
+ * Sync notification to Supabase for cross-device delivery
+ */
+window.syncNotificationToCloud = async function(notification) {
+  if (!window.isSupabaseEnabled || !window.supabaseClient) {
+    notificationDebugLog("[NotificationManager] Supabase not enabled, skipping cloud sync");
+    return null;
+  }
+
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('notifications')
+      .upsert({
+        id: notification.id,
+        recipient_type: notification.recipient_type,
+        recipient_id: notification.recipient_id,
+        title: notification.title,
+        body: notification.body,
+        type: notification.type,
+        deep_link: notification.deep_link,
+        is_read: false,
+        created_at: notification.created_at,
+        synced_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    notificationDebugLog("[NotificationManager] Notification synced to cloud:", notification.id);
+    return data;
+  } catch (err) {
+    notificationDebugLog("[NotificationManager] Failed to sync notification:", err);
+    return null;
+  }
+};
+
+/**
+ * Fetch notifications from Supabase for current user
+ */
+window.fetchNotificationsFromCloud = async function(recipientType, recipientId) {
+  if (!window.isSupabaseEnabled || !window.supabaseClient) {
+    return [];
+  }
+
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('notifications')
+      .select('*')
+      .eq('recipient_type', recipientType)
+      .eq('recipient_id', String(recipientId).toLowerCase())
+      .eq('is_read', false)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    notificationDebugLog("[NotificationManager] Fetched from cloud:", data?.length, "notifications");
+    return data || [];
+  } catch (err) {
+    notificationDebugLog("[NotificationManager] Failed to fetch notifications from cloud:", err);
+    return [];
+  }
+};
+
+/**
+ * Merge cloud notifications with local cache
+ */
+window.mergeCloudNotifications = async function() {
+  const recipient = window.getNotificationRecipientInfo();
+  if (!recipient.type || !recipient.id) return;
+
+  const cloudNotifs = await window.fetchNotificationsFromCloud(recipient.type, recipient.id);
+  if (!cloudNotifs.length) return;
+
+  const cacheKey = `local_notifs_${recipient.type}_${recipient.id}`;
+  const localCached = localStorage.getItem(cacheKey);
+  const localNotifs = localCached ? JSON.parse(localCached) : [];
+
+  // Create set of existing IDs
+  const existingIds = new Set(localNotifs.map(n => n.id));
+
+  // Add cloud notifications that don't exist locally
+  let merged = [...localNotifs];
+  let newCount = 0;
+
+  for (const cloudNotif of cloudNotifs) {
+    if (!existingIds.has(cloudNotif.id)) {
+      merged.unshift({
+        id: cloudNotif.id,
+        recipient_type: cloudNotif.recipient_type,
+        recipient_id: cloudNotif.recipient_id,
+        title: cloudNotif.title,
+        body: cloudNotif.body,
+        type: cloudNotif.type,
+        deep_link: cloudNotif.deep_link,
+        is_read: cloudNotif.is_read,
+        created_at: cloudNotif.created_at,
+        from_cloud: true
+      });
+      newCount++;
+    }
+  }
+
+  // Sort by created_at descending
+  merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  // Keep only 50
+  merged = merged.slice(0, 50);
+
+  // Save merged list
+  localStorage.setItem(cacheKey, JSON.stringify(merged));
+
+  if (newCount > 0) {
+    notificationDebugLog("[NotificationManager] Merged", newCount, "new cloud notifications");
+    window.renderNotificationsUI(merged);
+  }
+
+  return merged;
 };
 
 // Add new notification (localStorage only)
@@ -989,6 +1121,11 @@ window.addNotification = function (recipientType, recipientId, title, body, type
   } catch (e) {
     console.warn("Error updating local cache for new notification", e);
   }
+
+  // Sync to Supabase for cross-device notification
+  window.syncNotificationToCloud(newNotif).catch(err => {
+    notificationDebugLog("[NotificationManager] Failed to sync notification to cloud:", err);
+  });
 };
 
 // Mark single notification as read (localStorage only)

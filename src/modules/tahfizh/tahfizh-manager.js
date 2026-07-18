@@ -4,6 +4,31 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Pastikan template fragment dan modul terpasang di window
     window.initTahfizhTab = initTahfizhTab;
+
+    // Listen untuk realtime cloud changes (supabase-sync.js)
+    window.addEventListener('cloud:record-changed', async (e) => {
+        const { table, record, eventType } = e.detail || {};
+        if (table === 'tahfizh') {
+            console.log('[TahfizhManager] Cloud tahfizh changed:', eventType, record);
+            if (typeof window.reloadTahfizhData === 'function') {
+                await window.reloadTahfizhData();
+            }
+            // Refresh UI if tahfizh tab is visible
+            if (typeof window.renderTahfizhDashboard === 'function') {
+                window.renderTahfizhDashboard();
+            }
+        }
+    });
+
+    window.addEventListener('cloud:record-deleted', async (e) => {
+        const { table } = e.detail || {};
+        if (table === 'tahfizh') {
+            console.log('[TahfizhManager] Cloud tahfizh deleted');
+            if (typeof window.reloadTahfizhData === 'function') {
+                await window.reloadTahfizhData();
+            }
+        }
+    });
 });
 
 // Konfigurasi Tahfizh (Membaca dinamis dari konfigurasi terpusat)

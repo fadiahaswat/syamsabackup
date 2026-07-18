@@ -5821,11 +5821,12 @@ window.toggleStatus = function (id, actId, type) {
 
   // 1. TENTUKAN STATUS BARU (LOGIKA SIKLUS)
   if (type === "mandator") {
+    // Cycle: Hadir → Alpa → Telat → Sakit → Izin → Pulang
     if (curr === "Hadir") next = "Alpa";
-    else if (curr === "Alpa") next = "Sakit";
+    else if (curr === "Alpa") next = "Telat";
+    else if (curr === "Telat") next = "Sakit";
     else if (curr === "Sakit") next = "Izin";
     else if (curr === "Izin") next = "Pulang";
-    else if (curr === "Pulang") next = "Telat";
     else next = "Hadir";
   } else {
     // Siklus Sunnah: Ya -> Tidak -> Ya

@@ -196,6 +196,11 @@ window.updateDashboard = async function () {
   window.renderKBMBanner();
   window.renderActivePermitsWidget();
 
+  // Render announcement banner untuk Musyrif/Wali
+  if (typeof window.renderAnnouncementBanner === 'function') {
+    window.renderAnnouncementBanner();
+  }
+
   window.renderDashboardPembinaan(); // Refresh widget pembinaan
 
   // 4. Update Stats Chart

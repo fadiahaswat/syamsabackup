@@ -699,7 +699,8 @@ window._pendingSaves = new Set();
  */
 function calculateNextStatus(current, type) {
   if (type === "mandator") {
-    const cycle = ["Hadir", "Alpa", "Sakit", "Izin", "Pulang", "Telat"];
+    // Cycle: Hadir → Alpa → Telat → Sakit → Izin → Pulang
+    const cycle = ["Hadir", "Alpa", "Telat", "Sakit", "Izin", "Pulang"];
     const idx = cycle.indexOf(current);
     return cycle[(idx + 1) % cycle.length];
   } else {

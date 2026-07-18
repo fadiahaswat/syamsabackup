@@ -591,7 +591,7 @@ class SupabaseSync {
     const tables = [
       'attendances', 'permits', 'tahfizh', 'settings', 'activity_logs',
       'musyrif_journals', 'app_records', 'user_roles', 'user_devices',
-      'sessions', 'wali_students'
+      'sessions', 'wali_students', 'notifications'
     ];
 
     tables.forEach(table => {
@@ -639,9 +639,14 @@ class SupabaseSync {
                   : null;
                 if (!this._hasLocalStore(table) || !localRecord || (record._version > (localRecord._version || 0))) {
                   this._logger.debug(`[Realtime] Updating local ${table}:`, record.id);
-                  if (this._hasLocalStore(table)) {
+
+                  // SPECIAL HANDLING: Notifications - add to localStorage and show
+                  if (table === 'notifications') {
+                    await this._handleIncomingNotification(record);
+                  } else if (this._hasLocalStore(table)) {
                     await this._db.putFromCloud(table, transformedRecord);
                   }
+
                   window.dispatchEvent(new CustomEvent('cloud:record-changed', {
                     detail: { table, record: transformedRecord, eventType: payload.eventType }
                   }));
@@ -667,8 +672,13 @@ class SupabaseSync {
               if (window.stateManager && this._hasLocalStore(table)) {
                 await window.stateManager._loadPersistedState();
                 if (typeof window.stateManager._emit === 'function') {
-                  window.stateManager._emit('change', ['attendanceData', 'permits', 'settings']);
+                  window.stateManager._emit('change', ['attendanceData', 'permits', 'tahfizh', 'settings']);
                 }
+              }
+
+              // Reload tahfizh data if tahfizh table changed
+              if (table === 'tahfizh' && typeof window.reloadTahfizhData === 'function') {
+                window.reloadTahfizhData();
               }
             } catch (err) {
               this._logger.error(`[SupabaseSync] Failed to apply realtime change on ${table}:`, err);
@@ -791,6 +801,66 @@ class SupabaseSync {
       return { ...record, ...(record.metadata || {}) };
     }
     return record;
+  }
+
+  /**
+   * Handle incoming notification from Supabase realtime
+   * Add to localStorage and show browser notification
+   */
+  async _handleIncomingNotification(notification) {
+    try {
+      // Check if notification is for current user
+      const recipient = window.getNotificationRecipientInfo?.();
+      const isForCurrentUser =
+        (recipient?.type === notification.recipient_type) &&
+        (recipient?.id === notification.recipient_id);
+
+      // Save to localStorage regardless
+      const cacheKey = `local_notifs_${notification.recipient_type}_${notification.recipient_id}`;
+      const cached = localStorage.getItem(cacheKey);
+      let list = cached ? JSON.parse(cached) : [];
+
+      // Check if already exists
+      if (!list.find(n => n.id === notification.id)) {
+        list.unshift(notification);
+        list = list.slice(0, 50); // Keep max 50
+        localStorage.setItem(cacheKey, JSON.stringify(list));
+      }
+
+      // Show notification if for current user
+      if (isForCurrentUser && notification.title) {
+        // Dispatch event for UI update
+        window.dispatchEvent(new CustomEvent('cloud:notification-received', {
+          detail: { notification }
+        }));
+
+        // Show browser notification
+        if (typeof window.sendLocalNotification === 'function') {
+          window.sendLocalNotification(
+            notification.title,
+            notification.body,
+            notification.type || 'info'
+          );
+        }
+
+        // Update UI if visible
+        if (typeof window.renderNotificationsUI === 'function') {
+          window.renderNotificationsUI(list);
+        }
+
+        // Update bell badge
+        const unreadCount = list.filter(n => !n.is_read).length;
+        const badge = document.getElementById('notif-badge');
+        if (badge) {
+          badge.textContent = unreadCount;
+          badge.classList.toggle('hidden', unreadCount === 0);
+        }
+      }
+
+      this._logger.debug('[SupabaseSync] Handled incoming notification:', notification.id);
+    } catch (err) {
+      this._logger.error('[SupabaseSync] Failed to handle incoming notification:', err);
+    }
   }
 }
 
