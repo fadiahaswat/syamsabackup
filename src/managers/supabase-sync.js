@@ -439,25 +439,50 @@ class SupabaseSync {
     this.isSyncing = true;
     this.updateStatus('syncing');
 
+    // ENHANCEMENT: Progress tracking
+    this._emitProgress({ phase: 'starting', percent: 0, message: 'Memulai sinkronisasi...' });
+
     try {
       // 1. Tarik data konfigurasi dinamis (settings) dulu agar batas-batas terupdate
+      this._emitProgress({ phase: 'config', percent: 10, message: 'Mengunduh konfigurasi...' });
       await this.syncInboundConfig();
 
       // 2. Kirim perubahan lokal ke cloud
+      this._emitProgress({ phase: 'outbound', percent: 30, message: 'Mengirim data lokal...' });
       await this.syncOutbound();
 
       // 3. Tarik data terbaru dari cloud
+      this._emitProgress({ phase: 'inbound', percent: 60, message: 'Mengunduh data cloud...' });
       await this.syncInboundData();
 
+      // ENHANCEMENT: Update last sync time after successful sync
+      this._updateLastSyncTime();
+
+      this._emitProgress({ phase: 'complete', percent: 100, message: 'Sinkronisasi selesai!' });
       this.updateStatus('synced');
       this._history.unshift({ timestamp: new Date().toISOString(), status: 'success' });
       this._history = this._history.slice(0, 50);
     } catch (error) {
       this._logger.error('[SupabaseSync] Sync cycle failed:', error);
+      this._emitProgress({ phase: 'error', percent: 0, message: `Error: ${error.message}` });
       this.updateStatus('error');
       this._history.unshift({ timestamp: new Date().toISOString(), status: 'error', message: error.message });
     } finally {
       this.isSyncing = false;
+    }
+  }
+
+  /**
+   * ENHANCEMENT: Emit progress event for UI
+   * @private
+   */
+  _emitProgress(progress) {
+    // Dispatch event for UI components
+    window.dispatchEvent(new CustomEvent('sync:progress', { detail: progress }));
+
+    // Call registered callback if any
+    if (typeof this.onProgress === 'function') {
+      this.onProgress(progress);
     }
   }
 
@@ -548,15 +573,29 @@ class SupabaseSync {
 
       this._logger.info(`[SupabaseSync] Sync complete: ${successCount} success, ${failCount} failed`);
 
-    } catch (err) {
-      this._logger.error('[SupabaseSync] syncOutbound error:', err);
-    } finally {
-      this.isSyncingOutbound = false;
+      // UX FIX: Show toast notification for sync results
       if (failCount === 0 && successCount > 0) {
+        // Silent success - no toast needed for normal sync
         this.updateStatus('synced');
       } else if (failCount > 0) {
+        // ERROR: Notify user about failed items
         this.updateStatus('error');
+        window.showToast?.(`Sinkronisasi gagal: ${failCount} item tidak tersinkronkan.`, 'error');
+        window.dispatchEvent(new CustomEvent('sync:error', {
+          detail: { successCount, failCount }
+        }));
       }
+
+    } catch (err) {
+      this._logger.error('[SupabaseSync] syncOutbound error:', err);
+      // UX FIX: Show toast for critical errors
+      window.showToast?.('Sinkronisasi gagal. Periksa koneksi internet.', 'error');
+      this.updateStatus('error');
+      window.dispatchEvent(new CustomEvent('sync:critical-error', {
+        detail: { error: err.message }
+      }));
+    } finally {
+      this.isSyncingOutbound = false;
     }
   }
 
@@ -566,6 +605,37 @@ class SupabaseSync {
 
   _isVersionedTable(table) {
     return ['attendances', 'permits', 'tahfizh', 'settings', 'musyrif_journals', 'app_records'].includes(table);
+  }
+
+  /**
+   * ENHANCEMENT: Get last sync timestamp for incremental sync
+   * Returns ISO timestamp or null for full sync
+   */
+  _getLastSyncTime() {
+    // Try to get from localStorage first (persisted)
+    const stored = localStorage.getItem('supabase_sync_last_time');
+    if (stored) {
+      return stored;
+    }
+
+    // Fallback to this.lastSyncTime
+    if (this.lastSyncTime) {
+      return this.lastSyncTime;
+    }
+
+    // Default: null (full sync on first run)
+    return null;
+  }
+
+  /**
+   * ENHANCEMENT: Update last sync timestamp
+   * Call this after successful sync
+   */
+  _updateLastSyncTime() {
+    const now = new Date().toISOString();
+    this.lastSyncTime = now;
+    localStorage.setItem('supabase_sync_last_time', now);
+    return now;
   }
 
   async _writeCloudRecord(table, payload, baseVersion) {
@@ -667,92 +737,106 @@ class SupabaseSync {
     // Menandai agar write ke local DB tidak di-queue ulang ke sync_queue
     this._db.isSyncing = true;
 
-    try {
-      // 1. Sync Tabel Attendances
-      let queryAtt = window.supabaseClient.from('attendances').select('*');
-      if (!isAdmin) {
-        queryAtt = queryAtt.eq('kelas', kelas);
-      }
-      const { data: cloudAttendances, error: errAtt } = await queryAtt;
+    // ENHANCEMENT: Get last sync time for incremental sync
+    const lastSyncTime = this._getLastSyncTime();
 
+    try {
+      // PERFORMANCE FIX: Fetch all tables in PARALLEL using Promise.all
+      // ENHANCEMENT: Use timestamp-based incremental sync to reduce data transfer
+      const [
+        attResult,
+        permResult,
+        tahResult,
+        jrResult
+      ] = await Promise.all([
+        // 1. Fetch Attendances (with incremental sync filter)
+        (async () => {
+          let query = window.supabaseClient.from('attendances').select('*');
+          if (!isAdmin) query = query.eq('kelas', kelas);
+          // INCREMENTAL SYNC: Only fetch records updated since last sync
+          if (lastSyncTime) {
+            query = query.gt('updated_at', lastSyncTime);
+          }
+          return query;
+        })(),
+        // 2. Fetch Permits (with incremental sync filter)
+        (async () => {
+          let query = window.supabaseClient.from('permits').select('*');
+          if (!isAdmin) query = query.eq('kelas', kelas);
+          // INCREMENTAL SYNC: Only fetch records updated since last sync
+          if (lastSyncTime) {
+            query = query.gt('updated_at', lastSyncTime);
+          }
+          return query;
+        })(),
+        // 3. Fetch Tahfizh (with incremental sync filter)
+        (async () => {
+          let query = window.supabaseClient.from('tahfizh').select('*');
+          if (!isAdmin) query = query.eq('kelas', kelas);
+          // INCREMENTAL SYNC: Only fetch records updated since last sync
+          if (lastSyncTime) {
+            query = query.gt('updated_at', lastSyncTime);
+          }
+          return query;
+        })(),
+        // 4. Fetch Musyrif Journals (with incremental sync filter)
+        (async () => {
+          let query = window.supabaseClient.from('musyrif_journals').select('*');
+          if (!isAdmin) {
+            const musyrifId = window.journalManager?.getMusyrifId() || 'unknown_musyrif';
+            query = query.eq('musyrif_id', musyrifId);
+          }
+          // INCREMENTAL SYNC: Only fetch records updated since last sync
+          if (lastSyncTime) {
+            query = query.gt('updated_at', lastSyncTime);
+          }
+          return query;
+        })()
+      ]);
+
+      const { data: cloudAttendances, error: errAtt } = attResult;
+      const { data: cloudPermits, error: errPerm } = permResult;
+      const { data: cloudTahfizh, error: errTah } = tahResult;
+      const { data: cloudJournals, error: errJr } = jrResult;
+
+      // Handle fetch errors
       if (errAtt) {
         this._logger.error('[SupabaseSync] Error fetching attendances:', errAtt);
         throw errAtt;
       }
-
-      this._logger.info(`[SupabaseSync] Got ${cloudAttendances?.length || 0} attendance records from cloud`);
-
-      if (cloudAttendances && cloudAttendances.length > 0) {
-        for (const record of cloudAttendances) {
-          // Transform Supabase format to local format
-          const localRecord = await this._db.get('attendances', record.id);
-          const transformedRecord = this._toLocalFormat(record, 'attendances');
-
-          if (!localRecord || (record._version > (localRecord._version || 0))) {
-            this._logger.debug(`[SupabaseSync] Updating local attendance: ${record.id}`);
-            await this._db.putFromCloud('attendances', transformedRecord);
-          }
-        }
+      if (errPerm) {
+        this._logger.error('[SupabaseSync] Error fetching permits:', errPerm);
+        throw errPerm;
       }
-      await this._pruneLocalRows('attendances', cloudAttendances || [], record => isAdmin || record.kelas === kelas);
-
-      // 2. Sync Tabel Permits
-      let queryPerm = window.supabaseClient.from('permits').select('*');
-      if (!isAdmin) {
-        queryPerm = queryPerm.eq('kelas', kelas);
+      if (errTah) {
+        this._logger.error('[SupabaseSync] Error fetching tahfizh:', errTah);
+        throw errTah;
       }
-      const { data: cloudPermits, error: errPerm } = await queryPerm;
-
-      if (errPerm) throw errPerm;
-      if (cloudPermits) {
-        for (const record of cloudPermits) {
-          const localRecord = await this._db.get('permits', record.id);
-          if (!localRecord || (record._version > (localRecord._version || 0))) {
-            await this._db.putFromCloud('permits', record);
-          }
-        }
+      if (errJr) {
+        this._logger.error('[SupabaseSync] Error fetching journals:', errJr);
+        throw errJr;
       }
-      await this._pruneLocalRows('permits', cloudPermits || [], record => isAdmin || record.kelas === kelas);
 
-      // 3. Sync Tabel Tahfizh
-      let queryTah = window.supabaseClient.from('tahfizh').select('*');
-      if (!isAdmin) {
-        queryTah = queryTah.eq('kelas', kelas);
-      }
-      const { data: cloudTahfizh, error: errTah } = await queryTah;
+      this._logger.info(`[SupabaseSync] Got ${[
+        cloudAttendances?.length || 0,
+        cloudPermits?.length || 0,
+        cloudTahfizh?.length || 0,
+        cloudJournals?.length || 0
+      ].join('/')} records from cloud (attendances/permits/tahfizh/journals)`);
 
-      if (errTah) throw errTah;
-      if (cloudTahfizh) {
-        for (const record of cloudTahfizh) {
-          const localRecord = await this._db.get('tahfizh', record.id);
-          if (!localRecord || (record._version > (localRecord._version || 0))) {
-            await this._db.putFromCloud('tahfizh', record);
-          }
-        }
-      }
-      await this._pruneLocalRows('tahfizh', cloudTahfizh || [], record => isAdmin || record.kelas === kelas);
-
-      // 4. Sync Tabel Jurnal Musyrif
-      let queryJr = window.supabaseClient.from('musyrif_journals').select('*');
-      if (!isAdmin) {
-        const musyrifId = window.journalManager?.getMusyrifId() || 'unknown_musyrif';
-        queryJr = queryJr.eq('musyrif_id', musyrifId);
-      }
-      const { data: cloudJournals, error: errJr } = await queryJr;
-
-      if (errJr) throw errJr;
-      if (cloudJournals) {
-        for (const record of cloudJournals) {
-          const localRecord = await this._db.get('musyrif_journals', record.id);
-          if (!localRecord || (record._version > (localRecord._version || 0))) {
-            await this._db.putFromCloud('musyrif_journals', this._toLocalFormat(record, 'musyrif_journals'));
-          }
-        }
-      }
-      await this._pruneLocalRows('musyrif_journals', cloudJournals || [], record => {
-        const recordKelas = record.kelas || appState?.selectedClass;
-        return isAdmin || recordKelas === kelas;
-      });
+      // PERFORMANCE FIX: Process all tables in PARALLEL
+      await Promise.all([
+        // Process Attendances
+        this._processTableSync('attendances', cloudAttendances, isAdmin, kelas,
+          record => this._toLocalFormat(record, 'attendances')),
+        // Process Permits
+        this._processTableSync('permits', cloudPermits, isAdmin, kelas),
+        // Process Tahfizh
+        this._processTableSync('tahfizh', cloudTahfizh, isAdmin, kelas),
+        // Process Journals
+        this._processTableSync('musyrif_journals', cloudJournals, isAdmin, kelas,
+          record => this._toLocalFormat(record, 'musyrif_journals'))
+      ]);
 
       // Re-trigger UI Update setelah inbound sync selesai
       if (window.stateManager) {
@@ -768,6 +852,41 @@ class SupabaseSync {
     } finally {
       this._db.isSyncing = false;
     }
+  }
+
+  /**
+   * PERFORMANCE FIX: Helper to process table sync in parallel batches
+   * Processes records in parallel chunks instead of sequential forEach
+   */
+  async _processTableSync(tableName, cloudRecords, isAdmin, kelas, transformFn = null) {
+    if (!cloudRecords || cloudRecords.length === 0) return;
+
+    const isInScope = record => isAdmin || record.kelas === kelas;
+
+    // Filter records in scope
+    const inScopeRecords = cloudRecords.filter(isInScope);
+
+    // PERFORMANCE: Process in parallel batches of 50
+    const BATCH_SIZE = 50;
+    const batches = [];
+    for (let i = 0; i < inScopeRecords.length; i += BATCH_SIZE) {
+      batches.push(inScopeRecords.slice(i, i + BATCH_SIZE));
+    }
+
+    for (const batch of batches) {
+      await Promise.all(batch.map(async (record) => {
+        const localRecord = await this._db.get(tableName, record.id);
+        const transformedRecord = transformFn ? transformFn(record) : record;
+
+        if (!localRecord || (record._version > (localRecord._version || 0))) {
+          this._logger.debug(`[SupabaseSync] Updating local ${tableName}: ${record.id}`);
+          await this._db.putFromCloud(tableName, transformedRecord);
+        }
+      }));
+    }
+
+    // Prune local rows
+    await this._pruneLocalRows(tableName, cloudRecords, isInScope);
   }
 
   async _pruneLocalRows(table, cloudRows, isInScope) {

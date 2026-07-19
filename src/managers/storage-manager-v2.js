@@ -654,14 +654,73 @@ class StorageManagerV2 {
   // PERSISTENCE MANAGEMENT
   // ==========================================
 
+  /**
+   * FIX: Immediate write to IndexedDB to prevent data loss.
+   * Browser crash/close within debounce window no longer causes data loss.
+   */
   _scheduleAutoSave() {
     if (this._saveTimer) {
       clearTimeout(this._saveTimer);
     }
 
+    // FIXED: Write to IndexedDB IMMEDIATELY for data safety.
+    // This ensures data is persisted even if browser crashes.
+    // Debounce is only for localStorage cache update (non-critical).
+    this._immediateIndexedDBWrite();
+
+    // Debounce localStorage cache update (optional, non-critical)
     this._saveTimer = setTimeout(() => {
-      this._performAutoSave();
+      this._updateLocalStorageCache();
     }, this.autoSave.debounceMs);
+  }
+
+  /**
+   * FIXED: Immediate write to IndexedDB on every change.
+   * This prevents data loss on browser crash/close.
+   */
+  async _immediateIndexedDBWrite() {
+    if (typeof appState === 'undefined') return;
+
+    const currentVersion = appState._version || 0;
+
+    // Skip if no actual changes
+    if (this._lastSavedVersion === currentVersion && !this._isDirty) {
+      return;
+    }
+
+    this._lastSavedVersion = currentVersion;
+    this._isDirty = false;
+
+    if (this._useIndexedDB && this._stateManager) {
+      try {
+        // FIXED: Use forcePersist which now writes to IndexedDB immediately
+        await this._stateManager.forcePersist();
+        Logger.debug('[StorageManagerV2] IndexedDB write (v' + currentVersion + ')');
+      } catch (err) {
+        this._logger.error('[StorageManagerV2] IndexedDB write failed:', err);
+        // Fallback: try to save to localStorage immediately
+        this._emergencyLocalStorageBackup();
+      }
+    }
+  }
+
+  /**
+   * Emergency backup to localStorage if IndexedDB fails
+   */
+  _emergencyLocalStorageBackup() {
+    if (typeof appState === 'undefined') return;
+
+    try {
+      if (appState.attendanceData) {
+        this._set(this.keys.attendance, appState.attendanceData);
+      }
+      if (appState.permits) {
+        this._set(this.keys.permits, appState.permits);
+      }
+      Logger.warn('[StorageManagerV2] Emergency backup to localStorage');
+    } catch (err) {
+      this._logger.error('[StorageManagerV2] Emergency backup also failed:', err);
+    }
   }
 
   _performAutoSave() {
@@ -814,6 +873,145 @@ class StorageManagerV2 {
     }
   }
 
+  // ==========================================
+  // ENHANCEMENT: PROACTIVE QUOTA MONITORING
+  // ==========================================
+
+  /**
+   * ENHANCEMENT: Check storage quota and alert user proactively
+   * Call this periodically or before large operations
+   * @param {Object} options - Configuration options
+   * @param {number} options.warnThreshold - Warning threshold (0-1), default 0.7 (70%)
+   * @param {number} options.criticalThreshold - Critical threshold (0-1), default 0.9 (90%)
+   * @returns {Object} Quota status
+   */
+  async checkQuota(options = {}) {
+    const {
+      warnThreshold = 0.7,  // 70%
+      criticalThreshold = 0.9, // 90%
+    } = options;
+
+    try {
+      // Check localStorage quota
+      const localStorageResult = await this._checkLocalStorageQuota(warnThreshold, criticalThreshold);
+
+      // Check IndexedDB usage (approximate)
+      const indexedDBResult = await this._checkIndexedDBUsage(warnThreshold, criticalThreshold);
+
+      const status = {
+        localStorage: localStorageResult,
+        indexedDB: indexedDBResult,
+        isWarning: localStorageResult.isWarning || indexedDBResult.isWarning,
+        isCritical: localStorageResult.isCritical || indexedDBResult.isCritical,
+        timestamp: Date.now(),
+      };
+
+      // Dispatch event for UI to handle
+      if (status.isWarning || status.isCritical) {
+        window.dispatchEvent(new CustomEvent('storage:quota-warning', { detail: status }));
+      }
+
+      return status;
+    } catch (e) {
+      Logger.error('[StorageManagerV2] Quota check failed:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Check localStorage quota usage
+   * @private
+   */
+  async _checkLocalStorageQuota(warnThreshold, criticalThreshold) {
+    try {
+      // Estimate localStorage usage
+      const usage = this.getStorageUsage();
+      const estimatedQuota = 5 * 1024 * 1024; // ~5MB typical localStorage
+      const usedPercent = usage.totalBytes / estimatedQuota;
+
+      const result = {
+        type: 'localStorage',
+        usedBytes: usage.totalBytes,
+        estimatedQuotaBytes: estimatedQuota,
+        usedPercent,
+        isWarning: usedPercent >= warnThreshold && usedPercent < criticalThreshold,
+        isCritical: usedPercent >= criticalThreshold,
+      };
+
+      // Show proactive warnings
+      if (result.isWarning && !this._quotaWarningShown) {
+        this._quotaWarningShown = true;
+        window.showToast?.(`Storage lokal ${Math.round(usedPercent * 100)}% terpakai. Pertimbangkan untuk menghapus data lama.`, 'warning');
+      } else if (result.isCritical && !this._quotaCriticalShown) {
+        this._quotaCriticalShown = true;
+        window.showToast?.(`Storage lokal hampir penuh (${Math.round(usedPercent * 100)}%)! Hapus data tidak terpakai segera.`, 'error');
+      }
+
+      return result;
+    } catch (e) {
+      return { type: 'localStorage', error: e.message };
+    }
+  }
+
+  /**
+   * Check IndexedDB usage
+   * @private
+   */
+  async _checkIndexedDBUsage(warnThreshold, criticalThreshold) {
+    try {
+      if (!this._db) {
+        return { type: 'indexedDB', error: 'DB not initialized' };
+      }
+
+      // Estimate IndexedDB usage based on record counts
+      const counts = await this.getIndexedDBUsage();
+      if (!counts) {
+        return { type: 'indexedDB', error: 'Could not get counts' };
+      }
+
+      // Rough estimate: 1KB per record average
+      const totalRecords = Object.values(counts).reduce((sum, count) => sum + count, 0);
+      const estimatedBytes = totalRecords * 1024;
+      const estimatedQuota = 50 * 1024 * 1024; // ~50MB typical IndexedDB
+
+      const usedPercent = estimatedBytes / estimatedQuota;
+
+      return {
+        type: 'indexedDB',
+        usedBytes: estimatedBytes,
+        estimatedQuotaBytes: estimatedQuota,
+        usedPercent,
+        recordCounts: counts,
+        isWarning: usedPercent >= warnThreshold && usedPercent < criticalThreshold,
+        isCritical: usedPercent >= criticalThreshold,
+      };
+    } catch (e) {
+      return { type: 'indexedDB', error: e.message };
+    }
+  }
+
+  /**
+   * ENHANCEMENT: Start periodic quota monitoring
+   * @param {number} intervalMs - Check interval in ms (default: 5 minutes)
+   */
+  startQuotaMonitoring(intervalMs = 300000) { // 5 minutes
+    this.stopQuotaMonitoring();
+    this._quotaInterval = setInterval(() => {
+      this.checkQuota().catch(e => Logger.error('[StorageManagerV2] Quota check failed:', e));
+    }, intervalMs);
+    Logger.info('[StorageManagerV2] Quota monitoring started');
+  }
+
+  /**
+   * Stop quota monitoring
+   */
+  stopQuotaMonitoring() {
+    if (this._quotaInterval) {
+      clearInterval(this._quotaInterval);
+      this._quotaInterval = null;
+    }
+  }
+
   async clearAll() {
     // Clear localStorage
     for (const key of Object.values(this.keys)) {
@@ -862,6 +1060,9 @@ class StorageManagerV2 {
       clearTimeout(this._saveTimer);
       this._saveTimer = null;
     }
+
+    // ENHANCEMENT: Stop quota monitoring
+    this.stopQuotaMonitoring();
 
     if (this._stateManager) {
       this._stateManager = null;

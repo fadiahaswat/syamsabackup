@@ -776,9 +776,16 @@ class LocalDB {
 
   /**
    * Bulk insert/update with proper transaction handling
+   * @param {string} storeName - Name of the store
+   * @param {Array} records - Records to insert/update
+   * @param {Object} options - Options
+   * @param {boolean} options.preserveVersion - If true, don't increment version (for inbound sync)
+   * @param {boolean} options.skipSync - If true, don't add to sync queue
    */
-  async bulkPut(storeName, records) {
+  async bulkPut(storeName, records, options = {}) {
     if (!records || records.length === 0) return { success: [], failed: [], total: 0 };
+
+    const { preserveVersion = false, skipSync = false } = options;
 
     const db = await this.ensureReady();
     const now = new Date().toISOString();
@@ -805,11 +812,20 @@ class LocalDB {
           _updatedAt: now,
         };
 
-        if (!record._createdAt) {
-          record._createdAt = now;
-          record._version = 1;
+        // CRITICAL FIX: Only increment version for LOCAL updates, not inbound sync
+        // Inbound sync (preserveVersion=true) should keep cloud's version intact
+        if (preserveVersion) {
+          // Cloud is authoritative - keep the version as-is
+          // (putFromCloud is the preferred method, but bulkPut with preserveVersion is also valid)
+          if (!record._createdAt) record._createdAt = now;
         } else {
-          record._version = (record._version || 0) + 1;
+          // Local update - increment version
+          if (!record._createdAt) {
+            record._createdAt = now;
+            record._version = 1;
+          } else {
+            record._version = (record._version || 0) + 1;
+          }
         }
 
         const request = store.put(record);

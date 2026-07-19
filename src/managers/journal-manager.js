@@ -29,6 +29,24 @@ class JournalManager {
     this.pathCoords = [];
     this.gpsActive = false;
     this.gpsAccuracy = 0;
+
+    // Configurable thresholds (can be overridden via config)
+    this.config = {
+      stepsGoal: 100,
+      displacementGoal: 15, // 15 meters
+      peakThreshold: 11.5, // gravity spike for step detection
+      stepDebounceMs: 350,
+      magnitudeDelta: 1.5,
+      gpsTimeoutMs: 30000, // 30 seconds for indoor GPS acquisition
+    };
+  }
+
+  /**
+   * Update configuration thresholds
+   * @param {Object} overrides - Configuration overrides
+   */
+  setConfig(overrides) {
+    this.config = { ...this.config, ...overrides };
   }
 
   /**
@@ -61,6 +79,12 @@ class JournalManager {
    * @param {string} date - Date string YYYY-MM-DD
    */
   async getJournalForDate(date) {
+    // Validate date format YYYY-MM-DD
+    if (!this._isValidDateFormat(date)) {
+      this._logger.warn(`[JournalManager] Invalid date format: ${date}`);
+      return [];
+    }
+
     if (!this._repos?.journal) {
       this._logger.warn('[JournalManager] Repositories not ready');
       return [];
@@ -115,10 +139,31 @@ class JournalManager {
   /**
    * Get all journal entries for a date (used by Admin)
    * @param {string} date - Date string YYYY-MM-DD
+   * @param {string} musyrifId - Optional filter by musyrif ID
    */
-  async getAdminReportForDate(date) {
+  async getAdminReportForDate(date, musyrifId = null) {
     if (!this._repos?.journal) return [];
-    return this._repos.journal.getByDate(date);
+    const records = await this._repos.journal.getByDate(date);
+    if (musyrifId) {
+      return records.filter(r => r.musyrifId === musyrifId);
+    }
+    return records;
+  }
+
+  /**
+   * Get unique musyrif IDs for admin filter dropdown
+   * @returns {Array<{id: string, name: string}>}
+   */
+  async getUniqueMusyrifs() {
+    if (!this._repos?.journal) return [];
+    const all = await this._repos.journal.getAll();
+    const seen = new Map();
+    all.forEach(r => {
+      if (!seen.has(r.musyrifId)) {
+        seen.set(r.musyrifId, r.musyrifName || 'Musyrif');
+      }
+    });
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
   }
 
   /**
@@ -198,19 +243,21 @@ class JournalManager {
     this.gpsActive = false;
     this.isTracking = true;
 
+    const { gpsTimeoutMs } = this.config;
+
     // 1. Initialize GPS Tracking (if supported)
     if (navigator.geolocation) {
       this.gpsWatchId = navigator.geolocation.watchPosition(
         (position) => {
           this.gpsActive = true;
           this.gpsAccuracy = position.coords.accuracy;
-          
+
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           const currentPoint = { latitude: lat, longitude: lon, timestamp: Date.now() };
-          
+
           this.pathCoords.push(currentPoint);
-          
+
           if (!this.startCoords) {
             this.startCoords = currentPoint;
           } else {
@@ -222,7 +269,7 @@ class JournalManager {
               this.maxDisplacement = dist;
             }
           }
-          
+
           if (onStepCallback) {
             onStepCallback({
               steps: this.stepCount,
@@ -232,13 +279,14 @@ class JournalManager {
               gpsAccuracy: this.gpsAccuracy
             });
           }
-          
+
           this._checkCompletion(date, taskId, onCompleteCallback, onErrorCallback);
         },
         (err) => {
           this._logger.warn('[JournalManager] Geolocation tracking error:', err);
           this.gpsActive = false;
-          // Fallback UI reporting
+          // Graceful degradation - GPS failed, will rely on steps only
+          const sanitizedError = this._sanitizeErrorMessage(err.message);
           if (onStepCallback) {
             onStepCallback({
               steps: this.stepCount,
@@ -246,11 +294,11 @@ class JournalManager {
               pathCoords: this.pathCoords,
               gpsActive: false,
               gpsAccuracy: 0,
-              gpsError: err.message
+              gpsError: sanitizedError
             });
           }
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: gpsTimeoutMs, maximumAge: 0 }
       );
     }
 
@@ -264,7 +312,7 @@ class JournalManager {
     const startListener = () => {
       let lastMag = 0;
       let lastStepTime = 0;
-      const peakThreshold = 11.5; // gravity spike for step detection
+      const { peakThreshold, stepDebounceMs, magnitudeDelta } = this.config;
 
       this._stepListener = (event) => {
         const acc = event.accelerationIncludingGravity || event.acceleration;
@@ -273,12 +321,12 @@ class JournalManager {
         const x = acc.x || 0;
         const y = acc.y || 0;
         const z = acc.z || 0;
-        
+
         const mag = Math.sqrt(x * x + y * y + z * z);
         const now = Date.now();
 
-        if (mag > peakThreshold && (now - lastStepTime > 350)) {
-          if (Math.abs(mag - lastMag) > 1.5) {
+        if (mag > peakThreshold && (now - lastStepTime > stepDebounceMs)) {
+          if (Math.abs(mag - lastMag) > magnitudeDelta) {
             this.stepCount++;
             lastStepTime = now;
             
@@ -344,8 +392,7 @@ class JournalManager {
    * @private
    */
   _checkCompletion(date, taskId, onCompleteCallback, onErrorCallback) {
-    const stepsGoal = 100;
-    const displacementGoal = 15; // 15 meters
+    const { stepsGoal, displacementGoal } = this.config;
 
     // If GPS works, verify both. If GPS fails or is disabled/denied, fallback to steps only.
     const isGpsRequiredMet = !this.gpsActive || (this.maxDisplacement >= displacementGoal);
@@ -359,6 +406,15 @@ class JournalManager {
           if (onErrorCallback) onErrorCallback(err.message);
         });
     }
+  }
+
+  /**
+   * Sanitize error message to prevent XSS
+   * @private
+   */
+  _sanitizeErrorMessage(message) {
+    if (typeof message !== 'string') return 'Unknown error';
+    return message.replace(/[<>]/g, '').substring(0, 200);
   }
 
   /**
@@ -396,22 +452,26 @@ class JournalManager {
       throw new Error('Tugas tidak ditemukan');
     }
 
-    task.status = 'completed';
-    task.verifiedAt = new Date().toISOString();
-    task.stepsCount = this.stepCount;
-    task.gpsVerified = this.gpsActive && (this.maxDisplacement >= 15);
-    task.maxDisplacement = this.maxDisplacement;
-    task.pathCoords = this.pathCoords;
+    // Immutable update - create new object instead of mutating
+    const verifiedTask = {
+      ...task,
+      status: 'completed',
+      verifiedAt: new Date().toISOString(),
+      stepsCount: this.stepCount,
+      gpsVerified: this.gpsActive && (this.maxDisplacement >= this.displacementGoal),
+      maxDisplacement: this.maxDisplacement,
+      pathCoords: this.pathCoords,
+    };
 
-    await this._repos.journal.put(task);
+    await this._repos.journal.put(verifiedTask);
 
     // Audit log
     if (typeof window.logActivity === 'function') {
-      const gpsStatusText = task.gpsVerified ? `${this.maxDisplacement.toFixed(1)}m` : 'Tanpa GPS';
+      const gpsStatusText = verifiedTask.gpsVerified ? `${this.maxDisplacement.toFixed(1)}m` : 'Tanpa GPS';
       window.logActivity('Jurnal Musyrif', `Menyelesaikan tugas: ${task.taskName} (${this.stepCount} langkah, gps: ${gpsStatusText})`);
     }
 
-    return task;
+    return verifiedTask;
   }
 
   /**
@@ -423,6 +483,18 @@ class JournalManager {
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const day = String(dateObj.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Validate date format YYYY-MM-DD
+   * @private
+   */
+  _isValidDateFormat(dateStr) {
+    if (typeof dateStr !== 'string') return false;
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(dateStr)) return false;
+    const parsed = Date.parse(dateStr);
+    return !isNaN(parsed);
   }
 }
 

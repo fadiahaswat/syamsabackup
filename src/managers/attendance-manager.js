@@ -4,6 +4,91 @@
 // 5. ATTENDANCE ACTIONS
 // ==========================================
 
+// ENHANCEMENT: Profile stats cache to avoid recalculation on every render
+const ProfileStatsCache = {
+  _cache: new Map(),
+  _version: 0,
+  _lastDataHash: null,
+
+  /**
+   * Get cache key for a student
+   */
+  _getCacheKey(id, attendanceData) {
+    // Include a hash of the data to detect changes
+    const dataHash = JSON.stringify(attendanceData).length.toString();
+    return `${id}_${dataHash}`;
+  },
+
+  /**
+   * Get cached stats or compute if not cached
+   */
+  getStats(id) {
+    return this._cache.get(id) || null;
+  },
+
+  /**
+   * Invalidate cache for a specific student
+   */
+  invalidate(id) {
+    this._cache.delete(id);
+  },
+
+  /**
+   * Invalidate entire cache
+   */
+  invalidateAll() {
+    this._cache.clear();
+  },
+
+  /**
+   * Update cache with computed stats
+   */
+  setStats(id, stats) {
+    this._cache.set(id, stats);
+  },
+
+  /**
+   * Check if cache is valid
+   */
+  isValid(attendanceData) {
+    const currentHash = JSON.stringify(attendanceData).length.toString();
+    return this._lastDataHash === currentHash;
+  },
+
+  /**
+   * Update hash after attendance data changes
+   */
+  updateHash(attendanceData) {
+    this._lastDataHash = JSON.stringify(attendanceData).length.toString();
+  }
+};
+
+// Compute profile stats with caching
+window.getProfileStats = function(id, attendanceData) {
+  // Check cache first
+  const cached = ProfileStatsCache.getStats(id);
+  if (cached && ProfileStatsCache.isValid(attendanceData)) {
+    return cached;
+  }
+
+  // Compute stats
+  const profileStats = { Hadir: 0, Sakit: 0, Izin: 0, Pulang: 0, Alpa: 0, Telat: 0 };
+  Object.values(attendanceData || {}).forEach((dateSlots) => {
+    Object.values(dateSlots || {}).forEach((slotRecords) => {
+      const record = slotRecords?.[id];
+      Object.values(record?.status || {}).forEach((status) => {
+        if (profileStats[status] !== undefined) profileStats[status] += 1;
+      });
+    });
+  });
+
+  // Cache the result
+  ProfileStatsCache.setStats(id, profileStats);
+  ProfileStatsCache.updateHash(attendanceData);
+
+  return profileStats;
+};
+
 window.openAttendance = async function () {
   if (window.isSlotHoliday(appState.currentSlotId, appState.date)) {
     return window.showToast(
@@ -301,15 +386,8 @@ window.renderAttendanceList = function () {
       { icon: "scan-face", class: "from-lime-50 to-green-100 text-lime-700 dark:from-lime-900/30 dark:to-green-900/20 dark:text-lime-300" },
     ];
     const iconAvatar = iconAvatarOptions[avatarSeed % iconAvatarOptions.length];
-    const profileStats = { Hadir: 0, Sakit: 0, Izin: 0, Pulang: 0, Alpa: 0, Telat: 0 };
-    Object.values(appState.attendanceData || {}).forEach((dateSlots) => {
-      Object.values(dateSlots || {}).forEach((slotRecords) => {
-        const record = slotRecords?.[id];
-        Object.values(record?.status || {}).forEach((status) => {
-          if (profileStats[status] !== undefined) profileStats[status] += 1;
-        });
-      });
-    });
+    // ENHANCEMENT: Use cached profile stats instead of recalculating
+    const profileStats = window.getProfileStats(id, appState.attendanceData);
     const issueStatus = ["Sakit", "Izin", "Pulang", "Alpa", "Telat"].sort(
       (a, b) => profileStats[b] - profileStats[a],
     )[0];

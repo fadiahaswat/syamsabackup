@@ -59,6 +59,20 @@
       </button>
     </div>
 
+    <!-- ENHANCEMENT: Progress Bar -->
+    <div id="sync-progress-container" class="hidden px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+      <div class="flex items-center justify-between mb-2">
+        <span id="sync-progress-message" class="text-sm text-slate-600 dark:text-slate-300">Memproses...</span>
+        <span id="sync-progress-percent" class="text-sm font-bold text-syamsa-blue">0%</span>
+      </div>
+      <div class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div id="sync-progress-bar"
+          class="h-full bg-gradient-to-r from-syamsa-blue to-emerald-500 transition-all duration-300"
+          style="width: 0%">
+        </div>
+      </div>
+    </div>
+
     <!-- Content -->
     <div class="p-6 space-y-6 overflow-auto max-h-[50vh]">
 
@@ -69,13 +83,20 @@
           <div class="text-xs text-slate-500 dark:text-slate-400">Tertunda</div>
         </div>
         <div class="text-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
-          <div id="sync-stat-synced" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">0</div>
-          <div class="text-xs text-slate-500 dark:text-slate-400">Terakhir Sync</div>
+          <div id="sync-stat-synced-count" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">0</div>
+          <div class="text-xs text-slate-500 dark:text-slate-400">Berhasil</div>
         </div>
         <div class="text-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
           <div id="sync-stat-conflicts" class="text-2xl font-bold text-red-600 dark:text-red-400">0</div>
           <div class="text-xs text-slate-500 dark:text-slate-400">Konflik</div>
         </div>
+      </div>
+
+      <!-- Last Sync Time - UX FIX -->
+      <div class="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <i data-lucide="clock" class="w-4 h-4"></i>
+        <span>Terakhir sync: </span>
+        <span id="sync-last-time-display" class="font-medium">-</span>
       </div>
 
       <!-- Actions -->
@@ -195,6 +216,12 @@
     window.addEventListener('online', updateSyncStatus);
     window.addEventListener('offline', updateSyncStatus);
 
+    // ENHANCEMENT: Listen for sync progress events
+    window.addEventListener('sync:progress', (e) => {
+      const progress = e.detail;
+      updateProgressUI(progress);
+    });
+
     // 🔴 CRITICAL FIX #5: Listen for presence changes from SupabaseSync
     if (window.supabaseSync) {
       window.supabaseSync.onPresenceChange = updatePresenceIndicator;
@@ -282,10 +309,41 @@
 
       // Update stat displays
       const pendingStat = document.getElementById('sync-stat-pending');
+      const syncedStat = document.getElementById('sync-stat-synced-count');
       const conflictStat = document.getElementById('sync-stat-conflicts');
+      const lastTimeDisplay = document.getElementById('sync-last-time-display');
 
       if (pendingStat) pendingStat.textContent = pendingCount;
       if (conflictStat) conflictStat.textContent = conflictCount;
+
+      // UX FIX: Show synced count (not 0)
+      if (syncedStat) {
+        const syncedCount = stats.synced || 0;
+        syncedStat.textContent = syncedCount > 0 ? syncedCount : '-';
+      }
+
+      // UX FIX: Show actual last sync time
+      if (lastTimeDisplay) {
+        const lastSync = window.syncManager?.lastSyncTime || window.supabaseSync?.lastSyncTime;
+        if (lastSync) {
+          const lastDate = new Date(lastSync);
+          const now = new Date();
+          const diffMs = now - lastDate;
+          const diffMins = Math.floor(diffMs / 60000);
+
+          if (diffMins < 1) {
+            lastTimeDisplay.textContent = 'Baru saja';
+          } else if (diffMins < 60) {
+            lastTimeDisplay.textContent = `${diffMins} menit lalu`;
+          } else if (diffMins < 1440) {
+            lastTimeDisplay.textContent = `${Math.floor(diffMins / 60)} jam lalu`;
+          } else {
+            lastTimeDisplay.textContent = lastDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+          }
+        } else {
+          lastTimeDisplay.textContent = 'Belum pernah';
+        }
+      }
 
       // Update offline indicator
       const offlineIndicator = document.getElementById('offline-indicator');
@@ -302,6 +360,45 @@
 
     } catch (e) {
       console.error('[SyncStatusUI] Failed to update status:', e);
+    }
+  }
+
+  /**
+   * ENHANCEMENT: Update progress bar UI
+   */
+  function updateProgressUI(progress) {
+    const container = document.getElementById('sync-progress-container');
+    const bar = document.getElementById('sync-progress-bar');
+    const message = document.getElementById('sync-progress-message');
+    const percent = document.getElementById('sync-progress-percent');
+
+    if (!container || !bar) return;
+
+    if (progress.percent === 0 || progress.percent === 100) {
+      // Hide progress bar when complete
+      container.classList.add('hidden');
+    } else {
+      // Show progress bar
+      container.classList.remove('hidden');
+    }
+
+    if (bar) {
+      bar.style.width = `${progress.percent}%`;
+    }
+
+    if (message) {
+      message.textContent = progress.message || 'Memproses...';
+    }
+
+    if (percent) {
+      percent.textContent = `${progress.percent}%`;
+    }
+
+    // Color based on phase
+    if (progress.phase === 'error') {
+      bar.className = 'h-full bg-red-500 transition-all duration-300';
+    } else {
+      bar.className = 'h-full bg-gradient-to-r from-syamsa-blue to-emerald-500 transition-all duration-300';
     }
   }
 

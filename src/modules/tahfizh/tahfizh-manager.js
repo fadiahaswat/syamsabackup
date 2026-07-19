@@ -1794,7 +1794,13 @@ function renderTahfizhHistoryTable() {
             }
             const cIcon = clone.querySelector('.data-kelas-icon');
             if (cIcon) {
-                cIcon.innerHTML = `<span title="Kelas ${santri.kelas}" class="inline-flex items-center justify-center h-5 w-5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350 text-[10px] font-black border border-slate-200 dark:border-slate-700">${santri.kelas}</span>`;
+                // SECURITY FIX: Use textContent for user data instead of innerHTML
+                cIcon.textContent = '';
+                const span = document.createElement('span');
+                span.className = 'inline-flex items-center justify-center h-5 w-5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350 text-[10px] font-black border border-slate-200 dark:border-slate-700';
+                span.title = `Kelas ${santri.kelas || ''}`;
+                span.textContent = sesi.kelas || '';
+                cIcon.appendChild(span);
             }
         }
         

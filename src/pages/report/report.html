@@ -1201,12 +1201,22 @@
               </h2>
               <p class="text-xs text-slate-400 font-bold">Laporan pemantauan tugas harian musyrif yang diverifikasi dengan langkah kaki.</p>
             </div>
-            
-            <!-- Date Filter (default to appState.date) -->
-            <div class="flex items-center gap-2">
-              <input 
-                type="date" 
-                id="admin-journals-filter-date" 
+
+            <!-- Filters -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <!-- Musyrif Filter -->
+              <select
+                id="admin-journals-filter-musyrif"
+                onchange="window.renderAdminJournals()"
+                class="h-11 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-bold text-slate-600 dark:text-slate-300 outline-none focus:border-indigo-500"
+              >
+                <option value="">Semua Musyrif</option>
+              </select>
+
+              <!-- Date Filter (default to appState.date) -->
+              <input
+                type="date"
+                id="admin-journals-filter-date"
                 onchange="window.renderAdminJournals()"
                 class="h-11 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-bold text-slate-600 dark:text-slate-300 outline-none focus:border-indigo-500"
               >

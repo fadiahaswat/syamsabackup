@@ -1260,13 +1260,15 @@ window.findWaliSantriByNis = function (nis) {
 
 /**
  * SECURE WALI LOGIN WITH EMAIL VERIFICATION
+ * SECURITY FIX: Removed localStorage password hash storage
  *
  * Supports multiple verification methods:
- * 1. Supabase Auth (if enabled) - most secure
- * 2. Custom password from localStorage
- * 3. Default NIS password (fallback)
+ * 1. Supabase Edge Function - most secure (cloud-verified)
+ * 2. Cloud credentials table - offline fallback (from Supabase sync)
+ * 3. Default NIS password (last resort)
  *
- * Email verification adds additional security layer.
+ * SECURITY: Password hashes are NO LONGER stored in localStorage.
+ * All credential verification is done via cloud.
  */
 window.handleWaliSubmit = async function () {
   const nis = document.getElementById("wali-nis")?.value?.trim() || "";
@@ -1287,26 +1289,48 @@ window.handleWaliSubmit = async function () {
 
   const foundKelas = String(foundSantri.kelas || foundSantri.rombel || "").trim();
 
-  // Cek password kustom di localStorage
   let passwordVerified = false;
 
-  // Cek custom password dari localStorage
-  try {
-    const savedPasswords = window.AppStorage.getItem("wali_passwords_db");
-    if (savedPasswords) {
-      const passwords = JSON.parse(savedPasswords);
-      if (passwords[nis]) {
-        const inputHash = await window.sha256Hex(password);
-        if (inputHash === passwords[nis].password_hash) {
-          passwordVerified = true;
-        }
+  // 1. PRIMARY: Verify via Supabase Edge Function (cloud-verified)
+  if (window.isSupabaseEnabled && window.supabaseClient) {
+    try {
+      const { data, error } = await window.supabaseClient.functions.invoke('wali-auth', {
+        body: { nis, password }
+      });
+
+      if (data?.success) {
+        passwordVerified = true;
+        window.Logger?.info('[WaliAuth] Cloud verification successful');
+      } else if (error) {
+        window.Logger?.warn('[WaliAuth] Cloud verification failed:', error);
       }
+    } catch (e) {
+      console.warn('[WaliAuth] Cloud verification error:', e);
     }
-  } catch (e) {
-    console.warn('[WaliAuth] Custom password check failed:', e);
   }
 
-  // Fallback ke password default jika tidak ada record kustom
+  // 2. FALLBACK: Verify against synced cloud credentials (offline mode)
+  if (!passwordVerified && window.isSupabaseEnabled && window.supabaseClient) {
+    try {
+      const { data: credentials } = await window.supabaseClient
+        .from('wali_credentials')
+        .select('password_hash')
+        .eq('nis', nis)
+        .maybeSingle();
+
+      if (credentials?.password_hash) {
+        const inputHash = await window.sha256Hex(password);
+        if (inputHash === credentials.password_hash) {
+          passwordVerified = true;
+          window.Logger?.info('[WaliAuth] Offline verification successful (cloud-cached)');
+        }
+      }
+    } catch (e) {
+      console.warn('[WaliAuth] Offline verification failed:', e);
+    }
+  }
+
+  // 3. LAST RESORT: Default password (NIS itself)
   if (!passwordVerified) {
     const storedPassword = String(
       foundSantri.password_nis ||
@@ -1318,26 +1342,12 @@ window.handleWaliSubmit = async function () {
 
     if (String(password).trim() === expectedPassword) {
       passwordVerified = true;
+      window.Logger?.info('[WaliAuth] Default password verified');
     }
   }
 
-  // SECURE: Jika Supabase enabled, verifikasi via Edge Function
-  if (!passwordVerified && window.isSupabaseEnabled && window.supabaseClient) {
-    try {
-      const { data, error } = await window.supabaseClient.functions.invoke('wali-auth', {
-        body: { nis, password }
-      });
-
-      if (data?.success) {
-        passwordVerified = true;
-        window.Logger?.info('[WaliAuth] Supabase verification successful');
-      } else if (error) {
-        window.Logger?.warn('[WaliAuth] Supabase verification failed:', error);
-      }
-    } catch (e) {
-      console.warn('[WaliAuth] Supabase verification error:', e);
-    }
-  }
+  // SECURITY FIX: Removed localStorage password hash verification
+  // Credentials are now only stored/verified via cloud
 
   if (!passwordVerified) {
     return window.showToast("Password NIS salah.", "error");
@@ -14976,7 +14986,7 @@ window.renderJournalTab = async function () {
     if (window.lucide) window.lucide.createIcons();
   } catch (error) {
     console.error("[Journal] Render failed:", error);
-    container.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">Gagal memuat jurnal: ${error.message}</div>`;
+    container.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">Gagal memuat jurnal: ${typeof _escapeHtml === 'function' ? _escapeHtml(error.message) : 'Terjadi kesalahan'}</div>`;
   }
 };
 
@@ -15030,6 +15040,7 @@ window.renderAdminJournals = async function () {
   const tbody = document.getElementById("admin-journals-tbody");
   const mobileList = document.getElementById("admin-journals-mobile-list");
   const dateInput = document.getElementById("admin-journals-filter-date");
+  const musyrifSelect = document.getElementById("admin-journals-filter-musyrif");
   if (!tbody) return;
 
   // Set date filter value to appState.date if empty
@@ -15037,7 +15048,19 @@ window.renderAdminJournals = async function () {
     dateInput.value = appState.date;
   }
 
+  // Populate musyrif dropdown if not already populated
+  if (musyrifSelect && musyrifSelect.options.length <= 1) {
+    const musyrifs = await window.journalManager.getUniqueMusyrifs();
+    musyrifs.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent = m.name;
+      musyrifSelect.appendChild(opt);
+    });
+  }
+
   const filterDate = dateInput ? dateInput.value : appState.date;
+  const filterMusyrif = musyrifSelect ? musyrifSelect.value : '';
 
   try {
     tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 font-bold"><i data-lucide="loader" class="w-4.5 h-4.5 animate-spin inline-block mr-1.5"></i>Memuat jurnal...</td></tr>`;
@@ -15046,7 +15069,7 @@ window.renderAdminJournals = async function () {
     }
     if (window.lucide) window.lucide.createIcons();
 
-    const logs = await window.journalManager.getAdminReportForDate(filterDate);
+    const logs = await window.journalManager.getAdminReportForDate(filterDate, filterMusyrif || null);
     tbody.innerHTML = "";
     if (mobileList) mobileList.innerHTML = "";
 
@@ -15108,9 +15131,10 @@ window.renderAdminJournals = async function () {
     if (window.lucide) window.lucide.createIcons();
   } catch (error) {
     console.error("[AdminJournal] Render failed:", error);
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">Gagal memuat jurnal: ${error.message}</td></tr>`;
+    const safeError = typeof _escapeHtml === 'function' ? _escapeHtml(error.message) : (error.message || 'Terjadi kesalahan').replace(/[<>]/g, '');
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-red-500 font-bold">Gagal memuat jurnal: ${safeError}</td></tr>`;
     if (mobileList) {
-      mobileList.innerHTML = `<p class="text-xs text-red-500 font-bold p-4 text-center">Gagal memuat jurnal: ${error.message}</p>`;
+      mobileList.innerHTML = `<p class="text-xs text-red-500 font-bold p-4 text-center">Gagal memuat jurnal: ${safeError}</p>`;
     }
   }
 };

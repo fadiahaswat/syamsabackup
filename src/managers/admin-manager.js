@@ -2879,33 +2879,46 @@ window.renderAdminIbadahAnalytics = function () {
   studentPerformances.sort((a, b) => b.overallPct - a.overallPct);
   const topPerformers = studentPerformances.slice(0, 5);
 
+  // SECURITY FIX: Use DocumentFragment and textContent instead of innerHTML
   if (topPerformersEl) {
     topPerformersEl.innerHTML = "";
     if (topPerformers.length === 0) {
       topPerformersEl.innerHTML = `<p class="text-xs text-slate-400 font-bold p-2 text-center">Tidak ada data santri.</p>`;
     } else {
+      const fragment = document.createDocumentFragment();
       topPerformers.forEach(p => {
-        topPerformersEl.innerHTML += `
-          <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
-            <div>
-              <h4 class="text-xs font-black text-slate-800 dark:text-white">${window.sanitizeHTML(p.name)}</h4>
-              <p class="text-[9px] text-slate-400 font-bold mt-0.5">Kelas ${window.sanitizeHTML(p.className)}</p>
-            </div>
-            <div class="text-right">
-              <span class="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
-                ${p.overallPct}%
-              </span>
-            </div>
-          </div>
-        `;
+        const div = document.createElement('div');
+        div.className = 'p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between';
+
+        const divLeft = document.createElement('div');
+        const h4 = document.createElement('h4');
+        h4.className = 'text-xs font-black text-slate-800 dark:text-white';
+        h4.textContent = p.name || '';
+        const pClass = document.createElement('p');
+        pClass.className = 'text-[9px] text-slate-400 font-bold mt-0.5';
+        pClass.textContent = `Kelas ${p.className || ''}`;
+        divLeft.appendChild(h4);
+        divLeft.appendChild(pClass);
+
+        const divRight = document.createElement('div');
+        divRight.className = 'text-right';
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded';
+        span.textContent = `${p.overallPct}%`;
+        divRight.appendChild(span);
+
+        div.appendChild(divLeft);
+        div.appendChild(divRight);
+        fragment.appendChild(div);
       });
+      topPerformersEl.appendChild(fragment);
     }
   }
 
   studentPerformances.sort((a, b) => a.overallPct - b.overallPct);
   const lowPerformers = studentPerformances.filter(p => p.overallPct < 50).slice(0, 5);
 
+  // SECURITY FIX: Use DocumentFragment and textContent instead of innerHTML
   if (lowPerformersEl) {
     lowPerformersEl.innerHTML = "";
     if (lowPerformers.length === 0) {
@@ -2917,22 +2930,33 @@ window.renderAdminIbadahAnalytics = function () {
         </div>
       `;
     } else {
+      const fragment = document.createDocumentFragment();
       lowPerformers.forEach(p => {
-        lowPerformersEl.innerHTML += `
-          <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between">
-            <div>
-              <h4 class="text-xs font-black text-slate-800 dark:text-white">${window.sanitizeHTML(p.name)}</h4>
-              <p class="text-[9px] text-slate-400 font-bold mt-0.5">Kelas ${window.sanitizeHTML(p.className)}</p>
-            </div>
-            <div class="text-right">
-              <span class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5 rounded">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-down"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>
-                ${p.overallPct}%
-              </span>
-            </div>
-          </div>
-        `;
+        const div = document.createElement('div');
+        div.className = 'p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl flex items-center justify-between';
+
+        const divLeft = document.createElement('div');
+        const h4 = document.createElement('h4');
+        h4.className = 'text-xs font-black text-slate-800 dark:text-white';
+        h4.textContent = p.name || '';
+        const pClass = document.createElement('p');
+        pClass.className = 'text-[9px] text-slate-400 font-bold mt-0.5';
+        pClass.textContent = `Kelas ${p.className || ''}`;
+        divLeft.appendChild(h4);
+        divLeft.appendChild(pClass);
+
+        const divRight = document.createElement('div');
+        divRight.className = 'text-right';
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center gap-1 text-[10px] font-black text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 px-2 py-0.5 rounded';
+        span.textContent = `${p.overallPct}%`;
+        divRight.appendChild(span);
+
+        div.appendChild(divLeft);
+        div.appendChild(divRight);
+        fragment.appendChild(div);
       });
+      lowPerformersEl.appendChild(fragment);
     }
   }
 

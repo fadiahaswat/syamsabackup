@@ -5,6 +5,8 @@
  * Stores changes in 'sync_queue' store and conflicts in 'conflicts' store.
  *
  * IMPORTANT: All field names use snake_case for IndexedDB schema consistency.
+ *
+ * ENHANCEMENT: Added retry mechanism with exponential backoff for failed items.
  */
 
 class SyncQueue {
@@ -15,6 +17,11 @@ class SyncQueue {
     this.pendingCount = 0;
     this._logger = window.SyncQueueLogger || console;
     this._initPromise = null;
+
+    // ENHANCEMENT: Retry configuration
+    this._maxRetries = 3;
+    this._retryBaseDelayMs = 1000; // 1 second base delay
+    this._retryTimers = new Map(); // Track retry timers per item
   }
 
   /**
@@ -232,18 +239,113 @@ class SyncQueue {
    * Mark change as synced
    */
   async markSynced(id) {
+    // Cancel any pending retry for this item
+    this._cancelRetry(id);
     return this.updateStatus(id, 'synced', {
       synced_at: Date.now(),
+      retry_count: 0, // Reset retry count on success
     });
   }
 
   /**
-   * Mark change as failed
+   * Mark change as failed and schedule automatic retry
+   * ENHANCEMENT: Implements exponential backoff retry
    */
   async markFailed(id, error) {
-    return this.updateStatus(id, 'failed', {
-      last_error: error?.message || String(error),
-    });
+    const change = await this.getChange(id);
+    const retryCount = (change?.retry_count || 0) + 1;
+
+    // Check if we should retry
+    if (retryCount <= this._maxRetries) {
+      // Calculate delay with exponential backoff
+      const delayMs = this._retryBaseDelayMs * Math.pow(2, retryCount - 1);
+
+      this._logger.info(`[SyncQueue] Scheduling retry ${retryCount}/${this._maxRetries} for ${id} in ${delayMs}ms`);
+
+      // Update status and schedule retry
+      await this.updateStatus(id, 'pending', {
+        last_error: error?.message || String(error),
+        retry_count: retryCount,
+        next_retry_at: Date.now() + delayMs,
+      });
+
+      // Schedule automatic retry
+      this._scheduleRetry(id, delayMs);
+
+      return { scheduled: true, retryCount, delayMs };
+    } else {
+      // Max retries exceeded - mark as permanently failed
+      this._logger.warn(`[SyncQueue] Max retries exceeded for ${id}, marking as failed`);
+      await this.updateStatus(id, 'failed', {
+        last_error: error?.message || String(error),
+        retry_count: retryCount,
+        failed_permanently: true,
+      });
+
+      // Notify user about permanent failure
+      window.showToast?.(`Sinkronisasi gagal setelah ${this._maxRetries} percobaan. Item perlu disinkronkan manual.`, 'warning');
+      window.dispatchEvent(new CustomEvent('sync:permanent-failure', {
+        detail: { changeId: id, error: error?.message || String(error) }
+      }));
+
+      return { scheduled: false, permanentlyFailed: true };
+    }
+  }
+
+  /**
+   * Schedule automatic retry for a failed item
+   * @private
+   */
+  _scheduleRetry(id, delayMs) {
+    // Cancel existing retry if any
+    this._cancelRetry(id);
+
+    const timer = setTimeout(async () => {
+      try {
+        const change = await this.getChange(id);
+        if (change && change.status === 'pending' && change.retry_count > 0) {
+          this._logger.info(`[SyncQueue] Executing auto-retry for ${id}`);
+          // Trigger sync to retry this item
+          if (window.supabaseSync?.syncOutbound) {
+            await window.supabaseSync.syncOutbound();
+          }
+        }
+      } catch (err) {
+        this._logger.error(`[SyncQueue] Auto-retry failed for ${id}:`, err);
+      } finally {
+        this._retryTimers.delete(id);
+      }
+    }, delayMs);
+
+    this._retryTimers.set(id, timer);
+  }
+
+  /**
+   * Cancel pending retry for an item
+   * @private
+   */
+  _cancelRetry(id) {
+    const existingTimer = this._retryTimers.get(id);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      this._retryTimers.delete(id);
+      this._logger.debug(`[SyncQueue] Cancelled retry for ${id}`);
+    }
+  }
+
+  /**
+   * Get all items pending automatic retry
+   */
+  async getItemsPendingRetry() {
+    await this._ensureReady();
+    const now = Date.now();
+
+    const allPending = await this._db.getByIndex('sync_queue', 'status', 'pending');
+    return allPending.filter(item =>
+      item.retry_count > 0 &&
+      item.next_retry_at &&
+      item.next_retry_at <= now
+    );
   }
 
   /**
@@ -251,6 +353,9 @@ class SyncQueue {
    */
   async markConflict(id, serverData) {
     await this._ensureReady();
+
+    // Cancel any pending retry
+    this._cancelRetry(id);
 
     const change = await this.getChange(id);
     if (change) {
@@ -264,16 +369,66 @@ class SyncQueue {
 
     return this.updateStatus(id, 'conflict', {
       server_data: serverData,
+      retry_count: 0,
     });
   }
 
   /**
-   * Retry a failed change
+   * Retry a failed change (manual retry)
    */
   async retryChange(id) {
     return this.updateStatus(id, 'pending', {
       last_error: null,
+      retry_count: 0, // Reset retry count for manual retry
+      next_retry_at: null,
     });
+  }
+
+  /**
+   * Retry all failed items
+   */
+  async retryAllFailed() {
+    await this._ensureReady();
+
+    const failed = await this._db.getByIndex('sync_queue', 'status', 'failed');
+    const results = [];
+
+    for (const item of failed) {
+      // Skip items marked as permanently failed
+      if (item.failed_permanently) {
+        this._logger.warn(`[SyncQueue] Skipping permanently failed item ${item.id}`);
+        continue;
+      }
+      const result = await this.retryChange(item.id);
+      results.push({ id: item.id, result });
+    }
+
+    this._logger.info(`[SyncQueue] Retrying ${results.length} failed items`);
+
+    // Trigger sync
+    if (window.supabaseSync?.syncOutbound) {
+      window.supabaseSync.syncOutbound();
+    }
+
+    return results;
+  }
+
+  /**
+   * Cleanup method to prevent memory leaks
+   * Call when the app or component unmounts
+   */
+  destroy() {
+    // Cancel all pending retry timers
+    for (const [id, timer] of this._retryTimers) {
+      clearTimeout(timer);
+      this._logger.debug(`[SyncQueue] Cancelled retry for ${id} on destroy`);
+    }
+    this._retryTimers.clear();
+
+    // Cancel scheduled cleanup interval
+    this._stopScheduledCleanup();
+
+    this._logger.info('[SyncQueue] Destroyed, all timers cleared');
   }
 
   /**
@@ -449,6 +604,111 @@ class SyncQueue {
     if (this._initPromise) {
       await this._initPromise;
     }
+  }
+
+  // ============================================================
+  // SCHEDULED CLEANUP
+  // ============================================================
+
+  /**
+   * ENHANCEMENT: Start scheduled cleanup interval
+   * Cleans up old synced items periodically to prevent database bloat
+   * @param {number} intervalMs - Cleanup interval in ms (default: 1 hour)
+   */
+  startScheduledCleanup(intervalMs = 3600000) { // 1 hour default
+    // Cancel existing cleanup timer
+    this._stopScheduledCleanup();
+
+    this._cleanupInterval = setInterval(() => {
+      this.performScheduledCleanup().catch(err => {
+        this._logger.error('[SyncQueue] Scheduled cleanup failed:', err);
+      });
+    }, intervalMs);
+
+    this._logger.info(`[SyncQueue] Scheduled cleanup started (every ${intervalMs / 1000 / 60} minutes)`);
+  }
+
+  /**
+   * Stop scheduled cleanup
+   * @private
+   */
+  _stopScheduledCleanup() {
+    if (this._cleanupInterval) {
+      clearInterval(this._cleanupInterval);
+      this._cleanupInterval = null;
+    }
+  }
+
+  /**
+   * ENHANCEMENT: Perform scheduled cleanup
+   * Cleans up synced items older than retention period
+   * @param {number} retentionDays - Days to keep synced items (default: 7 days)
+   */
+  async performScheduledCleanup(retentionDays = 7) {
+    await this._ensureReady();
+
+    const retentionMs = retentionDays * 24 * 60 * 60 * 1000;
+    const cutoffTime = Date.now() - retentionMs;
+
+    this._logger.info(`[SyncQueue] Starting cleanup (retention: ${retentionDays} days)`);
+
+    // Get synced items older than retention period
+    const syncedItems = await this._db.getByIndex('sync_queue', 'status', 'synced');
+    const oldSyncedItems = syncedItems.filter(item =>
+      item.synced_at && item.synced_at < cutoffTime
+    );
+
+    if (oldSyncedItems.length === 0) {
+      this._logger.debug('[SyncQueue] No old synced items to clean up');
+      return { cleaned: 0 };
+    }
+
+    // Delete old synced items
+    const idsToDelete = oldSyncedItems.map(item => item.id);
+    await this._db.bulkDelete('sync_queue', idsToDelete);
+
+    // Also clean up old conflicts (resolved conflicts older than 30 days)
+    const conflicts = await this._db.getAll('conflicts');
+    const oldConflicts = conflicts.filter(conflict =>
+      conflict.resolved && conflict.resolved_at && conflict.resolved_at < cutoffTime * 4 // 30 days for conflicts
+    );
+
+    let conflictsCleaned = 0;
+    if (oldConflicts.length > 0) {
+      for (const conflict of oldConflicts) {
+        await this._db.delete('conflicts', conflict.id);
+        conflictsCleaned++;
+      }
+    }
+
+    // Update pending count
+    await this._updatePendingCount();
+
+    this._logger.info(`[SyncQueue] Cleanup complete: ${idsToDelete.length} synced, ${conflictsCleaned} conflicts removed`);
+
+    return {
+      cleaned: idsToDelete.length,
+      conflictsCleaned,
+      total: idsToDelete.length + conflictsCleaned
+    };
+  }
+
+  /**
+   * ENHANCEMENT: Get cleanup status
+   */
+  async getCleanupStatus() {
+    await this._ensureReady();
+
+    const syncedItems = await this._db.getByIndex('sync_queue', 'status', 'synced');
+    const conflicts = await this._db.getAll('conflicts');
+    const unresolvedConflicts = conflicts.filter(c => !c.resolved);
+
+    return {
+      syncedItemsCount: syncedItems.length,
+      conflictsCount: conflicts.length,
+      unresolvedConflictsCount: unresolvedConflicts.length,
+      hasScheduledCleanup: !!this._cleanupInterval,
+    };
   }
 }
 

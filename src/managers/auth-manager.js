@@ -117,6 +117,9 @@ window.signInAsWaliService = async function() {
 /**
  * Change Wali password
  * Called when Wali wants to change their password
+ *
+ * SECURITY FIX: Passwords are now stored in Supabase ONLY.
+ * No password hashes are stored in localStorage to prevent credential theft.
  */
 window.changeWaliPassword = async function(nis, oldPassword, newPassword) {
   if (!window.isSupabaseEnabled || !window.supabaseClient) {
@@ -124,17 +127,28 @@ window.changeWaliPassword = async function(nis, oldPassword, newPassword) {
   }
 
   try {
-    // Hash new password
+    // SECURITY: Use cloud-only authentication
+    // Verify old password first via Supabase Edge Function
+    const verifyResult = await window.supabaseClient.functions.invoke('wali-auth', {
+      body: { nis, password: oldPassword }
+    });
+
+    if (!verifyResult?.data?.success) {
+      return { success: false, error: 'Password lama salah' };
+    }
+
+    // Hash new password for cloud storage
     const newHash = await window.sha256Hex(newPassword);
 
-    // Update in cloud
+    // Update in cloud ONLY - no localStorage
     const { data, error } = await window.supabaseClient
       .from('wali_credentials')
-      .update({
+      .upsert({
+        nis: nis,
         password_hash: newHash,
-        password_changed_at: new Date().toISOString()
+        password_changed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
-      .eq('nis', nis)
       .select();
 
     if (error) {
@@ -142,15 +156,10 @@ window.changeWaliPassword = async function(nis, oldPassword, newPassword) {
       return { success: false, error };
     }
 
-    // Also save locally
-    const savedPasswords = JSON.parse(localStorage.getItem('wali_passwords_db') || '{}');
-    savedPasswords[nis] = {
-      password_hash: newHash,
-      changed_at: new Date().toISOString()
-    };
-    localStorage.setItem('wali_passwords_db', JSON.stringify(savedPasswords));
+    // SECURITY FIX: Removed localStorage password hash storage
+    // Passwords should only be verified via cloud (Supabase Edge Function)
 
-    console.log('[WaliAuth] Password changed successfully');
+    console.log('[WaliAuth] Password changed successfully via cloud');
     return { success: true };
 
   } catch (e) {

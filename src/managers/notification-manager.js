@@ -6,6 +6,136 @@ const notificationDebugLog = (...args) => {
   }
 };
 
+// ENHANCEMENT: IndexedDB notification storage for durability
+const NotificationStore = {
+  _dbName: 'musyrif_notifications_db',
+  _storeName: 'notifications',
+  _db: null,
+
+  async init() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this._dbName, 1);
+
+      request.onerror = () => {
+        notificationDebugLog('[NotificationStore] Failed to open IndexedDB:', request.error);
+        reject(request.error);
+      };
+
+      request.onsuccess = () => {
+        this._db = request.result;
+        notificationDebugLog('[NotificationStore] IndexedDB initialized');
+        resolve(this._db);
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(this._storeName)) {
+          const store = db.createObjectStore(this._storeName, { keyPath: 'id' });
+          store.createIndex('recipient_type', 'recipient_type', { unique: false });
+          store.createIndex('recipient_id', 'recipient_id', { unique: false });
+          store.createIndex('created_at', 'created_at', { unique: false });
+          store.createIndex('is_read', 'is_read', { unique: false });
+          notificationDebugLog('[NotificationStore] Object store created');
+        }
+      };
+    });
+  },
+
+  async save(notification) {
+    if (!this._db) await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this._db.transaction(this._storeName, 'readwrite');
+      const store = tx.objectStore(this._storeName);
+      const request = store.put(notification);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+
+  async getByRecipient(recipientType, recipientId) {
+    if (!this._db) await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this._db.transaction(this._storeName, 'readonly');
+      const store = tx.objectStore(this._storeName);
+      const index = store.index('recipient_id');
+      const request = index.getAll(recipientId);
+      request.onsuccess = () => {
+        // Filter by recipient_type
+        const results = request.result.filter(n =>
+          n.recipient_type === recipientType && n.recipient_id === recipientId
+        ).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        resolve(results);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  },
+
+  async delete(id) {
+    if (!this._db) await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this._db.transaction(this._storeName, 'readwrite');
+      const store = tx.objectStore(this._storeName);
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  },
+
+  async updateReadStatus(id, isRead) {
+    if (!this._db) await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this._db.transaction(this._storeName, 'readwrite');
+      const store = tx.objectStore(this._storeName);
+      const getRequest = store.get(id);
+      getRequest.onsuccess = () => {
+        const record = getRequest.result;
+        if (record) {
+          record.is_read = isRead;
+          const putRequest = store.put(record);
+          putRequest.onsuccess = () => resolve(record);
+          putRequest.onerror = () => reject(putRequest.error);
+        } else {
+          resolve(null);
+        }
+      };
+      getRequest.onerror = () => reject(getRequest.error);
+    });
+  },
+
+  async clearOld(daysToKeep = 90) {
+    if (!this._db) await this.init();
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - daysToKeep);
+
+    return new Promise((resolve, reject) => {
+      const tx = this._db.transaction(this._storeName, 'readwrite');
+      const store = tx.objectStore(this._storeName);
+      const request = store.openCursor();
+
+      let deleted = 0;
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          if (new Date(cursor.value.created_at) < cutoff) {
+            cursor.delete();
+            deleted++;
+          }
+          cursor.continue();
+        } else {
+          notificationDebugLog(`[NotificationStore] Cleared ${deleted} old notifications`);
+          resolve(deleted);
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+};
+
+// Initialize on load
+NotificationStore.init().catch(err => {
+  notificationDebugLog('[NotificationStore] Init failed:', err);
+});
+
 // ==========================================
 // 🔴 CRITICAL FIX #7: PUSH NOTIFICATION SUPPORT
 // ==========================================
@@ -996,7 +1126,7 @@ window.onRoleChange = function(newRole) {
 };
 
 // Toggle visibility dropdown
-// Fetch notifications from localStorage and merge with cloud
+// Fetch notifications from IndexedDB (primary) and merge with cloud
 window.fetchNotifications = async function () {
   const recipient = window.getNotificationRecipientInfo();
   notificationDebugLog("[NotificationManager] fetchNotifications called:", recipient);
@@ -1011,16 +1141,26 @@ window.fetchNotifications = async function () {
   notificationDebugLog("[NotificationManager] Cache key:", cacheKey);
   let notificationsList = [];
 
-  // Load from localStorage cache
+  // ENHANCEMENT: Load from IndexedDB (primary) with localStorage fallback
   try {
-    const cached = localStorage.getItem(cacheKey);
-    notificationDebugLog("[NotificationManager] Cached data:", cached ? "exists" : "empty");
-    if (cached) {
-      notificationsList = JSON.parse(cached);
-      notificationDebugLog("[NotificationManager] Loaded from cache, count:", notificationsList.length);
-    }
+    // Try IndexedDB first (more durable)
+    notificationsList = await NotificationStore.getByRecipient(recipient.type, recipient.id);
+    notificationDebugLog("[NotificationManager] Loaded from IndexedDB, count:", notificationsList.length);
+
+    // Update localStorage cache from IndexedDB
+    localStorage.setItem(cacheKey, JSON.stringify(notificationsList.slice(0, 50)));
   } catch (e) {
-    console.warn("Failed to load cached notifications", e);
+    notificationDebugLog("[NotificationManager] IndexedDB load failed, trying localStorage:", e);
+    // Fallback to localStorage
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        notificationsList = JSON.parse(cached);
+        notificationDebugLog("[NotificationManager] Loaded from localStorage cache, count:", notificationsList.length);
+      }
+    } catch (cacheError) {
+      console.warn("Failed to load cached notifications", cacheError);
+    }
   }
 
   window.renderNotificationsUI(notificationsList);
@@ -1202,7 +1342,12 @@ window.addNotification = function (recipientType, recipientId, title, body, type
   notificationDebugLog("[NotificationManager] Current recipient:", currentRecipient);
   notificationDebugLog("[NotificationManager] Match?:", currentRecipient.type === recipientType && currentRecipient.id === newNotif.recipient_id);
 
-  // Selalu simpan ke cache, baik match maupun tidak (untuk mode Wali/Musyrif berbeda)
+  // ENHANCEMENT: Save to IndexedDB for durability (primary storage)
+  NotificationStore.save(newNotif).catch(err => {
+    notificationDebugLog('[NotificationManager] Failed to save to IndexedDB:', err);
+  });
+
+  // Also update localStorage cache for quick access
   const cacheKey = `local_notifs_${recipientType}_${newNotif.recipient_id}`;
   try {
     const cached = localStorage.getItem(cacheKey);
