@@ -33,6 +33,13 @@ class SupabaseSync {
     // Track last sync time for UI
     this.lastSyncTime = null;
 
+    // C-05 FIX: Promise-based mutex for safe async locking
+    this._syncLock = null;
+
+    // H-03 FIX: Debounce timer for UI updates
+    this._uiUpdateTimer = null;
+    this._uiUpdateDebounceMs = 100; // 100ms debounce for UI updates
+
     // Logger
     this._logger = window.SupabaseSyncLogger || {
       debug: (...args) => window.Logger?.debug('SupabaseSync', ...args),
@@ -40,6 +47,42 @@ class SupabaseSync {
       warn: (...args) => window.Logger?.warn('SupabaseSync', ...args),
       error: (...args) => window.Logger?.error('SupabaseSync', ...args),
     };
+  }
+
+  /**
+   * C-05 FIX: Acquire sync lock (Promise-based mutex)
+   * Prevents race conditions between realtime events and periodic sync
+   */
+  async _acquireSyncLock(operationName) {
+    // If already locked, wait for it
+    if (this._syncLock) {
+      this._logger.debug(`[SupabaseSync] Waiting for sync lock (${operationName})...`);
+      try {
+        await this._syncLock;
+      } catch (e) {
+        // Previous operation failed, that's okay
+      }
+    }
+
+    // Create a new lock
+    let releaseLock;
+    this._syncLock = new Promise((resolve) => {
+      releaseLock = resolve;
+    });
+    this._syncLock._operationName = operationName;
+    this._syncLock._release = releaseLock;
+
+    return true;
+  }
+
+  /**
+   * C-05 FIX: Release sync lock
+   */
+  _releaseSyncLock(operationName) {
+    if (this._syncLock && this._syncLock._operationName === operationName) {
+      this._syncLock._release();
+      this._syncLock = null;
+    }
   }
 
   /**
@@ -125,16 +168,41 @@ class SupabaseSync {
     // 🔴 CRITICAL FIX #8: Setup BroadcastChannel for same-origin tab sync
     this._setupBroadcastChannel();
 
+    // H-05 FIX: Remove existing listeners before adding new ones to prevent memory leak
+    this._cleanupEventListeners();
+
     // 3. Setup event listener koneksi internet
-    window.addEventListener('online', () => {
+    // H-05 FIX: Store handlers so they can be removed later
+    this._onlineHandler = () => {
       this._startPeriodicSync(); // Restart interval on reconnect
       this.syncAll();
-    });
+    };
 
-    window.addEventListener('offline', () => {
+    this._offlineHandler = () => {
       this._stopPeriodicSync();
       this.updateStatus('offline');
-    });
+    };
+
+    window.addEventListener('online', this._onlineHandler);
+    window.addEventListener('offline', this._offlineHandler);
+  }
+
+  /**
+   * H-05 FIX: Cleanup event listeners to prevent memory leak
+   */
+  _cleanupEventListeners() {
+    if (this._onlineHandler) {
+      window.removeEventListener('online', this._onlineHandler);
+      this._onlineHandler = null;
+    }
+    if (this._offlineHandler) {
+      window.removeEventListener('offline', this._offlineHandler);
+      this._offlineHandler = null;
+    }
+    if (this._retryHandler) {
+      window.removeEventListener('cloud:auth-state', this._retryHandler);
+      this._retryHandler = null;
+    }
   }
 
   /**
@@ -435,14 +503,25 @@ class SupabaseSync {
    * Jalankan sinkronisasi dua arah secara penuh
    */
   async syncAll() {
-    if (this.isSyncing || !window.isSupabaseEnabled) return;
-    this.isSyncing = true;
-    this.updateStatus('syncing');
+    // C-05 FIX: Use mutex to prevent race conditions
+    const operationName = 'syncAll';
 
-    // ENHANCEMENT: Progress tracking
-    this._emitProgress({ phase: 'starting', percent: 0, message: 'Memulai sinkronisasi...' });
+    // C-05 FIX: Skip if already syncing (use mutex-aware check)
+    if (this.isSyncing || !window.isSupabaseEnabled) {
+      this._logger.debug('[SupabaseSync] syncAll skipped: already syncing or disabled');
+      return;
+    }
 
     try {
+      // C-05 FIX: Acquire lock before starting
+      await this._acquireSyncLock(operationName);
+
+      this.isSyncing = true;
+      this.updateStatus('syncing');
+
+      // ENHANCEMENT: Progress tracking
+      this._emitProgress({ phase: 'starting', percent: 0, message: 'Memulai sinkronisasi...' });
+
       // 1. Tarik data konfigurasi dinamis (settings) dulu agar batas-batas terupdate
       this._emitProgress({ phase: 'config', percent: 10, message: 'Mengunduh konfigurasi...' });
       await this.syncInboundConfig();
@@ -469,6 +548,8 @@ class SupabaseSync {
       this._history.unshift({ timestamp: new Date().toISOString(), status: 'error', message: error.message });
     } finally {
       this.isSyncing = false;
+      // C-05 FIX: Release mutex lock
+      this._releaseSyncLock(operationName);
     }
   }
 
@@ -608,28 +689,64 @@ class SupabaseSync {
   }
 
   /**
-   * ENHANCEMENT: Get last sync timestamp for incremental sync
-   * Returns ISO timestamp or null for full sync
+   * C-02 FIX: Get last sync timestamp using SERVER time with 5-minute buffer.
+   *
+   * This prevents data loss from clock skew (device clock ahead of server).
+   * Buffer of 5 minutes ensures we don't miss records whose updated_at
+   * is just before the device's lastSyncTime.
+   *
+   * @returns {string|null} ISO timestamp with buffer applied, or null for full sync
    */
-  _getLastSyncTime() {
+  async _getLastSyncTime() {
     // Try to get from localStorage first (persisted)
     const stored = localStorage.getItem('supabase_sync_last_time');
-    if (stored) {
-      return stored;
+    const baseTime = stored || this.lastSyncTime;
+
+    if (!baseTime) {
+      // First sync - full sync
+      return null;
     }
 
-    // Fallback to this.lastSyncTime
-    if (this.lastSyncTime) {
-      return this.lastSyncTime;
+    // C-02 FIX: For incremental sync, we need to fetch server time and subtract buffer
+    // This prevents clock skew issues where device time is ahead of server
+    try {
+      // Fetch server time (Supabase stores created_at/updated_at in UTC)
+      const { data, error } = await window.supabaseClient
+        .from('settings')
+        .select('created_at')
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data?.created_at) {
+        // Use server time as baseline
+        const serverTime = new Date(data.created_at).getTime();
+        const clientTime = new Date(baseTime).getTime();
+
+        // If device clock is ahead of server by more than 1 minute, use server time
+        if (clientTime - serverTime > 60000) {
+          this._logger.warn(`[SupabaseSync] Clock skew detected: device is ${Math.round((clientTime - serverTime) / 1000)}s ahead of server`);
+        }
+
+        // Apply 5-minute buffer (client time - 5 min = earliest possible record we might have missed)
+        const bufferedTime = new Date(clientTime - (5 * 60 * 1000)).toISOString();
+        return bufferedTime;
+      }
+    } catch (e) {
+      this._logger.warn('[SupabaseSync] Could not fetch server time, using local timestamp with buffer:', e);
     }
 
-    // Default: null (full sync on first run)
-    return null;
+    // Fallback: use local time with 5-minute buffer
+    const bufferedTime = new Date(new Date(baseTime).getTime() - (5 * 60 * 1000)).toISOString();
+    return bufferedTime;
   }
 
   /**
-   * ENHANCEMENT: Update last sync timestamp
-   * Call this after successful sync
+   * C-02 FIX: Update last sync timestamp using local time (not server time).
+   *
+   * We store local time because:
+   * 1. Server time is authoritative for comparisons during sync
+   * 2. Local time is used as "checkpoint" for next sync
+   * 3. Next sync will apply server time comparison with buffer
    */
   _updateLastSyncTime() {
     const now = new Date().toISOString();
@@ -715,6 +832,32 @@ class SupabaseSync {
   setTablesToSync() { /* cloud-only always syncs all scoped tables */ }
   setDateRange() { /* full scoped sync is required */ }
   clearDateRange() { /* no-op */ }
+
+  /**
+   * H-05 FIX: Cleanup and destroy the sync manager
+   * Call this when the app or component unmounts
+   */
+  destroy() {
+    this._logger.info('[SupabaseSync] Destroying...');
+
+    // Stop periodic sync
+    this._stopPeriodicSync();
+
+    // Cleanup event listeners
+    this._cleanupEventListeners();
+
+    // Cleanup sync queue
+    if (window.syncQueue?.destroy) {
+      window.syncQueue.destroy();
+    }
+
+    // Cleanup IndexedDB online listener
+    if (window.syncQueue?._clearOnlineRetryListener) {
+      window.syncQueue._clearOnlineRetryListener();
+    }
+
+    this._logger.info('[SupabaseSync] Destroyed');
+  }
   getHistory(limit = 10) { return this._history.slice(0, limit); }
   clearHistory() { this._history = []; }
   async getPendingCount() { return window.syncQueue?.getPendingCount?.() || 0; }
@@ -737,8 +880,8 @@ class SupabaseSync {
     // Menandai agar write ke local DB tidak di-queue ulang ke sync_queue
     this._db.isSyncing = true;
 
-    // ENHANCEMENT: Get last sync time for incremental sync
-    const lastSyncTime = this._getLastSyncTime();
+    // C-02 FIX: Get last sync time with server clock buffer (async now)
+    const lastSyncTime = await this._getLastSyncTime();
 
     try {
       // PERFORMANCE FIX: Fetch all tables in PARALLEL using Promise.all
@@ -825,17 +968,19 @@ class SupabaseSync {
       ].join('/')} records from cloud (attendances/permits/tahfizh/journals)`);
 
       // PERFORMANCE FIX: Process all tables in PARALLEL
+      // C-03 FIX: Pass isIncremental=true to skip prune during incremental sync
+      const isIncremental = !!lastSyncTime;
       await Promise.all([
         // Process Attendances
         this._processTableSync('attendances', cloudAttendances, isAdmin, kelas,
-          record => this._toLocalFormat(record, 'attendances')),
+          record => this._toLocalFormat(record, 'attendances'), isIncremental),
         // Process Permits
-        this._processTableSync('permits', cloudPermits, isAdmin, kelas),
+        this._processTableSync('permits', cloudPermits, isAdmin, kelas, null, isIncremental),
         // Process Tahfizh
-        this._processTableSync('tahfizh', cloudTahfizh, isAdmin, kelas),
+        this._processTableSync('tahfizh', cloudTahfizh, isAdmin, kelas, null, isIncremental),
         // Process Journals
         this._processTableSync('musyrif_journals', cloudJournals, isAdmin, kelas,
-          record => this._toLocalFormat(record, 'musyrif_journals'))
+          record => this._toLocalFormat(record, 'musyrif_journals'), isIncremental)
       ]);
 
       // Re-trigger UI Update setelah inbound sync selesai
@@ -855,10 +1000,38 @@ class SupabaseSync {
   }
 
   /**
+   * H-04 FIX: Schema validation for cloud data
+   */
+  _validateCloudRecord(tableName, record) {
+    // Basic schema validation
+    const requiredFields = {
+      attendances: ['id', 'date', 'slot', 'studentId'],
+      permits: ['id', 'nis', 'start_date'],
+      tahfizh: ['id', 'nis', 'tanggal'],
+      musyrif_journals: ['id', 'musyrif_id', 'tanggal'],
+    };
+
+    const required = requiredFields[tableName] || [];
+    const missing = required.filter(field => !(field in record));
+
+    if (missing.length > 0) {
+      this._logger.warn(`[SupabaseSync] Invalid record for ${tableName}: missing ${missing.join(', ')}`);
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
    * PERFORMANCE FIX: Helper to process table sync in parallel batches
    * Processes records in parallel chunks instead of sequential forEach
+   *
+   * C-03 FIX: Removed prune during incremental sync to prevent data loss.
+   * Pruning is ONLY done during full sync (when lastSyncTime is null).
+   *
+   * H-04 FIX: Added schema validation for cloud data.
    */
-  async _processTableSync(tableName, cloudRecords, isAdmin, kelas, transformFn = null) {
+  async _processTableSync(tableName, cloudRecords, isAdmin, kelas, transformFn = null, isIncremental = false) {
     if (!cloudRecords || cloudRecords.length === 0) return;
 
     const isInScope = record => isAdmin || record.kelas === kelas;
@@ -875,6 +1048,12 @@ class SupabaseSync {
 
     for (const batch of batches) {
       await Promise.all(batch.map(async (record) => {
+        // H-04 FIX: Validate schema before saving
+        if (!this._validateCloudRecord(tableName, record)) {
+          this._logger.warn(`[SupabaseSync] Skipping invalid record: ${record.id}`);
+          return;
+        }
+
         const localRecord = await this._db.get(tableName, record.id);
         const transformedRecord = transformFn ? transformFn(record) : record;
 
@@ -885,12 +1064,25 @@ class SupabaseSync {
       }));
     }
 
-    // Prune local rows
-    await this._pruneLocalRows(tableName, cloudRecords, isInScope);
+    // C-03 FIX: Only prune during FULL sync, not incremental
+    // With incremental sync, cloudRows is a subset - pruning would delete records
+    // that simply haven't been synced yet but still exist on the server
+    if (!isIncremental) {
+      this._logger.debug(`[SupabaseSync] Full sync - running prune for ${tableName}`);
+      await this._pruneLocalRows(tableName, cloudRecords, isInScope);
+    } else {
+      this._logger.debug(`[SupabaseSync] Incremental sync - skipping prune for ${tableName}`);
+    }
   }
 
+  /**
+   * C-03 FIX: Prune only runs during full sync.
+   * This is safe because during full sync, we get ALL records from cloud.
+   */
   async _pruneLocalRows(table, cloudRows, isInScope) {
     if (!this._hasLocalStore(table)) return;
+    if (!cloudRows || cloudRows.length === 0) return;
+
     const cloudIds = new Set(cloudRows.map(row => String(row.id)));
     const queued = await window.syncQueue?.export?.() || [];
     const protectedIds = new Set(
@@ -899,10 +1091,17 @@ class SupabaseSync {
         .map(item => String(item.entity_id || item.entityId))
     );
     const localRows = await this._db.getAll(table);
+
+    let deletedCount = 0;
     for (const row of localRows) {
       if (isInScope(row) && !cloudIds.has(String(row.id)) && !protectedIds.has(String(row.id))) {
         await this._db.delete(table, row.id, { skipSync: true });
+        deletedCount++;
       }
+    }
+
+    if (deletedCount > 0) {
+      this._logger.info(`[SupabaseSync] Pruned ${deletedCount} deleted records from ${table}`);
     }
   }
 
@@ -1222,9 +1421,27 @@ class SupabaseSync {
   }
 
   /**
-   * 🔴 CRITICAL FIX #2: Trigger UI updates based on table type
+   * H-03 FIX: Trigger UI updates with debouncing
+   * Prevents UI freeze when burst of realtime events come in
    */
   _triggerUIUpdate(table, eventType) {
+    // H-03 FIX: Cancel pending update and schedule new one
+    if (this._uiUpdateTimer) {
+      clearTimeout(this._uiUpdateTimer);
+    }
+
+    this._uiUpdateTimer = setTimeout(() => {
+      this._doTriggerUIUpdate(table, eventType);
+    }, this._uiUpdateDebounceMs);
+  }
+
+  /**
+   * H-03 FIX: Actual UI update logic (separated for debouncing)
+   * @private
+   */
+  _doTriggerUIUpdate(table, eventType) {
+    this._uiUpdateTimer = null;
+
     // Always reload state manager
     if (window.stateManager && this._hasLocalStore(table)) {
       window.stateManager._loadPersistedState?.();

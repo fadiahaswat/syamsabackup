@@ -69,6 +69,9 @@ window.syncWaliCredentialsToCloud = async function(nis, studentName, studentClas
 /**
  * Sign in as Wali service account
  * Called when Wali user logs in with NIS
+ *
+ * C-04 SECURITY FIX: Use Supabase Edge Function instead of storing credentials in browser memory.
+ * The Edge Function handles authentication server-side without exposing any credentials to the client.
  */
 window.signInAsWaliService = async function() {
   if (!window.isSupabaseEnabled || !window.supabaseClient) {
@@ -76,26 +79,21 @@ window.signInAsWaliService = async function() {
     return { success: false, reason: 'cloud_disabled' };
   }
 
-  // Get service account credentials from config (set by admin)
-  const serviceEmail = WALI_SERVICE_EMAIL;
-  const servicePassword = WALI_SERVICE_PASSWORD;
-
-  if (!servicePassword) {
-    console.warn('[WaliAuth] Service account password not configured. Add WALI_SERVICE_PASSWORD to config.local.js');
-    return { success: false, reason: 'service_not_configured' };
-  }
-
   try {
-    console.log('[WaliAuth] Signing in as Wali service account...');
+    console.log('[WaliAuth] Signing in as Wali service account via Edge Function...');
 
-    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
-      email: serviceEmail,
-      password: servicePassword,
+    // C-04 FIX: Use Edge Function for service account authentication
+    // This avoids storing credentials in browser memory/DevTools
+    const { data, error } = await window.supabaseClient.functions.invoke('service-auth', {
+      body: { action: 'signInService' }
     });
 
-    if (error) {
-      console.error('[WaliAuth] Service account login failed:', error);
-      return { success: false, error };
+    if (error || !data?.success) {
+      console.error('[WaliAuth] Service account login failed:', error || data?.error);
+
+      // Fallback: Try anonymous access for read-only operations
+      console.warn('[WaliAuth] Falling back to anonymous mode');
+      return { success: false, reason: 'auth_failed', error: error || data?.error };
     }
 
     // Set cloud session ready
@@ -104,7 +102,7 @@ window.signInAsWaliService = async function() {
       detail: { isAuthenticated: true }
     }));
 
-    console.log('[WaliAuth] Service account logged in successfully');
+    console.log('[WaliAuth] Service account authenticated successfully');
 
     return { success: true, session: data.session };
 

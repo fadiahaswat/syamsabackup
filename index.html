@@ -8694,36 +8694,37 @@
       </div>
     </div>
 
-    <!-- MODAL: Konfirmasi Ubah Presensi (untuk data yang sudah tersimpan) -->
+    <!-- BANNER: Edit Mode untuk Presensi Tersimpan -->
     <div
-      id="modal-edit-presence"
-      class="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-md hidden items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="edit-presence-title"
+      id="banner-edit-presence"
+      class="hidden sticky top-0 z-30 mb-3 mx-4 mt-3 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-3 shadow-lg backdrop-blur-xl"
     >
-      <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 animate-slide-up shadow-2xl border border-slate-100 dark:border-slate-800">
-        <div class="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-900/20 mx-auto mb-4 flex items-center justify-center">
-          <i data-lucide="edit-3" class="w-7 h-7 text-amber-500"></i>
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
+            <i data-lucide="edit-3" class="h-4 w-4" aria-hidden="true"></i>
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-black text-amber-900 dark:text-amber-100">Mode Edit Presensi</p>
+            <p class="mt-0.5 text-[11px] font-semibold leading-relaxed text-amber-700 dark:text-amber-200">Ubah status sesuai kebutuhan, lalu klik Simpan.</p>
+          </div>
         </div>
-        <h3 id="edit-presence-title" class="text-base font-black text-slate-800 dark:text-white mb-2 text-center">
-          Ubah Presensi?
-        </h3>
-        <p id="edit-presence-message" class="text-sm text-slate-600 dark:text-slate-400 mb-6 leading-relaxed text-center">
-          Data presensi ini sudah tersimpan. Apakah Anda yakin ingin mengubahnya?
-        </p>
-        <div class="flex flex-col gap-2">
+        <div class="flex gap-2 shrink-0">
           <button
-            id="edit-presence-yes"
-            class="w-full py-3 rounded-xl bg-amber-500 text-white font-bold text-sm transition-all active:scale-[0.98] hover:bg-amber-600 shadow-lg shadow-amber-500/30"
-          >
-            Ya, Ubah Presensi
-          </button>
-          <button
-            id="edit-presence-no"
-            class="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white font-bold text-sm transition-all active:scale-[0.98] hover:bg-slate-200 dark:hover:bg-slate-700"
+            id="banner-edit-cancel"
+            type="button"
+            onclick="window.cancelEditPresensi()"
+            class="rounded-xl bg-white dark:bg-slate-700 px-3 py-2 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 shadow-sm active:scale-95 transition-all"
           >
             Batal
+          </button>
+          <button
+            id="banner-edit-save"
+            type="button"
+            onclick="window.saveEditPresensi()"
+            class="rounded-xl bg-amber-600 px-3 py-2 text-[10px] font-black text-white shadow-sm active:scale-95 transition-all"
+          >
+            💾 Simpan
           </button>
         </div>
       </div>

@@ -135,6 +135,14 @@ window.openAttendance = async function () {
 };
 
 window.closeAttendance = function () {
+  // Reset edit mode state
+  window._isEditingSavedAttendance = false;
+  window._editPresensiOriginalData = null;
+
+  // Hide edit banner
+  const banner = document.getElementById("banner-edit-presence");
+  if (banner) banner.classList.add("hidden");
+
   if (window.clearAttendanceReviewGate) window.clearAttendanceReviewGate();
   document.getElementById("view-attendance").classList.add("hidden");
   document.getElementById("view-main").classList.remove("hidden");
@@ -827,16 +835,14 @@ window.toggleStatus = function (id, actId, type) {
 
   const dateKey = appState.date;
 
-  // CEK: Jika presensi sudah tersimpan, tanyakan konfirmasi dulu
+  // CEK: Jika presensi sudah tersimpan dan belum dalam mode edit, aktifkan edit mode
   const slotData = appState.attendanceData?.[dateKey]?.[slotId];
   const isAlreadySaved = slotData?.__reviewConfirmed === true && slotData?.__requiresReview !== true;
+  const isEditMode = window._isEditingSavedAttendance === true;
 
-  if (isAlreadySaved) {
-    // Tampilkan modal konfirmasi
-    window.showEditPresenceModal(id, actId, type);
-    // Unlock karena proses dibatalkan
-    delete window._toggleLock[lockKey];
-    return;
+  if (isAlreadySaved && !isEditMode) {
+    // Aktifkan mode edit SEBELUM toggle (agar toggle tetap diproses)
+    window.enableEditPresensiMode(dateKey, slotId);
   }
 
   // Lanjutkan dengan proses toggle normal
@@ -1014,60 +1020,17 @@ window.toggleStatus = function (id, actId, type) {
 };
 
 /**
- * Tampilkan modal konfirmasi untuk mengubah presensi yang sudah tersimpan
+ * Aktifkan mode edit untuk presensi yang sudah tersimpan
  */
-window.showEditPresenceModal = function (id, actId, type) {
-  const modal = document.getElementById("modal-edit-presence");
-  if (!modal) {
-    console.error("Modal edit-presence tidak ditemukan!");
-    return;
-  }
-
-  // Simpan context untuk callback
-  window._editPresenceContext = { id, actId, type };
-
-  // Tampilkan modal
-  modal.classList.remove("hidden");
-  modal.classList.add("flex");
-
-  // Setup tombol Ya
-  const yesBtn = document.getElementById("edit-presence-yes");
-  yesBtn.onclick = () => {
-    window.closeModal("modal-edit-presence");
-    // Lanjutkan toggle dengan context yang disimpan
-    window._proceedWithEdit();
-  };
-
-  // Setup tombol Batal
-  const noBtn = document.getElementById("edit-presence-no");
-  noBtn.onclick = () => {
-    window.closeModal("modal-edit-presence");
-    window._editPresenceContext = null;
-    window.showToast("Perubahan dibatalkan", "info");
-  };
-
-  // Refresh icons
-  if (window.lucide) window.lucide.createIcons();
-};
-
-/**
- * Lanjutkan proses edit setelah konfirmasi modal
- */
-window._proceedWithEdit = function () {
-  const context = window._editPresenceContext;
-  if (!context) return;
-
-  const { id, actId, type } = context;
-  window._editPresenceContext = null;
-
-  // Set flag bahwa kita sedang dalam mode edit
+window.enableEditPresensiMode = function (dateKey, slotId) {
+  // Set flag mode edit
   window._isEditingSavedAttendance = true;
+  window._editPresensiOriginalData = JSON.parse(JSON.stringify(
+    appState.attendanceData?.[dateKey]?.[slotId] || {}
+  ));
 
   // Unlock presensi untuk diedit
-  const slotId = appState.currentSlotId;
-  const dateKey = appState.date;
   const slotData = appState.attendanceData?.[dateKey]?.[slotId];
-
   if (slotData) {
     slotData.__requiresReview = true;
     slotData.__unlockedAt = new Date().toISOString();
@@ -1075,10 +1038,73 @@ window._proceedWithEdit = function () {
     window.saveData();
   }
 
-  // Re-render untuk update UI
+  // Tampilkan banner edit
+  const banner = document.getElementById("banner-edit-presence");
+  if (banner) {
+    banner.classList.remove("hidden");
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  // Update indicator
+  window.setAttendanceSaveIndicator("pending");
+};
+
+/**
+ * Simpan perubahan edit presensi
+ */
+window.saveEditPresensi = function () {
+  const slotId = appState.currentSlotId;
+  const dateKey = appState.date;
+
+  // Simpan presensi (konfirmasi ulang)
+  window.markAttendanceReviewConfirmed(dateKey, slotId);
+
+  // Reset flag mode edit
+  window._isEditingSavedAttendance = false;
+  window._editPresensiOriginalData = null;
+
+  // Sembunyikan banner
+  const banner = document.getElementById("banner-edit-presence");
+  if (banner) {
+    banner.classList.add("hidden");
+  }
+
+  // Sync ke cloud
+  window.syncAttendanceToCloud?.(dateKey, slotId);
+
+  window.showToast("Perubahan presensi berhasil disimpan!", "success");
+};
+
+/**
+ * Batalkan edit presensi dan kembalikan data asli
+ */
+window.cancelEditPresensi = function () {
+  const slotId = appState.currentSlotId;
+  const dateKey = appState.date;
+
+  // Kembalikan data asli dari backup
+  if (window._editPresensiOriginalData) {
+    appState.attendanceData[dateKey][slotId] = window._editPresensiOriginalData;
+    window.saveData();
+  }
+
+  // Reset flag mode edit
+  window._isEditingSavedAttendance = false;
+  window._editPresensiOriginalData = null;
+
+  // Sembunyikan banner
+  const banner = document.getElementById("banner-edit-presence");
+  if (banner) {
+    banner.classList.add("hidden");
+  }
+
+  // Update indicator
+  window.setAttendanceSaveIndicator("saved");
+
+  // Re-render
   window.renderAttendanceList();
 
-  window.showToast("Silakan ubah status presensi, lalu simpan", "info");
+  window.showToast("Perubahan dibatalkan", "info");
 };
 
 /**

@@ -71,6 +71,9 @@ class SyncManager {
 
   /**
    * Initialize SyncManager
+   *
+   * C-01 FIX: Deprecated - now only SupabaseSync handles auto-sync.
+   * This class is kept for backward compatibility only.
    */
   async init(localDB, repositories, userProfile) {
     this._db = localDB;
@@ -79,17 +82,12 @@ class SyncManager {
     this._userKelas = userProfile?.kelas || userProfile?.selectedClass;
     this._userNis = userProfile?.nis;
 
-    // Setup auto-sync if Supabase is enabled
-    if (window.isSupabaseEnabled) {
-      this.startAutoSync();
-    }
+    // C-01 FIX: DO NOT start auto-sync here - SupabaseSync handles it
+    // SyncManager is deprecated and should not trigger any sync operations
+    console.warn('[SyncManager] ⚠️ DEPRECATED - Using SupabaseSync for sync. This manager is inactive.');
 
-    // Setup online/offline listeners
-    window.addEventListener('online', () => {
-      if (!this._isPaused) {
-        this.syncAll();
-      }
-    });
+    // C-01 FIX: Remove online/offline listeners that would trigger duplicate sync
+    // SupabaseSync handles these events instead
 
     // Load sync history from storage
     await this._loadHistory();

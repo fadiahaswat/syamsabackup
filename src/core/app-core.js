@@ -726,9 +726,21 @@ window.renderAttendanceReviewGate = function (
     if (window.refreshIcons) window.refreshIcons();
   }
 
+  // CEK: Jika dalam mode edit presensi tersimpan, tampilkan banner
+  const isEditMode = window._isEditingSavedAttendance === true;
+  if (isEditMode && confirmed) {
+    const banner = document.getElementById("banner-edit-presence");
+    if (banner) {
+      banner.classList.remove("hidden");
+      if (window.refreshIcons) window.refreshIcons();
+    }
+  }
+
   // Update indicator
   if (needsReview && !confirmed) {
     window.setAttendanceSaveIndicator("notStarted");
+  } else if (isEditMode) {
+    window.setAttendanceSaveIndicator("pending");
   } else {
     window.setAttendanceSaveIndicator("saved");
   }
@@ -737,6 +749,7 @@ window.renderAttendanceReviewGate = function (
 window.clearAttendanceReviewGate = function () {
   document.getElementById("attendance-review-banner")?.remove();
   document.getElementById("attendance-summary-card")?.remove();
+  document.getElementById("banner-edit-presence")?.remove();
 
   const container = document.getElementById("attendance-list-container");
   if (container) {

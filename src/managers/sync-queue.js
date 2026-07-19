@@ -250,10 +250,32 @@ class SyncQueue {
   /**
    * Mark change as failed and schedule automatic retry
    * ENHANCEMENT: Implements exponential backoff retry
+   *
+   * H-01 FIX: Check navigator.onLine before marking as permanently failed.
+   * If offline, keep retrying when connection is restored.
    */
   async markFailed(id, error) {
     const change = await this.getChange(id);
     const retryCount = (change?.retry_count || 0) + 1;
+
+    // H-01 FIX: If device is offline, don't mark as permanently failed
+    // Just schedule retry for when online
+    if (!navigator.onLine) {
+      this._logger.info(`[SyncQueue] Device offline - scheduling retry for ${id} when online`);
+
+      // Keep as pending with offline flag
+      await this.updateStatus(id, 'pending', {
+        last_error: error?.message || String(error),
+        retry_count: retryCount,
+        next_retry_at: null, // Will retry when online event fires
+        offline_pending: true,
+      });
+
+      // Set up online listener to retry when connection restored
+      this._setupOnlineRetry(id);
+
+      return { scheduled: true, offline: true };
+    }
 
     // Check if we should retry
     if (retryCount <= this._maxRetries) {
@@ -274,7 +296,23 @@ class SyncQueue {
 
       return { scheduled: true, retryCount, delayMs };
     } else {
-      // Max retries exceeded - mark as permanently failed
+      // H-01 FIX: Even with max retries, if online, schedule retry after longer delay
+      // Only mark permanently failed after even more retries OR user explicitly says so
+      if (retryCount <= this._maxRetries * 2) {
+        const delayMs = this._retryBaseDelayMs * Math.pow(2, retryCount - 1);
+        this._logger.info(`[SyncQueue] Extended retry ${retryCount}/${this._maxRetries * 2} for ${id}`);
+
+        await this.updateStatus(id, 'pending', {
+          last_error: error?.message || String(error),
+          retry_count: retryCount,
+          next_retry_at: Date.now() + delayMs,
+        });
+
+        this._scheduleRetry(id, delayMs);
+        return { scheduled: true, retryCount, delayMs, extended: true };
+      }
+
+      // Max extended retries exceeded - mark as permanently failed
       this._logger.warn(`[SyncQueue] Max retries exceeded for ${id}, marking as failed`);
       await this.updateStatus(id, 'failed', {
         last_error: error?.message || String(error),
@@ -318,6 +356,36 @@ class SyncQueue {
     }, delayMs);
 
     this._retryTimers.set(id, timer);
+  }
+
+  /**
+   * H-01 FIX: Setup online listener for offline-retrying items
+   * @private
+   */
+  _setupOnlineRetry(id) {
+    // Check if we already have an online listener
+    if (this._onlineRetryListener) return;
+
+    const handler = async () => {
+      this._logger.info('[SyncQueue] Device came online - retrying pending items');
+      if (window.supabaseSync?.syncOutbound) {
+        await window.supabaseSync.syncOutbound();
+      }
+    };
+
+    window.addEventListener('online', handler);
+    this._onlineRetryListener = handler;
+  }
+
+  /**
+   * H-01 FIX: Clear online retry listener
+   * @private
+   */
+  _clearOnlineRetryListener() {
+    if (this._onlineRetryListener) {
+      window.removeEventListener('online', this._onlineRetryListener);
+      this._onlineRetryListener = null;
+    }
   }
 
   /**
