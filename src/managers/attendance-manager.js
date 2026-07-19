@@ -827,6 +827,19 @@ window.toggleStatus = function (id, actId, type) {
 
   const dateKey = appState.date;
 
+  // CEK: Jika presensi sudah tersimpan, tanyakan konfirmasi dulu
+  const slotData = appState.attendanceData?.[dateKey]?.[slotId];
+  const isAlreadySaved = slotData?.__reviewConfirmed === true && slotData?.__requiresReview !== true;
+
+  if (isAlreadySaved) {
+    // Tampilkan modal konfirmasi
+    window.showEditPresenceModal(id, actId, type);
+    // Unlock karena proses dibatalkan
+    delete window._toggleLock[lockKey];
+    return;
+  }
+
+  // Lanjutkan dengan proses toggle normal
   // Safety check data - ensure structure exists
   if (!appState.attendanceData[dateKey]) {
     appState.attendanceData[dateKey] = {};
@@ -992,8 +1005,124 @@ window.toggleStatus = function (id, actId, type) {
   window.renderAttendanceList(); // Render ulang agar perubahan otomatis terlihat
   window.refreshPembinaanSurfaces?.();
 
+  // Sync ke database setelah save
+  window.syncAttendanceToCloud?.(dateKey, slotId);
+
   if (appState.date === window.getLocalDateStr()) {
     window.updateDashboard();
+  }
+};
+
+/**
+ * Tampilkan modal konfirmasi untuk mengubah presensi yang sudah tersimpan
+ */
+window.showEditPresenceModal = function (id, actId, type) {
+  const modal = document.getElementById("modal-edit-presence");
+  if (!modal) {
+    console.error("Modal edit-presence tidak ditemukan!");
+    return;
+  }
+
+  // Simpan context untuk callback
+  window._editPresenceContext = { id, actId, type };
+
+  // Tampilkan modal
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+
+  // Setup tombol Ya
+  const yesBtn = document.getElementById("edit-presence-yes");
+  yesBtn.onclick = () => {
+    window.closeModal("modal-edit-presence");
+    // Lanjutkan toggle dengan context yang disimpan
+    window._proceedWithEdit();
+  };
+
+  // Setup tombol Batal
+  const noBtn = document.getElementById("edit-presence-no");
+  noBtn.onclick = () => {
+    window.closeModal("modal-edit-presence");
+    window._editPresenceContext = null;
+    window.showToast("Perubahan dibatalkan", "info");
+  };
+
+  // Refresh icons
+  if (window.lucide) window.lucide.createIcons();
+};
+
+/**
+ * Lanjutkan proses edit setelah konfirmasi modal
+ */
+window._proceedWithEdit = function () {
+  const context = window._editPresenceContext;
+  if (!context) return;
+
+  const { id, actId, type } = context;
+  window._editPresenceContext = null;
+
+  // Set flag bahwa kita sedang dalam mode edit
+  window._isEditingSavedAttendance = true;
+
+  // Unlock presensi untuk diedit
+  const slotId = appState.currentSlotId;
+  const dateKey = appState.date;
+  const slotData = appState.attendanceData?.[dateKey]?.[slotId];
+
+  if (slotData) {
+    slotData.__requiresReview = true;
+    slotData.__unlockedAt = new Date().toISOString();
+    slotData.__unlockedBy = window.getCurrentActorName();
+    window.saveData();
+  }
+
+  // Re-render untuk update UI
+  window.renderAttendanceList();
+
+  window.showToast("Silakan ubah status presensi, lalu simpan", "info");
+};
+
+/**
+ * Sync attendance data ke cloud/database
+ */
+window.syncAttendanceToCloud = async function (dateKey, slotId) {
+  if (!window.isSupabaseEnabled || !window.supabaseClient) {
+    console.log("[AttendanceManager] Cloud sync skipped - Supabase not enabled");
+    return;
+  }
+
+  try {
+    const slotData = appState.attendanceData?.[dateKey]?.[slotId];
+    if (!slotData) return;
+
+    // Prepare data for sync
+    const syncData = {
+      date: dateKey,
+      slot_id: slotId,
+      class_id: appState.selectedClass,
+      data: slotData,
+      updated_at: new Date().toISOString(),
+      updated_by: window.getCurrentActorName(),
+    };
+
+    // Upsert to cloud
+    const { data, error } = await window.supabaseClient
+      .from("attendance_data")
+      .upsert(syncData, { onConflict: "date,slot_id,class_id" })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[AttendanceManager] Cloud sync failed:", error);
+      return;
+    }
+
+    console.log("[AttendanceManager] Cloud sync successful:", data);
+
+    // Update local indicator
+    window.setAttendanceSaveIndicator("saved");
+
+  } catch (err) {
+    console.error("[AttendanceManager] Cloud sync error:", err);
   }
 };
 
