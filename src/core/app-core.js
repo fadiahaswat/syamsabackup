@@ -373,6 +373,45 @@ window.getAttendanceSlotData = function (dateKey, slotId) {
   return appState.attendanceData?.[dateKey]?.[slotId] || null;
 };
 
+/**
+ * Calculate attendance summary statistics for a slot
+ * @param {string} dateKey - Date in YYYY-MM-DD format
+ * @param {string} slotId - Slot ID (shubuh, sekolah, ashar, etc.)
+ * @returns {Object} Summary with counts per status
+ */
+window.calculateAttendanceSummary = function (dateKey, slotId) {
+  const slotData = appState.attendanceData?.[dateKey]?.[slotId];
+  if (!slotData) {
+    return { total: 0, Hadir: 0, Alpa: 0, Telat: 0, Sakit: 0, Izin: 0, Pulang: 0 };
+  }
+
+  const slotConfig = SLOT_WAKTU[slotId];
+  const mainActId = slotConfig?.activities?.[0]?.id || "shalat";
+
+  const summary = { total: 0, Hadir: 0, Alpa: 0, Telat: 0, Sakit: 0, Izin: 0, Pulang: 0 };
+
+  // Count each student
+  Object.keys(slotData).forEach((key) => {
+    // Skip metadata keys
+    if (key.startsWith("__")) return;
+
+    const studentData = slotData[key];
+    if (!studentData?.status) return;
+
+    summary.total++;
+    const mainStatus = studentData.status[mainActId] || "Hadir";
+
+    if (summary[mainStatus] !== undefined) {
+      summary[mainStatus]++;
+    } else if (mainStatus === "Ya" || mainStatus === "Tidak") {
+      // For sunnah activities, default to Hadir count
+      summary.Hadir++;
+    }
+  });
+
+  return summary;
+};
+
 window.markAttendanceReviewConfirmed = function (dateKey, slotId) {
   const slotData = window.getAttendanceSlotData(dateKey, slotId);
   if (!slotData) return;
@@ -390,6 +429,77 @@ window.markAttendanceReviewConfirmed = function (dateKey, slotId) {
     }
   }, 900);
   window.updateDashboard();
+
+  // Update the summary card to show saved state
+  window.updateSummaryCardState(dateKey, slotId, 'saved');
+};
+
+/**
+ * Unlock editing after presensi has been saved
+ * Allows musyrif to make changes even after saving
+ */
+window.unlockAttendanceEdit = function (dateKey, slotId) {
+  const slotData = window.getAttendanceSlotData(dateKey, slotId);
+  if (!slotData) return;
+
+  // Keep __reviewConfirmed but allow editing
+  // The key is to remove any visual lock and allow toggleStatus to work
+  slotData.__requiresReview = true; // Mark as needing review again
+  slotData.__unlockedAt = new Date().toISOString();
+  slotData.__unlockedBy = window.getCurrentActorName();
+
+  window.saveData();
+  window.updateDashboard();
+
+  // Update the summary card to show edit mode
+  window.updateSummaryCardState(dateKey, slotId, 'editing');
+
+  // Show confirmation toast
+  window.showToast?.('Presensi dapat diedit kembali', 'info');
+};
+
+/**
+ * Update the summary card state based on save status
+ */
+window.updateSummaryCardState = function (dateKey, slotId, state) {
+  const card = document.getElementById('attendance-summary-card');
+  if (!card) return;
+
+  const saveBtn = card.querySelector('#summary-save-btn');
+  const savedInfo = card.querySelector('#summary-saved-info');
+  const editBtn = card.querySelector('#summary-edit-btn');
+  const slotData = window.getAttendanceSlotData(dateKey, slotId);
+
+  if (state === 'saved' && slotData?.__reviewConfirmed) {
+    // Hide save button, show saved info and edit button
+    if (saveBtn) saveBtn.classList.add('hidden');
+    if (savedInfo) {
+      savedInfo.classList.remove('hidden');
+      const reviewedAt = slotData.__reviewedAt ? window.formatTime(slotData.__reviewedAt) : '';
+      const reviewedBy = slotData.__reviewedBy || window.getCurrentActorName();
+      savedInfo.innerHTML = `
+        <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span class="text-xs font-semibold">Tersimpan</span>
+        </div>
+        <span class="text-[10px] text-slate-400">${reviewedAt} • ${reviewedBy}</span>
+      `;
+    }
+    if (editBtn) editBtn.classList.remove('hidden');
+  } else if (state === 'editing') {
+    // Show save button, hide saved info
+    if (saveBtn) saveBtn.classList.remove('hidden');
+    if (savedInfo) savedInfo.classList.add('hidden');
+    if (editBtn) editBtn.classList.add('hidden');
+  } else if (state === 'unsaved') {
+    // Show save button with highlight
+    if (saveBtn) {
+      saveBtn.classList.remove('hidden');
+      saveBtn.classList.add('ring-2', 'ring-amber-400', 'ring-offset-2');
+    }
+    if (savedInfo) savedInfo.classList.add('hidden');
+    if (editBtn) editBtn.classList.add('hidden');
+  }
 };
 
 window.setAttendanceSaveIndicator = function (status) {
@@ -453,9 +563,15 @@ window.renderAttendanceReviewGate = function (
   slotId,
   needsReview,
 ) {
+  // Remove old banner if exists
   const existingBanner = document.getElementById("attendance-review-banner");
   if (existingBanner) existingBanner.remove();
 
+  // Remove old summary card if exists
+  const existingCard = document.getElementById("attendance-summary-card");
+  if (existingCard) existingCard.remove();
+
+  // Clean up scroll handler
   if (scrollContainer) {
     if (scrollContainer._attendanceReviewScrollHandler) {
       scrollContainer.removeEventListener(
@@ -469,60 +585,150 @@ window.renderAttendanceReviewGate = function (
 
   const slotData = window.getAttendanceSlotData(dateKey, slotId);
   const confirmed = slotData?.__reviewConfirmed === true;
+  const summary = window.calculateAttendanceSummary(dateKey, slotId);
 
-  if (needsReview && !confirmed) {
-    window.setAttendanceSaveIndicator("notStarted");
+  // Helper to get status meta
+  const getStatusMeta = (status) => {
+    const metas = {
+      Hadir: { color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300', label: 'Hadir' },
+      Alpa: { color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300', label: 'Alpa' },
+      Telat: { color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300', label: 'Telat' },
+      Sakit: { color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', label: 'Sakit' },
+      Izin: { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300', label: 'Izin' },
+      Pulang: { color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300', label: 'Pulang' },
+    };
+    return metas[status] || { color: 'bg-slate-100 text-slate-700', label: status };
+  };
 
-    if (scrollContainer) {
-      const banner = document.createElement("div");
-      banner.id = "attendance-review-banner";
-      banner.className =
-        "sticky top-0 z-20 mb-3 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-3 shadow-sm backdrop-blur-xl";
-      banner.innerHTML = `
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex items-start gap-3 min-w-0">
-            <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
-              <i data-lucide="clipboard-check" class="h-4 w-4" aria-hidden="true"></i>
-            </div>
-            <div class="min-w-0">
-              <p class="text-xs font-black text-amber-900 dark:text-amber-100">Default hadir belum dikonfirmasi</p>
-              <p class="mt-0.5 text-[11px] font-semibold leading-relaxed text-amber-700 dark:text-amber-200">Periksa santri yang sakit, izin, pulang, telat, atau alpa. Setelah sesuai, gulir sampai bawah untuk konfirmasi otomatis.</p>
-            </div>
-          </div>
-          <button type="button" onclick="window.markAttendanceReviewConfirmed('${dateKey}', '${slotId}'); document.getElementById('attendance-review-banner')?.remove(); window.showToast?.('Presensi berhasil dikonfirmasi! 🎉', 'success');" class="shrink-0 rounded-xl bg-amber-600 px-3 py-2 text-[10px] font-black text-white shadow-sm active:scale-95">
-            Sudah dicek
-          </button>
+  // Generate status badges HTML
+  const statusBadges = ['Hadir', 'Alpa', 'Telat', 'Sakit', 'Izin', 'Pulang']
+    .filter(s => summary[s] > 0)
+    .map(s => {
+      const meta = getStatusMeta(s);
+      return `
+        <div class="flex flex-col items-center gap-1 p-3 rounded-xl ${meta.color}">
+          <span class="text-xl font-black">${summary[s]}</span>
+          <span class="text-[10px] font-bold uppercase tracking-wide">${meta.label}</span>
         </div>
       `;
-      scrollContainer.prepend(banner);
-      if (window.refreshIcons) window.refreshIcons();
+    }).join('');
 
-      const confirmWhenAtBottom = () => {
-        const scrollTop = scrollContainer.scrollTop;
-        const scrollHeight = scrollContainer.scrollHeight;
-        const clientHeight = scrollContainer.clientHeight;
+  const hasProblemStatuses = summary.Alpa > 0 || summary.Sakit > 0 || summary.Izin > 0 || summary.Pulang > 0 || summary.Telat > 0;
 
-        // Cek jika sudah mendekati paling bawah (toleransi 15px)
-        const isAtBottom = (scrollHeight - scrollTop - clientHeight) <= 15;
+  // Only show summary card if there are problem statuses OR needs review OR already saved
+  const shouldShowCard = hasProblemStatuses || needsReview || confirmed;
 
-        if (isAtBottom && scrollHeight > clientHeight + 10) {
-          // Cegah eksekusi ganda
-          if (scrollContainer._isAttendanceConfirming) return;
-          scrollContainer._isAttendanceConfirming = true;
-
-          // Konfirmasi otomatis presensi
-          window.markAttendanceReviewConfirmed(dateKey, slotId);
-          document.getElementById('attendance-review-banner')?.remove();
-          window.showToast?.('Presensi berhasil dikonfirmasi otomatis! 🎉', 'success');
-        } else if (scrollTop > 12) {
-          window.setAttendanceSaveIndicator("pending");
-        }
-      };
-      scrollContainer._attendanceReviewScrollHandler = confirmWhenAtBottom;
-      scrollContainer.addEventListener("scroll", confirmWhenAtBottom, {
-        passive: true,
-      });
+  if (!shouldShowCard) {
+    // Update indicator and exit
+    if (needsReview && !confirmed) {
+      window.setAttendanceSaveIndicator("notStarted");
+    } else {
+      window.setAttendanceSaveIndicator("saved");
     }
+    return;
+  }
+
+  // Create the summary card - append to bottom of container
+  const summaryCard = document.createElement("div");
+  summaryCard.id = "attendance-summary-card";
+  summaryCard.className = `
+    sticky bottom-0 z-20 mt-4 rounded-3xl
+    bg-white dark:bg-slate-800
+    border border-slate-200 dark:border-slate-700
+    shadow-xl shadow-slate-900/10
+    overflow-hidden
+  `;
+
+  // Determine card state
+  const isSaved = confirmed && !needsReview;
+  const showSaveBtn = needsReview || !confirmed;
+  const savedInfoHtml = isSaved ? `
+    <div id="summary-saved-info" class="flex flex-col gap-1">
+      <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+        <i data-lucide="check-circle" class="w-4 h-4"></i>
+        <span class="text-xs font-semibold">Tersimpan</span>
+      </div>
+      <span class="text-[10px] text-slate-400">
+        ${slotData?.__reviewedAt ? window.formatTime(slotData.__reviewedAt) : ''} • ${slotData?.__reviewedBy || window.getCurrentActorName()}
+      </span>
+    </div>
+  ` : `<div id="summary-saved-info" class="hidden"></div>`;
+
+  const editBtnHtml = isSaved ? `
+    <button
+      id="summary-edit-btn"
+      type="button"
+      onclick="window.unlockAttendanceEdit('${dateKey}', '${slotId}')"
+      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+    >
+      <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+      Ubah
+    </button>
+  ` : `<button id="summary-edit-btn" type="button" class="hidden"></button>`;
+
+  // Build status badges only if there are problem statuses
+  const badgesHtml = hasProblemStatuses ? `
+    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+      ${statusBadges}
+    </div>
+  ` : '';
+
+  summaryCard.innerHTML = `
+    <!-- Header -->
+    <div class="px-4 pt-4 pb-2">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+            <i data-lucide="bar-chart-3" class="h-4 w-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-black text-slate-800 dark:text-white">Ringkasan Presensi</h3>
+            <p class="text-[10px] text-slate-400">${summary.total} Santri</p>
+          </div>
+        </div>
+        ${editBtnHtml}
+      </div>
+    </div>
+
+    <!-- Status Badges Grid (only if has problems) -->
+    ${badgesHtml}
+
+    <!-- Divider -->
+    <div class="h-px bg-slate-100 dark:bg-slate-700 mx-4"></div>
+
+    <!-- Action Area -->
+    <div class="p-4">
+      ${showSaveBtn ? `
+        <button
+          id="summary-save-btn"
+          type="button"
+          onclick="window.markAttendanceReviewConfirmed('${dateKey}', '${slotId}'); window.showToast?.('Presensi berhasil disimpan! 🎉', 'success');"
+          class="
+            w-full flex items-center justify-center gap-2
+            py-3 px-4 rounded-xl
+            bg-emerald-600 hover:bg-emerald-700
+            text-white font-black text-sm
+            shadow-lg shadow-emerald-500/30
+            active:scale-[0.98] transition-all
+          "
+        >
+          <i data-lucide="save" class="w-4 h-4"></i>
+          SIMPAN PRESENSI
+        </button>
+      ` : `<button id="summary-save-btn" type="button" class="hidden"></button>`}
+      ${savedInfoHtml}
+    </div>
+  `;
+
+  // Append to scroll container (bottom)
+  if (scrollContainer) {
+    scrollContainer.appendChild(summaryCard);
+    if (window.refreshIcons) window.refreshIcons();
+  }
+
+  // Update indicator
+  if (needsReview && !confirmed) {
+    window.setAttendanceSaveIndicator("notStarted");
   } else {
     window.setAttendanceSaveIndicator("saved");
   }
@@ -530,6 +736,7 @@ window.renderAttendanceReviewGate = function (
 
 window.clearAttendanceReviewGate = function () {
   document.getElementById("attendance-review-banner")?.remove();
+  document.getElementById("attendance-summary-card")?.remove();
 
   const container = document.getElementById("attendance-list-container");
   if (container) {
